@@ -1,6 +1,7 @@
 /**
- *   GPStar Proton Pack - Ghostbusters Proton Pack & Neutrona Wand.
- *   Copyright (C) 2023-2024 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *   GPStar Single-Shot Blaster
+ *   Copyright (C) 2024 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *                    & Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -44,12 +45,12 @@ uint16_t i_music_count = 0;
 uint16_t i_current_music_track = 0;
 const uint16_t i_music_track_start = 500; // Music tracks start on file named 500_ and higher.
 const int8_t i_volume_abs_min = -70; // System (absolute) minimum volume possible.
-const int8_t i_volume_abs_max = 10; // System (absolute) maximum volume possible.
+const int8_t i_volume_abs_max = 0; // System (absolute) maximum volume possible.
 bool b_playing_music = false;
 bool b_music_paused = false;
 bool b_repeat_track = false;
-uint8_t i_wand_beep_level = 10; // 10 for WAV Trigger. 40 for GPStar Audio. This lowers the volume of certain Neutrona Wand beep sounds that the Proton Pack can play.
-uint8_t i_wand_idle_level = 20; // This adjusts the volume of certain Afterlife / Frozen Empire Neutrona Wand idle sounds that the Proton pack can play.
+uint8_t i_device_beep_level = 10; // 10 for WAV Trigger. 40 for GPStar Audio.
+uint8_t i_device_sound_level = 0; // 1 for WAV Trigger. 0 For GPStar Audio.
 const uint8_t i_volume_master_percentage_max = 100; // Max percentage of master volume.
 
 /*
@@ -72,12 +73,10 @@ uint8_t i_volume_music_percentage = STARTUP_VOLUME_MUSIC; // Music volume
  * General Volume
  */
 int8_t i_volume_master = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_master_percentage / 100); // Master overall volume
-int8_t i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup.
+int8_t i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup in standalone mode
 int8_t i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100); // Sound effects
 int8_t i_volume_music = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_music_percentage / 100); // Music volume
 int8_t i_volume_revert = i_volume_master;
-
-millisDelay ms_volume_check; // Put some timing on the master volume gain to not overload the audio device serial communication.
 
 /*
  * Function Prototypes
@@ -107,7 +106,7 @@ void playEffect(uint16_t i_track_id, bool b_track_loop, int8_t i_track_volume, b
   switch(AUDIO_DEVICE) {
     case A_WAV_TRIGGER:
     case A_GPSTAR_AUDIO:
-      if(b_fade_in == true) {
+      if(b_fade_in) {
         audio.trackGain(i_track_id, i_volume_abs_min);
         audio.trackPlayPoly(i_track_id, b_lock);
         audio.trackFade(i_track_id, i_track_volume, i_fade_time, 0);
@@ -117,7 +116,7 @@ void playEffect(uint16_t i_track_id, bool b_track_loop, int8_t i_track_volume, b
         audio.trackPlayPoly(i_track_id, b_lock);
       }
 
-      if(b_track_loop == true) {
+      if(b_track_loop) {
         audio.trackLoop(i_track_id, 1);
       }
       else {
@@ -159,7 +158,7 @@ void adjustGainEffect(uint16_t i_track_id, int8_t i_track_volume, bool b_fade, u
   switch(AUDIO_DEVICE) {
     case A_WAV_TRIGGER:
     case A_GPSTAR_AUDIO:
-      if(b_fade == true) {
+      if(b_fade) {
         audio.trackFade(i_track_id, i_track_volume, i_fade_time, 0);
       }
       else {
@@ -178,68 +177,8 @@ void updateEffectsVolume() {
   switch(AUDIO_DEVICE) {
     case A_WAV_TRIGGER:
     case A_GPSTAR_AUDIO:
-      // Since adjusting only from the wand, only certain effects need to be adjusted on the fly.
-      audio.trackGain(S_BEEPS, i_volume_effects);
-      audio.trackGain(S_BEEPS_ALT, i_volume_effects);
-      audio.trackGain(S_BEEPS_LOW, i_volume_effects);
-      audio.trackGain(S_BEEPS_BARGRAPH, i_volume_effects);
-      audio.trackGain(S_WAND_BOOTUP, i_volume_effects);
-      audio.trackGain(S_PACK_RIBBON_ALARM_1, i_volume_effects);
-      audio.trackGain(S_ALARM_LOOP, i_volume_effects);
-      audio.trackGain(S_RIBBON_CABLE_START, i_volume_effects);
-      audio.trackGain(S_SHUTDOWN, i_volume_effects);
-
-      if(SYSTEM_YEAR == SYSTEM_1989) {
-        audio.trackGain(S_GB2_PACK_START, i_volume_effects);
-        audio.trackGain(S_GB2_PACK_LOOP, i_volume_effects);
-        audio.trackGain(S_GB2_PACK_OFF, i_volume_effects);
-      }
-
-      if(SYSTEM_YEAR == SYSTEM_1984 || SYSTEM_YEAR == SYSTEM_1989) {
-        audio.trackGain(S_PACK_SHUTDOWN, i_volume_effects);
-      }
-
-      if(SYSTEM_YEAR == SYSTEM_1984) {
-        audio.trackGain(S_IDLE_LOOP, i_volume_effects);
-        audio.trackGain(S_BOOTUP, i_volume_effects);
-      }
-
-      if(SYSTEM_YEAR == SYSTEM_FROZEN_EMPIRE || SYSTEM_YEAR == SYSTEM_AFTERLIFE) {
-        audio.trackGain(S_POWERCELL, i_volume_effects);
-        audio.trackGain(S_AFTERLIFE_BEEP_WAND_S1, i_volume_effects - i_wand_beep_level);
-        audio.trackGain(S_AFTERLIFE_BEEP_WAND_S2, i_volume_effects - i_wand_beep_level);
-        audio.trackGain(S_AFTERLIFE_BEEP_WAND_S3, i_volume_effects - i_wand_beep_level);
-        audio.trackGain(S_AFTERLIFE_BEEP_WAND_S4, i_volume_effects - i_wand_beep_level);
-        audio.trackGain(S_AFTERLIFE_BEEP_WAND_S5, i_volume_effects - i_wand_beep_level);
-        audio.trackGain(S_AFTERLIFE_PACK_STARTUP, i_volume_effects);
-        audio.trackGain(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects);
-        audio.trackGain(S_PACK_SHUTDOWN_AFTERLIFE_ALT, i_volume_effects);
-        audio.trackGain(S_FROZEN_EMPIRE_SHUTDOWN, i_volume_effects);
-        audio.trackGain(S_AFTERLIFE_WAND_RAMP_1, i_volume_effects - i_wand_idle_level);
-        audio.trackGain(S_AFTERLIFE_WAND_RAMP_2, i_volume_effects - i_wand_idle_level);
-        audio.trackGain(S_AFTERLIFE_WAND_RAMP_2_FADE_IN, i_volume_effects - i_wand_idle_level);
-        audio.trackGain(S_AFTERLIFE_WAND_IDLE_1, i_volume_effects - i_wand_idle_level);
-        audio.trackGain(S_AFTERLIFE_WAND_IDLE_2, i_volume_effects - i_wand_idle_level);
-        audio.trackGain(S_AFTERLIFE_WAND_RAMP_DOWN_2, i_volume_effects - i_wand_idle_level);
-        audio.trackGain(S_AFTERLIFE_WAND_RAMP_DOWN_2_FADE_OUT, i_volume_effects - i_wand_idle_level);
-        audio.trackGain(S_AFTERLIFE_WAND_RAMP_DOWN_1, i_volume_effects - i_wand_idle_level);
-      }
-
-      if(b_brass_pack_sound_loop) {
-        audio.trackGain(S_FROZEN_EMPIRE_BOOT_EFFECT, i_volume_effects);
-      }
-
-      if(STREAM_MODE == SLIME) {
-        audio.trackGain(S_PACK_SLIME_TANK_LOOP, i_volume_effects);
-      }
-
-      if(STREAM_MODE == STASIS) {
-        audio.trackGain(S_STASIS_IDLE_LOOP, i_volume_effects);
-      }
-
-      if(STREAM_MODE == MESON) {
-        audio.trackGain(S_MESON_IDLE_LOOP, i_volume_effects);
-      }
+      // Since adjusting only happens while in the menu mode, only certain effects need to be adjusted on the fly.
+      audio.trackGain(S_IDLE_LOOP, i_volume_effects);
     break;
 
     case A_NONE:
@@ -247,8 +186,6 @@ void updateEffectsVolume() {
       // No audio device connected.
     break;
   }
-
-  serial1SendData(A_VOLUME_SYNC); // Tell the connected device about this change.
 }
 
 // Play a music track using certain defaults.
@@ -260,7 +197,7 @@ void playMusic() {
       case A_WAV_TRIGGER:
       case A_GPSTAR_AUDIO:
         // Loop the music track.
-        if(b_repeat_track == true) {
+        if(b_repeat_track) {
           audio.trackLoop(i_current_music_track, 1);
         }
         else {
@@ -280,12 +217,8 @@ void playMusic() {
       break;
     }
 
-    // Manage track navigation.
+    // Keep track of music playback on the device directly.
     ms_music_status_check.start(i_music_check_delay * 10);
-
-    // Tell connected serial device music playback has started.
-    serial1Send(A_MUSIC_IS_PLAYING, i_current_music_track);
-    serial1Send(A_MUSIC_IS_NOT_PAUSED);
   }
 }
 
@@ -308,18 +241,11 @@ void stopMusic() {
 
   b_music_paused = false;
   b_playing_music = false;
-
-  // Tell connected serial device music playback has stopped.
-  serial1Send(A_MUSIC_IS_NOT_PLAYING, i_current_music_track);
-  serial1Send(A_MUSIC_IS_NOT_PAUSED);
 }
 
 void pauseMusic() {
-  if(b_playing_music == true) {
-    // Tell connected devices music playback is paused.
-    serial1Send(A_MUSIC_IS_PAUSED);
-
-    // Pause music playback on the Proton Pack
+  if(b_playing_music) {
+    // Pause music playback on the Single-Shot Blaster
     switch(AUDIO_DEVICE) {
       case A_WAV_TRIGGER:
       case A_GPSTAR_AUDIO:
@@ -341,11 +267,8 @@ void pauseMusic() {
 }
 
 void resumeMusic() {
-  if(b_playing_music == true) {
-    // Reset the music check timer.
-    ms_music_status_check.start(i_music_check_delay * 4);
-
-    // Resume music playback on the Proton Pack
+  if(b_playing_music) {
+    // Resume music playback on the Single-Shot Blaster
     switch(AUDIO_DEVICE) {
       case A_WAV_TRIGGER:
       case A_GPSTAR_AUDIO:
@@ -366,8 +289,8 @@ void resumeMusic() {
 
     b_music_paused = false;
 
-    // Tell connected devices music playback has resumed.
-    serial1Send(A_MUSIC_IS_NOT_PAUSED);
+    // Keep track of music playback on the device directly.
+    ms_music_status_check.start(i_music_check_delay * 4);
   }
 }
 
@@ -384,20 +307,18 @@ void musicNextTrack() {
   }
 
   // Switch to the next track.
-  if(b_playing_music == true) {
+  if(b_playing_music) {
     // Stops music using the current track number as the identifier.
     stopMusic();
 
     i_current_music_track = i_temp_track; // Change only AFTER stopping music playback.
 
-    // Play the appropriate track on pack and wand, and notify the serial1 device.
+    // Begin playing the new track.
     playMusic();
   }
   else {
     // Set the new track.
     i_current_music_track = i_temp_track;
-
-    serial1Send(A_MUSIC_IS_NOT_PLAYING); // Updates the music track on the attenuator.
   }
 }
 
@@ -414,20 +335,18 @@ void musicPrevTrack() {
   }
 
   // Switch to the previous track.
-  if(b_playing_music == true) {
+  if(b_playing_music) {
     // Stops music using the current track number as the identifier.
     stopMusic();
 
     i_current_music_track = i_temp_track; // Change only AFTER stopping music playback.
 
-    // Play the appropriate track on pack and wand, and notify the serial1 device.
+    // Begin playing the new track.
     playMusic();
   }
   else {
     // Set the new track.
     i_current_music_track = i_temp_track;
-
-    serial1Send(A_MUSIC_IS_NOT_PLAYING); // Updates the music track on the attenuator.
   }
 }
 
@@ -454,7 +373,7 @@ void decreaseVolumeEffects() {
 
     // Provide feedback at minimum volume.
     stopEffect(S_BEEPS_ALT);
-    playEffect(S_BEEPS_ALT, false, i_volume_master - i_wand_beep_level);
+    playEffect(S_BEEPS_ALT, false, i_volume_master);
   }
   else {
     i_volume_effects_percentage = i_volume_effects_percentage - VOLUME_EFFECTS_MULTIPLIER;
@@ -479,8 +398,6 @@ void updateMusicVolume() {
       break;
     }
   }
-
-  serial1SendData(A_VOLUME_SYNC); // Tell the connected device about this change.
 }
 
 void increaseVolumeMusic() {
@@ -489,7 +406,7 @@ void increaseVolumeMusic() {
 
     // Provide feedback at maximum volume.
     stopEffect(S_BEEPS_ALT);
-    playEffect(S_BEEPS_ALT, false, i_volume_master - i_wand_beep_level);
+    playEffect(S_BEEPS_ALT, false, i_volume_master - i_device_beep_level);
   }
   else {
     i_volume_music_percentage = i_volume_music_percentage + VOLUME_MUSIC_MULTIPLIER;
@@ -506,7 +423,7 @@ void decreaseVolumeMusic() {
 
     // Provide feedback at minimum volume.
     stopEffect(S_BEEPS_ALT);
-    playEffect(S_BEEPS_ALT, false, i_volume_master - i_wand_beep_level);
+    playEffect(S_BEEPS_ALT, false, i_volume_master - i_device_beep_level);
   }
   else {
     i_volume_music_percentage = i_volume_music_percentage - VOLUME_MUSIC_MULTIPLIER;
@@ -532,8 +449,8 @@ void increaseVolumeEEPROM() {
   i_volume_master_eeprom = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_master_percentage / 100);
   i_volume_revert = i_volume_master_eeprom;
 
-  if(b_pack_on != true && b_pack_shutting_down != true) {
-    // Provide feedback when the Proton Pack is not running.
+  if(DEVICE_STATUS == MODE_OFF) {
+    // Provide feedback when the Single-Shot Blaster is not running.
     stopEffect(S_BEEPS_ALT);
     playEffect(S_BEEPS_ALT, false, i_volume_master_eeprom);
   }
@@ -583,8 +500,8 @@ void decreaseVolumeEEPROM() {
     }
   }
 
-  if(b_pack_on != true && b_pack_shutting_down != true) {
-    // Provide feedback when the pack is not running.
+  if(DEVICE_STATUS == MODE_OFF) {
+    // Provide feedback when the Single-Shot Blaster is not running.
     stopEffect(S_BEEPS_ALT);
     playEffect(S_BEEPS_ALT, false, i_volume_master_eeprom);
   }
@@ -605,8 +522,8 @@ void increaseVolume() {
   i_volume_master = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_master_percentage / 100);
   i_volume_revert = i_volume_master;
 
-  if(b_pack_on != true && b_pack_shutting_down != true) {
-    // Provide feedback when the Proton Pack is not running.
+  if(DEVICE_STATUS == MODE_OFF) {
+    // Provide feedback when the Single-Shot Blaster is not running.
     stopEffect(S_BEEPS_ALT);
     playEffect(S_BEEPS_ALT, false, i_volume_master);
   }
@@ -622,8 +539,6 @@ void increaseVolume() {
       // No audio device connected.
     break;
   }
-
-  serial1SendData(A_VOLUME_SYNC);
 }
 
 void decreaseVolume() {
@@ -654,19 +569,16 @@ void decreaseVolume() {
     }
   }
 
-  if(b_pack_on != true && b_pack_shutting_down != true) {
-    // Provide feedback when the pack is not running.
+  if(DEVICE_STATUS == MODE_OFF) {
+    // Provide feedback when the Single-Shot Blaster is not running.
     stopEffect(S_BEEPS_ALT);
     playEffect(S_BEEPS_ALT, false, i_volume_master);
   }
-
-  serial1SendData(A_VOLUME_SYNC);
 }
 
 void buildMusicCount(uint16_t i_num_tracks) {
   // Build the music track count.
   i_music_count = i_num_tracks - i_last_effects_track;
-
   if(i_music_count > 0 && i_music_count < 5000) {
     i_current_music_track = i_music_track_start; // Set the first track of music as file 500_
   }
@@ -719,7 +631,7 @@ bool musicTrackStatus() {
 }
 
 void checkMusic() {
-  if(ms_check_music.justFinished() && ms_music_next_track.isRunning() != true) {
+  if(ms_check_music.justFinished() && !ms_music_next_track.isRunning()) {
     switch(AUDIO_DEVICE) {
       case A_WAV_TRIGGER:
       case A_GPSTAR_AUDIO:
@@ -728,8 +640,8 @@ void checkMusic() {
         musicTrackPlayingStatus();
 
         // Loop through all the tracks if the music is not set to repeat a track.
-        if(b_playing_music == true && b_repeat_track == false && b_music_paused != true) {
-          if(musicTrackStatus() != true && ms_music_status_check.justFinished() && musicGetTrackCounter() != true) {
+        if(b_playing_music && !b_repeat_track && !b_music_paused) {
+          if(!musicTrackStatus() && ms_music_status_check.justFinished() && !musicGetTrackCounter()) {
             ms_check_music.stop();
             ms_music_status_check.stop();
 
@@ -766,7 +678,7 @@ void checkMusic() {
     ms_music_next_track.stop();
     ms_check_music.start(i_music_check_delay);
 
-    // Play the appropriate track on the pack and wand, and notify the serial1 device.
+    // Play the appropriate track on the device.
     playMusic();
   }
 }
@@ -776,7 +688,7 @@ void toggleMusicLoop() {
     case A_WAV_TRIGGER:
     case A_GPSTAR_AUDIO:
       // Loop the music track.
-      if(b_repeat_track == false) {
+      if(!b_repeat_track) {
         b_repeat_track = true;
 
         if(i_music_count > 0) {
@@ -794,7 +706,7 @@ void toggleMusicLoop() {
 
     case A_NONE:
     default:
-      if(b_repeat_track == false) {
+      if(!b_repeat_track) {
         b_repeat_track = true;
       }
       else {
@@ -829,7 +741,7 @@ bool setupAudioDevice() {
   // Onboard amplifier on or off. Only for the WAV Trigger.
   audio.setAmpPwr(b_onboard_amp_enabled);
 
-  // Enable track reporting. Only for the WAV Trigger.
+  // Enable track reporting, only for the WAV Trigger.
   audio.setReporting(true);
 
   // Allow time for hello command and other data to return back.
@@ -846,6 +758,7 @@ bool setupAudioDevice() {
     }
 
     AUDIO_DEVICE = A_WAV_TRIGGER;
+    i_device_sound_level = 1; // This gets subtracted from certain sound volume levels.
 
     debugln(F("Using WAV Trigger"));
 
@@ -858,8 +771,7 @@ bool setupAudioDevice() {
 
   if(audio.gpstarAudioHello()) {
     AUDIO_DEVICE = A_GPSTAR_AUDIO;
-
-    i_wand_beep_level = 40; // Special setting to adjust certain wand sounds on the pack side as they can be too loud.
+    i_device_sound_level = 0; // Special setting to adjust certain device sounds, usually lower.
 
     debugln(F("Using GPStar Audio"));
 
