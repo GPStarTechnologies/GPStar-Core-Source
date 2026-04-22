@@ -20,7 +20,7 @@
 
 ## Q: Is a Proton Pack required?
 
-**A:** No, a pack is not required for a wand-only conversion. However, please note that to run a GPStar wand board off of the Hasbro battery sled, you will need to provide your own 5V DC converter to supply regulated 5VDC to the GPStar components (see above FAQ answer). By default, a GPStar Neutrona Wand board will look for a Proton Pack before activating. To bypass this and run the wand in standalone mode, insert a 2mm jumper into the PROTON PACK TX1/RX1 connector or otherwise short these pins together. For more information see the [Troubleshooting Guide](TROUBLESHOOTING.md#neutrona-wand-standalone-mode). Note that the GPStar II Neutrona Wand can also be toggled to use Standalone Mode via its web interface. For more information see the [GPStar II Wireless Operation Guide](WIRELESS_GPSTAR_II.md#special-device-settings-1).
+**A:** No, a pack is not required for a wand-only conversion. However, please note that to run a GPStar wand board off of the Hasbro battery sled, you will need to provide your own 5V DC converter to supply regulated 5VDC to the GPStar components (see above FAQ answer). By default, a GPStar Neutrona Wand board will look for a Proton Pack before activating. To bypass this and run the wand in standalone mode, insert a 2mm jumper into the PROTON PACK TX1/RX1 connector or otherwise short these pins together. For more information see the [Troubleshooting Guide](TROUBLESHOOTING.md#neutrona-wand-standalone-mode). Note that the GPStar II Neutrona Wand can also be toggled to use Standalone Mode via its web interface. For more information see the [GPStar II Wireless Operation Guide](WIRELESS_GPSTAR_II.md#special-neutrona-wand-device-settings).
 
 ## Q: Is a GPStar Neutrona Wand required?
 
@@ -40,11 +40,11 @@
 
 ## Q: Can I produce and sell kits for others for commercial purposes?
 
-**A:** Yes, the code is released under a GPLv3 License. Modifications or enhancements which may be useful to the community are encouraged to be contributed back to [the original repository](https://github.com/gpstar81/haslab-proton-pack).
+**A:** Yes, the code is released under a GPLv3 License. Modifications or enhancements which may be useful to the community are encouraged to be contributed back to [the original repository](https://github.com/GPStarTechnologies/GPStar-Core-Source).
 
 ## Q: I have some cool ideas, can you add some custom bits in the code for me?
 
-**A:** Feel free to use the [discussion section of the GitHub repository](https://github.com/gpstar81/haslab-proton-pack/discussions) to talk about them. Anybody can contribute modifications or enhancements back to the repository (by use of a branch or fork) for review and final acceptance into the main branch.
+**A:** Feel free to use the [discussion section of the GitHub repository](https://github.com/GPStarTechnologies/GPStar-Core-Source/discussions) to talk about them. Anybody can contribute modifications or enhancements back to the repository (by use of a branch or fork) for review and final acceptance into the main branch.
 
 ## Q: Help, I fried my stock equipment or components!
 
