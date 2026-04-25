@@ -67,6 +67,9 @@ extern const uint8_t _binary_assets_smoke_html_gz_end[];
 // swaggerui.html
 extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
 extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
+// help.json
+extern const uint8_t _binary_assets_help_json_gz_start[];
+extern const uint8_t _binary_assets_help_json_gz_end[];
 
 // Define standard ports and URI endpoints.
 const uint16_t WS_PORT = 80; // Web Server (+WebSocket) port
@@ -683,6 +686,16 @@ void handleEquipSvg(AsyncWebServerRequest *request) {
   debugln(F("Sending -> Equipment SVG"));
   size_t i_file_len = embeddedFileSize(_binary_assets_equipment_svg_gz_start, _binary_assets_equipment_svg_gz_end);
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_SVG, _binary_assets_equipment_svg_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response);
+}
+
+void handleContextHelp(AsyncWebServerRequest *request) {
+  // Serves the contextual help JSON file for web UI field descriptions.
+  debugln(F("Sending -> Help JSON"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_help_json_gz_start, _binary_assets_help_json_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, _binary_assets_help_json_gz_start, i_file_len);
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
   request->send(response);

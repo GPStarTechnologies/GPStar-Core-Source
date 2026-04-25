@@ -95,13 +95,15 @@
     <script type="application/javascript" src="/common.js"></script>
     <script type="application/javascript">
       window.addEventListener("load", onLoad);
-
       function onLoad(event) {
         // Wait for page to fully load.
         setTimeout(function () {
           getNetworks();
           getSettings();
         }, 50);
+
+        // Initialize contextual help system
+        initializeHelp("Network");
       }
 
       // Ensure the select element reflects the current network input value.

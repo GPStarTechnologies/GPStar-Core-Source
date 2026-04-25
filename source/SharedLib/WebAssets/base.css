@@ -523,3 +523,69 @@ input[type="text"] {
   border-color: #0000ff;
   color: rgba(100, 60, 255, 1);
 }
+
+/* Contextual Help System */
+.help-icon {
+  color: #2478ab;
+  cursor: help;
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: bold;
+  margin-left: 4px;
+  user-select: none;
+}
+
+.help-icon:hover {
+  color: #1a5a85;
+}
+
+.help-modal {
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: none;
+  height: 100%;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10000;
+}
+
+.help-modal-content {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  color: #333;
+  margin: 15% auto;
+  max-width: 500px;
+  padding: 20px;
+  position: relative;
+  width: 90%;
+}
+
+.help-modal-content h3 {
+  color: #2478ab;
+  font-size: 1.125rem;
+  margin-bottom: 12px;
+}
+
+.help-modal-content p {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.help-modal-close {
+  color: #aaa;
+  cursor: pointer;
+  float: right;
+  font-size: 1.75rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.help-modal-close:hover,
+.help-modal-close:focus {
+  color: #000;
+}

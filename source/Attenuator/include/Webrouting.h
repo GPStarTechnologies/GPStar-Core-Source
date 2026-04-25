@@ -102,6 +102,7 @@ void registerWebRoutes() {
   addSimpleRoute("/settings/smoke", HTTP_GET, handleSmokeSettings, "Smoke settings page", "Serves the smoke settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/settings/wand", HTTP_GET, handleWandSettings, "Wand settings page", "Serves the wand settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/equipment.svg", HTTP_GET, handleEquipSvg, "Equipment SVG", "Serves the equipment visualization SVG", TAG_ASSETS, RESP_SVG_FILE);
+  addSimpleRoute("/help.json", HTTP_GET, handleContextHelp, "Help JSON", "Serves the help JSON file", TAG_ASSETS, RESP_JSON_OBJECT);
 
   // Configuration Endpoints
   addSimpleRoute("/config/device", HTTP_GET, handleGetDeviceConfig, "Get device config", "Returns current device configuration as JSON", TAG_CONFIGURATION, RESP_CONFIG_OBJECT);
