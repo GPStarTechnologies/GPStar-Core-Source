@@ -59,11 +59,12 @@ WirelessManager::WirelessManager(WirelessDeviceType deviceType, const String& de
     localPassword(AP_DEFAULT_PASSWORD),                       // Sets default local AP password
     localAddress(convertToIP(deviceAddress)),                 // Converts and sets device IP address
     localSubnet(convertToIP("255.255.255.0")),                // Sets default subnet mask
-    localGateway(convertToIP("0.0.0.0")),                     // Sets default gateway
+    localGateway(convertToIP("0.0.0.0")),                     // Temporary initialization
     extWifiEnabled(false),                                    // External WiFi disabled by default
     dnsServerActive(false)                                    // DNS server not started yet
 {
   // Run the true constructor after member variables are initialized above.
+  localGateway = localAddress; // Set gateway to device IP for captive portal detection
   localDhcpStart = IPAddress(localAddress[0], localAddress[1], localAddress[2], 100);
   localDeviceName = getDeviceTypeName(); // Set the default device name based on type enum.
   loadWirelessPreferences(); // Loads custom credentials and other values from Preferences if set by user.
