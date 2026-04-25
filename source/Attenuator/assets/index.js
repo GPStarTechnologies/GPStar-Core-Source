@@ -206,13 +206,13 @@ function getNetworkInfo() {
         }
         
         // Display client counts
-        var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WS Clients: " + (jObj.wsClients ?? 0);
+        var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
         setHtml("clientInfo", clientText);
         
         // Display captive portal statistics
         var statsText = "";
         if (jObj.dns && jObj.dns.active) {
-          statsText = "DNS Requests: " + (jObj.dns.requestCount ?? 0);
+          statsText = "DNS Server: Active";
         }
         if (jObj.captivePortalRequests !== undefined) {
           if (statsText) statsText += " / ";
@@ -921,9 +921,6 @@ function updateEquipment(jObj) {
       musicTrackCurrent = jObj.musicCurrent || 0;
       updateTrackListing();
     }
-
-    // Connected Wifi Clients - Private AP vs. WebSocket
-    setHtml("clientInfo", "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0));
   }
 
   // Always run logic to update the graphics, even if we don't have the expected data.

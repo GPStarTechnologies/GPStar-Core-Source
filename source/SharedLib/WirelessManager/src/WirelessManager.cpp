@@ -61,8 +61,7 @@ WirelessManager::WirelessManager(WirelessDeviceType deviceType, const String& de
     localSubnet(convertToIP("255.255.255.0")),                // Sets default subnet mask
     localGateway(convertToIP("0.0.0.0")),                     // Sets default gateway
     extWifiEnabled(false),                                    // External WiFi disabled by default
-    dnsServerActive(false),                                   // DNS server not started yet
-    dnsRequestCount(0)                                        // Initialize DNS request counter
+    dnsServerActive(false)                                    // DNS server not started yet
 {
   // Run the true constructor after member variables are initialized above.
   localDhcpStart = IPAddress(localAddress[0], localAddress[1], localAddress[2], 100);
@@ -135,7 +134,6 @@ bool WirelessManager::startDnsService() {
 void WirelessManager::processDnsRequests() {
   if(dnsServerActive) {
     dnsServer.processNextRequest();
-    dnsRequestCount++; // Increment counter (counts loop iterations, not actual DNS queries)
   }
 }
 
@@ -240,7 +238,6 @@ void WirelessManager::getNetworkStatus(JsonObject& obj) const {
   // DNS Server Info
   JsonObject dns = obj["dns"].to<JsonObject>();
   dns["active"] = dnsServerActive;
-  dns["requestCount"] = dnsRequestCount;
 
   // External WiFi Info
   JsonObject extWifi = obj["extWifi"].to<JsonObject>();

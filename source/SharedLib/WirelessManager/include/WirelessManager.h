@@ -204,7 +204,6 @@ class WirelessManager {
     // DNS Server for captive portal detection
     DNSServer dnsServer;
     bool dnsServerActive;
-    uint32_t dnsRequestCount; // Track total DNS requests processed
 
     // Local AP Configuration
     WirelessDeviceType localDeviceType;
