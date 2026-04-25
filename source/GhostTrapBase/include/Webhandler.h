@@ -334,7 +334,7 @@ void webLoops() {
       i_ap_client_count = WiFi.softAPgetStationNum();
 
       // Restart timer for next count.
-      ms_apclient.start(i_apClientCount);
+      ms_apclient.start(i_apClientDelay);
     }
 
     if(ms_otacheck.remaining() < 1) {

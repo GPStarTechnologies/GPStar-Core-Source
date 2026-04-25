@@ -32,7 +32,7 @@ bool b_ext_wifi_started = false; // Denotes external WiFi was joined.
 
 // Create timer for checking connections.
 millisDelay ms_apclient;
-const uint16_t i_apClientCount = 200;
+const uint16_t i_apClientDelay = 200;
 
 // Track the number of connected WiFi (AP) clients.
 uint8_t i_ap_client_count = 0;

@@ -601,7 +601,7 @@ void webLoops() {
       i_ap_client_count = WiFi.softAPgetStationNum();
 
       // Restart timer for next count.
-      ms_apclient.start(i_apClientCount);
+      ms_apclient.start(i_apClientDelay);
     }
 
     if(ms_otacheck.remaining() < 1) {
@@ -645,7 +645,7 @@ void restartWireless() {
 
       // Begin timer for remote client events.
       ms_cleanup.start(i_websocketCleanup);
-      ms_apclient.start(i_apClientCount);
+      ms_apclient.start(i_apClientDelay);
       ms_otacheck.start(i_otaCheck);
 
       #if defined(DEBUG_WIRELESS_SETUP)

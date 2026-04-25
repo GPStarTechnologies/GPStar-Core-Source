@@ -85,6 +85,9 @@ AsyncEventSource events("/events");
 // Track the number of connected WebSocket clients.
 uint8_t i_ws_client_count = 0;
 
+// Track captive portal HTTP endpoint requests.
+uint32_t captivePortalRequests = 0;
+
 // Track time to refresh progress for OTA updates.
 unsigned long i_progress_millis = 0;
 
@@ -169,18 +172,6 @@ String getDeviceConfig() {
       streamMode["value"] = gpstarSystem.getStreamModeValue(mode);
       streamMode["label"] = gpstarSystem.getStreamModeName(mode);
     }
-  }
-
-  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
-  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
-
-  // Refresh external WiFi info when/if connected and get the values.
-  if(wirelessMgr->getExtWifiNetworkInfo()) {
-    jsonBody["extAddr"] = wirelessMgr->getExtWifiAddress().toString();
-    jsonBody["extMask"] = wirelessMgr->getExtWifiSubnet().toString();
-  } else {
-    jsonBody["extAddr"] = "";
-    jsonBody["extMask"] = "";
   }
 
   // Serialize JSON object to string.
@@ -434,8 +425,6 @@ String getEquipmentStatus() {
     jsonBody["packTempC"] = roundFloat(f_temperature_c);
     jsonBody["packTempF"] = roundFloat(f_temperature_f);
     jsonBody["wandAmps"] = roundFloat(f_wand_amps);
-    jsonBody["apClients"] = i_ap_client_count;
-    jsonBody["wsClients"] = i_ws_client_count;
     jsonBody["canChangeStream"] = canChangeStreamMode();
   }
 
@@ -590,6 +579,10 @@ void startWebServer() {
 // Perform management if the AP and web server are started.
 void webLoops() {
   if(b_local_ap_started && b_httpd_started) {
+    // Process DNS requests for captive portal detection via WirelessManager.
+    // This must be called frequently to handle incoming DNS queries.
+    wirelessMgr->processDnsRequests();
+
     if(ms_cleanup.remaining() < 1) {
       // Clean up oldest WebSocket connections.
       ws.cleanupClients();
@@ -603,7 +596,7 @@ void webLoops() {
       i_ap_client_count = WiFi.softAPgetStationNum();
 
       // Restart timer for next count.
-      ms_apclient.start(i_apClientCount);
+      ms_apclient.start(i_apClientDelay);
     }
 
     if(ms_otacheck.remaining() < 1) {
@@ -846,6 +839,27 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
   request->send(response);
 }
 
+void handleGetNetworkStatus(AsyncWebServerRequest *request) {
+  // Return network status and statistics including DNS request count and connected clients.
+  String statusJson;
+  JsonDocument jsonBody;
+  JsonObject statusObj = jsonBody.to<JsonObject>();
+
+  // Populate with current network configuration and statistics.
+  wirelessMgr->getNetworkStatus(statusObj);
+
+  // Add device-specific client connection counts.
+  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
+  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
+  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, statusJson);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, statusJson);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  request->send(response);
+}
+
 // Handles DELETE /wifi/network/{index} to remove a saved WiFi network by index.
 void handleDeleteNetwork(AsyncWebServerRequest *request) {
   int networkIndex = -1;
@@ -881,6 +895,39 @@ void handleRestart(AsyncWebServerRequest *request) {
   request->send(HTTP_STATUS_204, MIME_JSON, returnJsonStatus());
   delay(1000);
   ESP.restart();
+}
+
+/**
+ * Captive Portal / Connectivity Check Handlers
+ * Purpose: Intercept OS connectivity checks to signal this is a captive portal without internet.
+ * This prevents mobile devices (especially Android) from thinking they have internet access,
+ * allowing them to fall back to cellular data for actual internet while staying connected to
+ * the device's WiFi for local configuration.
+ */
+
+void handleCaptivePortal(AsyncWebServerRequest *request) {
+  // Redirect connectivity checks to the device's main page.
+  // This signals to the OS that this is a captive portal (no internet available).
+  captivePortalRequests++;  // Track captive portal endpoint usage
+
+  // Redirect to the root page with HTTP 302 (Found/Temporary Redirect).
+  // This makes Android/iOS recognize this as a captive portal.
+  request->redirect("/");
+}
+
+void handleConnectivityCheck(AsyncWebServerRequest *request) {
+  // Handle connectivity checks that expect specific responses.
+  // Return HTTP 200 with HTML content instead of 204 (No Content).
+  // This signals no internet connectivity to the OS.
+  captivePortalRequests++;  // Track captive portal endpoint usage
+
+  // Return a simple HTML response (not 204) to indicate captive portal.
+  AsyncWebServerResponse *response = request->beginResponse(
+    HTTP_STATUS_200, 
+    MIME_HTML, 
+    F("<html><head><title>GPStar Device</title><meta http-equiv='refresh' content='0;url=/'></head><body>Redirecting to device...</body></html>")
+  );
+  request->send(response);
 }
 
 /**

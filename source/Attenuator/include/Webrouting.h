@@ -176,10 +176,24 @@ void registerWebRoutes() {
 
   // WiFi Management
   addSimpleRoute("/wifi/settings", HTTP_GET, handleGetWifi, "Get WiFi settings", "Returns current WiFi configuration", TAG_WIFI, RESP_WIFI_SETTINGS);
+  addSimpleRoute("/wifi/status", HTTP_GET, handleGetNetworkStatus, "Get network status", "Returns network status including AP info, statistics, and connection details", TAG_WIFI, RESP_JSON_OBJECT);
   addSimpleRoute("/wifi/networks", HTTP_GET, handleGetSSIDs, "Get available networks", "Returns list of nearby 2.4 GHz WiFi networks", TAG_WIFI, RESP_NETWORK_ARRAY);
   addSimpleRoute("/wifi/network/*", HTTP_DELETE, handleDeleteNetwork, "Delete saved network", "Deletes a saved WiFi network by index", TAG_WIFI);
 
   // OpenAPI Documentation
   addSimpleRoute("/swaggerui", HTTP_GET, handleSwagger, "Swagger UI", "Serves the Swagger UI page for API documentation", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/openapi.json", HTTP_GET, handleOpenAPISpec, "OpenAPI specification", "Returns the OpenAPI 3.x specification for this API", TAG_DOCUMENTATION, RESP_OPENAPI_SPEC);
+
+  // Captive Portal / Connectivity Check Endpoints
+  // These intercept OS-level connectivity checks to signal this is a captive portal (no internet).
+  // Android and iOS check various URLs to determine if a WiFi network provides internet access.
+  // By redirecting or returning non-204 responses, we tell the OS to use cellular for internet.
+  addSimpleRoute("/generate_204", HTTP_GET, handleConnectivityCheck, "Android connectivity check", "Captive portal detection endpoint", TAG_PORTAL, RESP_CAPTIVE_PORTAL);
+  addSimpleRoute("/gen_204", HTTP_GET, handleConnectivityCheck, "Google connectivity check", "Captive portal detection endpoint", TAG_PORTAL, RESP_CAPTIVE_PORTAL);
+  addSimpleRoute("/ncsi.txt", HTTP_GET, handleConnectivityCheck, "Windows connectivity check", "Captive portal detection endpoint", TAG_PORTAL, RESP_CAPTIVE_PORTAL);
+  addSimpleRoute("/hotspot-detect.html", HTTP_GET, handleCaptivePortal, "iOS captive portal", "iOS captive portal detection", TAG_PORTAL, RESP_HTML_PAGE);
+  addSimpleRoute("/library/test/success.html", HTTP_GET, handleCaptivePortal, "iOS connectivity check", "iOS captive portal detection", TAG_PORTAL, RESP_HTML_PAGE);
+  addSimpleRoute("/connecttest.txt", HTTP_GET, handleConnectivityCheck, "Windows connectivity test", "Captive portal detection endpoint", TAG_PORTAL, RESP_CAPTIVE_PORTAL);
+  addSimpleRoute("/redirect", HTTP_GET, handleCaptivePortal, "Windows captive portal", "Windows captive portal detection", TAG_PORTAL, RESP_HTML_PAGE);
+  addSimpleRoute("/success.txt", HTTP_GET, handleConnectivityCheck, "Android connectivity test", "Captive portal detection endpoint", TAG_PORTAL, RESP_CAPTIVE_PORTAL);
 }
