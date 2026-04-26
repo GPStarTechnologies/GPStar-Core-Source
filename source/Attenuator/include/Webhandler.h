@@ -67,6 +67,9 @@ extern const uint8_t _binary_assets_smoke_html_gz_end[];
 // swaggerui.html
 extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
 extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
+// portal.html
+extern const uint8_t _binary_assets_portal_html_gz_start[];
+extern const uint8_t _binary_assets_portal_html_gz_end[];
 // help.json
 extern const uint8_t _binary_assets_help_json_gz_start[];
 extern const uint8_t _binary_assets_help_json_gz_end[];
@@ -919,28 +922,42 @@ void handleRestart(AsyncWebServerRequest *request) {
  */
 
 void handleCaptivePortal(AsyncWebServerRequest *request) {
-  // Redirect connectivity checks to the device's main page.
-  // This signals to the OS that this is a captive portal (no internet available).
+  // Handle captive portal detection with auto-dismiss behavior.
+  // Serves a shared portal.html page that detects OS and auto-dismisses after showing connection success.
   captivePortalRequests++;  // Track captive portal endpoint usage
 
-  // Redirect to the root page with HTTP 302 (Found/Temporary Redirect).
-  // This makes Android/iOS recognize this as a captive portal.
-  request->redirect("/");
+  debugln(F("Sending -> Captive Portal Page"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_portal_html_gz_start, _binary_assets_portal_html_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_HTML, _binary_assets_portal_html_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response); // Serve page content.
 }
 
 void handleConnectivityCheck(AsyncWebServerRequest *request) {
-  // Handle connectivity checks that expect specific responses.
-  // Return HTTP 200 with HTML content instead of 204 (No Content).
-  // This signals no internet connectivity to the OS.
-  captivePortalRequests++;  // Track captive portal endpoint usage
+  // Handle OS-specific connectivity checks.
+  // Return responses that tell the OS to dismiss the captive portal view.
+  captivePortalRequests++;
 
-  // Return a simple HTML response (not 204) to indicate captive portal.
-  AsyncWebServerResponse *response = request->beginResponse(
-    HTTP_STATUS_200, 
-    MIME_HTML, 
-    F("<html><head><title>GPStar Device</title><meta http-equiv='refresh' content='0;url=/'></head><body>Redirecting to device...</body></html>")
-  );
-  request->send(response);
+  String path = request->url();
+  
+  // Android expects 204 No Content for /generate_204 and /gen_204
+  if (path.indexOf("/generate_204") >= 0 || path.indexOf("/gen_204") >= 0) {
+    debugln(F("Sending -> 204 No Content (Android connectivity check)"));
+    request->send(204);
+    return;
+  }
+  
+  // iOS expects 200 with "Success" body
+  if (path.indexOf("hotspot-detect") >= 0 || path.indexOf("success.html") >= 0) {
+    debugln(F("Sending -> Success (iOS connectivity check)"));
+    request->send(HTTP_STATUS_200, MIME_PLAIN, "Success");
+    return;
+  }
+  
+  // Other endpoints (ncsi.txt, connecttest.txt, etc.) - return simple success
+  debugln(F("Sending -> Success (Generic connectivity check)"));
+  request->send(HTTP_STATUS_200, MIME_PLAIN, "Success");
 }
 
 /**

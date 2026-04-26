@@ -365,7 +365,7 @@ function showHelpModal(title, text) {
   modal.style.display = "block";
 }
 
-function createHelpIcon(fieldId, helpText) {
+function createHelpIcon(labelText, helpText) {
   // Create an info icon that shows help when clicked
   var icon = document.createElement("span");
   icon.className = "help-icon";
@@ -374,7 +374,7 @@ function createHelpIcon(fieldId, helpText) {
   icon.onclick = function (e) {
     e.preventDefault();
     e.stopPropagation();
-    showHelpModal(fieldId, helpText);
+    showHelpModal(labelText, helpText);
   };
   return icon;
 }
@@ -392,20 +392,31 @@ function initializeHelp(section) {
         var element = getEl(fieldId);
         if (element) {
           var helpText = sectionHelp[fieldId];
-          var helpIcon = createHelpIcon(fieldId, helpText);
-
+          
           // Find the parent setting div or label to insert the icon
           var parent = element.closest(".setting");
           if (parent) {
-            // For inputs/selects, find the label or add after the label text
+            // Find the label text
             var label = parent.querySelector("b, .label");
+            var labelText = fieldId; // Fallback to field ID
+            
             if (label) {
+              // Extract and clean the label text
+              labelText = label.textContent || label.innerText || fieldId;
+              labelText = labelText.trim().replace(/:$/, ""); // Remove trailing colon
+              
+              // Create and add the help icon
+              var helpIcon = createHelpIcon(labelText, helpText);
               label.appendChild(document.createTextNode(" "));
               label.appendChild(helpIcon);
             } else {
-              // For toggle switches, add after the label span
+              // For toggle switches, find the label span
               var toggleLabel = parent.querySelector("label .label");
               if (toggleLabel) {
+                labelText = toggleLabel.textContent || toggleLabel.innerText || fieldId;
+                labelText = labelText.trim().replace(/:$/, "");
+                
+                var helpIcon = createHelpIcon(labelText, helpText);
                 toggleLabel.appendChild(document.createTextNode(" "));
                 toggleLabel.appendChild(helpIcon);
               }
