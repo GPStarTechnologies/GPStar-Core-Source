@@ -9,6 +9,19 @@ function isJsonString(str) {
   return true;
 }
 
+function handleStatus(response) {
+  // Generic handler for a JSON response with a "status" field.
+  // If a response is not JSON then the full text is displayed.
+  if (isJsonString(response || "")) {
+    var jObj = JSON.parse(response || "");
+    if (jObj.status && jObj.status != "success") {
+      alert(jObj.status); // Report non-success status.
+    }
+  } else {
+    alert(response); // Display plain text message.
+  }
+}
+
 function openTab(evt, tabName) {
   // Hide all tab contents
   var tabs = document.getElementsByClassName("tab");

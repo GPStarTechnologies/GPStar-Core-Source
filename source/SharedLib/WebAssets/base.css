@@ -191,10 +191,31 @@ details > summary {
 .button-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  justify-content: center;
   width: 100%;
   margin: 10px 0;
+}
+
+.top-link {
+  display: block;
+  padding-right: 10px;
+  text-align: right;
+}
+
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-links a {
+  margin-right: 10px;
+}
+
+.action-links a:last-child {
+  margin-right: 0;
 }
 
 /* Card Component */

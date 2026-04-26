@@ -73,3 +73,11 @@ function blinkEl(id, state) {
     getEl(id).classList.remove("blinking");
   }
 }
+
+function disableControls() {
+  // Disables all form controls (inputs, selects, buttons)
+  var controls = document.querySelectorAll('input, select, button');
+  for (var i = 0; i < controls.length; i++) {
+    controls[i].disabled = true;
+  }
+}

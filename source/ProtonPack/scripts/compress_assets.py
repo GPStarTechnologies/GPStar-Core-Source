@@ -116,9 +116,10 @@ def combine_js_files():
 
     # Define the combination order - shared libraries first, device-specific last
     js_sources = [
+        shared_dir / "api.js",
         shared_dir / "dom.js",
-        shared_dir / "utils.js",
         shared_dir / "help.js",
+        shared_dir / "utils.js",
         device_js  # Device-specific functions last
     ]
 
