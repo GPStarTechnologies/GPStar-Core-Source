@@ -341,16 +341,29 @@
       </div>
     </div>
 
+    <div id="gpstar2">
+      <h1>GPStar II Options</h1>
+      <div class="block left">
+        <div class="setting">
+          <label class="toggle-switchy" data-text="yesno" data-label="left">
+            <input id="resetWifiPassword" name="resetWifiPassword" type="checkbox" />
+            <span class="toggle">
+              <span class="switch"></span>
+            </span>
+            <span class="label">Reset WiFi Password:</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="block">
       <a href="#top">Top</a>
       <hr />
-      <a href="/">&laquo; Back</a>
-      &nbsp;&nbsp;
-      <button type="button" class="green" onclick="saveSettings()" id="btnSave">Update&nbsp;Settings</button>
-      &nbsp;&nbsp;&nbsp;
-      <button type="button" class="red" onclick="resetEEPROM()" id="btnReset">Reset&nbsp;EEPROM</button>
-      <br />
-      <br />
+      <div class="button-group">
+        <a href="/">&laquo; Back</a>
+        <button type="button" class="green" onclick="saveSettings()" id="btnSave">Update&nbsp;Settings</button>
+        <button type="button" class="red" onclick="resetEEPROM()" id="btnReset">Reset&nbsp;EEPROM</button>
+      </div>
     </div>
 
     <script type="application/javascript" src="/common.js"></script>
@@ -364,7 +377,7 @@
         disableEl("btnSave");
 
         // Initialize contextual help system
-        initializeHelp("NeutronaWand");
+        initializeHelp("wand");
       }
 
       function disableControls() {
@@ -372,7 +385,6 @@
         disableEl("ledWandCount");
         disableEl("ledWandHue");
         disableEl("ledWandSat");
-        //disableEl("rgbVentEnabled");
         disableEl("defaultStreamMode");
         disableEl("stasisStream");
         disableEl("slimeStream");
@@ -401,7 +413,9 @@
         disableEl("bargraphIdleAnimation");
         disableEl("bargraphFireAnimation");
         hideEl("gpstarAudioLedToggle");
+        disableEl("resetWifiPassword");
         disableEl("btnReset");
+        hideEl("gpstar2");
       }
 
       // Converts a value from one range to another: eg. convertRange(160, [2,254], [0,360])
@@ -492,7 +506,6 @@
               setValue("ledWandCount", settings.ledWandCount ?? 2); // GPStar: 2 (50 LED)
               setValue("ledWandHue", convertRange(settings.ledWandHue || 254, [1, 254], [0, 360])); // Default: Red
               setValue("ledWandSat", convertRange(settings.ledWandSat || 254, [1, 254], [0, 100])); // Full Saturation
-              setToggle("rgbVentEnabled", settings.rgbVentEnabled);
               setValue("defaultStreamMode", settings.defaultStreamMode);
               setToggle("stasisStream", settings.stasisStream);
               setToggle("slimeStream", settings.slimeStream);
@@ -549,7 +562,6 @@
           ledWandCount: getInt("ledWandCount") ?? 2,
           ledWandHue: convertRange(getInt("ledWandHue"), [0, 360], [1, 254]) || 254,
           ledWandSat: convertRange(getInt("ledWandSat"), [0, 100], [1, 254]) || 254,
-          rgbVentEnabled: getToggle("rgbVentEnabled"),
           defaultStreamMode: getInt("defaultStreamMode") ?? 0,
           stasisStream: getToggle("stasisStream") || getInt("defaultStreamMode") === 1 || getInt("currentStreamMode") === "Dark Matter Gen.",
           slimeStream: getToggle("slimeStream") || getInt("defaultStreamMode") === 2 || getInt("currentStreamMode") === "Plasm System",
@@ -577,6 +589,8 @@
           bargraphOverheatBlink: getToggle("bargraphOverheatBlink"),
           bargraphIdleAnimation: getInt("bargraphIdleAnimation") ?? 1,
           bargraphFireAnimation: getInt("bargraphFireAnimation") ?? 1,
+          isWiFiEnabled: true,
+          resetWifiPassword: getToggle("resetWifiPassword"),
         };
         var body = JSON.stringify(settings);
 

@@ -188,6 +188,15 @@ details > summary {
   min-width: 230px;
 }
 
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  margin: 10px 0;
+}
+
 /* Card Component */
 .card {
   background: #ddd;

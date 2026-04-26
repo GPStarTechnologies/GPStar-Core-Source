@@ -82,6 +82,7 @@
           <option value="3">Disabled</option>
         </select>
       </div>
+      <!-- Toggle for rgbVentEnabled used only for GPStar Neutrona Wand I -->
       <div class="setting" id="rgbVentToggle">
         <label class="toggle-switchy" data-label="left">
           <input id="rgbVentEnabled" name="rgbVentEnabled" type="checkbox" />
@@ -380,13 +381,11 @@
     <div class="block">
       <a href="#top">Top</a>
       <hr />
-      <a href="/">&laquo; Back</a>
-      &nbsp;&nbsp;
-      <button type="button" class="green" onclick="saveSettings()" id="btnSave">Update&nbsp;Settings</button>
-      &nbsp;&nbsp;&nbsp;
-      <button type="button" class="red" onclick="resetEEPROM()" id="btnReset">Reset&nbsp;EEPROM</button>
-      <br />
-      <br />
+      <div class="button-group">
+        <a href="/">&laquo; Back</a>
+        <button type="button" class="green" onclick="saveSettings()" id="btnSave">Update&nbsp;Settings</button>
+        <button type="button" class="red" onclick="resetEEPROM()" id="btnReset">Reset&nbsp;EEPROM</button>
+      </div>
     </div>
 
     <script type="application/javascript" src="/common.js"></script>
@@ -400,7 +399,7 @@
         disableEl("btnSave");
 
         // Initialize contextual help system
-        initializeHelp("NeutronaWand");
+        initializeHelp("wand");
       }
 
       function disableControls() {
@@ -439,8 +438,8 @@
         hideEl("gpstarAudioLedToggle");
         disableEl("isWiFiEnabled");
         disableEl("resetWifiPassword");
-        hideEl("gpstar2");
         disableEl("btnReset");
+        hideEl("gpstar2");
       }
 
       // Converts a value from one range to another: eg. convertRange(160, [2,254], [0,360])

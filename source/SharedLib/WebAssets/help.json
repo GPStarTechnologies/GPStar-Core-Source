@@ -1,5 +1,5 @@
 {
-  "Device": {
+  "device": {
     "wifiName": "Customize the name of the built-in WiFi network (SSID) for your device. Must be 8-32 characters using only letters, numbers, hyphens, and underscores. This name will also be used for mDNS access (http://[CUSTOM_NAME].local).",
     "invertLEDs": "Reverses the order of addressable LEDs on the device if your wiring is reversed from the default configuration.",
     "grbLEDs": "Changes the LED color order from RGB to GRB if your addressable LEDs use a different chip configuration.",
@@ -15,9 +15,40 @@
     "invertRightToggle": "Reverses the logic of the right toggle switch (up becomes down, down becomes up).",
     "displayType": "Choose how equipment status is displayed on the web interface: Text (detailed info), Graphical (visual representation), or Both.",
     "useAnimation": "Enables or disables CSS animation effects in the web interface for a more dynamic visual experience.",
-    "songList": "Enter a custom list of music track names (one per line, maximum 2000 bytes) to display in the music player interface."
+    "songList": "Enter a custom list of music track names (one per line, maximum 2000 bytes) to display in the music player interface.",
+    "openedSmokeEnabled": "Enables smoke effects when the Ghost Trap doors open (Ghost Trap only).",
+    "openedSmokeDuration": "Duration in seconds (1-10) for smoke output when trap doors are opened.",
+    "closedSmokeEnabled": "Enables smoke effects when the Ghost Trap doors close (Ghost Trap only).",
+    "closedSmokeDuration": "Duration in seconds (1-10) for smoke output when trap doors are closed.",
+    "orientation": "Specifies the physical mounting orientation of the blaster for accurate magnetometer readings and motion detection.",
+    "hardIron1": null,
+    "hardIron2": null,
+    "hardIron3": null,
+    "softIron1": null,
+    "softIron2": null,
+    "softIron3": null,
+    "softIron4": null,
+    "softIron5": null,
+    "softIron6": null,
+    "softIron7": null,
+    "softIron8": null,
+    "softIron9": null,
+    "magField": null,
+    "ledType": "Specifies the color channel order for addressable LEDs (RGB, GRB, or GBR) to match your specific LED strip hardware.",
+    "numLeds": "Number of addressable LEDs in the strip (50-500) for Stream Effects device configuration.",
+    "nixieCount": "Number of nixie tube indicators to display on the Belt Gizmo device (7, 8, or 10 depending on prop variant).",
+    "maxHealth": "Maximum health points (100-10000) for the PSTT target before it registers as defeated.",
+    "lowHealth": "Health threshold (50-5000) at which the PSTT target enters low health warning state with visual/audio indicators.",
+    "extremeLowHealth": "Health threshold (10-2500) at which the PSTT target enters extreme low health critical state with urgent warnings.",
+    "healthRegen": "Amount of health points (1-500) the PSTT target regenerates per cycle when not being hit.",
+    "healthRegenDelay": "Delay in milliseconds before the PSTT target begins regenerating health after the last hit received.",
+    "wandPower1": null,
+    "wandPower2": null,
+    "wandPower3": null,
+    "wandPower4": null,
+    "wandPower5": null
   },
-  "Network": {
+  "network": {
     "extEnabled": "Enables the device to connect to an external 2.4GHz WiFi network (e.g., your home network) instead of only operating as an access point.",
     "availNetworks": "Displays a list of detected 2.4GHz WiFi networks in range. Select a network to automatically populate the SSID field.",
     "savedNetworks": "Shows previously-saved WiFi networks that the device has connected to before. Select to reload saved credentials.",
@@ -28,11 +59,11 @@
     "subnet": "The subnet mask for the external network (e.g., 255.255.255.0). Only used when 'Use Static IP' is enabled.",
     "gateway": "The gateway (router) IP address for the external network (e.g., 192.168.1.1). Only used when 'Use Static IP' is enabled."
   },
-  "Password": {
+  "password": {
     "password": "Enter a new password to secure the built-in WiFi network. Must be at least 8 characters to meet WPA2 security standards. This prevents unauthorized connections to your device.",
     "password2": "Re-enter the new password to confirm it matches. Both password fields must be identical to proceed with the update."
   },
-  "ProtonPack": {
+  "pack": {
     "defaultSystemModePack": "Choose the default operation mode: Super Hero (all features enabled, video game streams) or Mode Original (classic movie-accurate behavior with limited features).",
     "defaultYearThemePack": "Sets which movie era theme the pack uses by default at startup: System Toggle (manual), 1984 (original film), 1989 (Ghostbusters II), Afterlife, or Frozen Empire.",
     "currentYearThemePack": "Immediately changes the active theme without restarting: 1984, 1989, Afterlife, or Frozen Empire. This affects lights, sounds, and behavior.",
@@ -46,7 +77,7 @@
     "defaultPackVolume": "Sets the master audio volume percentage (5-100%) for all pack sounds at startup. Can be adjusted later via controls.",
     "fadeoutIdleSounds": "When enabled, idle loop sounds (like the pack hum) will gradually fade out instead of stopping abruptly when the pack is shut down.",
     "protonStreamEffects": "When enabled, adds impact sound effects when the proton stream is active, simulating the stream hitting surfaces or ghosts.",
-    "brassStartupLoop": "When enabled, uses the distinctive brass instrument startup loop sound during pack activation (from certain movie versions).",
+    "brassStartupLoop": "When enabled, repeats the distinctive startup sound (as heard in Frozen Empire) while the cyclotron lid is removed.",
     "gpstarAudioLed": "Controls the status LED on GPStar audio boards, which indicates audio playback activity. Useful for troubleshooting audio issues.",
     "ledCycLidCount": "Specifies the number of LEDs in the cyclotron lid: 12 (stock), 20 (Frutto 4x5), 36 (GPStar 4x9), or 40 (RGB ring).",
     "ledCycLidHue": "Sets the custom color hue (0-360 degrees) for the cyclotron lid LEDs. This allows you to choose any color on the spectrum.",
@@ -76,7 +107,7 @@
     "isWiFiEnabled": "Enables or disables the WiFi radio on GPStar II hardware. Recommended to keep disabled to conserve battery unless performing updates or configuration.",
     "resetWifiPassword": "When enabled during settings save, resets the WiFi password back to the factory default. Useful if you've forgotten your custom password."
   },
-  "NeutronaWand": {
+  "wand": {
     "defaultFiringMode": "Sets the firing behavior: Video Game (multiple stream types available), CTS (movie-accurate mode with fewer features), or CTS Mix (hybrid mode).",
     "defaultYearModeWand": "Sets which movie era theme the wand uses: Via System (follows pack theme), 1984, 1989, Afterlife, or Frozen Empire.",
     "defaultYearModeCTS": "Sets the default theme when using CTS firing mode: Via System (follows pack theme), 1984, or Afterlife.",
@@ -111,7 +142,7 @@
     "isWiFiEnabled": "Enables or disables the WiFi radio on GPStar II hardware. Recommended to keep disabled to conserve battery unless performing updates or sensor calibration.",
     "resetWifiPassword": "When enabled during settings save, resets the WiFi password back to the factory default. Useful if you've forgotten your custom password."
   },
-  "Smoke": {
+  "smoke": {
     "smokeEnabled": "Master control to enable or disable all smoke/fog effects. When disabled, no smoke will be produced regardless of other settings.",
     "overheatLevel5": "When enabled, allows the equipment to overheat when firing at power level 5, triggering smoke effects.",
     "overheatContinuous5": "When enabled, produces continuous smoke while sustained firing at power level 5, before the overheat event occurs.",
@@ -133,5 +164,13 @@
     "overheatContinuous1": "When enabled, produces continuous smoke while sustained firing at power level 1, before the overheat event occurs.",
     "overheatDelay1": "Number of seconds (2-60) of continuous firing at power level 1 before an overheat event is triggered.",
     "overheatDuration1": "Number of seconds (2-60) that the overheat smoke effect lasts at power level 1 before the cooldown completes."
+  },
+  "blaster": {
+    "deviceVibration": "Controls when the blaster's vibration motor activates: Always (continuous), When Firing (only during shots), or Never (disabled).",
+    "ventLightAutoIntensity": "When enabled, automatically adjusts the vent light brightness based on ambient conditions or power level for optimal visibility.",
+    "deviceBootErrorBeep": "When enabled, occasionally plays error sounds during blaster startup to simulate equipment malfunctions (cosmetic only, can be disabled).",
+    "defaultSystemVolume": "Sets the master audio volume percentage (5-100%) for all blaster sounds at startup. Can be adjusted later via controls.",
+    "gpstarAudioLed": "Controls the status LED on GPStar audio boards, which indicates audio playback activity. Useful for troubleshooting audio issues.",
+    "invertBlasterBargraph": "When enabled, reverses the direction of bargraph animations (bottom-to-top becomes top-to-bottom, or vice versa)."
   }
 }

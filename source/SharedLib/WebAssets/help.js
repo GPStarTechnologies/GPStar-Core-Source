@@ -87,6 +87,11 @@ function initializeHelp(section) {
         if (element) {
           var helpText = sectionHelp[fieldId];
           
+          // Skip if helpText is null or empty (no help available)
+          if (!helpText) {
+            continue;
+          }
+          
           // Find the parent setting div or label to insert the icon
           var parent = element.closest(".setting");
           if (parent) {

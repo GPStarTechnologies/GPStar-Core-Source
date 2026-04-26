@@ -419,16 +419,29 @@
       </div>
     </div>
 
+    <div id="gpstar2">
+      <h1>GPStar II Options</h1>
+      <div class="block left">
+        <div class="setting">
+          <label class="toggle-switchy" data-text="yesno" data-label="left">
+            <input id="resetWifiPassword" name="resetWifiPassword" type="checkbox" />
+            <span class="toggle">
+              <span class="switch"></span>
+            </span>
+            <span class="label">Reset WiFi Password:</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="block">
       <a href="#top">Top</a>
       <hr />
-      <a href="/">&laquo; Back</a>
-      &nbsp;&nbsp;
-      <button type="button" class="green" onclick="saveSettings()" id="btnSave">Update&nbsp;Settings</button>
-      &nbsp;&nbsp;&nbsp;
-      <button type="button" class="red" onclick="resetEEPROM()" id="btnReset">Reset&nbsp;EEPROM</button>
-      <br />
-      <br />
+      <div class="button-group">
+        <a href="/">&laquo; Back</a>
+        <button type="button" class="green" onclick="saveSettings()" id="btnSave">Update&nbsp;Settings</button>
+        <button type="button" class="red" onclick="resetEEPROM()" id="btnReset">Reset&nbsp;EEPROM</button>
+      </div>
     </div>
 
     <script type="application/javascript" src="/common.js"></script>
@@ -442,7 +455,7 @@
         disableEl("btnSave");
 
         // Initialize contextual help system
-        initializeHelp("ProtonPack");
+        initializeHelp("pack");
       }
 
       function disableControls() {
@@ -486,7 +499,8 @@
         disableEl("ledPowercellLum");
         disableEl("ledInvertPowercell");
         disableEl("ledVGPowercell");
-        hideEl("gpstarAudioLedToggle");
+        disableEl("gpstarAudioLedToggle");
+        disableEl("resetWifiPassword");
         disableEl("btnReset");
       }
 
@@ -657,6 +671,9 @@
           ledPowercellSat: convertRange(getInt("ledPowercellSat"), [0, 100], [1, 254]) || 254,
           ledPowercellLum: getInt("ledPowercellLum") || 100,
           ledVGPowercell: getToggle("ledVGPowercell"),
+
+          isWiFiEnabled: true,
+          resetWifiPassword: getToggle("resetWifiPassword"),
         };
         var body = JSON.stringify(settings);
 
