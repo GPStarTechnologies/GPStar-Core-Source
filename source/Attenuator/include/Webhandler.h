@@ -67,9 +67,6 @@ extern const uint8_t _binary_assets_smoke_html_gz_end[];
 // swaggerui.html
 extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
 extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
-// portal.html
-extern const uint8_t _binary_assets_portal_html_gz_start[];
-extern const uint8_t _binary_assets_portal_html_gz_end[];
 // help.json
 extern const uint8_t _binary_assets_help_json_gz_start[];
 extern const uint8_t _binary_assets_help_json_gz_end[];
@@ -914,29 +911,15 @@ void handleRestart(AsyncWebServerRequest *request) {
 }
 
 /**
- * Captive Portal / Connectivity Check Handlers
+ * Connectivity Check Handler
  * Purpose: Intercept OS connectivity checks to signal this is a captive portal without internet.
  * This prevents mobile devices (especially Android) from thinking they have internet access,
  * allowing them to fall back to cellular data for actual internet while staying connected to
  * the device's WiFi for local configuration.
  */
-
-void handleCaptivePortal(AsyncWebServerRequest *request) {
-  // Handle captive portal detection with auto-dismiss behavior.
-  // Serves a shared portal.html page that detects OS and auto-dismisses after showing connection success.
-  captivePortalRequests++;  // Track captive portal endpoint usage
-
-  debugln(F("Sending -> Captive Portal Page"));
-  size_t i_file_len = embeddedFileSize(_binary_assets_portal_html_gz_start, _binary_assets_portal_html_gz_end);
-  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_HTML, _binary_assets_portal_html_gz_start, i_file_len);
-  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
-  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
-  request->send(response); // Serve page content.
-}
-
 void handleConnectivityCheck(AsyncWebServerRequest *request) {
   // Handle OS-specific connectivity checks.
-  // Return responses that tell the OS to dismiss the captive portal view.
+  // Return exact responses that tell the OS "internet works, dismiss captive portal".
   captivePortalRequests++;
 
   String path = request->url();
@@ -948,16 +931,18 @@ void handleConnectivityCheck(AsyncWebServerRequest *request) {
     return;
   }
   
-  // iOS expects 200 with "Success" body
+  // iOS expects 200 with EXACT HTML format that Apple's server returns
+  // This signals "captive portal authenticated, dismiss the view"
   if (path.indexOf("hotspot-detect") >= 0 || path.indexOf("success.html") >= 0) {
-    debugln(F("Sending -> Success (iOS connectivity check)"));
-    request->send(HTTP_STATUS_200, MIME_PLAIN, "Success");
+    debugln(F("Sending -> Apple Success HTML (iOS connectivity check)"));
+    request->send(HTTP_STATUS_200, MIME_HTML, 
+      F("<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>"));
     return;
   }
   
-  // Other endpoints (ncsi.txt, connecttest.txt, etc.) - return simple success
-  debugln(F("Sending -> Success (Generic connectivity check)"));
-  request->send(HTTP_STATUS_200, MIME_PLAIN, "Success");
+  // Windows and other endpoints - return Microsoft's expected format
+  debugln(F("Sending -> Microsoft Success (Generic connectivity check)"));
+  request->send(HTTP_STATUS_200, MIME_PLAIN, F("Microsoft Connect Test"));
 }
 
 /**

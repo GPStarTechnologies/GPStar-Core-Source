@@ -209,17 +209,6 @@ function getNetworkInfo() {
         var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
         setHtml("clientInfo", clientText);
         
-        // Display captive portal statistics
-        var statsText = "";
-        if (jObj.dns && jObj.dns.active) {
-          statsText = "DNS Server: Active";
-        }
-        if (jObj.captivePortalRequests !== undefined) {
-          if (statsText) statsText += " / ";
-          statsText += "Portal Requests: " + (jObj.captivePortalRequests ?? 0);
-        }
-        setHtml("statsInfo", statsText);
-        
         // Display external WiFi info if connected
         if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
           var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;

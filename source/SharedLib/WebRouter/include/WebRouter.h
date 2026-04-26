@@ -144,7 +144,7 @@ const char* RESP_WIFI_SETTINGS = "WiFi settings object";
 const char* RESP_NETWORK_ARRAY = "Array of network SSIDs";
 const char* RESP_OPENAPI_SPEC = "OpenAPI 3.x JSON specification";
 const char* RESP_NO_CONTENT_RESTART = "No content (device restarting)";
-const char* RESP_CAPTIVE_PORTAL = "Captive portal response";
+const char* RESP_CONNECTIVITY_CHECK = "Device connectivity check";
 
 /*
  * JSON Property Names - Common property keys used in OpenAPI specification
