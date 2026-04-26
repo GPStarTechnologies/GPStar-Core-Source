@@ -122,7 +122,8 @@ bool WirelessManager::startMdnsService() {
 bool WirelessManager::startDnsService() {
   if(!dnsServerActive) {
     // Start DNS server on port 53, redirecting all queries (*) to the device's IP
-    dnsServerActive = dnsServer.start(DNS_PORT, "*", localAddress);
+    // DISABLED TEMPORARILY - Provided for easier testing when needed.
+    // dnsServerActive = dnsServer.start(DNS_PORT, "*", localAddress);
   }
   return dnsServerActive;
 }
