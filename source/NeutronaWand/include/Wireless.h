@@ -260,5 +260,24 @@ bool startWiFi() {
   #endif
   delay(100);
 
+  // Start DNS server for captive portal detection via WirelessManager.
+  // This hijacks ALL DNS queries and redirects them to the device's IP address,
+  // forcing connectivity checks to reach our HTTP handlers instead of timing out.
+  if(b_local_ap_started) {
+    bool b_dns_started = wirelessMgr->startDnsService();
+    #if defined(DEBUG_WIRELESS_SETUP)
+      if(b_dns_started) {
+        debug(F("DNS Server Started: All domains resolve to "));
+        debugln(wirelessMgr->getLocalAddress());
+      }
+      else {
+        debugln(F("Error Starting DNS Server!"));
+      }
+    #else
+      // Suppress unused variable warning.
+      (void)b_dns_started;
+    #endif
+  }
+
   return b_local_ap_started; // At least return whether the soft AP started successfully.
 }

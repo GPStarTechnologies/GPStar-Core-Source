@@ -89,6 +89,27 @@ def combine_css_files():
     else:
         print("CSS files are up to date, skipping combination")
 
+def copy_shared_help():
+    """Copy and compress help.json from SharedLib/WebAssets if newer than local compressed version."""
+    assets_dir = Path("assets")
+    shared_dir = Path("../SharedLib/WebAssets")
+    
+    if not assets_dir.exists() or not shared_dir.exists():
+        return
+    
+    source_file = shared_dir / "help.json"
+    compressed_file = assets_dir / "help.json.gz"
+    
+    if not source_file.exists():
+        return
+    
+    # Compress if source is newer than compressed or compressed doesn't exist
+    if not compressed_file.exists() or source_file.stat().st_mtime > compressed_file.stat().st_mtime:
+        print(f"Compressing shared help.json -> {compressed_file}")
+        with open(source_file, 'rb') as f_input:
+            with gzip.open(compressed_file, 'wb') as f_output:
+                shutil.copyfileobj(f_input, f_output)
+
 def compress_assets():
     """
     Function: compress_assets
@@ -149,4 +170,5 @@ def compress_assets():
 
 # Execute combination first, then compression
 combine_css_files()
+copy_shared_help()
 compress_assets()

@@ -145,10 +145,12 @@
     <script type="application/javascript" src="/common.js"></script>
     <script type="application/javascript">
       window.addEventListener("load", onLoad);
-
       function onLoad(event) {
         // Wait 0.1s for page to fully load.
         setTimeout(getSettings, 100);
+
+        // Initialize contextual help system
+        initializeHelp("Device");
       }
 
       function updateByteCount() {
