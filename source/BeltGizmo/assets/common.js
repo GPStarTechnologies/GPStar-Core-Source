@@ -17,12 +17,12 @@
  *
  */
 
-/**
- * NOTICE: Some required functions exist in shared JS files:
- * - api.js
- * - dom.js
- * - help.js
- * - utils.js
- */
+/** Common JavaScript - Device Specific **/
 
-// No device-specific functions
+/**
+ * Appended shared JavaScript functions from SharedLib/WebAssets/*.js below:
+ *  - api.js
+ *  - dom.js
+ *  - help.js
+ *  - utils.js
+ */

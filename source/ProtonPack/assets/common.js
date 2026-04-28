@@ -18,15 +18,7 @@
  *
  */
 
-/**
- * NOTICE: Some required functions exist in shared JS files:
- * - api.js
- * - dom.js
- * - help.js
- * - utils.js
- */
-
-/** Common API Commands **/
+/** Common JavaScript - Device Specific **/
 
 function packOn() {
   sendCommand("/pack/on");
@@ -73,3 +65,11 @@ function streamModeSelect(caller) {
   // Change the stream mode via selected option: /pack/stream/<stream_mode>
   sendCommand("/pack/stream/" + caller.value);
 }
+
+/**
+ * Appended shared JavaScript functions from SharedLib/WebAssets/*.js below:
+ *  - api.js
+ *  - dom.js
+ *  - help.js
+ *  - utils.js
+ */

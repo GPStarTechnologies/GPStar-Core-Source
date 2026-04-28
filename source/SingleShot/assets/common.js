@@ -18,6 +18,8 @@
  *
  */
 
+/** Common JavaScript - Device Specific **/
+
 /**
  * NOTICE: Some required functions exist in shared JS files:
  * - api.js
@@ -25,5 +27,3 @@
  * - help.js
  * - utils.js
  */
-
-// No device-specific functions

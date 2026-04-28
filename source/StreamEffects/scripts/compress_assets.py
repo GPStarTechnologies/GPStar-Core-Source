@@ -13,9 +13,10 @@ except NameError:
 def combine_css_files():
     """
     Function: combine_css_files
-    Purpose: Combine shared CSS files with device-specific styles into a single CSS file.
-    Inputs: None
-    Outputs: None (side effect: creates combined.css file)
+    Purpose: Combine shared CSS with device-specific styles into a single CSS file.
+             Order: Shared libraries first, then device-specific customizations last.
+    Inputs: SharedLib/WebAssets/*.css (shared), assets/style.css (device-specific)
+    Outputs: combined.css (temporary combined file), style.css.gz (final compressed file)
     """
     print("=== Starting CSS combination ===")
     assets_dir = Path("assets")
@@ -92,9 +93,10 @@ def combine_css_files():
 def combine_js_files():
     """
     Function: combine_js_files
-    Purpose: Combine shared JavaScript files with device-specific scripts into a single JS file.
-    Inputs: None
-    Outputs: None (side effect: creates combined.js file)
+    Purpose: Combine device-specific JavaScript with shared libraries into a single JS file.
+             Order: Device-specific first, then shared libraries appended.
+    Inputs: assets/common.js (device-specific), SharedLib/WebAssets/*.js (shared)
+    Outputs: combined.js (temporary combined file), common.js.gz (final compressed file)
     """
     print("=== Starting JavaScript combination ===")
     assets_dir = Path("assets")
@@ -114,13 +116,13 @@ def combine_js_files():
     combined_js = assets_dir / "combined.js"
     final_gz = assets_dir / "common.js.gz"
 
-    # Define the combination order - shared libraries first, device-specific last
+    # Define the combination order - device-specific first, shared libraries appended
     js_sources = [
+        device_js,  # Device-specific functions first
         shared_dir / "api.js",
         shared_dir / "dom.js",
         shared_dir / "help.js",
-        shared_dir / "utils.js",
-        device_js  # Device-specific functions last
+        shared_dir / "utils.js"
     ]
 
     # Check which source files exist
@@ -170,7 +172,12 @@ def combine_js_files():
         print("JavaScript files are up to date, skipping combination")
 
 def copy_shared_help():
-    """Copy and compress help.json from SharedLib/WebAssets if newer than local compressed version."""
+    """
+    Function: copy_shared_help
+    Purpose: Copy and compress help.json from SharedLib/WebAssets if newer than local compressed version.
+    Inputs: uncompressed help.json in SharedLib/WebAssets/
+    Outputs: creates help.json.gz in assets/
+    """
     assets_dir = Path("assets")
     shared_dir = Path("../SharedLib/WebAssets")
     
@@ -195,8 +202,8 @@ def compress_assets():
     Function: compress_assets
     Purpose: Compress all web assets in the assets directory using gzip compression.
              Only compresses files if source is newer than existing compressed version.
-    Inputs: None
-    Outputs: None (side effect: creates .gz files)
+    Inputs: uncompressed files in assets/
+    Outputs: creates .gz files)
     """
     assets_dir = Path("assets")
 
@@ -219,9 +226,23 @@ def compress_assets():
         # Clean up intermediate file after successful compression
         combined_css.unlink()
 
+    # Special handling for combined JavaScript file - compress as common.js.gz
+    combined_js = assets_dir / "combined.js"
+    common_js_gz = assets_dir / "common.js.gz"
+
+    if combined_js.exists():
+        # Always compress to ensure fresh builds
+        print(f"Compressing: {combined_js} -> {common_js_gz}")
+        with open(combined_js, 'rb') as f_input:
+            with gzip.open(common_js_gz, 'wb') as f_output:
+                shutil.copyfileobj(f_input, f_output)
+
+        # Clean up intermediate file after successful compression
+        combined_js.unlink()
+
     # Define file extensions that should be compressed for web serving
-    # Note: .css excluded since we handle combined.css specially above
-    compress_extensions = ['.html', '.js', '.svg', '.ico']
+    # Note: .css and .js excluded since we handle combined files specially above
+    compress_extensions = ['.html', '.svg', '.ico']
 
     # Process each file in the assets directory
     for file_path in assets_dir.iterdir():
@@ -248,7 +269,7 @@ def compress_assets():
                 with gzip.open(compressed_path, 'wb') as f_output:
                     shutil.copyfileobj(f_input, f_output)
 
-# Execute combination first, then compression
+# Execute combination first, then shared files, then compression
 combine_css_files()
 combine_js_files()
 copy_shared_help()

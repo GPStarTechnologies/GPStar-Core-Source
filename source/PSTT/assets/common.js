@@ -18,15 +18,7 @@
  *
  */
 
-/**
- * NOTICE: Some required functions exist in shared JS files:
- * - api.js
- * - dom.js
- * - help.js
- * - utils.js
- */
-
-/** Device-Specific API Commands **/
+/** Common JavaScript - Device Specific **/
 
 function psttDrop() {
   sendCommand("/pstt/drop");
@@ -36,3 +28,10 @@ function psttReset() {
   sendCommand("/pstt/reset");
 }
 
+/**
+ * Appended shared JavaScript functions from SharedLib/WebAssets/*.js below:
+ *  - api.js
+ *  - dom.js
+ *  - help.js
+ *  - utils.js
+ */
