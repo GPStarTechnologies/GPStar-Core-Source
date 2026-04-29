@@ -141,6 +141,7 @@ String getDeviceConfig() {
   JsonDocument jsonBody;
 
   // Provide current values for the device.
+  jsonBody["resetWifiPassword"] = false;
   jsonBody["invertRotation"] = encoder.isRotationInverted();
   jsonBody["invertLeftToggle"] = b_left_toggle_inverted;
   jsonBody["invertRightToggle"] = b_right_toggle_inverted;
@@ -155,6 +156,7 @@ String getDeviceConfig() {
   jsonBody["radLensIdle"] = RAD_LENS_IDLE;
   jsonBody["displayType"] = DISPLAY_TYPE;
   jsonBody["useAnimation"] = b_enable_ui_animations;
+  jsonBody["useStandalone"] = (!b_wait_for_pack && !ms_packsync.isRunning());
   if(s_track_listing != "" && s_track_listing != "null") {
     jsonBody["songList"] = s_track_listing;
   }
@@ -544,10 +546,10 @@ void startWebServer() {
 
   // Set the MDNS name (get it from your wireless manager)
   setDeviceMdnsName(wirelessMgr->getMdnsName());
-  
+
   // Set the private IP address for OpenAPI spec (set unique per device)
   setDeviceIpAddress(wirelessMgr->getLocalAddress().toString());
-  
+
   // Set callback to dynamically retrieve external IP for OpenAPI spec
   setExternalIpCallback([]() -> String {
     return wirelessMgr->getExtWifiAddress().toString();
@@ -592,7 +594,7 @@ void webLoops() {
   if(b_local_ap_started && b_httpd_started) {
     // Process DNS requests for captive portal detection via WirelessManager.
     // This must be called frequently to handle incoming DNS queries.
-    wirelessMgr->processDnsRequests();
+    wirelessMgr->handleDNS();
 
     if(ms_cleanup.remaining() < 1) {
       // Clean up oldest WebSocket connections.
@@ -931,23 +933,23 @@ void handleConnectivityCheck(AsyncWebServerRequest *request) {
   captivePortalRequests++;
 
   String path = request->url();
-  
+
   // Android expects 204 No Content for /generate_204 and /gen_204
   if (path.indexOf("/generate_204") >= 0 || path.indexOf("/gen_204") >= 0) {
     debugln(F("Sending -> 204 No Content (Android connectivity check)"));
     request->send(204);
     return;
   }
-  
+
   // iOS expects 200 with EXACT HTML format that Apple's server returns
   // This signals "captive portal authenticated, dismiss the view"
   if (path.indexOf("hotspot-detect") >= 0 || path.indexOf("success.html") >= 0) {
     debugln(F("Sending -> Apple Success HTML (iOS connectivity check)"));
-    request->send(HTTP_STATUS_200, MIME_HTML, 
+    request->send(HTTP_STATUS_200, MIME_HTML,
       F("<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>"));
     return;
   }
-  
+
   // Windows and other endpoints - return Microsoft's expected format
   debugln(F("Sending -> Microsoft Success (Generic connectivity check)"));
   request->send(HTTP_STATUS_200, MIME_PLAIN, F("Microsoft Connect Test"));
@@ -1494,10 +1496,16 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     }
 
     // General Options - Returned as unsigned integers
+    if(jsonBody["resetWifiPassword"].is<bool>()) {
+      // Reset the WiFi password if set by the user.
+      if(jsonBody["resetWifiPassword"].as<bool>()) {
+        wirelessMgr->resetWifiPassword();
+      }
+    }
+
     if(jsonBody["invertRotation"].is<bool>()) {
       // Inverts the rotation of the dial as viewed by the user.
-      bool b_invert_dial = jsonBody["invertRotation"].as<bool>();
-      encoder.setRotationInverted(b_invert_dial);
+      encoder.setRotationInverted(jsonBody["invertRotation"].as<bool>());
     }
 
     if(jsonBody["invertLeftToggle"].is<bool>()) {
@@ -1583,6 +1591,24 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       b_enable_ui_animations = jsonBody["useAnimation"].as<bool>();
     }
 
+    bool b_standalone_mode = false;
+    if(jsonBody["useStandalone"].is<bool>()) {
+      // Enable/disable standalone mode.
+      b_standalone_mode = jsonBody["useStandalone"].as<bool>();
+
+      if(!b_standalone_mode && !ms_packsync.isRunning()) {
+        // Need to disable standalone mode.
+        b_wait_for_pack = true;
+        ms_packsync.start(0);
+      }
+      else if(b_standalone_mode) {
+        // Need to enable standalone mode.
+        b_wait_for_pack = false;
+        ms_packsync.stop();
+        gpstarSystem.setPowerLevel(LEVEL_5);
+      }
+    }
+
     // Get the track listing from the text field.
     String songList = jsonBody["songList"].as<String>();
     bool b_list_err = false;
@@ -1606,6 +1632,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       preferences.putUChar("radiation_idle", RAD_LENS_IDLE);
       preferences.putUChar("display_type", DISPLAY_TYPE);
       preferences.putBool("use_animations", b_enable_ui_animations);
+      preferences.putBool("standalone", b_standalone_mode);
 
       // Store the song list to preferences.
       if(songList.length() <= 2000) {
