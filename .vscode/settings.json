@@ -1,0 +1,15 @@
+{
+  "C_Cpp.files.exclude": {
+    "**/.pio": true,
+    "**/.vscode/ipch": true,
+    "**/node_modules": true,
+    "**/.git": true
+  },
+  "files.exclude": {
+    "**/.pio": true
+  },
+  "search.exclude": {
+    "**/.pio": true,
+    "**/node_modules": true
+  }
+}
