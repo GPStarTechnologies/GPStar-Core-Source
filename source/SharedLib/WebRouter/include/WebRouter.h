@@ -365,7 +365,7 @@ String generateOpenAPISpec() {
   // External documentation
   JsonObject externalDocs = jsonBody["externalDocs"].to<JsonObject>();
   externalDocs[JSON_PROPERTY_DESCRIPTION] = F("GPStar Documentation Home");
-  externalDocs[JSON_PROPERTY_URL] = F("https://gpstar81.github.io/GPStar-proton-pack/");
+  externalDocs[JSON_PROPERTY_URL] = F("https://gpstartechnologies.github.io/GPStar-Core-Source/");
 
   // Servers
   JsonArray servers = jsonBody["servers"].to<JsonArray>();

@@ -85,6 +85,30 @@
     		}
 	],
 	"settings": {
+		"C_Cpp.files.exclude": {
+			"**/.pio": true,
+			"**/.pio/**": true,
+			"**/.pio/**/*": true,
+			"**/.platformio": true,
+			"**/.platformio/**": true,
+			"**/.platformio/**/*": true,
+			"/Users/dgrau/.platformio/**": true,
+			"/Users/dgrau/.platformio/**/*": true
+		},
+		"files.exclude": {
+			"**/.pio": true,
+			"**/.platformio": true
+		},
+		"search.exclude": {
+			"**/.pio/**": true,
+			"**/.platformio/**": true
+		},
+		"files.watcherExclude": {
+			"**/.pio/**": true,
+			"**/.platformio/**": true
+		},
+		"C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
+		"C_Cpp.workspaceParsingPriority": "low",
 		"editor.detectIndentation": false,
 		"editor.insertSpaces": true,
 		"editor.tabSize": 2,

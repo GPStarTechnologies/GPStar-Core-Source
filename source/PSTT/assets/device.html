@@ -44,7 +44,7 @@
         <br />
         <span class="note">Total health points when target is reset (100-10000)</span>
         <br />
-        <input type="range" id="maxHealth" min="100" max="10000" step="10" value="1000" style="width: 100%; max-width: 300px" oninput="updateSliderValue('maxHealth')" />
+        <input type="range" id="maxHealth" min="100" max="10000" step="100" value="1000" style="width: 100%; max-width: 300px" oninput="updateSliderValue('maxHealth')" />
         <span id="maxHealth-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">1000</span>
       </div>
       <div class="setting">
@@ -52,7 +52,7 @@
         <br />
         <span class="note">Health level where indicator turns yellow</span>
         <br />
-        <input type="range" id="lowHealth" min="50" max="5000" step="10" value="440" style="width: 100%; max-width: 300px" oninput="updateSliderValue('lowHealth')" />
+        <input type="range" id="lowHealth" min="50" max="5000" step="50" value="440" style="width: 100%; max-width: 300px" oninput="updateSliderValue('lowHealth')" />
         <span id="lowHealth-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">440</span>
       </div>
       <div class="setting">
@@ -72,7 +72,7 @@
         <br />
         <span class="note">Health restored per regeneration cycle</span>
         <br />
-        <input type="range" id="healthRegen" min="1" max="500" step="1" value="100" style="width: 100%; max-width: 300px" oninput="updateSliderValue('healthRegen')" />
+        <input type="range" id="healthRegen" min="10" max="500" step="10" value="100" style="width: 100%; max-width: 300px" oninput="updateSliderValue('healthRegen')" />
         <span id="healthRegen-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">100</span>
       </div>
       <div class="setting">
@@ -80,15 +80,7 @@
         <br />
         <span class="note">Milliseconds between regeneration cycles</span>
         <br />
-        <input
-          type="range"
-          id="healthRegenDelay"
-          min="100"
-          max="10000"
-          step="100"
-          value="1000"
-          style="width: 100%; max-width: 300px"
-          oninput="updateSliderValue('healthRegenDelay')"
+        <input type="range" id="healthRegenDelay" min="100" max="10000" step="100" value="1000" style="width: 100%; max-width: 300px" oninput="updateSliderValue('healthRegenDelay')"
         />
         <span id="healthRegenDelay-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">1000</span>
       </div>
@@ -101,40 +93,40 @@
         <br />
         <span class="note">Damage per hit at power level 1</span>
         <br />
-        <input type="range" id="wandPower1" min="1" max="500" step="1" value="10" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower1')" />
-        <span id="wandPower1-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">10</span>
+        <input type="range" id="wandPower1" min="10" max="500" step="10" value="15" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower1')" />
+        <span id="wandPower1-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">15</span>
       </div>
       <div class="setting">
         <b>Power Level 2:</b>
         <br />
         <span class="note">Damage per hit at power level 2</span>
         <br />
-        <input type="range" id="wandPower2" min="1" max="500" step="1" value="14" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower2')" />
-        <span id="wandPower2-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">14</span>
+        <input type="range" id="wandPower2" min="10" max="500" step="10" value="30" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower2')" />
+        <span id="wandPower2-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">30</span>
       </div>
       <div class="setting">
         <b>Power Level 3:</b>
         <br />
         <span class="note">Damage per hit at power level 3</span>
         <br />
-        <input type="range" id="wandPower3" min="1" max="500" step="1" value="20" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower3')" />
-        <span id="wandPower3-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">20</span>
+        <input type="range" id="wandPower3" min="10" max="500" step="10" value="45" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower3')" />
+        <span id="wandPower3-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">45</span>
       </div>
       <div class="setting">
         <b>Power Level 4:</b>
         <br />
         <span class="note">Damage per hit at power level 4</span>
         <br />
-        <input type="range" id="wandPower4" min="1" max="500" step="1" value="25" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower4')" />
-        <span id="wandPower4-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">25</span>
+        <input type="range" id="wandPower4" min="10" max="500" step="10" value="60" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower4')" />
+        <span id="wandPower4-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">60</span>
       </div>
       <div class="setting">
         <b>Power Level 5:</b>
         <br />
         <span class="note">Damage per hit at power level 5</span>
         <br />
-        <input type="range" id="wandPower5" min="1" max="500" step="1" value="33" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower5')" />
-        <span id="wandPower5-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">33</span>
+        <input type="range" id="wandPower5" min="10" max="500" step="10" value="75" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower5')" />
+        <span id="wandPower5-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">75</span>
       </div>
     </div>
 
@@ -191,11 +183,11 @@
               setSliderValue("healthRegenDelay", settings.healthRegenDelay || 1000);
 
               // Damage Values
-              setSliderValue("wandPower1", settings.wandPower1 || 10);
-              setSliderValue("wandPower2", settings.wandPower2 || 14);
-              setSliderValue("wandPower3", settings.wandPower3 || 20);
-              setSliderValue("wandPower4", settings.wandPower4 || 25);
-              setSliderValue("wandPower5", settings.wandPower5 || 33);
+              setSliderValue("wandPower1", settings.wandPower1 || 15);
+              setSliderValue("wandPower2", settings.wandPower2 || 30);
+              setSliderValue("wandPower3", settings.wandPower3 || 45);
+              setSliderValue("wandPower4", settings.wandPower4 || 60);
+              setSliderValue("wandPower5", settings.wandPower5 || 75);
             }
           } else if (this.readyState == 4) {
             // Handle error responses
