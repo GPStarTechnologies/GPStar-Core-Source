@@ -186,6 +186,9 @@ class WirelessManager {
     int8_t getPreferredNetworkIndex(const String& ssid);
 
   private:
+    // Device Identification
+    uint16_t cachedDeviceID = 0; // Cached 12-bit device ID from MAC address
+
     // Local AP Configuration
     static constexpr uint8_t MAX_ATTEMPTS = 3;
     static constexpr char AP_DEFAULT_PREFIX[] = "GPStar_";
