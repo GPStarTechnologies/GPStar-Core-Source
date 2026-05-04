@@ -640,7 +640,7 @@ void firePulseEffect() {
 
   #ifdef ESP32
     // Trigger infrared after firing pulse ends; will only send as a Proton stream.
-    irManager->sendCommand(IR_CMD_FIRING, IR_STREAM_PROTON, gpstarBlaster.getPowerLevel(), IR_CMD_BLAST);
+    irManager->sendCommand(IR_CMD_FIRING, IR_STREAM_PROTON, gpstarBlaster.getPowerLevel(), IR_CMD_STREAM);
   #endif
   }
 }
