@@ -2390,7 +2390,26 @@ void powercellRampDown() {
       // Do Nothing.
     }
     else {
-      pack_leds[i_powercell_led] = getHueAsRGB(POWERCELL, C_BLACK);
+      uint8_t i_tmp_powercell_led = 0;
+
+      if(b_powercell_invert) {
+        if(i_powercell_num_leds == HASLAB_POWERCELL_LED_COUNT) {
+          i_tmp_powercell_led = PROGMEM_READU8(powercell_13_invert[i_powercell_led]);
+        }
+        else {
+          i_tmp_powercell_led = PROGMEM_READU8(powercell_15_invert[i_powercell_led]);
+        }
+      }
+      else {
+        if(i_powercell_num_leds == HASLAB_POWERCELL_LED_COUNT) {
+          i_tmp_powercell_led = PROGMEM_READU8(powercell_13[i_powercell_led]);
+        }
+        else {
+          i_tmp_powercell_led = PROGMEM_READU8(powercell_15[i_powercell_led]);
+        }
+      }
+
+      pack_leds[i_tmp_powercell_led] = getHueAsRGB(POWERCELL, C_BLACK);
 
       i_powercell_led--;
     }
@@ -2610,7 +2629,6 @@ void powercellDraw(uint8_t i_start) {
         }
         else {
           i_tmp_powercell_led = PROGMEM_READU8(powercell_15_invert[i]);
-
         }
       }
       else {
@@ -2757,7 +2775,6 @@ void slimeCyclotronEffect() {
       return;
     }
 
-    uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
     uint8_t i_random_lower = 50;
     uint8_t i_random_upper = 121;
 
@@ -2794,12 +2811,19 @@ void slimeCyclotronEffect() {
 
     if(b_cyclotron_lid_on) {
       for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
+        uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
         pack_leds[i + i_cyclotron_led_start] = getHueAsRGB(CYCLOTRON_OUTER, i_colour_scheme, random(i_random_lower, i_random_upper));
       }
     }
     else {
       for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
-        cyclotron_leds[i + i_ic_cake_start] = getHueAsRGB(CYCLOTRON_OUTER, i_colour_scheme, random(i_random_lower, i_random_upper));
+        uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_INNER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+        if(CAKE_LED_TYPE == GRB_LED) {
+          cyclotron_leds[i + i_ic_cake_start] = getHueAsGRB(CYCLOTRON_INNER, i_colour_scheme, random(i_random_lower, i_random_upper));
+        }
+        else {
+          cyclotron_leds[i + i_ic_cake_start] = getHueAsRGB(CYCLOTRON_INNER, i_colour_scheme, random(i_random_lower, i_random_upper));
+        }
       }
     }
 
@@ -2844,40 +2868,24 @@ void cyclotronIceAnimation() {
     uint8_t i_random_upper = 21;
 
     if(b_cyclotron_lid_on) {
-      for(int8_t i = 0; i < i_cyclotron_num_leds; i++) {
+      for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
         pack_leds[i + i_cyclotron_led_start] = getHueAsRGB(CYCLOTRON_OUTER, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
       }
     }
     else {
-      for(int8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
+      for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
         if((i + i_ic_cake_start) != i_led_cyclotron_ring - 1 || (!b_fading_out_frozen && !b_inner_ramp_down)) {
-          cyclotron_leds[i + i_ic_cake_start] = getHueAsRGB(CYCLOTRON_OUTER, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
+          if(CAKE_LED_TYPE == GRB_LED) {
+            cyclotron_leds[i + i_ic_cake_start] = getHueAsGRB(CYCLOTRON_INNER, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
+          }
+          else {
+            cyclotron_leds[i + i_ic_cake_start] = getHueAsRGB(CYCLOTRON_INNER, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
+          }
         }
       }
     }
 
-    switch(gpstarPack.getPowerLevel()) {
-      case LEVEL_1:
-        ms_cyclotron_slime_effect.start(100);
-      break;
-
-      case LEVEL_2:
-        ms_cyclotron_slime_effect.start(90);
-      break;
-
-      case LEVEL_3:
-        ms_cyclotron_slime_effect.start(80);
-      break;
-
-      case LEVEL_4:
-        ms_cyclotron_slime_effect.start(70);
-      break;
-
-      case LEVEL_5:
-      default:
-        ms_cyclotron_slime_effect.start(60);
-      break;
-    }
+    ms_cyclotron_slime_effect.start(100);
   }
 }
 
@@ -4139,7 +4147,10 @@ void cyclotronControl() {
 
     if(ms_mash_lockout.isRunning() && gpstarPack.getSystemTheme() == SYSTEM_FROZEN_EMPIRE) {
       // If we aren't frozen over but the mash timer is running, add some ice!
-      ms_cyclotron_slime_effect.start(0);
+      if(!ms_cyclotron_slime_effect.isRunning()) {
+        ms_cyclotron_slime_effect.start(0);
+      }
+
       cyclotronIceAnimation();
     }
 
@@ -5483,7 +5494,6 @@ void systemPOST() {
       }
       else {
         i_tmp_powercell_led = PROGMEM_READU8(powercell_15_invert[i_post_powercell_up]);
-
       }
     }
     else {
@@ -5576,7 +5586,6 @@ void systemPOST() {
       }
       else {
         i_tmp_powercell_led = PROGMEM_READU8(powercell_15_invert[i_post_powercell_down]);
-
       }
     }
     else {

@@ -35,7 +35,7 @@ function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
   setDefaultOverlays(); // Set graphics to defaults.
   getDevicePrefs(); // Get all preferences.
-  getNetworkInfo(); // Get networking info.        
+  getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
   getStatus(updateEquipment); // Get status immediately.
 }
@@ -204,11 +204,11 @@ function getNetworkInfo() {
         if (jObj.localAP && jObj.localAP.ssid) {
           setHtml("wifiName", "Private Network: " + jObj.localAP.ssid);
         }
-        
+
         // Display client counts
         var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
         setHtml("clientInfo", clientText);
-        
+
         // Display external WiFi info if connected
         if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
           var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;

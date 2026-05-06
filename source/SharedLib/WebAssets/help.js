@@ -86,24 +86,24 @@ function initializeHelp(section) {
         var element = getEl(fieldId);
         if (element) {
           var helpText = sectionHelp[fieldId];
-          
+
           // Skip if helpText is null or empty (no help available)
           if (!helpText) {
             continue;
           }
-          
+
           // Find the parent setting div or label to insert the icon
           var parent = element.closest(".setting");
           if (parent) {
             // Find the label text
             var label = parent.querySelector("b, .label");
             var labelText = fieldId; // Fallback to field ID
-            
+
             if (label) {
               // Extract and clean the label text
               labelText = label.textContent || label.innerText || fieldId;
               labelText = labelText.trim().replace(/:$/, ""); // Remove trailing colon
-              
+
               // Create and add the help icon
               var helpIcon = createHelpIcon(labelText, helpText);
               label.appendChild(document.createTextNode(" "));
@@ -114,7 +114,7 @@ function initializeHelp(section) {
               if (toggleLabel) {
                 labelText = toggleLabel.textContent || toggleLabel.innerText || fieldId;
                 labelText = labelText.trim().replace(/:$/, "");
-                
+
                 var helpIcon = createHelpIcon(labelText, helpText);
                 toggleLabel.appendChild(document.createTextNode(" "));
                 toggleLabel.appendChild(helpIcon);
