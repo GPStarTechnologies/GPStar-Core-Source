@@ -30,7 +30,7 @@ function onLoad(event) {
   hideEl("calInfo"); // Hide the calibration coverage info.
   disableSensorButtons(); // Set button states by default.
   getDevicePrefs(); // Get all preferences.
-  getNetworkInfo(); // Get networking info.        
+  getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
   getStatus(updateEquipment); // Get status immediately.
   init3D(); // Initialize 3D representations.
@@ -141,11 +141,11 @@ function getNetworkInfo() {
         if (jObj.localAP && jObj.localAP.ssid) {
           setHtml("wifiName", "Private Network: " + jObj.localAP.ssid);
         }
-        
+
         // Display client counts
         var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
         setHtml("clientInfo", clientText);
-        
+
         // Display external WiFi info if connected
         if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
           var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;

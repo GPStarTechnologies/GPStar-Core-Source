@@ -369,14 +369,14 @@ String generateOpenAPISpec() {
 
   // Servers
   JsonArray servers = jsonBody["servers"].to<JsonArray>();
-  
+
   // Add MDNS server entry, if available
   if(deviceMdnsName.length() > 0) {
     JsonObject mdnsServer = servers.add<JsonObject>();
     mdnsServer[JSON_PROPERTY_URL] = String(F("http://")) + deviceMdnsName;
     mdnsServer[JSON_PROPERTY_DESCRIPTION] = F("Local device server (mDNS)");
   }
-  
+
   // Add local IP address server entry, if available
   if(deviceIpAddress.length() > 0) {
     JsonObject ipServer = servers.add<JsonObject>();
