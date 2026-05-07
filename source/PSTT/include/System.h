@@ -343,9 +343,15 @@ void checkInfraredData() {
   }
 
   // Handle SingleShot instant defeat (only for PROTON stream)
-  if(irManager->dataDeviceType() == IR_DEVICE_SINGLE_SHOT && streamType == 1) {
-    pstt_current_health = PSTT_MIN_HEALTH;
-    sendInfraredJSON("target_defeated", deviceName, String(irManager->getDeviceID()).c_str(), streamName, powerLevel + 1, targetConfig.maxHealth, "Instant defeat by SingleShot");
+  if(irManager->dataDeviceType() == IR_DEVICE_SINGLE_SHOT) {
+    if(streamType == 1) {
+      pstt_current_health = PSTT_MIN_HEALTH;
+      sendInfraredJSON("target_defeated", deviceName, String(irManager->getDeviceID()).c_str(), streamName, powerLevel + 1, targetConfig.maxHealth, "Instant defeat by SingleShot");
+    }
+    else {
+      String msg = String("SingleShot can only fire PROTON stream. Received stream type ") + streamName;
+      sendInfraredJSON("ir_ignored", deviceName, String(irManager->getDeviceID()).c_str(), streamName, 0, 0, msg.c_str());
+    }
     irManager->resumeData();
     return;
   }

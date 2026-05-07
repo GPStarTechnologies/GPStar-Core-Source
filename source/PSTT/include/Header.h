@@ -88,11 +88,11 @@ bool b_colourChange = true;
 /*
  * Damage Values - Neutrona Wand by Power Level
  */
-#define NEUTRONA_WAND_PWR_1 10
-#define NEUTRONA_WAND_PWR_2 14
-#define NEUTRONA_WAND_PWR_3 20
-#define NEUTRONA_WAND_PWR_4 25
-#define NEUTRONA_WAND_PWR_5 33
+#define NEUTRONA_WAND_PWR_1 15
+#define NEUTRONA_WAND_PWR_2 30
+#define NEUTRONA_WAND_PWR_3 45
+#define NEUTRONA_WAND_PWR_4 60
+#define NEUTRONA_WAND_PWR_5 75
 
 /*
  * Data structure object for target customizations which are saved into NVS.

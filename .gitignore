@@ -6,8 +6,6 @@
 **/.vscode/*
 # But do not ignore the .vscode directories themselves
 !**/.vscode/
-# Allow settings.json inside any .vscode directory to be tracked
-!**/.vscode/settings.json
 
 **/*.log
 *.bootloader.*

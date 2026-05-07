@@ -18,7 +18,7 @@ Just see for yourself what this kit can do, and you'll be ready to believe us!
 
 ## Official Documentation
 
-All product documentation has been integrated directly into Github Docs in HTML format at [https://gpstar81.github.io/GPStar-proton-pack/](https://gpstar81.github.io/GPStar-proton-pack/) and is kept up to date with the very latest public (non-beta) release.
+All product documentation has been integrated directly into Github Docs in HTML format at [https://gpstartechnologies.github.io/GPStar-Core-Source/](https://gpstartechnologies.github.io/GPStar-Core-Source/) and is kept up to date with the very latest public (non-beta) release.
 
 ### Viewing MD Files
 

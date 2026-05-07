@@ -73,7 +73,7 @@ body:
     id: troubleshooting
     attributes:
       label: Homework Completed
-      description: By submitting this issue, you did not find a solution via the [Troubleshooting Guide](https://gpstar81.github.io/GPStar-proton-pack/TROUBLESHOOTING/) or an existing bug report.
+      description: By submitting this issue, you did not find a solution via the [Troubleshooting Guide](https://gpstartechnologies.github.io/GPStar-Core-Source/TROUBLESHOOTING/) or an existing bug report.
       options:
         - label: I did my part!
           required: true
