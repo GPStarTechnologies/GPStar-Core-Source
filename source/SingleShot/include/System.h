@@ -723,6 +723,17 @@ void ventLightControl(uint8_t i_intensity) {
 // Determine the light status on the device and any beeps.
 void deviceLightControlCheck() {
   // Vent light and first stage of the safety system.
+  if(switch_vent.switched()) {
+    if(switch_vent.on()) {
+      // Start idle loop sound (runs continuously).
+      stopEffect(S_BOOTUP);
+      stopEffect(S_BOOTUP_SHORT);
+      playEffect(S_BOOTUP);
+      soundIdleLoopStop();
+      soundIdleLoop(true);
+    }
+  }
+
   if(switch_vent.on()) {
     if(blasterConfig.ventLightAutoIntensity) {
       // Vent light on, brightness dependent on mode.
@@ -935,13 +946,20 @@ void postActivation() {
     ms_warning_blink.stop();
     ms_error_blink.stop();
 
-    // Play bootup sound (runs only once).
-    stopEffect(S_BOOTUP);
-    stopEffect(S_BOOTUP_SHORT);
-    playEffect(S_BOOTUP);
-
-    // Start idle loop sound (runs continuously).
-    soundIdleLoop(true);
+    if(switch_vent.on()) {
+      // If vent switch is already on, start the idle and play the bootup sound.
+      stopEffect(S_BOOTUP);
+      stopEffect(S_BOOTUP_SHORT);
+      playEffect(S_BOOTUP);
+      soundIdleLoopStop();
+      soundIdleLoop(true);
+    }
+    else {
+      // If vent switch is off, only play the short bootup sound.
+      stopEffect(S_BOOTUP);
+      stopEffect(S_BOOTUP_SHORT);
+      playEffect(S_BOOTUP_SHORT);
+    }
   }
 }
 
