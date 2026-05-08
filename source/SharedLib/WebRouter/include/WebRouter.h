@@ -365,18 +365,18 @@ String generateOpenAPISpec() {
   // External documentation
   JsonObject externalDocs = jsonBody["externalDocs"].to<JsonObject>();
   externalDocs[JSON_PROPERTY_DESCRIPTION] = F("GPStar Documentation Home");
-  externalDocs[JSON_PROPERTY_URL] = F("https://gpstar81.github.io/GPStar-proton-pack/");
+  externalDocs[JSON_PROPERTY_URL] = F("https://gpstartechnologies.github.io/GPStar-Core-Source/");
 
   // Servers
   JsonArray servers = jsonBody["servers"].to<JsonArray>();
-  
+
   // Add MDNS server entry, if available
   if(deviceMdnsName.length() > 0) {
     JsonObject mdnsServer = servers.add<JsonObject>();
     mdnsServer[JSON_PROPERTY_URL] = String(F("http://")) + deviceMdnsName;
     mdnsServer[JSON_PROPERTY_DESCRIPTION] = F("Local device server (mDNS)");
   }
-  
+
   // Add local IP address server entry, if available
   if(deviceIpAddress.length() > 0) {
     JsonObject ipServer = servers.add<JsonObject>();

@@ -183,41 +183,44 @@ void WirelessManager::handleDNS() {
 
 /**
  * Function: getDeviceID
- * Purpose: Generate a unique 12-bit device ID from WiFi MAC address.
- *          Uses fallback methods if MAC is invalid or uninitialized.
+ * Purpose: Generate a unique 12-bit device ID from the hardware eFuse MAC address (bytes 4-5).
+ *          The eFuse MAC is hardware-burned and always available without WiFi initialization.
+ *          Caches the result for performance on subsequent calls.
  * Inputs: None.
  * Outputs:
  *   - uint16_t: A 12-bit unique device identifier (0x000-0xFFF).
  */
 uint16_t WirelessManager::getDeviceID() {
-  uint8_t mac[6];
-  WiFi.macAddress(mac);
+  // Return cached value if already computed
+  if(cachedDeviceID != 0) {
+    return cachedDeviceID;
+  }
 
-  // Extract 12-bit ID from MAC (lower 4 bits of mac[4] + all 8 bits of mac[5])
-  uint16_t deviceId = ((mac[4] & 0x0F) << 8) | mac[5];
+  // Use ESP32 chip eFuse MAC address (hardware-burned, always available)
+  // This is the same MAC that WiFi uses but doesn't require WiFi initialization
+  uint64_t efuseMac = ESP.getEfuseMac();
+  
+  // Extract bytes 4 and 5 from eFuse MAC (same as original WiFi MAC extraction)
+  // eFuse MAC is stored as: [byte0][byte1][byte2][byte3][byte4][byte5]
+  uint8_t mac4 = (efuseMac >> 32) & 0xFF;
+  uint8_t mac5 = (efuseMac >> 40) & 0xFF;
+  
+  // Extract 12-bit ID: lower 4 bits of byte 4 + all 8 bits of byte 5
+  uint16_t deviceId = ((mac4 & 0x0F) << 8) | mac5;
 
-  // Check for invalid MAC address (all zeros or common invalid values)
-  if(deviceId == 0x000 ||
-     (mac[0] == 0 && mac[1] == 0 && mac[2] == 0 && mac[3] == 0 && mac[4] == 0 && mac[5] == 0) ||
-     (mac[0] == 0xFF && mac[1] == 0xFF && mac[2] == 0xFF && mac[3] == 0xFF && mac[4] == 0xFF && mac[5] == 0xFF)) {
-
-    // Fallback 1: Try ESP32 chip ID from eFuse MAC
-    uint64_t chipId = ESP.getEfuseMac();
-    deviceId = chipId & 0x0FFF;  // Last 12 bits
-
-    // Fallback 2: If chip ID is also invalid, use pseudo-random based on millis()
+  // Ensure it's never 0x000 or 0xFFF (reserve for special/broadcast use)
+  if(deviceId == 0x000 || deviceId == 0xFFF) {
+    // Use alternate bits from eFuse MAC if lower 12 bits are reserved values
+    deviceId = ((efuseMac >> 12) & 0x0FFF);
+    
+    // Last resort: ensure we have a valid ID
     if(deviceId == 0x000 || deviceId == 0xFFF) {
-      // Generate reproducible pseudo-random ID based on boot time and analog noise
-      uint32_t seed = millis() + analogRead(A0);
-      deviceId = (seed ^ (seed >> 12)) & 0x0FFF;
-
-      // Ensure it's never 0x000 (reserve for broadcast/special use)
-      if(deviceId == 0x000) {
-        deviceId = 0x001;
-      }
+      deviceId = 0x001; // Default to 1 if all else fails
     }
   }
 
+  // Cache the device ID for future calls
+  cachedDeviceID = deviceId;
   return deviceId;
 }
 

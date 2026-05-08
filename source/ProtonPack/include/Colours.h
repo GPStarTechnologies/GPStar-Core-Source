@@ -387,7 +387,7 @@ CHSV getHue(uint8_t i_device, uint8_t i_colour, uint8_t i_brightness = 255, uint
     break;
 
     case C_DARK_GREEN:
-      return CHSV(96, i_saturation, 128);
+      return CHSV(96, i_saturation, 128 * (255 / i_brightness));
     break;
 
     case C_MINT:
@@ -407,7 +407,7 @@ CHSV getHue(uint8_t i_device, uint8_t i_colour, uint8_t i_brightness = 255, uint
     break;
 
     case C_NAVY_BLUE:
-      return CHSV(170, 200, 112);
+      return CHSV(170, 200, 112 * (255 / i_brightness));
     break;
 
     case C_BLUE:

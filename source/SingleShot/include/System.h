@@ -640,7 +640,7 @@ void firePulseEffect() {
 
   #ifdef ESP32
     // Trigger infrared after firing pulse ends; will only send as a Proton stream.
-    irManager->sendCommand(IR_CMD_FIRING, IR_STREAM_PROTON, gpstarBlaster.getPowerLevel(), IR_CMD_BLAST);
+    irManager->sendCommand(IR_CMD_FIRING, IR_STREAM_PROTON, gpstarBlaster.getPowerLevel(), IR_CMD_STREAM);
   #endif
   }
 }
@@ -729,11 +729,8 @@ void deviceLightControlCheck() {
       stopEffect(S_BOOTUP);
       stopEffect(S_BOOTUP_SHORT);
       playEffect(S_BOOTUP);
-      soundIdleLoop(true);
-    }
-    else {
-      // Stop the idle loop audio.
       soundIdleLoopStop();
+      soundIdleLoop(true);
     }
   }
 
@@ -954,10 +951,12 @@ void postActivation() {
       stopEffect(S_BOOTUP);
       stopEffect(S_BOOTUP_SHORT);
       playEffect(S_BOOTUP);
+      soundIdleLoopStop();
       soundIdleLoop(true);
     }
     else {
       // If vent switch is off, only play the short bootup sound.
+      stopEffect(S_BOOTUP);
       stopEffect(S_BOOTUP_SHORT);
       playEffect(S_BOOTUP_SHORT);
     }
