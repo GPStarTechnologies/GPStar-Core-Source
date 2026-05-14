@@ -22,19 +22,69 @@
 #include <stdint.h>
 
 /**
- * Data is sent between devices using the SerialTransfer library and struct objects.
- * Every struct uses packed data and each preference is stored as a single byte value,
- * though some values are sent as double-byte on rare occasion. Only ATMega and ESP32
- * are used and both are little-endian so no declaration of byte-order is provided.
+ * Devices send serial (UART) data using SerialTransfer and packed structs.
  *
- * Note that SerialTransfer encapsulates all data packets with a 4-byte preamble and
- * a 2-byte postamble, adding 6 bytes of overhead to any transfer.
+ * SerialTransfer always adds 6 bytes around each packet:
+ *   - 4 bytes at the start
+ *   - 2 bytes at the end
  *
- * Additionally, at 9600 baud it takes roughly 1 millisecond to transfer 1 byte of
- * data. By default, SerialTransfer considers a packet 'stale' after 50 milliseconds.
- * The exception is the Proton Pack to Attenuator connection, which doubles this to
- * 100 milliseconds. Thus it is important to keep the size of any payload plus
- * overhead to less than this timeout length in bytes.
+ * Common packet data sizes for commands and messages:
+ *   - CommandPacket = 5 data bytes (s, c, d1, e)
+ *   - MessagePacket = 6 data bytes (s, m, d[3], e)
+ *   - Total bytes sent for these are 11 and 12 (data + 6 overhead), respectively.
+ *
+ * Special packet data sizes for preferences and synchronization:
+ *   - PackPrefs = 43 data bytes, 49 total bytes sent
+ *   - WandPrefs = 28 data bytes, 34 total bytes sent
+ *   - SmokePrefs = 21 data bytes, 27 total bytes sent
+ *   - WandSyncData = 15 data bytes, 21 total bytes sent
+ *   - AttenuatorSyncData = 38 data bytes, 44 total bytes sent
+ *   - These all fit within one SerialTransfer packet.
+ *
+ * Byte order notes:
+ *   - Supported serial devices here are little-endian (ATMega + ESP32).
+ *   - Multi-byte values (for example uint16_t) are copied as-is.
+ *
+ * Timing and packet timeout:
+ *   - Device-to-device serial (UART) links run at 9600 baud.
+ *   - At 9600 baud, one byte takes about 1.04 ms to transmit.
+ *   - UART frame format: 8 data bits, no parity, 1 stop bit (8N1).
+ *   - SerialTransfer default packet timeout is 50 ms.
+ *   - Proton Pack <-> Attenuator uses 100 ms timeout.
+ *   - One sendData() call sends one SerialTransfer packet.
+ *   - Time to finish sending depends on the total packet size and baud rate.
+ *
+ * Example device-to-device transmit times at 9600 baud:
+ *   - Common command/message packets:
+ *       CommandPacket: 11 total bytes, about 11.5 ms
+ *       MessagePacket: 12 total bytes, about 12.5 ms
+ *   - Special preferences/sync packets:
+ *       PackPrefs: 49 total bytes, about 51.0 ms (Pack <-> Attenuator)
+ *       WandPrefs: 34 total bytes, about 35.4 ms (Pack <-> Attenuator, Pack <-> Wand)
+ *       SmokePrefs: 27 total bytes, about 28.1 ms (Pack <-> Attenuator, Pack <-> Wand)
+ *       WandSyncData: 21 total bytes, about 21.9 ms (Pack <-> Wand)
+ *       AttenuatorSyncData: 44 total bytes, about 45.8 ms (Pack <-> Attenuator)
+ *
+ * Send timing:
+ *   - SerialTransfer does not add a pause between packets.
+ *   - Packets are queued to the UART transmit buffer (TX buffer) right away.
+ *   - The actual gap depends on serial speed and how often code calls send.
+ *
+ * Receive timing and buffers:
+ *   - SerialTransfer does not run its own receive timer.
+ *   - Data is parsed when firmware calls available() from its loop/task checks.
+ *   - On Pack and Wand builds, these checks happen once per main loop pass on both
+ *     ESP32 and ATMega targets. On ESP32, the loop also yields briefly (~1 ms).
+ *   - On the Attenuator, serial checks run in a dedicated task with a 2 ms delay
+ *     between passes.
+ *   - SerialTransfer packet buffers are fixed at 254 bytes each:
+ *       txBuff[254] for payload staging and rxBuff[254] for parsed payload data.
+ *   - SerialTransfer rxBuff is a packet buffer, not a circular (ring) buffer.
+ *   - Pending packets are kept in the UART receive buffer and are handled in the
+ *     order they arrive.
+ *   - Each poll normally parses and exposes one completed packet, then the next
+ *     packet is handled on a later loop/task pass.
+ *   - UART driver RX/TX buffer sizes are not set in this file and may vary by board/core defaults.
  */
 
 // Types of packets to be sent via serial communication.
