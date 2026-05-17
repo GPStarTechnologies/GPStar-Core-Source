@@ -90,6 +90,7 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
           case CYCLOTRON_OUTER:
           case CYCLOTRON_INNER:
           case CYCLOTRON_PANEL:
+          default:
             return C_RED;
           break;
 
@@ -118,7 +119,6 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
 
           // VENT_LIGHT colour in PROTON mode will always be overridden by void ventLight()
           case VENT_LIGHT:
-          default:
             return C_WHITE;
           break;
         }
@@ -127,6 +127,7 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
       case SLIME:
         switch(i_device) {
           case POWERCELL:
+            // Note this is separate because yellow will eventually be an option.
             if(gpstarPack.getSystemTheme() == SYSTEM_1989) {
               return C_PINK;
             }
@@ -151,88 +152,63 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
       break;
 
       case STASIS:
-        switch(i_device) {
-          case POWERCELL:
-          case CYCLOTRON_OUTER:
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
-          case VENT_LIGHT:
-          default:
-            return C_LIGHT_BLUE;
-          break;
-        }
+        return C_LIGHT_BLUE;
       break;
 
       case MESON:
-        switch(i_device) {
-          case POWERCELL:
-          case CYCLOTRON_OUTER:
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
-          case VENT_LIGHT:
-          default:
-            return C_ORANGE;
-          break;
-        }
+        return C_ORANGE;
       break;
 
       case SPECTRAL:
-        switch(i_device) {
-          case POWERCELL:
-          case CYCLOTRON_OUTER:
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
-          case VENT_LIGHT:
-          default:
-            return C_RAINBOW;
-          break;
-        }
+        return C_RAINBOW;
       break;
 
       case HOLIDAY_HALLOWEEN:
-        switch(i_device) {
-          case POWERCELL:
-          case CYCLOTRON_OUTER:
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
-          case VENT_LIGHT:
-          default:
-            return C_ORANGEPURPLE;
-          break;
-        }
+        return C_ORANGEPURPLE;
       break;
 
       case HOLIDAY_CHRISTMAS:
-        switch(i_device) {
-          case POWERCELL:
-          case CYCLOTRON_OUTER:
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
-          case VENT_LIGHT:
-          default:
-            return C_REDGREEN;
-          break;
-        }
+        return C_REDGREEN;
       break;
 
       case SPECTRAL_CUSTOM:
         switch(i_device) {
+          case CYCLOTRON_CAVITY:
+            // Cycles through 3 colours, changing on each call.
+            // If starting at 0, value will increment to 1.
+            // If value is above/divisible by 4, reset to 1.
+            i_count[i_device]++;
+            if(i_count[i_device] > 4 || i_count[i_device] % 4 == 0) {
+              i_count[i_device] = 1; // Reset counter.
+            }
+
+            switch(i_count[i_device]) {
+              case 1:
+                return C_ORANGE;
+              break;
+              case 2:
+                return C_WHITE;
+              break;
+              case 3:
+              default:
+                return C_YELLOW;
+              break;
+            }
+          break;
+
           case POWERCELL:
             return C_CUSTOM_POWERCELL;
           break;
 
           case CYCLOTRON_OUTER:
+          case VENT_LIGHT:
+          default:
             return C_CUSTOM_CYCLOTRON;
           break;
 
           case CYCLOTRON_INNER:
           case CYCLOTRON_PANEL:
             return C_CUSTOM_INNER_CYCLOTRON;
-          break;
-
-          case VENT_LIGHT:
-          default:
-            return C_CUSTOM_CYCLOTRON;
           break;
         }
       break;

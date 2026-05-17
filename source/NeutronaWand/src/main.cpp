@@ -587,13 +587,15 @@ void mainLoop() {
           bargraphPowerCheck();
         }
 
-        if(ms_gun_ramp_1.justFinished() && !switch_vent.on()) {
-          if(b_extra_pack_sounds) {
-            wandSerialSend(W_AFTERLIFE_GUN_LOOP_1);
-          }
+        if(getNeutronaWandYearMode() == SYSTEM_AFTERLIFE || getNeutronaWandYearMode() == SYSTEM_FROZEN_EMPIRE) {
+          if(ms_gun_ramp_1.justFinished() && !switch_vent.on()) {
+            if(b_extra_pack_sounds) {
+              wandSerialSend(W_AFTERLIFE_GUN_LOOP_1);
+            }
 
-          if(AUDIO_DEVICE != A_GPSTAR_AUDIO_ADV) {
-            playEffect(S_AFTERLIFE_WAND_IDLE_1, true);
+            if(AUDIO_DEVICE != A_GPSTAR_AUDIO_ADV) {
+              playEffect(S_AFTERLIFE_WAND_IDLE_1, true);
+            }
           }
         }
       }

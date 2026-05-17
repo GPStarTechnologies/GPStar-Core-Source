@@ -1428,6 +1428,8 @@ void soundIdleLoopStop(bool stopAlts) {
 }
 
 void stopAfterlifeSounds() {
+  ms_gun_ramp_1.stop();
+  ms_gun_ramp_2.stop();
   stopEffect(S_AFTERLIFE_WAND_RAMP_1);
   stopEffect(S_AFTERLIFE_WAND_IDLE_1);
   stopEffect(S_AFTERLIFE_WAND_RAMP_2);

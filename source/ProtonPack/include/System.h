@@ -4582,7 +4582,7 @@ void modeFireStartSounds() {
   }
 
   // Adjust the gain with the Afterlife idling sound effect while firing.
-  if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL) {
+  if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL && !b_fadeout_idle_sounds) {
     if(ms_idle_fire_fade.remaining() < 3000) {
       if(gpstarPack.inStreamMode(SLIME)) {
         if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
@@ -4846,7 +4846,7 @@ void modeFireStopSounds() {
     }
 
     // Adjust the gain with the Afterlife idling track.
-    if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL) {
+    if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL && !b_fadeout_idle_sounds) {
       if(ms_idle_fire_fade.remaining() < 1000) {
         if(gpstarPack.inStreamMode(SLIME)) {
           if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
