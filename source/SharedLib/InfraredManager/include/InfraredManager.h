@@ -100,7 +100,7 @@ enum IR_COMMAND_TYPE {
 
 // IR Stream Type. Sending a stream, a crossing the streams or a blast.
 enum IR_STREAM_INFO {
-  IR_CMD_STREAM,   // Regular firing strea
+  IR_CMD_STREAM,   // Regular firing stream
   IR_CMD_CTS,      // Crossing the streams
   IR_CMD_BLAST     // Alt firing blasts such as: Boson Dart, Shock Blast, Overload Pulse and Slime Blast
 };
