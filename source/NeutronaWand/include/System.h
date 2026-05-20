@@ -949,7 +949,7 @@ void bargraphRamp() {
             case BARGRAPH_SUPER_HERO:
               // Bargraph has ramped up and down. In 1984/1989 mode we want to start the ramping.
               if(i_bargraph_status_alt == 55) {
-                ms_bargraph_alt.start(i_bargraph_interval); // Start the alternate bargraph to ramp up and down continuously.
+                ms_bargraph_alt.start(i_bargraph_wait / 2); // Start the alternate bargraph to ramp up and down continuously.
                 ms_bargraph.stop();
                 b_bargraph_up = true;
                 i_bargraph_status_alt = 0;
@@ -1117,7 +1117,7 @@ void bargraphRamp() {
             case BARGRAPH_SUPER_HERO:
               // Bargraph has ramped up and down. In 1984/1989 mode we want to start the ramping.
               if(i_bargraph_status_alt == 59) {
-                ms_bargraph_alt.start(i_bargraph_interval); // Start the alternate bargraph to ramp up and down continuously.
+                ms_bargraph_alt.start(i_bargraph_wait / 2); // Start the alternate bargraph to ramp up and down continuously.
                 ms_bargraph.stop();
                 b_bargraph_up = true;
                 i_bargraph_status_alt = 0;
