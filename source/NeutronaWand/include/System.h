@@ -6119,13 +6119,18 @@ void modeFireStart() {
 
   bargraphRampFiring();
 
-  if(gpstarWand.inStreamMode(PROTON) && b_stream_effects) {
+  if(b_stream_effects) {
     ms_impact.start(random(10,16) * 1000);
 
-    // Standalone wand plays additional SFX from Proton Pack.
+    #ifdef ESP32
+    // Start the IMU debounce timer.
+    ms_firing_sound_mix.start(0);
+    #else
     if(b_wand_standalone) {
+      // Standalone wand plays additional SFX from Proton Pack.
       ms_firing_sound_mix.start(random(7,15) * 1000);
     }
+    #endif
   }
 
   ms_firing_length_timer.start(i_firing_timer_length);
@@ -7088,74 +7093,81 @@ void mixExtraFiringEffects() {
   // Mix some impact sound based on user-initiated motions while firing.
   if(gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects && filteredMotionData.shaken) {
     // Only play impact sound if firing, in Proton mode, and threshold exceeded.
-    uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
-    switch(i_random_effect) {
-      case 3:
-        playEffect(S_FIRE_SPARKS_5, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_5;
-      break;
+    if(ms_firing_sound_mix.justFinished()) {
+      uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
+      switch(i_random_effect) {
+        case 3:
+          playEffect(S_FIRE_SPARKS_5, false, i_volume_effects - 10, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_5;
+        break;
 
-      case 2:
-        playEffect(S_FIRE_SPARKS_4, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_4;
-      break;
+        case 2:
+          playEffect(S_FIRE_SPARKS_4, false, i_volume_effects - 10, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_4;
+        break;
 
-      case 1:
-        playEffect(S_FIRE_SPARKS_3, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_3;
-      break;
+        case 1:
+          playEffect(S_FIRE_SPARKS_3, false, i_volume_effects - 10, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_3;
+        break;
 
-      case 0:
-      default:
-        playEffect(S_FIRE_SPARKS_2, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_2;
-      break;
+        case 0:
+        default:
+          playEffect(S_FIRE_SPARKS_2, false, i_volume_effects - 10, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_2;
+        break;
+      }
+
+      wandSerialSend(W_IMPACT_SOUND, i_random_effect); // Trigger an impact sound to play on the pack (matched to the random value chosen here).
+      ms_firing_sound_mix.start(500); // Restart the debounce timer.
     }
+  }
+#else
+  // Standalone Neutrona Wand gets additional effects which would normally be played by Proton Pack.
+  if(gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects && b_wand_standalone) {
+    if(ms_firing_sound_mix.justFinished()) {
+      uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
+      uint16_t i_s_random = random(2,4) * 1000; // Affects mix timer, not effect chosen.
 
-    wandSerialSend(W_IMPACT_SOUND, i_random_effect); // Trigger an impact sound to play on the pack (matched to the random value chosen here).
+      switch(i_random_effect) {
+        case 3:
+          playEffect(S_FIRE_SPARKS, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS;
+
+          ms_firing_sound_mix.start(i_s_random * 5);
+        break;
+
+        case 2:
+          playEffect(S_FIRE_SPARKS_4, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_4;
+
+          ms_firing_sound_mix.start(i_s_random);
+        break;
+
+        case 1:
+          playEffect(S_FIRE_SPARKS_3, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_3;
+
+          ms_firing_sound_mix.start(i_s_random);
+        break;
+
+        case 0:
+        default:
+          playEffect(S_FIRE_SPARKS_2, false, i_volume_effects, false, 0, false);
+          playEffect(S_FIRE_SPARKS_5, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_5;
+
+          ms_firing_sound_mix.start(1800);
+        break;
+      }
+    }
   }
 #endif
   // Mix some impact sound every 10-15 seconds while firing.
-  if(ms_impact.justFinished() && gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects) {
-    playEffect(S_FIRE_LOOP_IMPACT, false, i_volume_effects, false, 0, false);
-    ms_impact.start(random(10,16) * 1000);
-  }
-
-  // Standalone Neutrona Wand gets additional effects which would normally be played by Proton Pack.
-  if(ms_firing_sound_mix.justFinished() && gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects) {
-    uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
-    uint16_t i_s_random = random(2,4) * 1000; // Affects mix timer, not effect chosen.
-
-    switch(i_random_effect) {
-      case 3:
-        playEffect(S_FIRE_SPARKS, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS;
-
-        ms_firing_sound_mix.start(i_s_random * 5);
-      break;
-
-      case 2:
-        playEffect(S_FIRE_SPARKS_4, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_4;
-
-        ms_firing_sound_mix.start(i_s_random);
-      break;
-
-      case 1:
-        playEffect(S_FIRE_SPARKS_3, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_3;
-
-        ms_firing_sound_mix.start(i_s_random);
-      break;
-
-      case 0:
-      default:
-        playEffect(S_FIRE_SPARKS_2, false, i_volume_effects, false, 0, false);
-        playEffect(S_FIRE_SPARKS_5, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_5;
-
-        ms_firing_sound_mix.start(1800);
-      break;
+  if(gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects) {
+    if(ms_impact.justFinished()) {
+      playEffect(S_FIRE_LOOP_IMPACT, false, i_volume_effects, false, 0, false);
+      ms_impact.start(random(10,16) * 1000);
     }
   }
 }
@@ -7256,6 +7268,8 @@ void modeFiring() {
   if(b_firing_alt && b_firing_intensify && !b_sound_firing_cross_the_streams && !b_firing_cross_streams) {
     b_firing_cross_streams = true;
     b_sound_firing_cross_the_streams = true;
+    ms_impact.stop();
+    ms_firing_sound_mix.stop();
 
     switch(WAND_YEAR_CTS) {
       case CTS_AFTERLIFE:
@@ -7334,10 +7348,6 @@ void modeFiring() {
         }
       break;
     }
-
-    if(b_stream_effects) {
-      ms_impact.start(random(10,16) * 1000);
-    }
   }
 
   if((!b_firing_alt || !b_firing_intensify) && b_firing_cross_streams && gpstarWand.isFiringModeCTSMix()) {
@@ -7395,9 +7405,19 @@ void modeFiring() {
       break;
     }
 
-    // Restart the impact sound timer for the standalone wand.
-    if(b_stream_effects && b_wand_standalone) {
-      ms_firing_sound_mix.start(random(7,15) * 1000);
+    // Restart the impact sound timers.
+    if(b_stream_effects) {
+      ms_impact.start(random(10,16) * 1000);
+
+      #ifdef ESP32
+      // Restart the IMU debounce timer.
+      ms_firing_sound_mix.start(0);
+      #else
+      if(b_wand_standalone) {
+        // Standalone wand plays additional SFX from Proton Pack.
+        ms_firing_sound_mix.start(random(7,15) * 1000);
+      }
+      #endif
     }
   }
 
