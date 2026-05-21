@@ -7091,7 +7091,7 @@ uint8_t getRandomFiringEffect() {
 void mixExtraFiringEffects() {
 #ifdef ESP32
   // Mix some impact sound based on user-initiated motions while firing.
-  if(gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects && filteredMotionData.shaken) {
+  if((gpstarWand.inStreamMode(PROTON) || gpstarWand.inStreamMode(SPECTRAL_CUSTOM)) && !b_firing_cross_streams && b_stream_effects && filteredMotionData.shaken) {
     // Only play impact sound if firing, in Proton mode, and threshold exceeded.
     if(ms_firing_sound_mix.justFinished()) {
       uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
@@ -7124,7 +7124,7 @@ void mixExtraFiringEffects() {
   }
 #else
   // Standalone Neutrona Wand gets additional effects which would normally be played by Proton Pack.
-  if(gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects && b_wand_standalone) {
+  if((gpstarWand.inStreamMode(PROTON) || gpstarWand.inStreamMode(SPECTRAL_CUSTOM)) && !b_firing_cross_streams && b_stream_effects && b_wand_standalone) {
     if(ms_firing_sound_mix.justFinished()) {
       uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
       uint16_t i_s_random = random(2,4) * 1000; // Affects mix timer, not effect chosen.
@@ -7164,7 +7164,7 @@ void mixExtraFiringEffects() {
   }
 #endif
   // Mix some impact sound every 10-15 seconds while firing.
-  if(gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects) {
+  if((gpstarWand.inStreamMode(PROTON) || gpstarWand.inStreamMode(SPECTRAL_CUSTOM)) && !b_firing_cross_streams && b_stream_effects) {
     if(ms_impact.justFinished()) {
       playEffect(S_FIRE_LOOP_IMPACT, false, i_volume_effects, false, 0, false);
       ms_impact.start(random(10,16) * 1000);
