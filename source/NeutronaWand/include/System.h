@@ -7097,23 +7097,23 @@ void mixExtraFiringEffects() {
       uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
       switch(i_random_effect) {
         case 3:
-          playEffect(S_FIRE_SPARKS_5, false, i_volume_effects - 10, false, 0, false);
+          playEffect(S_FIRE_SPARKS_5, false, i_volume_effects, false, 0, false);
           i_last_firing_effect_mix = S_FIRE_SPARKS_5;
         break;
 
         case 2:
-          playEffect(S_FIRE_SPARKS_4, false, i_volume_effects - 10, false, 0, false);
+          playEffect(S_FIRE_SPARKS_4, false, i_volume_effects, false, 0, false);
           i_last_firing_effect_mix = S_FIRE_SPARKS_4;
         break;
 
         case 1:
-          playEffect(S_FIRE_SPARKS_3, false, i_volume_effects - 10, false, 0, false);
+          playEffect(S_FIRE_SPARKS_3, false, i_volume_effects, false, 0, false);
           i_last_firing_effect_mix = S_FIRE_SPARKS_3;
         break;
 
         case 0:
         default:
-          playEffect(S_FIRE_SPARKS_2, false, i_volume_effects - 10, false, 0, false);
+          playEffect(S_FIRE_SPARKS_2, false, i_volume_effects, false, 0, false);
           i_last_firing_effect_mix = S_FIRE_SPARKS_2;
         break;
       }
