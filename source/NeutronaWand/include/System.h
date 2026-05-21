@@ -7119,7 +7119,7 @@ void mixExtraFiringEffects() {
       }
 
       wandSerialSend(W_IMPACT_SOUND, i_random_effect); // Trigger an impact sound to play on the pack (matched to the random value chosen here).
-      ms_firing_sound_mix.start(500); // Restart the debounce timer.
+      ms_firing_sound_mix.start(i_impact_sound_debounce); // Restart the debounce timer.
     }
   }
 #else
