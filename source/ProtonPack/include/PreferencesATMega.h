@@ -110,6 +110,7 @@ struct objConfigEEPROM {
   uint8_t use_ribbon_cable; // Enable/disable the ribbon cable alarm (useful for DIY packs).
   uint8_t disable_lid_detection; // Enable/disable cyclotron lid detection (useful for DIY packs).
   uint8_t fadeout_idle_sounds; // Enable/disable fading out of idle SFX after booting.
+  uint8_t fadeout_idle_delay; // How long before the idle fadeout takes place (10-60 seconds).
 };
 
 /*
@@ -408,6 +409,10 @@ void readEEPROM() {
       b_fadeout_idle_sounds = (obj_config_eeprom.fadeout_idle_sounds > 1);
     }
 
+    if(obj_config_eeprom.fadeout_idle_delay > 9 && obj_config_eeprom.fadeout_idle_delay < 61) {
+      i_idle_fadeout_delay = obj_config_eeprom.fadeout_idle_delay * 1000;
+    }
+
     if(obj_config_eeprom.default_system_volume > 0 && obj_config_eeprom.default_system_volume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = obj_config_eeprom.default_system_volume - 1;
@@ -631,6 +636,7 @@ void saveConfigEEPROM() {
   uint8_t i_use_ribbon_cable = b_use_ribbon_cable ? 2 : 1;
   uint8_t i_disable_lid_detection = b_disable_lid_detection ? 2 : 1;
   uint8_t i_fadeout_idle_sounds = b_fadeout_idle_sounds ? 2 : 1;
+  uint8_t i_fadeout_idle_delay = i_idle_fadeout_delay / 1000;
   uint8_t i_default_system_volume = 101; // <- i_eeprom_volume_master_percentage + 1
   uint8_t i_overheat_smoke_duration_level_5 = i_ms_overheating_length_5 / 1000;
   uint8_t i_overheat_smoke_duration_level_4 = i_ms_overheating_length_4 / 1000;
@@ -704,7 +710,8 @@ void saveConfigEEPROM() {
     i_pack_vibration,
     i_use_ribbon_cable,
     i_disable_lid_detection,
-    i_fadeout_idle_sounds
+    i_fadeout_idle_sounds,
+    i_fadeout_idle_delay
   };
 
   // Save and update our object in the EEPROM.

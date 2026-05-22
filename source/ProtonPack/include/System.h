@@ -963,7 +963,7 @@ void packStartup(bool fullStartup) {
 
   if(b_fadeout_idle_sounds) {
     // Start a timer that will fade out the idle SFX when complete.
-    ms_delay_post.start(i_idle_fadeout_time);
+    ms_delay_post.start(i_idle_fadeout_delay);
   }
   else {
     // Stop the Brass Pack shutdown timer in case it's running.
@@ -2290,7 +2290,7 @@ void cyclotronSwitchLEDLoop() {
 
           if(b_fadeout_idle_sounds) {
             // Restart the idle timer if we enter brass pack mode.
-            ms_delay_post.start(i_idle_fadeout_time);
+            ms_delay_post.start(i_idle_fadeout_delay);
           }
         }
       }
@@ -2338,7 +2338,7 @@ void cyclotronSwitchLEDLoop() {
           // Restart the normal idle sounds if the lid is put back on.
           stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
           playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
 
         stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT);
@@ -4979,7 +4979,7 @@ void wandStoppedFiring() {
     }
 
     // Make sure we reset the fadeout counter to account for the new idle sounds.
-    ms_delay_post.start(i_idle_fadeout_time);
+    ms_delay_post.start(i_idle_fadeout_delay);
   }
 }
 
@@ -5089,7 +5089,7 @@ void restartFromWandMash() {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         break;
         case SYSTEM_1989:
           stopEffect(S_GB2_PACK_START);
@@ -5101,7 +5101,7 @@ void restartFromWandMash() {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         break;
         case SYSTEM_AFTERLIFE:
         default:

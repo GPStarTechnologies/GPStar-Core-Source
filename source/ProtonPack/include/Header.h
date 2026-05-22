@@ -510,7 +510,7 @@ bool b_spectral_lights_on = false;
 bool b_first_boot = true;
 uint16_t i_wand_audio_version = 0;
 const uint16_t i_gbfe_brass_shutdown_delay = 8796;
-const uint16_t i_idle_fadeout_time = 30000;
+uint16_t i_idle_fadeout_delay = 30000;
 
 /*
  * UI Status Display Type

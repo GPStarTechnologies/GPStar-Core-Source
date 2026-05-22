@@ -169,6 +169,7 @@ void getPackPrefsObject() {
   packConfig.currentYearThemePack = gpstarPack.getSystemTheme();
   packConfig.defaultPackVolume = i_eeprom_volume_master_percentage;
   packConfig.fadeoutIdleSounds = b_fadeout_idle_sounds;
+  packConfig.fadeoutIdleDelay = i_idle_fadeout_delay / 1000;
   packConfig.protonStreamEffects = b_stream_effects;
   packConfig.brassStartupLoop = b_brass_startup_loop;
   packConfig.overheatStrobeNF = b_overheat_strobe;
@@ -660,6 +661,7 @@ void handlePackPrefsUpdate() {
   sendDebug(F("Updating general variables..."));
   i_volume_master_eeprom = (MINIMUM_VOLUME + i_volume_min_adj) - ((MINIMUM_VOLUME + i_volume_min_adj) * packConfig.defaultPackVolume / 100);
   b_fadeout_idle_sounds = packConfig.fadeoutIdleSounds; // Choose whether to fade the idle sounds out or have them play permanently.
+  i_idle_fadeout_delay = packConfig.fadeoutIdleDelay * 1000; // Set how long to wait before fading out the idle sounds.
   b_stream_effects = packConfig.protonStreamEffects; // Implement the stream impact sounds while firing.
   b_brass_startup_loop = packConfig.brassStartupLoop; // Choose whether brass pack startup will loop or play once.
   b_overheat_strobe = packConfig.overheatStrobeNF; // Choose whether N-Filter LED will strobe or not when overheating.
@@ -1496,7 +1498,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
       }
       else {
@@ -1566,7 +1568,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
       }
       else {
@@ -1644,7 +1646,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
       }
       else {
@@ -1723,7 +1725,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
       }
     break;
@@ -1783,7 +1785,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
       }
     break;
@@ -1842,7 +1844,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           }
 
           // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
       }
       else {
@@ -2056,7 +2058,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
             break;
           }
 
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
 
         switch(gpstarPack.getStreamMode()) {

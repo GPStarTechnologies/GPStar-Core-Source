@@ -479,7 +479,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
             break;
           }
 
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
 
         // Trigger the proper sound effect(s) for the new stream mode.

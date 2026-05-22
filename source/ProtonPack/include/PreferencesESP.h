@@ -97,6 +97,7 @@ struct objConfigEEPROM {
   uint8_t use_ribbon_cable;
   uint8_t disable_lid_detection;
   uint8_t fadeout_idle_sounds;
+  uint8_t fadeout_idle_delay;
 } gObjConfigEEPROM;
 
 // Save LED settings to Preferences
@@ -246,6 +247,7 @@ void saveConfigEEPROM() {
   gObjConfigEEPROM.use_ribbon_cable = b_use_ribbon_cable ? 2 : 1;
   gObjConfigEEPROM.disable_lid_detection = b_disable_lid_detection ? 2 : 1;
   gObjConfigEEPROM.fadeout_idle_sounds = b_fadeout_idle_sounds ? 2 : 1;
+  gObjConfigEEPROM.fadeout_idle_delay = i_idle_fadeout_delay / 1000;
 
   if(preferences.begin("config", false)) {
     preferences.putBytes("config", &gObjConfigEEPROM, sizeof(gObjConfigEEPROM));
@@ -548,6 +550,10 @@ void readEEPROM() {
 
     if(gObjConfigEEPROM.fadeout_idle_sounds > 0 && gObjConfigEEPROM.fadeout_idle_sounds < 3) {
       b_fadeout_idle_sounds = (gObjConfigEEPROM.fadeout_idle_sounds > 1);
+    }
+
+    if(gObjConfigEEPROM.fadeout_idle_delay > 9 && gObjConfigEEPROM.fadeout_idle_delay < 61) {
+      i_idle_fadeout_delay = gObjConfigEEPROM.fadeout_idle_delay * 1000;
     }
 
     if(gObjConfigEEPROM.default_system_volume > 0 && gObjConfigEEPROM.default_system_volume < 102) {

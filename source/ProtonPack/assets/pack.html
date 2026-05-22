@@ -131,6 +131,12 @@
         </label>
       </div>
       <div class="setting">
+        <b>Idle Loop Fade Out Delay:</b>
+        <br />
+        <input type="range" id="fadeoutIdleDelay" name="fadeoutIdleDelay" min="10" max="60" value="30" step="5" oninput="fadeoutDelayOut.value = fadeoutIdleDelay.value" />
+        <output class="labelSlider" id="fadeoutDelayOut" for="fadeoutIdleDelay"></output>
+      </div>
+      <div class="setting">
         <label class="toggle-switchy" data-label="left">
           <input id="protonStreamEffects" name="protonStreamEffects" type="checkbox" />
           <span class="toggle">
@@ -481,6 +487,8 @@
         setHtml("masterVolOut", getValue("defaultPackVolume"));
         setValue("packVibration", settings.packVibration || 4);
         setToggle("fadeoutIdleSounds", settings.fadeoutIdleSounds);
+        setValue("fadeoutIdleDelay", settings.fadeoutIdleDelay || 30);
+        setHtml("fadeoutDelayOut", getValue("fadeoutIdleDelay"));
         setToggle("protonStreamEffects", settings.protonStreamEffects);
         setToggle("brassStartupLoop", settings.brassStartupLoop);
         setToggle("ribbonCableAlarm", settings.ribbonCableAlarm);
@@ -608,6 +616,7 @@
           defaultPackVolume: getInt("defaultPackVolume") || 100,
           packVibration: getInt("packVibration") || 4,
           fadeoutIdleSounds: getToggle("fadeoutIdleSounds"),
+          fadeoutIdleDelay: getInt("fadeoutIdleDelay") || 30,
           protonStreamEffects: getToggle("protonStreamEffects"),
           brassStartupLoop: getToggle("brassStartupLoop"),
           ribbonCableAlarm: getToggle("ribbonCableAlarm"),

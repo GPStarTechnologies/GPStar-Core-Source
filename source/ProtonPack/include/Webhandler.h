@@ -207,6 +207,7 @@ String getPackConfig() {
     jsonBody["currentYearThemePack"] = packConfig.currentYearThemePack; // [2=1984,3=1989,4=2021,5=2024]
     jsonBody["defaultPackVolume"] = packConfig.defaultPackVolume; // 5-100
     jsonBody["fadeoutIdleSounds"] = packConfig.fadeoutIdleSounds; // true|false
+    jsonBody["fadeoutIdleDelay"] = packConfig.fadeoutIdleDelay; // 10-60
     jsonBody["packVibration"] = packConfig.packVibration; // [1=ALWAYS,2=FIRING,3=NEVER,4=TOGGLE,5=MOTORIZED_CYCLOTRON]
     jsonBody["protonStreamEffects"] = packConfig.protonStreamEffects; // true|false
     jsonBody["brassStartupLoop"] = packConfig.brassStartupLoop; // true|false
@@ -1618,6 +1619,7 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.defaultYearThemePack = (SYSTEM_THEMES)jsonBody["defaultYearThemePack"].as<uint8_t>();
       packConfig.currentYearThemePack = (SYSTEM_THEMES)jsonBody["currentYearThemePack"].as<uint8_t>();
       packConfig.packVibration = (VIBRATION_MODES)jsonBody["packVibration"].as<uint8_t>();
+      packConfig.fadeoutIdleDelay = jsonBody["fadeoutIdleDelay"].as<uint8_t>();
       packConfig.defaultPackVolume = jsonBody["defaultPackVolume"].as<uint8_t>();
 
       // Boolean fields - Effect toggles
