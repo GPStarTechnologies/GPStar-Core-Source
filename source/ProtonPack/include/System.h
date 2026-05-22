@@ -289,7 +289,9 @@ void wandStopFiringSounds() {
         stopEffect(S_CROSS_STREAMS_END);
       }
 
-      playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
+      if(!ms_mash_lockout.isRunning()) {
+        playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
+      }
     break;
 
     case CTS_FIRING_2021:
@@ -298,7 +300,9 @@ void wandStopFiringSounds() {
       stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_START);
       stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END);
 
-      playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
+      if(!ms_mash_lockout.isRunning()) {
+        playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
+      }
     break;
 
     case CTS_NOT_FIRING:
@@ -337,13 +341,17 @@ void wandExtraSoundsBeepLoopStop(bool stopNaturally) {
 }
 
 void stopMashErrorSounds() {
-  // Stop GB:FE button-smash sounds.
-  stopEffect(S_FROZEN_EMPIRE_PACK_FREEZE_STOP);
-  stopEffect(S_FROZEN_EMPIRE_BRASS_FIRE_TAIL);
-  stopEffect(S_STASIS_IDLE_LOOP);
-  // Stop normal button-smash sounds.
-  stopEffect(S_MASH_ERROR_LOOP);
-  stopEffect(S_SMASH_ERROR_RESTART);
+  if(gpstarPack.getSystemTheme() == SYSTEM_FROZEN_EMPIRE) {
+    // Stop GB:FE button mash sounds.
+    stopEffect(S_FROZEN_EMPIRE_PACK_FREEZE_STOP);
+    stopEffect(S_FROZEN_EMPIRE_BRASS_FIRE_TAIL);
+    stopEffect(S_STASIS_IDLE_LOOP);
+  }
+  else {
+    // Stop normal button mash sounds.
+    stopEffect(S_MASH_ERROR_LOOP);
+    stopEffect(S_SMASH_ERROR_RESTART);
+  }
 }
 
 void wandExtraSoundsStop() {
@@ -360,36 +368,36 @@ void wandExtraSoundsStop() {
   stopEffect(S_WAND_BOOTUP_SHORT);
 }
 
-void fadeoutIdleSounds() {
+void fadeoutIdleSounds(bool fadeFast = false) {
   switch(gpstarPack.getSystemTheme()) {
     case SYSTEM_1984:
-      fadeoutEffect(S_GB1_1984_PACK_LOOP, 5000);
+      fadeoutEffect(S_GB1_1984_PACK_LOOP, fadeFast ? 100 : 5000);
     break;
     case SYSTEM_1989:
-      fadeoutEffect(S_GB2_PACK_LOOP, 5000);
+      fadeoutEffect(S_GB2_PACK_LOOP, fadeFast ? 100 : 5000);
     break;
     case SYSTEM_AFTERLIFE:
     default:
-      fadeoutEffect(S_AFTERLIFE_PACK_IDLE_LOOP, 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, 5000);
-      fadeoutEffect(S_POWERCELL, 5000);
+      fadeoutEffect(S_AFTERLIFE_PACK_IDLE_LOOP, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_POWERCELL, fadeFast ? 100 : 5000);
       wandExtraSoundsBeepLoopStop(true);
     break;
     case SYSTEM_FROZEN_EMPIRE:
       if(isBrassPack()) {
         if(b_brass_startup_loop) {
-          fadeoutEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, 5000);
+          fadeoutEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, fadeFast ? 100 : 5000);
         }
         else {
-          fadeoutEffect(S_FROZEN_EMPIRE_BRASS_IDLE, 5000);
+          fadeoutEffect(S_FROZEN_EMPIRE_BRASS_IDLE, fadeFast ? 100 : 5000);
         }
       }
 
-      fadeoutEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, 5000);
-      fadeoutEffect(S_POWERCELL, 5000);
+      fadeoutEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_POWERCELL, fadeFast ? 100 : 5000);
       wandExtraSoundsBeepLoopStop(true);
     break;
   }
@@ -404,13 +412,13 @@ void fadeoutIdleSounds() {
       // Do nothing.
     break;
     case SLIME:
-      fadeoutEffect(S_PACK_SLIME_TANK_LOOP, 5000);
+      fadeoutEffect(S_PACK_SLIME_TANK_LOOP, fadeFast ? 100 : 5000);
     break;
     case STASIS:
-      fadeoutEffect(S_STASIS_IDLE_LOOP, 5000);
+      fadeoutEffect(S_STASIS_IDLE_LOOP, fadeFast ? 100 : 5000);
     break;
     case MESON:
-      fadeoutEffect(S_MESON_IDLE_LOOP, 5000);
+      fadeoutEffect(S_MESON_IDLE_LOOP, fadeFast ? 100 : 5000);
     break;
   }
 }
@@ -1313,7 +1321,7 @@ void packShutdown() {
       break;
 
       case SYSTEM_FROZEN_EMPIRE:
-        if(b_brass_pack_sound_loop) {
+        if(isBrassPack()) {
           if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
             playTransitionEffect(S_FROZEN_EMPIRE_BRASS_SHUTDOWN, PROGMEM_READU16(sfx_smoke[random(5)]));
           }
@@ -2265,12 +2273,14 @@ void cyclotronSwitchLEDLoop() {
   if(ms_cyclotron_switch_led.justFinished()) {
     if(!b_cyclotron_lid_on) {
       // Frozen Empire brass pack sound is handled here.
-      if(isBrassPack() && !b_pack_alarm && !b_overheating && !b_ramp_down && !b_wand_mash_lockout) {
+      if(isBrassPack() && !b_pack_alarm && !b_overheating && !b_ramp_down && !b_wand_mash_lockout && !ms_mash_lockout.isRunning()) {
         if(!b_brass_pack_sound_loop) {
           if(b_brass_startup_loop) {
+            stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
             playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true, i_volume_effects, true, 2000);
           }
           else {
+            stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
             playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT);
             playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true, i_volume_effects, true, 2300);
           }
@@ -2758,7 +2768,7 @@ void slimeCyclotronFadeout() {
 
   if(b_leds_fading) {
     // At least one LED not off yet.
-    ms_cyclotron_slime_effect.start(30);
+    ms_cyclotron_slime_effect.start(i_slime_effect_shutdown_delay);
   }
   else {
     // All LEDs faded to black.
@@ -2828,29 +2838,30 @@ void slimeCyclotronEffect() {
     }
 
     if(i_random_lower == 50 && i_random_upper == 121) {
-      ms_cyclotron_slime_effect.start(random(70,101));
+      // Idle animation.
+      ms_cyclotron_slime_effect.start(random(i_slime_effect_idle_lower_delay, i_slime_effect_idle_upper_delay));
     }
     else {
       switch(gpstarPack.getPowerLevel()) {
         case LEVEL_1:
-          ms_cyclotron_slime_effect.start(100);
+          ms_cyclotron_slime_effect.start(i_slime_effect_pl1_delay);
         break;
 
         case LEVEL_2:
-          ms_cyclotron_slime_effect.start(90);
+          ms_cyclotron_slime_effect.start(i_slime_effect_pl2_delay);
         break;
 
         case LEVEL_3:
-          ms_cyclotron_slime_effect.start(80);
+          ms_cyclotron_slime_effect.start(i_slime_effect_pl3_delay);
         break;
 
         case LEVEL_4:
-          ms_cyclotron_slime_effect.start(70);
+          ms_cyclotron_slime_effect.start(i_slime_effect_pl4_delay);
         break;
 
         case LEVEL_5:
         default:
-          ms_cyclotron_slime_effect.start(60);
+          ms_cyclotron_slime_effect.start(i_slime_effect_pl5_delay);
         break;
       }
     }
@@ -2885,7 +2896,7 @@ void cyclotronIceAnimation() {
       }
     }
 
-    ms_cyclotron_slime_effect.start(100);
+    ms_cyclotron_slime_effect.start(i_ice_effect_delay);
   }
 }
 
@@ -4090,7 +4101,7 @@ void cyclotronControl() {
             r_inner_cyclotron_ramp.go(i_2021_inner_delay, i_2021_ramp_length, QUARTIC_OUT);
           }
           else {
-            if(b_brass_pack_sound_loop) {
+            if(isBrassPack()) {
               // Faster startup for brass pack.
               r_outer_cyclotron_ramp.go(i_2021_delay, (uint16_t)(i_2021_ramp_length / 4), QUADRATIC_OUT);
               r_inner_cyclotron_ramp.go(i_2021_inner_delay, (uint16_t)(i_2021_ramp_length / 4), QUADRATIC_OUT);
@@ -4123,11 +4134,11 @@ void cyclotronControl() {
           r_outer_cyclotron_ramp.go(i_2021_ramp_delay, ms_mash_lockout.delay() / 3, QUARTIC_IN);
           r_inner_cyclotron_ramp.go(i_inner_ramp_delay, ms_mash_lockout.delay() / 3, QUARTIC_IN);
         }
-        else if(gpstarPack.getSystemTheme() == SYSTEM_FROZEN_EMPIRE && !b_brass_pack_sound_loop) {
+        else if(gpstarPack.getSystemTheme() == SYSTEM_FROZEN_EMPIRE && !isBrassPack()) {
           r_outer_cyclotron_ramp.go(i_2021_ramp_delay, i_2021_ramp_down_length / 4, QUARTIC_IN);
           r_inner_cyclotron_ramp.go(i_inner_ramp_delay, i_2021_ramp_down_length / 4, QUARTIC_IN);
         }
-        else if(b_brass_pack_sound_loop) {
+        else if(isBrassPack()) {
           r_outer_cyclotron_ramp.go(i_2021_ramp_delay, i_brass_ramp_down_length, QUARTIC_IN);
           r_inner_cyclotron_ramp.go(i_inner_ramp_delay, i_brass_ramp_down_length, QUARTIC_IN);
         }
@@ -4420,7 +4431,7 @@ void modeFireStartSounds() {
   // If idle fadeout is enabled and counting down, start the idle fadeout early.
   if(b_fadeout_idle_sounds && ms_delay_post.isRunning()) {
     ms_delay_post.stop();
-    fadeoutIdleSounds();
+    fadeoutIdleSounds(true);
   }
 
   switch(gpstarPack.getStreamMode()) {
@@ -4575,6 +4586,7 @@ void modeFireStartSounds() {
           case LEVEL_5:
             playRapidEffect(S_MESON_FIRE_PULSE, i_meson_blast_delay_level_5);
           default:
+            // We should not be here; do nothing.
           break;
         }
       }
@@ -4711,7 +4723,7 @@ void wandFiring() {
     b_powercell_sound_loop = false;
   }
 
-  if(b_brass_pack_sound_loop) {
+  if(isBrassPack()) {
     // Mute the brass pack loop while firing.
     stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT);
     stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
@@ -4754,99 +4766,105 @@ void wandFiring() {
 
 void modeFireStopSounds() {
   if(b_wand_firing) {
-    switch(gpstarPack.getStreamMode()) {
-      case PROTON:
-      default:
-        switch(gpstarPack.getSystemTheme()) {
-          case SYSTEM_1984:
-            if(gpstarPack.getPowerLevel() != MAX_POWER_LEVEL) {
-              // Play different firing end stream sound depending on how long we have been firing for.
-              if(ms_firing_length_timer.remaining() < 5000) {
-                // Long firing tail end.
-                playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
-              }
-              else if(ms_firing_length_timer.remaining() < 10000) {
-                // Mid firing tail end.
-                playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
+    if(!ms_mash_lockout.isRunning()) {
+      switch(gpstarPack.getStreamMode()) {
+        case PROTON:
+        default:
+          switch(gpstarPack.getSystemTheme()) {
+            case SYSTEM_1984:
+              if(gpstarPack.getPowerLevel() != MAX_POWER_LEVEL) {
+                // Play different firing end stream sound depending on how long we have been firing for.
+                if(ms_firing_length_timer.remaining() < 5000) {
+                  // Long firing tail end.
+                  playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
+                }
+                else if(ms_firing_length_timer.remaining() < 10000) {
+                  // Mid firing tail end.
+                  playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
+                }
+                else {
+                  // Short firing tail end.
+                  playEffect(S_GB1_1984_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
+                }
               }
               else {
-                // Short firing tail end.
-                playEffect(S_GB1_1984_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
+                // Play different firing end stream sound depending on how long we have been firing for.
+                if(ms_firing_length_timer.remaining() < 5000) {
+                  // Long tail end.
+                  playEffect(S_GB1_1984_FIRE_END_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                }
+                else if(ms_firing_length_timer.remaining() < 10000) {
+                  // Mid tail end.
+                  playEffect(S_GB1_1984_FIRE_END_MID_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                }
+                else {
+                  // Short tail end.
+                  playEffect(S_GB1_1984_FIRE_END_SHORT_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                }
               }
-            }
-            else {
+            break;
+
+            case SYSTEM_1989:
               // Play different firing end stream sound depending on how long we have been firing for.
               if(ms_firing_length_timer.remaining() < 5000) {
                 // Long tail end.
-                playEffect(S_GB1_1984_FIRE_END_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                playEffect(S_FIRING_END_GUN, false, i_volume_effects, false, 0, false);
               }
               else if(ms_firing_length_timer.remaining() < 10000) {
                 // Mid tail end.
-                playEffect(S_GB1_1984_FIRE_END_MID_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
               }
               else {
                 // Short tail end.
-                playEffect(S_GB1_1984_FIRE_END_SHORT_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
               }
-            }
-          break;
+            break;
 
-          case SYSTEM_1989:
-            // Play different firing end stream sound depending on how long we have been firing for.
-            if(ms_firing_length_timer.remaining() < 5000) {
-              // Long tail end.
-              playEffect(S_FIRING_END_GUN, false, i_volume_effects, false, 0, false);
-            }
-            else if(ms_firing_length_timer.remaining() < 10000) {
-              // Mid tail end.
-              playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
-            }
-            else {
-              // Short tail end.
-              playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
-            }
-          break;
+            case SYSTEM_AFTERLIFE:
+            default:
+              // Play different firing end stream sound depending on how long we have been firing for.
+              if(ms_firing_length_timer.remaining() < 5000) {
+                // Long firing tail end.
+                playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
+              }
+              else if(ms_firing_length_timer.remaining() < 10000) {
+                // Mid firing tail end.
+                playEffect(S_AFTERLIFE_FIRE_END_MID, false, i_volume_effects, false, 0, false);
+              }
+              else {
+                // Short firing tail end.
+                playEffect(S_AFTERLIFE_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
+              }
+            break;
 
-          case SYSTEM_AFTERLIFE:
-          default:
-            // Play different firing end stream sound depending on how long we have been firing for.
-            if(ms_firing_length_timer.remaining() < 5000) {
-              // Long firing tail end.
-              playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
-            }
-            else if(ms_firing_length_timer.remaining() < 10000) {
-              // Mid firing tail end.
+            case SYSTEM_FROZEN_EMPIRE:
+              // Frozen Empire replaces all firing tail sounds with just a "thump".
               playEffect(S_AFTERLIFE_FIRE_END_MID, false, i_volume_effects, false, 0, false);
-            }
-            else {
-              // Short firing tail end.
-              playEffect(S_AFTERLIFE_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
-            }
-          break;
+            break;
+          }
+        break;
 
-          case SYSTEM_FROZEN_EMPIRE:
-            // Frozen Empire replaces all firing tail sounds with just a "thump".
-            playEffect(S_AFTERLIFE_FIRE_END_MID, false, i_volume_effects, false, 0, false);
-          break;
-        }
-      break;
+        case SLIME:
+          playEffect(S_SLIME_END, false, i_volume_effects, false, 0, false);
+        break;
 
-      case SLIME:
-        playEffect(S_SLIME_END, false, i_volume_effects, false, 0, false);
-      break;
+        case STASIS:
+          playEffect(S_STASIS_END, false, i_volume_effects, false, 0, false);
+        break;
 
-      case STASIS:
-        playEffect(S_STASIS_END, false, i_volume_effects, false, 0, false);
-      break;
+        case MESON:
+          // Do nothing; this is handled later.
+        break;
+      }
+    }
 
-      case MESON:
-        // Set the pulse to stop looping.
-        stopEffectLoop(S_MESON_FIRE_PULSE);
-      break;
+    if(gpstarPack.getStreamMode() == MESON) {
+      // Stop meson looping no matter what.
+      stopEffectLoop(S_MESON_FIRE_PULSE);
     }
 
     // Adjust the gain with the Afterlife idling track.
-    if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL && !b_fadeout_idle_sounds) {
+    if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL && !b_fadeout_idle_sounds && !ms_mash_lockout.isRunning()) {
       if(ms_idle_fire_fade.remaining() < 1000) {
         if(gpstarPack.inStreamMode(SLIME)) {
           if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
@@ -4890,16 +4908,6 @@ void modeFireStopSounds() {
 }
 
 void wandStoppedFiring() {
-  if(b_brass_pack_sound_loop) {
-    // Restore the volume for the brass pack loop.
-    if(b_brass_startup_loop) {
-      playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true, i_volume_effects, true, 2000);
-    }
-    else {
-      playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true, i_volume_effects, true, 1000);
-    }
-  }
-
   modeFireStopSounds();
 
   ms_firing_sound_mix.stop();
@@ -4934,7 +4942,7 @@ void wandStoppedFiring() {
   // Stop overheat beeps.
   stopOverheatBeepWarnings();
 
-  if(b_fadeout_idle_sounds) {
+  if(b_fadeout_idle_sounds && !ms_mash_lockout.isRunning()) {
     // Restart the idle sounds if the timer is not already running.
     if(!ms_delay_post.isRunning()) {
       switch(gpstarPack.getSystemTheme()) {
@@ -4965,17 +4973,6 @@ void wandStoppedFiring() {
           }
           else {
             playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-          }
-
-          if(b_brass_pack_sound_loop) {
-            if(b_brass_startup_loop) {
-              stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
-              playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
-            }
-            else {
-              stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
-              playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
-            }
           }
         break;
       }
@@ -5074,6 +5071,8 @@ void checkRotaryEncoder() {
 
 void restartFromWandMash() {
   if(b_wand_mash_lockout) {
+    ms_mash_lockout.stop();
+    ms_cyclotron_switch_led.start(0);
     b_wand_mash_lockout = false;
     b_fading_out_frozen = false;
     stopMashErrorSounds();
@@ -5104,30 +5103,32 @@ void restartFromWandMash() {
           // Make sure we reset the fadeout counter to account for the new idle sounds.
           ms_delay_post.start(i_idle_fadeout_time);
         break;
+        case SYSTEM_AFTERLIFE:
+        default:
+          // Play pack restart sound.
+          playEffect(S_SMASH_ERROR_RESTART);
+
+          if(b_fadeout_idle_sounds && !ms_delay_post.isRunning()) {
+            stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
+            playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects, true, 500);
+          }
+        break;
         case SYSTEM_FROZEN_EMPIRE:
           // Play pack restart sound depending on lid on/off.
+          stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
           playEffect(S_PACK_RECOVERY);
+
           if(gpstarPack.inStreamMode(SLIME)) {
             playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level, true, 500);
           }
           else {
             playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects, true, 2000);
           }
-          if(b_brass_pack_sound_loop) {
-            if(b_brass_startup_loop) {
-              playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true, i_volume_effects, true, 2000);
-            }
-            else {
-              playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT);
-              playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true, i_volume_effects, true, 2300);
-            }
-          }
 
           // Reset the lighting timers.
           b_ramp_down = false;
           b_inner_ramp_down = false;
           resetRampUp();
-          ms_mash_lockout.stop();
           if(gpstarPack.getStreamMode() != SLIME) {
             // If not in slime mode, stop the ice effect timer and melt the ice.
             cyclotronLidLedsOff();
@@ -5142,10 +5143,6 @@ void restartFromWandMash() {
           if(gpstarPack.getVibrationMode() == CYCLOTRON_MOTOR && b_vibration_switch_on) {
             digitalWrite(VIBRATION_PIN, HIGH);
           }
-        break;
-        default:
-          // Play pack restart sound.
-          playEffect(S_SMASH_ERROR_RESTART);
         break;
       }
     }
@@ -5387,6 +5384,13 @@ void updateContinuousSmoke() {
 void startWandMashLockout(uint16_t i_timeout) {
   if(!b_wand_mash_lockout) {
     if(PACK_STATE == MODE_ON) {
+      ms_mash_lockout.start(i_timeout);
+
+      if(isBrassPack()) {
+        // We need to stop this timer to prevent audio glitches.
+        ms_cyclotron_switch_led.stop();
+      }
+
       if(b_wand_firing) {
         wandStoppedFiring();
       }
@@ -5423,16 +5427,23 @@ void startWandMashLockout(uint16_t i_timeout) {
             break;
           }
 
-          stopEffect(S_CROSS_STREAMS_END);
-          stopEffect(S_CROSS_STREAMS_START);
-          stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END);
-          stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_START);
+          if(gpstarPack.getSystemTheme() == SYSTEM_1984 || gpstarPack.getSystemTheme() == SYSTEM_1989) {
+            stopEffect(S_CROSS_STREAMS_END);
+            stopEffect(S_CROSS_STREAMS_START);
+          }
+          else {
+            stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END);
+            stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_START);
+          }
         break;
         case SLIME:
           stopEffect(S_SLIME_END);
         break;
         case STASIS:
           stopEffect(S_STASIS_END);
+        break;
+        case MESON:
+          // Do nothing.
         break;
       }
 
@@ -5448,11 +5459,12 @@ void startWandMashLockout(uint16_t i_timeout) {
         playEffect(S_FROZEN_EMPIRE_PACK_FREEZE_STOP);
         playEffect(S_STASIS_IDLE_LOOP, true, i_volume_effects, true, 2500);
 
-        if(b_brass_pack_sound_loop) {
+        if(isBrassPack()) {
           playEffect(S_FROZEN_EMPIRE_BRASS_FIRE_TAIL);
           stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
           stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT);
           stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
+          b_brass_pack_sound_loop = false;
         }
 
         stopEffect(S_BOOTUP);
@@ -5464,7 +5476,6 @@ void startWandMashLockout(uint16_t i_timeout) {
         }
 
         // Stop all light functions by use of adjusting the timers.
-        ms_mash_lockout.start(i_timeout);
         resetRampDown();
       }
     }
