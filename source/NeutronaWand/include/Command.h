@@ -46,8 +46,8 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
         // Turn wand off.
         if(WAND_STATUS != MODE_OFF) {
           if(WAND_STATUS == MODE_ERROR) {
-            b_wand_mash_lockout = false;
             wandOff();
+            b_wand_mash_lockout = false;
           }
           else {
             b_wand_mash_lockout = false;
