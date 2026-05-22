@@ -602,9 +602,9 @@ void updateMasterVolume(bool startup) {
   if(!startup) {
     // If this isn't being called at boot, provide audio feedback and report the change.
     if(DEVICE_STATUS == MODE_OFF && !(b_playing_music && !b_music_paused)) {
-      // Provide feedback when the Proton Pack is not running.
+      // Provide feedback when the Single Shot Blaster is not running.
       stopEffect(S_BEEPS_ALT);
-      playEffect(S_BEEPS_ALT);
+      playEffect(S_BEEPS_ALT, false, 0, false, 0, false);
     }
   }
 }

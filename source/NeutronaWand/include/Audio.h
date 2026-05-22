@@ -620,12 +620,12 @@ void updateMasterVolume(bool startup) {
       if(i_volume_master_percentage == 50) {
         // Provide a distinct sound when set to 50%.
         stopEffect(S_BEEPS);
-        playEffect(S_BEEPS);
+        playEffect(S_BEEPS, false, 0, false, 0, false);
       }
       else {
-        // Provide feedback when the wand is not running.
+        // Provide feedback when the Neutrona Wand is not running.
         stopEffect(S_BEEPS_ALT);
-        playEffect(S_BEEPS_ALT);
+        playEffect(S_BEEPS_ALT, false, 0, false, 0, false);
       }
     }
   }
