@@ -332,27 +332,16 @@ void wandTipOn() {
       colours c_temp = C_WHITE;
 
       if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE) {
-        if(b_wand_mash_lockout || b_pack_alarm) {
-          if(gpstarWand.inStreamMode(PROTON) && !b_pack_cyclotron_lid_on) {
-            // Green goop effect if in Proton Stream mode and pack's cyclotron lid is off.
-            c_temp = C_CHARTREUSE;
-          }
-          else {
-            // Set the tip of the GPStar Neutrona Barrel LED array to beige if playing the lockout/cable spark animation.
-            c_temp = C_BEIGE;
-          }
-        }
-        else if(b_firing_cross_streams && !b_pack_cyclotron_lid_on) {
-          // Set the tip of the GPStar Neutrona Barrel LED array to greenish if in Frozen Empire and using CTS mode.
+        if(isBrassPack()) {
+          // Green goop effect if in Proton Stream mode and pack's cyclotron lid is off.
           c_temp = C_CHARTREUSE;
         }
+        else if(b_wand_mash_lockout || b_pack_alarm) {
+          // Set the tip of the GPStar Neutrona Barrel LED array to beige if playing the lockout/cable spark animation.
+          c_temp = C_BEIGE;
+        }
         else if(gpstarWand.inStreamMode(SLIME)) {
-          if(getSystemYearMode() == SYSTEM_1989) {
-            c_temp = C_PASTEL_PINK;
-          }
-          else {
-            c_temp = C_DARK_GREEN;
-          }
+          c_temp = C_DARK_GREEN;
         }
       }
       else {
@@ -7623,9 +7612,8 @@ void wandBarrelHeatDown() {
 
   if(b_wand_mash_lockout || b_pack_alarm) {
     // Special spark effect handling for button mash lockout and ribbon cable removal.
-
     if(ms_wand_heatup_fade.justFinished() && i_heatdown_counter > 0) {
-      if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE && gpstarWand.inStreamMode(PROTON) && !b_pack_cyclotron_lid_on) {
+      if(isBrassPack()) {
         // Green goop effect in FE mode if the cyclotron lid is off.
         c_temp = C_CHARTREUSE;
       }
@@ -7689,7 +7677,10 @@ void wandBarrelHeatDown() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        // Do nothing since c_temp is already C_WHITE.
+        if(isBrassPack()) {
+          // Green goop effect in FE mode if the cyclotron lid is off.
+          c_temp = C_CHARTREUSE;
+        }
       break;
 
       case SLIME:
@@ -7791,12 +7782,11 @@ void wandBarrelHeatUp() {
 
   if(b_wand_mash_lockout || b_pack_alarm) {
     // Special spark effect handling for button mash lockout and ribbon cable removal.
-
     if((i_bmash_spark_index < 1 && i_heatup_counter > 100) || (i_bmash_spark_index > 0 && i_heatup_counter > 75)) {
       wandBarrelHeatDown();
     }
     else if(ms_wand_heatup_fade.justFinished() && ((i_bmash_spark_index < 1 && i_heatup_counter <= 100) || (i_bmash_spark_index > 0 && i_heatup_counter <= 75))) {
-      if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE && gpstarWand.inStreamMode(PROTON) && !b_pack_cyclotron_lid_on) {
+      if(isBrassPack()) {
         // Green goop effect in FE mode if the cyclotron lid is off.
         c_temp = C_CHARTREUSE;
       }
@@ -7851,7 +7841,10 @@ void wandBarrelHeatUp() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        // Do nothing since c_temp is already C_WHITE.
+        if(isBrassPack()) {
+          // Green goop effect in FE mode if the cyclotron lid is off.
+          c_temp = C_CHARTREUSE;
+        }
       break;
 
       case SLIME:
@@ -8468,13 +8461,11 @@ void fireEffectEnd() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        if(b_firing_cross_streams) {
-          if(isBrassPack()) {
-            c_temp = C_ORANGE;
-          }
-          else {
-            c_temp = C_YELLOW;
-          }
+        if(isBrassPack()) {
+          c_temp = C_ORANGE;
+        }
+        else if(b_firing_cross_streams) {
+          c_temp = C_YELLOW;
         }
         else if(getSystemYearMode() == SYSTEM_1989) {
           // Shift the stream from orange to red on higher power levels.
@@ -8676,13 +8667,11 @@ void fireEffectEnd() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        if(b_firing_cross_streams) {
-          if(isBrassPack()) {
-            c_temp = C_CHARTREUSE;
-          }
-          else {
-            c_temp = C_WHITE;
-          }
+        if(isBrassPack()) {
+          c_temp = C_CHARTREUSE;
+        }
+        else if(b_firing_cross_streams) {
+          c_temp = C_WHITE;
         }
         else if(getSystemYearMode() == SYSTEM_1989) {
           // Shift the stream from orange to red on higher power levels.
