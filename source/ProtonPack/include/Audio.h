@@ -634,15 +634,16 @@ void updateMasterVolume(bool startup) {
 
   if(!startup) {
     // If this isn't being called at boot, provide audio feedback and report the change.
-    if(PACK_STATE != MODE_ON && !b_pack_shutting_down) {
-      // Provide feedback when the Proton Pack is not running.
-      stopEffect(S_BEEPS_ALT);
-      playEffect(S_BEEPS_ALT);
-
+    if(PACK_STATE != MODE_ON && !b_pack_shutting_down && !(b_playing_music && !b_music_paused)) {
       if(i_volume_master_percentage == 50) {
         // Provide a distinct sound when set to 50%.
         stopEffect(S_BEEPS);
         playEffect(S_BEEPS);
+      }
+      else {
+        // Provide feedback when the Proton Pack is not running.
+        stopEffect(S_BEEPS_ALT);
+        playEffect(S_BEEPS_ALT);
       }
     }
 

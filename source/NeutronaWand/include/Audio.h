@@ -616,15 +616,16 @@ void updateMasterVolume(bool startup) {
 
   if(!startup) {
     // If this isn't being called at boot, provide audio feedback and report the change.
-    if(WAND_STATUS == MODE_OFF) {
-      // Provide feedback when the wand is not running.
-      stopEffect(S_BEEPS_ALT);
-      playEffect(S_BEEPS_ALT);
-
+    if(WAND_STATUS == MODE_OFF && !(b_playing_music && !b_music_paused)) {
       if(i_volume_master_percentage == 50) {
         // Provide a distinct sound when set to 50%.
         stopEffect(S_BEEPS);
         playEffect(S_BEEPS);
+      }
+      else {
+        // Provide feedback when the wand is not running.
+        stopEffect(S_BEEPS_ALT);
+        playEffect(S_BEEPS_ALT);
       }
     }
   }
