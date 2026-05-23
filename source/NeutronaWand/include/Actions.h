@@ -1691,18 +1691,21 @@ void checkWandAction() {
             }
             else if(switch_mode.pushed()) {
               // Silence the Proton Pack and Neutrona Wand or revert back to previously-selected volume.
-              if(i_volume_master == i_volume_abs_min) {
-                i_volume_master = i_volume_revert;
-              }
-              else {
-                i_volume_revert = i_volume_master;
-
-                // Set the master volume to silent.
-                i_volume_master = i_volume_abs_min;
-              }
-
               wandSerialSend(W_TOGGLE_MUTE);
-              updateMasterVolume();
+
+              if(b_wand_standalone) {
+                if(i_volume_master == i_volume_abs_min) {
+                  i_volume_master = i_volume_revert;
+                }
+                else {
+                  i_volume_revert = i_volume_master;
+
+                  // Set the master volume to silent.
+                  i_volume_master = i_volume_abs_min;
+                }
+
+                updateMasterVolume();
+              }
             }
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {

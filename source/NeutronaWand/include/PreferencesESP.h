@@ -140,7 +140,7 @@ void clearLEDEEPROM() {
 // Save config settings to Preferences
 void saveConfigEEPROM() {
   // Convert the current EEPROM volume value into a percentage.
-  uint8_t i_eeprom_volume_master_percentage = 100 * (MINIMUM_VOLUME - i_volume_master_eeprom) / MINIMUM_VOLUME;
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   uint8_t i_bargraph_mode = 1; // 1 = default, 2 = super hero, 3 = original.
   switch(BARGRAPH_MODE_EEPROM) {
@@ -506,7 +506,7 @@ void readEEPROM() {
     if(gObjConfigEEPROM.defaultWandVolume > 0 && gObjConfigEEPROM.defaultWandVolume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = gObjConfigEEPROM.defaultWandVolume - 1;
-      i_volume_master_eeprom = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+      i_volume_master_eeprom = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }

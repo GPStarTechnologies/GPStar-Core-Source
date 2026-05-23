@@ -150,7 +150,7 @@ void toggleYearModes() {
 void getPackPrefsObject() {
   sendDebug(F("Getting Pack Preferences"));
 
-  uint8_t i_eeprom_volume_master_percentage = 100 * ((MINIMUM_VOLUME + i_volume_min_adj) - i_volume_master_eeprom) / (MINIMUM_VOLUME + i_volume_min_adj);
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   // Return an indication of whether the device is an ESP32 or not.
 #ifdef ESP32
@@ -659,7 +659,7 @@ void handlePackPrefsUpdate() {
   }
 
   sendDebug(F("Updating general variables..."));
-  i_volume_master_eeprom = (MINIMUM_VOLUME + i_volume_min_adj) - ((MINIMUM_VOLUME + i_volume_min_adj) * packConfig.defaultPackVolume / 100);
+  i_volume_master_eeprom = PROGMEM_READI8(i_volume_master_lookup_table[packConfig.defaultPackVolume / 5]);
   b_fadeout_idle_sounds = packConfig.fadeoutIdleSounds; // Choose whether to fade the idle sounds out or have them play permanently.
   i_idle_fadeout_delay = packConfig.fadeoutIdleDelay * 1000; // Set how long to wait before fading out the idle sounds.
   b_stream_effects = packConfig.protonStreamEffects; // Implement the stream impact sounds while firing.

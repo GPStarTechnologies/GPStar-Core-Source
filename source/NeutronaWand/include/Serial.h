@@ -59,7 +59,7 @@ struct MessagePacket recvData;
 void getWandPrefsObject() {
   sendDebug(F("Getting Wand Preferences"));
 
-  uint8_t i_eeprom_volume_master_percentage = 100 * (MINIMUM_VOLUME - i_volume_master_eeprom) / MINIMUM_VOLUME;
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   // Return an indication of whether the device is an ESP32 or not.
 #ifdef ESP32
@@ -575,7 +575,7 @@ void handleWandPrefsUpdate() {
     break;
   }
 
-  i_volume_master_eeprom = MINIMUM_VOLUME - (MINIMUM_VOLUME * wandConfig.defaultWandVolume / 100);
+  i_volume_master_eeprom = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[wandConfig.defaultWandVolume / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[wandConfig.defaultWandVolume / 5]);
 
   // Offer some feedback to the user
   stopEffect(S_BEEPS);
@@ -798,7 +798,7 @@ void checkPack() {
           i_volume_effects_percentage = wandSyncData.effectsVolume;
 
           // Set the decibel volume.
-          i_volume_effects = i_volume_abs_min - (i_volume_abs_min * i_volume_effects_percentage / 100);
+          i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
           updateEffectsVolume();
 
           if(wandSyncData.masterMuted) {

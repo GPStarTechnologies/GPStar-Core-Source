@@ -254,7 +254,7 @@ void readEEPROM() {
     if(obj_config_eeprom.default_wand_volume > 0 && obj_config_eeprom.default_wand_volume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = obj_config_eeprom.default_wand_volume - 1;
-      i_volume_master_eeprom = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+      i_volume_master_eeprom = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }
@@ -490,7 +490,7 @@ void clearConfigEEPROM() {
 
 void saveConfigEEPROM() {
   // Convert the current EEPROM volume value into a percentage.
-  uint8_t i_eeprom_volume_master_percentage = 100 * (MINIMUM_VOLUME - i_volume_master_eeprom) / MINIMUM_VOLUME;
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   // 1 = false, 2 = true.
   uint8_t i_cross_the_streams = (gpstarWand.isFiringModeCTS() || gpstarWand.isFiringModeCTSMix()) ? 2 : 1;

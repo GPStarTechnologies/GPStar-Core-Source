@@ -61,6 +61,12 @@ enum AUDIO_DEVICES AUDIO_DEVICE;
 /*
  * Audio Variables
  */
+// Lookup table to convert perceived loudness in 5% steps to amplifier gain. https://sengpielaudio.com/calculator-levelchange.htm
+const int8_t i_volume_master_lookup_table[21] PROGMEM = { MINIMUM_VOLUME < -43 ? MINIMUM_VOLUME : -50, -43, -33, -27, -23, -20, -17, -15, -13, -12, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0 };
+
+// Lookup table to convert dB to %.
+const uint8_t i_volume_percentage_lookup_table[44] PROGMEM = { 100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 0, 45, 40, 0, 35, 0, 30, 0, 0, 25, 0, 0, 20, 0, 0, 0, 15, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5 };
+
 uint16_t i_max_track_count = 4096; // Contains the maximum allowable tracks on a microSD card.
 int16_t i_music_track_count = 0; // Contains the total number of detected music tracks on the SD card.
 uint16_t i_current_music_track = 0; // Sets the ID number for the music track to be played.
@@ -100,13 +106,15 @@ uint8_t i_volume_music_percentage = STARTUP_VOLUME_MUSIC; // Music volume.
 
 /*
  * General Volume
- * Master Volume: MINIMUM_VOLUME = Quietest, i_volume_abs_max = Loudest
- * Effects/Music: i_volume_abs_min = Quietest, i_track_volume_abs_max = Loudest
+ * MINIMUM_VOLUME = Quietest, i_volume_abs_max = Loudest
+ *
+ * Note that these are set up properly in setupAudioDevice() below.
  */
-int8_t i_volume_master = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100); // Master overall volume.
+int8_t i_volume_master = i_volume_abs_min; // Master overall volume.
+int8_t i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup.
 int8_t i_volume_revert = i_volume_master; // Used to restore volume level from a muted state.
-int8_t i_volume_effects = i_volume_abs_min - (i_volume_abs_min * i_volume_effects_percentage / 100); // Sound effects.
-int8_t i_volume_music = i_volume_abs_min - (i_volume_abs_min * i_volume_music_percentage / 100); // Music volume.
+int8_t i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100); // Sound effects.
+int8_t i_volume_music = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_music_percentage / 100); // Music volume.
 
 /*
  * Function Prototypes
@@ -120,6 +128,7 @@ void rapidEffectDelay(uint16_t i_track_id, uint16_t i_cycle_rate);
 void adjustGainEffect(uint16_t i_track_id, int8_t i_track_volume = i_volume_effects, bool b_fade = false, uint16_t i_fade_time = 0);
 void fadeoutEffect(uint16_t i_track_id, uint16_t i_fade_time = 50);
 void updateMasterVolume(bool startup = false);
+uint8_t getVolumePercentage(int8_t gain);
 bool setMasterVolumePercentage(uint8_t percentage);
 
 #ifndef VERSION_STRING_LEN
@@ -621,7 +630,8 @@ void increaseVolumeEEPROM() {
       i_volume_master_percentage += VOLUME_MULTIPLIER;
     }
 
-    i_volume_master = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+    blasterConfig.defaultSystemVolume = i_volume_master_percentage;
+    i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
     i_volume_revert = i_volume_master;
 
     updateMasterVolume();
@@ -640,7 +650,8 @@ void decreaseVolumeEEPROM() {
       i_volume_master_percentage -= VOLUME_MULTIPLIER;
     }
 
-    i_volume_master = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+    blasterConfig.defaultSystemVolume = i_volume_master_percentage;
+    i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
     i_volume_revert = i_volume_master;
 
     updateMasterVolume();
@@ -659,7 +670,7 @@ void increaseVolume() {
       i_volume_master_percentage += VOLUME_MULTIPLIER;
     }
 
-    i_volume_master = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+    i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
     i_volume_revert = i_volume_master;
 
     updateMasterVolume();
@@ -678,10 +689,25 @@ void decreaseVolume() {
       i_volume_master_percentage -= VOLUME_MULTIPLIER;
     }
 
-    i_volume_master = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+    i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
     i_volume_revert = i_volume_master;
 
     updateMasterVolume();
+  }
+}
+
+// Return the percentage value for a particular dB gain
+uint8_t getVolumePercentage(int8_t gain) {
+  if(gain < -43) {
+    // Minimum is 0%.
+    return 0;
+  }
+  else if(gain > 0) {
+    // Maximum is 100%.
+    return 100;
+  }
+  else {
+    return PROGMEM_READU8(i_volume_percentage_lookup_table[abs(gain)]);
   }
 }
 
@@ -704,8 +730,8 @@ bool setMasterVolumePercentage(uint8_t percentage) {
   // Update percentage value
   i_volume_master_percentage = percentage;
 
-  // Convert to decibel value using NeutronaWand formula
-  i_volume_master = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+  // Convert to decibel value using lookup table
+  i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
 
   // Check against system min/max bounds
   if(i_volume_master > i_volume_abs_max) {
@@ -768,13 +794,13 @@ void increaseVolumeEffects() {
 
     // Provide feedback at maximum volume.
     stopEffect(S_BEEPS_ALT);
-    playEffect(S_BEEPS_ALT);
+    playEffect(S_BEEPS_ALT, false, 0, false, 0, false);
   }
   else {
     i_volume_effects_percentage += VOLUME_EFFECTS_MULTIPLIER;
   }
 
-  i_volume_effects = i_volume_abs_min - (i_volume_abs_min * i_volume_effects_percentage / 100);
+  i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
 
   updateEffectsVolume();
 }
@@ -785,13 +811,13 @@ void decreaseVolumeEffects() {
 
     // Provide feedback at minimum volume.
     stopEffect(S_BEEPS_ALT);
-    playEffect(S_BEEPS_ALT, false, i_volume_master);
+    playEffect(S_BEEPS_ALT, false, 0, false, 0, false);
   }
   else {
     i_volume_effects_percentage -= VOLUME_EFFECTS_MULTIPLIER;
   }
 
-  i_volume_effects = i_volume_abs_min - (i_volume_abs_min * i_volume_effects_percentage / 100);
+  i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
 
   updateEffectsVolume();
 }
@@ -819,13 +845,13 @@ void increaseVolumeMusic() {
 
     // Provide feedback at maximum volume.
     stopEffect(S_BEEPS_ALT);
-    playEffect(S_BEEPS_ALT, false, i_volume_master);
+    playEffect(S_BEEPS_ALT, false, 0, false, 0, false);
   }
   else {
     i_volume_music_percentage += VOLUME_MUSIC_MULTIPLIER;
   }
 
-  i_volume_music = i_volume_abs_min - (i_volume_abs_min * i_volume_music_percentage / 100);
+  i_volume_music = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_music_percentage / 100);
 
   updateMusicVolume();
 }
@@ -836,13 +862,13 @@ void decreaseVolumeMusic() {
 
     // Provide feedback at minimum volume.
     stopEffect(S_BEEPS_ALT);
-    playEffect(S_BEEPS_ALT, false, i_volume_master);
+    playEffect(S_BEEPS_ALT, false, 0, false, 0, false);
   }
   else {
     i_volume_music_percentage -= VOLUME_MUSIC_MULTIPLIER;
   }
 
-  i_volume_music = i_volume_abs_min - (i_volume_abs_min * i_volume_music_percentage / 100);
+  i_volume_music = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_music_percentage / 100);
 
   updateMusicVolume();
 }
@@ -1069,6 +1095,11 @@ void useShortTrackOverload(bool enabled) {
  * Used to detect, update, and reset the available audio devices.
  */
 bool setupAudioDevice() {
+  // Before we do anything, set up our initial volume parameters.
+  i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]); // Master overall volume.
+  i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup.
+  i_volume_revert = i_volume_master; // Used to restore volume level from a muted state.
+
   char gVersion[VERSION_STRING_LEN];
 
 #ifdef ESP32
@@ -1103,9 +1134,6 @@ bool setupAudioDevice() {
       i_audio_version = 100; // Set to 100 to indicate old version.
     }
 
-    i_volume_master = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100); // Master overall volume.
-    i_volume_revert = i_volume_master; // Used to restore volume level from a muted state.
-
     sendDebug(String(F("Using GPStar Audio Version: ")) + String(audio.getVersionNumber()));
 
     i_num_tracks = audio.getNumTracks();
@@ -1121,7 +1149,7 @@ bool setupAudioDevice() {
     if(b_microsd_corrupt || b_microsd_outdated) {
       // If we ran into an error, attempt to play an alarm sound and exit.
       if(i_num_tracks >= S_BEEP_8) {
-        playEffect(S_BEEP_8);
+        playEffect(S_BEEP_8, false, 0, false, 0, false);
       }
 
       return false;
@@ -1172,7 +1200,7 @@ bool setupAudioDevice() {
     if(b_microsd_corrupt || b_microsd_outdated) {
       // If we ran into an error, attempt to play an alarm sound and exit.
       if(i_num_tracks >= S_BEEP_8) {
-        playEffect(S_BEEP_8);
+        playEffect(S_BEEP_8, false, 0, false, 0, false);
       }
 
       return false;
