@@ -211,7 +211,6 @@ String getPackConfig() {
     jsonBody["fadeoutIdleSounds"] = packConfig.fadeoutIdleSounds; // true|false
     jsonBody["fadeoutIdleDelay"] = packConfig.fadeoutIdleDelay; // 10-60
     jsonBody["packVibration"] = packConfig.packVibration; // [1=ALWAYS,2=FIRING,3=NEVER,4=TOGGLE,5=MOTORIZED_CYCLOTRON]
-    jsonBody["protonStreamEffects"] = packConfig.protonStreamEffects; // true|false
     jsonBody["brassStartupLoop"] = packConfig.brassStartupLoop; // true|false
     jsonBody["ribbonCableAlarm"] = packConfig.ribbonCableAlarm; // true|false
     jsonBody["wandQuickBootup"] = packConfig.wandQuickBootup; // true|false
@@ -306,6 +305,7 @@ String getWandConfig() {
     jsonBody["rgbVentColours"] = wandConfig.rgbVentColours; // true|false
     jsonBody["autoVentLight"] = wandConfig.autoVentLight; // true|false
     jsonBody["gpstarAudioLed"] = wandConfig.gpstarAudioLed; // true|false
+    jsonBody["extraProtonSounds"] = wandConfig.extraProtonSounds; // true|false
     jsonBody["wandBeepLoop"] = wandConfig.wandBeepLoop; // true|false (Afterlife/Frozen Empire Only)
     jsonBody["wandBootError"] = wandConfig.wandBootError; // true|false (Super-Hero Mode Only)
     jsonBody["defaultYearModeWand"] = wandConfig.defaultYearModeWand; // [1=TOGGLE,2=1984,3=1989,4=2021,5=2024]
@@ -1697,7 +1697,6 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       // Boolean fields - Effect toggles
       updateJsonBool(packConfig.ribbonCableAlarm, jsonBody, "ribbonCableAlarm");
       updateJsonBool(packConfig.wandQuickBootup, jsonBody, "wandQuickBootup");
-      updateJsonBool(packConfig.protonStreamEffects, jsonBody, "protonStreamEffects");
       updateJsonBool(packConfig.brassStartupLoop, jsonBody, "brassStartupLoop");
       updateJsonBool(packConfig.overheatStrobeNF, jsonBody, "overheatStrobeNF");
       updateJsonBool(packConfig.overheatLightsOff, jsonBody, "overheatLightsOff");
@@ -1830,6 +1829,7 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       updateJsonBool(wandConfig.wandSoundsToPack, jsonBody, "wandSoundsToPack");
       updateJsonBool(wandConfig.quickVenting, jsonBody, "quickVenting");
       updateJsonBool(wandConfig.wandBeepLoop, jsonBody, "wandBeepLoop");
+      updateJsonBool(wandConfig.extraProtonSounds, jsonBody, "extraProtonSounds");
       updateJsonBool(wandConfig.wandBootError, jsonBody, "wandBootError");
       updateJsonBool(wandConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
 

@@ -69,7 +69,6 @@ struct objLEDEEPROM {
 } gObjLEDEEPROM;
 
 struct objConfigEEPROM {
-  uint8_t stream_effects;
   uint8_t brass_startup_loop;
   uint8_t cyclotron_direction;
   uint8_t center_led_fade;
@@ -219,7 +218,6 @@ void saveConfigEEPROM() {
     break;
   }
 
-  gObjConfigEEPROM.stream_effects = b_stream_effects ? 2 : 1;
   gObjConfigEEPROM.brass_startup_loop = b_brass_startup_loop ? 2 : 1;
   gObjConfigEEPROM.cyclotron_direction = b_clockwise ? 2 : 1;
   gObjConfigEEPROM.center_led_fade = b_fade_cyclotron_led ? 2 : 1;
@@ -460,11 +458,6 @@ void readEEPROM() {
     resetCyclotronLEDs();
     resetInnerCyclotronLEDs();
     updateProtonPackLEDCounts();
-
-
-    if(gObjConfigEEPROM.stream_effects > 0 && gObjConfigEEPROM.stream_effects < 3) {
-      b_stream_effects = (gObjConfigEEPROM.stream_effects > 1);
-    }
 
     if(gObjConfigEEPROM.brass_startup_loop > 0 && gObjConfigEEPROM.brass_startup_loop < 3) {
       b_brass_startup_loop = (gObjConfigEEPROM.brass_startup_loop > 1);

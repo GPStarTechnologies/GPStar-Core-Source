@@ -82,7 +82,6 @@ struct objLEDEEPROM {
  * Data structure object for customizations which are saved into the EEPROM memory.
  */
 struct objConfigEEPROM {
-  uint8_t stream_effects;
   uint8_t brass_startup_loop;
   uint8_t cyclotron_direction;
   uint8_t center_led_fade; // Used for the 1984/1989 themes.
@@ -318,10 +317,6 @@ void readEEPROM() {
     uint16_t i_eepromConfigAddress = i_eepromAddress + sizeof(objLEDEEPROM);
 
     EEPROM.get(i_eepromConfigAddress, obj_config_eeprom);
-
-    if(obj_config_eeprom.stream_effects > 0 && obj_config_eeprom.stream_effects < 3) {
-      b_stream_effects = (obj_config_eeprom.stream_effects > 1);
-    }
 
     if(obj_config_eeprom.brass_startup_loop > 0 && obj_config_eeprom.brass_startup_loop < 3) {
       b_brass_startup_loop = (obj_config_eeprom.brass_startup_loop > 1);
@@ -618,7 +613,6 @@ void saveConfigEEPROM() {
   uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   // 1 = false, 2 = true.
-  uint8_t i_proton_stream_effects = b_stream_effects ? 2 : 1;
   uint8_t i_brass_startup_loop = b_brass_startup_loop ? 2 : 1;
   uint8_t i_cyclotron_direction = b_clockwise ? 2 : 1; // 1 = counter-clockwise, 2 = clockwise.
   uint8_t i_center_led_fade = b_fade_cyclotron_led ? 2 : 1;
@@ -683,7 +677,6 @@ void saveConfigEEPROM() {
   uint16_t i_eepromConfigAddress = i_eepromAddress + sizeof(objLEDEEPROM);
 
   objConfigEEPROM obj_config_eeprom = {
-    i_proton_stream_effects,
     i_brass_startup_loop,
     i_cyclotron_direction,
     i_center_led_fade,

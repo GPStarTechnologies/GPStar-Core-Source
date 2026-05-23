@@ -106,6 +106,7 @@ void getWandPrefsObject() {
   wandConfig.autoVentLight = b_vent_light_control;
   wandConfig.wandBeepLoop = b_beep_loop;
   wandConfig.wandBootError = b_wand_boot_errors;
+  wandConfig.extraProtonSounds = b_stream_effects;
   wandConfig.gpstarAudioLed = b_gpstar_audio_led_enabled;
 
   switch(WAND_YEAR_MODE) {
@@ -493,6 +494,7 @@ void handleWandPrefsUpdate() {
   b_vent_light_control = wandConfig.autoVentLight;
   b_beep_loop = wandConfig.wandBeepLoop;
   b_wand_boot_errors = wandConfig.wandBootError;
+  b_stream_effects = wandConfig.extraProtonSounds;
   b_gpstar_audio_led_enabled = wandConfig.gpstarAudioLed;
 
   switch(wandConfig.defaultYearModeWand) {
@@ -876,6 +878,9 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
           wandSerialSend(W_SET_FIRING_MODE, FLAG_VG_MODE);
         }
       }
+
+      // Tell the pack the status of the proton stream effects flag.
+      wandSerialSend(W_PROTON_STREAM_IMPACT_TOGGLE, b_stream_effects ? 4 : 3);
 
       // Tell the pack the status of the Neutrona Wand barrel.
       if(gpstarWand.getBarrelState() != BARREL_UNKNOWN) {

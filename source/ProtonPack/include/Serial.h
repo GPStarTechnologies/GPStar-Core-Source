@@ -170,7 +170,6 @@ void getPackPrefsObject() {
   packConfig.defaultPackVolume = i_eeprom_volume_master_percentage;
   packConfig.fadeoutIdleSounds = b_fadeout_idle_sounds;
   packConfig.fadeoutIdleDelay = i_idle_fadeout_delay / 1000;
-  packConfig.protonStreamEffects = b_stream_effects;
   packConfig.brassStartupLoop = b_brass_startup_loop;
   packConfig.overheatStrobeNF = b_overheat_strobe;
   packConfig.overheatLightsOff = b_overheat_lights_off;
@@ -662,7 +661,6 @@ void handlePackPrefsUpdate() {
   i_volume_master_eeprom = PROGMEM_READI8(i_volume_master_lookup_table[packConfig.defaultPackVolume / 5]);
   b_fadeout_idle_sounds = packConfig.fadeoutIdleSounds; // Choose whether to fade the idle sounds out or have them play permanently.
   i_idle_fadeout_delay = packConfig.fadeoutIdleDelay * 1000; // Set how long to wait before fading out the idle sounds.
-  b_stream_effects = packConfig.protonStreamEffects; // Implement the stream impact sounds while firing.
   b_brass_startup_loop = packConfig.brassStartupLoop; // Choose whether brass pack startup will loop or play once.
   b_overheat_strobe = packConfig.overheatStrobeNF; // Choose whether N-Filter LED will strobe or not when overheating.
   b_overheat_lights_off = packConfig.overheatLightsOff; // Choose whether Proton Pack lights will go out or stay on when overheating.
@@ -3333,23 +3331,14 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
     break;
 
     case W_PROTON_STREAM_IMPACT_TOGGLE:
-      if(b_stream_effects) {
-        b_stream_effects = false;
+      // Enable flag if i_value is even; otherwise disable.
+      b_stream_effects = (i_value % 2 == 0);
 
+      if(i_value < 3) {
+        // Only play the voice callout if this is being set by the wand menu, not during wand sync.
         stopEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
         stopEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-        playEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-
-        packSerialSend(P_PROTON_STREAM_IMPACT_DISABLED);
-      }
-      else {
-        b_stream_effects = true;
-
-        stopEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-        stopEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-        playEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-
-        packSerialSend(P_PROTON_STREAM_IMPACT_ENABLED);
+        b_stream_effects ? playEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED) : playEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
       }
     break;
 

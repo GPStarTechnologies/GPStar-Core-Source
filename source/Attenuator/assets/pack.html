@@ -138,15 +138,6 @@
       </div>
       <div class="setting">
         <label class="toggle-switchy" data-label="left">
-          <input id="protonStreamEffects" name="protonStreamEffects" type="checkbox" />
-          <span class="toggle">
-            <span class="switch"></span>
-          </span>
-          <span class="label">Proton Stream Impact Effects:</span>
-        </label>
-      </div>
-      <div class="setting">
-        <label class="toggle-switchy" data-label="left">
           <input id="brassStartupLoop" name="brassStartupLoop" type="checkbox" />
           <span class="toggle">
             <span class="switch"></span>
@@ -502,7 +493,6 @@
         setToggle("fadeoutIdleSounds", settings.fadeoutIdleSounds);
         setValue("fadeoutIdleDelay", settings.fadeoutIdleDelay || 30);
         setHtml("fadeoutDelayOut", getValue("fadeoutIdleDelay"));
-        setToggle("protonStreamEffects", settings.protonStreamEffects);
         setToggle("brassStartupLoop", settings.brassStartupLoop);
         setToggle("ribbonCableAlarm", settings.ribbonCableAlarm);
         setToggle("wandQuickBootup", settings.wandQuickBootup);
@@ -645,7 +635,6 @@
           packVibration: getInt("packVibration") || 4,
           fadeoutIdleSounds: getToggle("fadeoutIdleSounds"),
           fadeoutIdleDelay: getInt("fadeoutIdleDelay") || 30,
-          protonStreamEffects: getToggle("protonStreamEffects"),
           brassStartupLoop: getToggle("brassStartupLoop"),
           ribbonCableAlarm: getToggle("ribbonCableAlarm"),
           wandQuickBootup: getToggle("wandQuickBootup"),

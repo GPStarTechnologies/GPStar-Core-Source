@@ -779,26 +779,6 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
       playEffect(S_VOICE_INNER_CYCLOTRON_PANEL_BRIGHTNESS);
     break;
 
-    case P_PROTON_STREAM_IMPACT_ENABLED:
-      // Enables additional Proton Stream sparking sounds.
-      b_stream_effects = true;
-
-      stopEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-      stopEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-
-      playEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-    break;
-
-    case P_PROTON_STREAM_IMPACT_DISABLED:
-      // Disables additional Proton Stream sparking sounds.
-      b_stream_effects = false;
-
-      stopEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-      stopEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-
-      playEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-    break;
-
     case P_CYCLOTRON_FADING_DISABLED:
       stopEffect(S_VOICE_CYCLOTRON_FADING_DISABLED);
       stopEffect(S_VOICE_CYCLOTRON_FADING_ENABLED);

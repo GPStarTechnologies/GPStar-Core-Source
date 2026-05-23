@@ -38,7 +38,6 @@ struct __attribute__((packed)) PackPrefs {
   bool wandQuickBootup = false;
   bool cyclotronDirection = false;
   bool demoLightMode = false;
-  bool protonStreamEffects = false;
   bool brassStartupLoop = false;
   bool overheatStrobeNF = false;
   bool overheatSyncToFan = false;
@@ -86,6 +85,7 @@ struct __attribute__((packed)) WandPrefs {
   uint8_t streamFlags = FLAG_PROTON; // Represents STREAM_MODE_FLAGS (managed by a DeviceState)
   uint8_t defaultStreamMode = PROTON;
   uint8_t defaultFiringMode = 0; // [0=VG,1=CTS,3=CTS_MIX]
+  bool extraProtonSounds = false;
   VIBRATION_MODES wandVibration = VIBRATION_DEFAULT; // [1=ALWAYS,2=FIRING_ONLY,3=NEVER,4=DEFAULT]
   uint8_t barrelSwitchPolarity = 1; // [1=DEFAULT,2=INVERTED,3=DISABLED]
   bool wandSoundsToPack = false;
