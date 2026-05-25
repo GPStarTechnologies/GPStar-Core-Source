@@ -41,6 +41,9 @@ HardwareSerial AudioSerial(2);
 /*
  * Audio Variables
  */
+// This is here to make damn sure we are dealing with 5% increments. If we aren't, these arrays are invalid and must be remade by hand!
+static_assert(VOLUME_MULTIPLIER == 5, "WARNING: Only a VOLUME_MULTIPLIER of 5 is supported! To support other increments, the gain LUTs must be rewritten!");
+
 // Lookup tables to convert perceived loudness in 5% steps to amplifier gain. https://sengpielaudio.com/calculator-levelchange.htm
 const int8_t i_volume_master_lookup_table[21] PROGMEM = { MINIMUM_VOLUME < -43 ? MINIMUM_VOLUME : -50, -43, -33, -27, -23, -20, -17, -15, -13, -12, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0 };
 const int8_t i_boosted_volume_master_lookup_table[21] PROGMEM = { MINIMUM_VOLUME < -33 ? MINIMUM_VOLUME : -50, -33, -23, -17, -13, -10, -7, -5, -3, -2, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -564,8 +567,8 @@ int8_t getGainValue(uint8_t percentage) {
   }
 
   // Round to nearest VOLUME_MULTIPLIER step (5% increments)
-  if(percentage % VOLUME_MULTIPLIER != 0) {
-    uint8_t step_size = VOLUME_MULTIPLIER;
+  uint8_t step_size = VOLUME_MULTIPLIER;
+  if(percentage % step_size != 0) {
     percentage = ((percentage + step_size / 2) / step_size) * step_size;
   }
 
@@ -577,11 +580,11 @@ int8_t getGainValue(uint8_t percentage) {
   // Determine if our gain range is boosted.
   if(b_audio_boost) {
     // Return the boosted range value.
-    return PROGMEM_READI8(i_boosted_volume_master_lookup_table[percentage / 5]);
+    return PROGMEM_READI8(i_boosted_volume_master_lookup_table[percentage / step_size]);
   }
   else {
     // Return the non-boosted range value.
-    return PROGMEM_READI8(i_volume_master_lookup_table[percentage / 5]);
+    return PROGMEM_READI8(i_volume_master_lookup_table[percentage / step_size]);
   }
 }
 
@@ -768,25 +771,30 @@ bool setMasterVolumePercentage(uint8_t percentage) {
 }
 
 void toggleMute(bool enable) {
-  if(enable) {
-    i_volume_revert = i_volume_master;
+  if(i_volume_master == i_volume_abs_min) {
+    if(!enable) {
+      i_volume_master = i_volume_revert;
 
-    // Set the master volume to minimum.
-    i_volume_master = i_volume_abs_min;
-
-    updateMasterVolume();
+      updateMasterVolume();
+    }
   }
   else {
-    i_volume_master = i_volume_revert;
+    if(enable) {
+      i_volume_revert = i_volume_master;
+      i_volume_master = i_volume_abs_min;
 
-    updateMasterVolume();
+      updateMasterVolume(true); // set to true to stop sound playback
+    }
   }
 }
 
 // Toggles doubling the volume output on or off.
 void toggleAudioBoost(bool enable) {
+  // Set the flag.
+  b_audio_boost = enable;
+
   // If enabled, max gain is +10dB, otherwise unity gain.
-  i_volume_abs_max = enable ? 10 : 0;
+  i_volume_abs_max = b_audio_boost ? 10 : 0;
 
   // Finally, reset out current volume to the new paradigm.
   i_volume_master = getGainValue(i_volume_master_percentage);
