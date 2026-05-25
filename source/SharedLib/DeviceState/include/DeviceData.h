@@ -66,6 +66,7 @@ struct __attribute__((packed)) PackPrefs {
   uint8_t ledPowercellSat = 2; // Spectral custom saturation 2-254
   uint8_t ledPowercellLum = 50; // Brightness 20-100
   bool ledVGPowercell = false;
+  bool audioVolumeBoosted = false; // Whether audio is boosted by +10dB or not
   bool gpstarAudioLed = false;
   bool isWiFiEnabled = false; // WiFi Enabled (true) or Disabled (false)
   bool resetWifiPassword = false;
@@ -102,6 +103,7 @@ struct __attribute__((packed)) WandPrefs {
   bool bargraphOverheatBlink = false;
   uint8_t bargraphIdleAnimation = 1; // [1=System,2=SuperHero,3=ModeOriginal]
   uint8_t bargraphFireAnimation = 1; // [1=System,2=SuperHero,3=ModeOriginal]
+  bool audioVolumeBoosted = false; // Whether audio is boosted by +10dB or not
   bool gpstarAudioLed = false;
   bool isWiFiEnabled = false; // WiFi Enabled (true) or Disabled (false)
   bool resetWifiPassword = false;

@@ -57,6 +57,15 @@
         <input type="range" id="defaultSystemVolume" name="defaultSystemVolume" min="5" max="100" value="100" step="5" oninput="masterVolOut.value = defaultSystemVolume.value" />
         <output class="labelSlider" id="masterVolOut" for="defaultSystemVolume"></output>
       </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-label="left">
+          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">+10dB Amplification Boost:</span>
+        </label>
+      </div>
       <div class="setting" id="gpstarAudioLedToggle">
         <label class="toggle-switchy" data-label="left">
           <input id="gpstarAudioLed" name="gpstarAudioLed" type="checkbox" />
@@ -125,6 +134,7 @@
         setHtml("masterVolOut", getValue("defaultSystemVolume"));
         setToggle("deviceBootErrorBeep", settings.deviceBootErrorBeep);
         setValue("deviceVibration", settings.deviceVibration || 3);
+        setToggle("audioVolumeBoosted", settings.audioVolumeBoosted);
         setToggle("gpstarAudioLed", settings.gpstarAudioLed);
         setToggle("invertBlasterBargraph", settings.invertBlasterBargraph);
       }
@@ -188,6 +198,7 @@
           defaultSystemVolume: getInt("defaultSystemVolume") || 100,
           deviceBootErrorBeep: getToggle("deviceBootErrorBeep"),
           deviceVibration: getInt("deviceVibration") || 3,
+          audioVolumeBoosted: getToggle("audioVolumeBoosted"),
           gpstarAudioLed: getToggle("gpstarAudioLed"),
           invertBlasterBargraph: getToggle("invertBlasterBargraph"),
         };

@@ -94,6 +94,7 @@ struct objConfigEEPROM {
   uint8_t system_mode; // Super Hero or Mode Original.
   uint8_t demo_light_mode; // Enables pack startup automatically at bootup (battery power-on).
   uint8_t wand_quick_bootup; // Controls whether pack does short or full bootup from wand in AL/FE.
+  uint8_t audio_volume_boost; // Whether to enable +10dB (200%) amplification.
   uint8_t default_system_volume; // Default master volume at bootup (battery power-on).
   uint8_t overheat_smoke_duration_level_5;
   uint8_t overheat_smoke_duration_level_4;
@@ -408,10 +409,15 @@ void readEEPROM() {
       i_idle_fadeout_delay = obj_config_eeprom.fadeout_idle_delay * 1000;
     }
 
+    // Make sure we set this before trying to set the volume level.
+    if(obj_config_eeprom.audio_volume_boost > 0 && obj_config_eeprom.audio_volume_boost < 3) {
+      b_audio_boost = (obj_config_eeprom.audio_volume_boost > 1);
+    }
+
     if(obj_config_eeprom.default_system_volume > 0 && obj_config_eeprom.default_system_volume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = obj_config_eeprom.default_system_volume - 1;
-      i_volume_master_eeprom = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+      i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }
@@ -631,6 +637,7 @@ void saveConfigEEPROM() {
   uint8_t i_disable_lid_detection = b_disable_lid_detection ? 2 : 1;
   uint8_t i_fadeout_idle_sounds = b_fadeout_idle_sounds ? 2 : 1;
   uint8_t i_fadeout_idle_delay = i_idle_fadeout_delay / 1000;
+  uint8_t i_audio_volume_boost = b_audio_boost ? 2 : 1;
   uint8_t i_default_system_volume = 101; // <- i_eeprom_volume_master_percentage + 1
   uint8_t i_overheat_smoke_duration_level_5 = i_ms_overheating_length_5 / 1000;
   uint8_t i_overheat_smoke_duration_level_4 = i_ms_overheating_length_4 / 1000;
@@ -689,6 +696,7 @@ void saveConfigEEPROM() {
     i_system_mode,
     i_demo_light_mode,
     i_wand_quick_bootup,
+    i_audio_volume_boost,
     i_default_system_volume,
     i_overheat_smoke_duration_level_5,
     i_overheat_smoke_duration_level_4,

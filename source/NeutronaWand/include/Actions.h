@@ -1481,7 +1481,7 @@ void checkWandAction() {
 
               // Standalone Neutrona Wand has to change this setting on its own.
               if(b_wand_standalone) {
-                toggleMusicLoop();
+                toggleMusicLoop(!b_repeat_track);
               }
             }
           }
@@ -1765,7 +1765,7 @@ void checkWandAction() {
 
               // Standalone Neutrona Wand has to change this setting on its own.
               if(b_wand_standalone) {
-                toggleMusicShuffle();
+                toggleMusicShuffle(!b_shuffle_tracks);
               }
             }
           }

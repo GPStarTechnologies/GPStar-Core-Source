@@ -107,6 +107,7 @@ void getWandPrefsObject() {
   wandConfig.wandBeepLoop = b_beep_loop;
   wandConfig.wandBootError = b_wand_boot_errors;
   wandConfig.extraProtonSounds = b_stream_effects;
+  wandConfig.audioVolumeBoosted = b_audio_boost;
   wandConfig.gpstarAudioLed = b_gpstar_audio_led_enabled;
 
   switch(WAND_YEAR_MODE) {
@@ -577,17 +578,17 @@ void handleWandPrefsUpdate() {
     break;
   }
 
-  i_volume_master_eeprom = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[wandConfig.defaultWandVolume / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[wandConfig.defaultWandVolume / 5]);
+  // Update and reset wand components.
+  setAudioLED(b_gpstar_audio_led_enabled);
+  toggleAudioBoost(wandConfig.audioVolumeBoosted);
+  i_volume_master_eeprom = getGainValue(wandConfig.defaultWandVolume);
+  bargraphYearModeUpdate();
+  updateOverheatLevels();
+  resetWhiteLEDBlinkRate();
 
   // Offer some feedback to the user
   stopEffect(S_BEEPS);
   playEffect(S_BEEPS);
-
-  // Update and reset wand components.
-  setAudioLED(b_gpstar_audio_led_enabled);
-  bargraphYearModeUpdate();
-  updateOverheatLevels();
-  resetWhiteLEDBlinkRate();
 
   // Inform the pack of our current stream flags.
   wandSerialSend(W_STREAM_FLAGS, gpstarWand.getStreamModeOpts());

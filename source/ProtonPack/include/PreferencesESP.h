@@ -81,6 +81,7 @@ struct objConfigEEPROM {
   uint8_t system_mode;
   uint8_t demo_light_mode;
   uint8_t wand_quick_bootup;
+  uint8_t audio_volume_boost;
   uint8_t default_system_volume;
   uint8_t overheat_smoke_duration_level_5;
   uint8_t overheat_smoke_duration_level_4;
@@ -230,6 +231,7 @@ void saveConfigEEPROM() {
   gObjConfigEEPROM.system_mode = gpstarPack.getSystemMode() == MODE_ORIGINAL ? 2 : 1;
   gObjConfigEEPROM.demo_light_mode = b_demo_light_mode ? 2 : 1;
   gObjConfigEEPROM.wand_quick_bootup = !b_wand_long_startup ? 2 : 1; // Have to invert this one!
+  gObjConfigEEPROM.audio_volume_boost = b_audio_boost ? 2 : 1;
   gObjConfigEEPROM.default_system_volume = (i_eeprom_volume_master_percentage < 101) ? (i_eeprom_volume_master_percentage + 1) : 101;
   gObjConfigEEPROM.overheat_smoke_duration_level_5 = i_ms_overheating_length_5 / 1000;
   gObjConfigEEPROM.overheat_smoke_duration_level_4 = i_ms_overheating_length_4 / 1000;
@@ -549,10 +551,15 @@ void readEEPROM() {
       i_idle_fadeout_delay = gObjConfigEEPROM.fadeout_idle_delay * 1000;
     }
 
+    // Make sure we set this before trying to set the volume level.
+    if(gObjConfigEEPROM.audio_volume_boost > 0 && gObjConfigEEPROM.audio_volume_boost < 3) {
+      b_audio_boost = (gObjConfigEEPROM.audio_volume_boost > 1);
+    }
+
     if(gObjConfigEEPROM.default_system_volume > 0 && gObjConfigEEPROM.default_system_volume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = gObjConfigEEPROM.default_system_volume - 1;
-      i_volume_master_eeprom = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+      i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }

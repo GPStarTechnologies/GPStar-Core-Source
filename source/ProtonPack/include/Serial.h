@@ -177,6 +177,7 @@ void getPackPrefsObject() {
   packConfig.demoLightMode = b_demo_light_mode;
   packConfig.ribbonCableAlarm = b_use_ribbon_cable;
   packConfig.wandQuickBootup = !b_wand_long_startup;
+  packConfig.audioVolumeBoosted = b_audio_boost;
   packConfig.gpstarAudioLed = b_gpstar_audio_led_enabled;
 
   if(VIBRATION_MODE_EEPROM > 0) {
@@ -658,7 +659,6 @@ void handlePackPrefsUpdate() {
   }
 
   sendDebug(F("Updating general variables..."));
-  i_volume_master_eeprom = PROGMEM_READI8(i_volume_master_lookup_table[packConfig.defaultPackVolume / 5]);
   b_fadeout_idle_sounds = packConfig.fadeoutIdleSounds; // Choose whether to fade the idle sounds out or have them play permanently.
   i_idle_fadeout_delay = packConfig.fadeoutIdleDelay * 1000; // Set how long to wait before fading out the idle sounds.
   b_brass_startup_loop = packConfig.brassStartupLoop; // Choose whether brass pack startup will loop or play once.
@@ -765,18 +765,20 @@ void handlePackPrefsUpdate() {
   // GPStar Audio LED Status
   b_gpstar_audio_led_enabled = packConfig.gpstarAudioLed;
 
-  // Offer some feedback to the user
-  stopEffect(S_BEEP_VARIATION);
-  playEffect(S_BEEP_VARIATION);
-
   // Update system values and reset as needed.
   sendDebug(F("Running update functions..."));
   setAudioLED(b_gpstar_audio_led_enabled);
+  toggleAudioBoost(packConfig.audioVolumeBoosted);
+  i_volume_master_eeprom = getGainValue(packConfig.defaultPackVolume);
   resetInnerCyclotronLEDs(); // Must call this first, prior to updating counts
   updateProtonPackLEDCounts(); // Must call this after resetting # of LEDs
   resetCyclotronLEDs(); // Update delays based on LED count
   resetRampSpeeds(); // Update delays based on LED count
   packOffReset(); // Make sure we reset any and all LEDs.
+
+  // Offer some feedback to the user
+  stopEffect(S_BEEP_VARIATION);
+  playEffect(S_BEEP_VARIATION);
 
 #ifdef ESP32
   if(packConfig.resetWifiPassword) {
@@ -3175,19 +3177,22 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
     break;
 
     case W_MUSIC_TRACK_LOOP_TOGGLE:
-      toggleMusicLoop();
+      // Inverting the logic acts as a push-button on/off toggle.
+      toggleMusicLoop(!b_repeat_track);
       attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, b_repeat_track ? 2 : 1);
       packSerialSend(P_MUSIC_LOOP_STATUS, b_repeat_track ? 2 : 1);
     break;
 
     case W_MUSIC_TRACK_SHUFFLE_TOGGLE:
-      toggleMusicShuffle();
+      // Inverting the logic acts as a push-button on/off toggle.
+      toggleMusicShuffle(!b_shuffle_tracks);
       attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, b_shuffle_tracks ? 2 : 1);
       packSerialSend(P_MUSIC_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
     break;
 
     case W_TOGGLE_MUTE:
-      toggleMute();
+      // Inverting the logic acts as a push-button on/off toggle.
+      toggleMute(i_volume_master != i_volume_abs_min);
 
       // Notify serial devices of our mute status.
       attenuatorSerialSend(A_TOGGLE_MUTE, i_volume_master == i_volume_abs_min ? 2 : 1);

@@ -216,17 +216,17 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
     case P_MUSIC_LOOP_STATUS:
       // The pack is telling us if the current music track is looped or not.
-      toggleMusicLoop(i_value);
+      toggleMusicLoop(i_value == 2);
     break;
 
     case P_MUSIC_SHUFFLE_STATUS:
       // The pack is telling us if "shuffle all music tracks" is enabled or not.
-      toggleMusicShuffle(i_value);
+      toggleMusicShuffle(i_value == 2);
     break;
 
     case P_MASTER_AUDIO_STATUS:
       // The pack is telling us whether the master mute is enabled or not.
-      toggleMute(i_value);
+      toggleMute(i_value == 2);
     break;
 
     case P_ALARM_ON:

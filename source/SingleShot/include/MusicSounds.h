@@ -63,10 +63,12 @@ enum sound_fx {
   S_VOICE_VIBRATION_FIRING_ENABLED,
   S_VENT_DRY,
   S_BOOTUP_SHORT,
-  S_BEEP_8
+  S_BEEP_8,
+  S_VOICE_AUDIO_BOOST_ENABLED,
+  S_VOICE_AUDIO_BOOST_DISABLED
 };
 
 /*
  * Need to keep track which is the last sound effect, so we can iterate over the effects to adjust the volume gain on them.
  */
-const uint16_t i_last_effects_track = S_BEEP_8;
+const uint16_t i_last_effects_track = S_VOICE_AUDIO_BOOST_DISABLED;

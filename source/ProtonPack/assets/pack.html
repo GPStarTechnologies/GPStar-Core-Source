@@ -145,6 +145,15 @@
           <span class="label">Brass Pack Startup Loop:</span>
         </label>
       </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-label="left">
+          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">+10dB Amplification Boost:</span>
+        </label>
+      </div>
       <div class="setting" id="gpstarAudioLedToggle">
         <label class="toggle-switchy" data-label="left">
           <input id="gpstarAudioLed" name="gpstarAudioLed" type="checkbox" />
@@ -487,6 +496,7 @@
         setToggle("overheatLightsOff", settings.overheatLightsOff);
         setToggle("overheatSyncToFan", settings.overheatSyncToFan);
         setToggle("demoLightMode", settings.demoLightMode);
+        setToggle("audioVolumeBoosted", settings.audioVolumeBoosted);
         setToggle("gpstarAudioLed", settings.gpstarAudioLed);
 
         setValue("ledCycLidCount", settings.ledCycLidCount || 36);
@@ -614,6 +624,7 @@
           overheatLightsOff: getToggle("overheatLightsOff"),
           overheatSyncToFan: getToggle("overheatSyncToFan"),
           demoLightMode: getToggle("demoLightMode"),
+          audioVolumeBoosted: getToggle("audioVolumeBoosted"),
           gpstarAudioLed: getToggle("gpstarAudioLed"),
 
           ledCycLidCount: getInt("ledCycLidCount") || 12,

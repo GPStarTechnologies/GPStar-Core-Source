@@ -245,6 +245,7 @@ String getPackConfig() {
     jsonBody["ledPowercellSat"] = packConfig.ledPowercellSat; // Spectral custom saturation 2-254
     jsonBody["ledPowercellLum"] = packConfig.ledPowercellLum; // Brightness 20-100
     jsonBody["ledVGPowercell"] = packConfig.ledVGPowercell; // true|false
+    jsonBody["audioVolumeBoosted"] = packConfig.audioVolumeBoosted; // true|false
     jsonBody["gpstarAudioLed"] = packConfig.gpstarAudioLed; // true|false
   }
   else {
@@ -304,6 +305,7 @@ String getWandConfig() {
     jsonBody["rgbVentEnabled"] = wandConfig.rgbVentEnabled; // true|false
     jsonBody["rgbVentColours"] = wandConfig.rgbVentColours; // true|false
     jsonBody["autoVentLight"] = wandConfig.autoVentLight; // true|false
+    jsonBody["audioVolumeBoosted"] = wandConfig.audioVolumeBoosted; // true|false
     jsonBody["gpstarAudioLed"] = wandConfig.gpstarAudioLed; // true|false
     jsonBody["extraProtonSounds"] = wandConfig.extraProtonSounds; // true|false
     jsonBody["wandBeepLoop"] = wandConfig.wandBeepLoop; // true|false (Afterlife/Frozen Empire Only)
@@ -1703,6 +1705,7 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       updateJsonBool(packConfig.overheatSyncToFan, jsonBody, "overheatSyncToFan");
       updateJsonBool(packConfig.demoLightMode, jsonBody, "demoLightMode");
       updateJsonBool(packConfig.fadeoutIdleSounds, jsonBody, "fadeoutIdleSounds");
+      updateJsonBool(packConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
       updateJsonBool(packConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
 
       // Update certain operational values immediately.
@@ -1829,8 +1832,9 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       updateJsonBool(wandConfig.wandSoundsToPack, jsonBody, "wandSoundsToPack");
       updateJsonBool(wandConfig.quickVenting, jsonBody, "quickVenting");
       updateJsonBool(wandConfig.wandBeepLoop, jsonBody, "wandBeepLoop");
-      updateJsonBool(wandConfig.extraProtonSounds, jsonBody, "extraProtonSounds");
       updateJsonBool(wandConfig.wandBootError, jsonBody, "wandBootError");
+      updateJsonBool(wandConfig.extraProtonSounds, jsonBody, "extraProtonSounds");
+      updateJsonBool(wandConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
       updateJsonBool(wandConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
 
       // Numeric fields - Bargraph options

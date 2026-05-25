@@ -317,6 +317,7 @@ String getWandConfig() {
     jsonBody["rgbVentEnabled"] = wandConfig.rgbVentEnabled; // true|false
     jsonBody["rgbVentColours"] = wandConfig.rgbVentColours; // true|false
     jsonBody["autoVentLight"] = wandConfig.autoVentLight; // true|false
+    jsonBody["audioVolumeBoosted"] = wandConfig.audioVolumeBoosted; // true|false
     jsonBody["gpstarAudioLed"] = wandConfig.gpstarAudioLed; // true|false
     jsonBody["extraProtonSounds"] = wandConfig.extraProtonSounds; // true|false
     jsonBody["wandBeepLoop"] = wandConfig.wandBeepLoop; // true|false (Afterlife/Frozen Empire Only)
@@ -1081,13 +1082,13 @@ void handleToggleMute(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "mute") {
-        toggleMute(2);
+        toggleMute(true);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "unmute") {
-        toggleMute(1);
+        toggleMute(false);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
@@ -1228,13 +1229,13 @@ void handleLoopMusicTrack(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "one") {
-        toggleMusicLoop(2);
+        toggleMusicLoop(true);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "all") {
-        toggleMusicLoop(1);
+        toggleMusicLoop(false);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
@@ -1255,13 +1256,13 @@ void handleShuffleMusicTracks(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "on") {
-        toggleMusicShuffle(2);
+        toggleMusicShuffle(true);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "off") {
-        toggleMusicShuffle(1);
+        toggleMusicShuffle(false);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
@@ -1748,6 +1749,7 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       updateJsonBool(wandConfig.wandBeepLoop, jsonBody, "wandBeepLoop");
       updateJsonBool(wandConfig.wandBootError, jsonBody, "wandBootError");
       updateJsonBool(wandConfig.extraProtonSounds, jsonBody, "extraProtonSounds");
+      updateJsonBool(wandConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
       updateJsonBool(wandConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
 
       // Numeric fields - Bargraph options

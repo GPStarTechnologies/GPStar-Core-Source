@@ -61,8 +61,9 @@ void readEEPROM() {
 
   if(b_config_loaded) {
     // Successfully loaded a valid configuration, apply to other variables.
+    b_audio_boost = blasterConfig.audioVolumeBoosted;
     i_volume_master_percentage = blasterConfig.defaultSystemVolume;
-    i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+    i_volume_master = getGainValue(i_volume_master_percentage);
     i_volume_revert = i_volume_master;
     b_rgb_vent_light = blasterConfig.ventLightRGB;
     setAudioLED(blasterConfig.gpstarAudioLed);

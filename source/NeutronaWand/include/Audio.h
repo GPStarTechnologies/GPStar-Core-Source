@@ -82,6 +82,7 @@ bool b_music_paused = false; // Sets whether a music track is currently paused o
 bool b_repeat_track = false; // Sets whether to repeat one music track or loop through all music tracks.
 bool b_shuffle_tracks = false; // Sets whether to shuffle all music tracks or not.
 bool b_preload_tracks = false; // Sets whether to add a 50ms delay before playing any file to allow slower SD cards more time to fill the buffer.
+bool b_audio_boost = false; // Sets whether or not to use the +10dB boosted audio range or not.
 bool b_microsd_outdated = false; // Sets whether the microSD card sound effect contents are out of date for the current firmware version.
 bool b_microsd_corrupt = false; // Sets whether the microSD card appears to be corrupt.
 String s_track_listing = ""; // Utilized only for the web UI to display the music track listing.
@@ -135,9 +136,14 @@ void playRapidEffect(uint16_t i_track_id, uint16_t i_cycle_rate, int8_t i_track_
 void rapidEffectDelay(uint16_t i_track_id, uint16_t i_cycle_rate);
 void adjustGainEffect(uint16_t i_track_id, int8_t i_track_volume = i_volume_effects, bool b_fade = false, uint16_t i_fade_time = 0);
 void fadeoutEffect(uint16_t i_track_id, uint16_t i_fade_time = 50);
+int8_t getGainValue(uint8_t percentage);
 void updateMasterVolume(bool startup = false);
 uint8_t getVolumePercentage(int8_t gain);
 bool setMasterVolumePercentage(uint8_t percentage);
+void toggleMute(bool enable);
+void toggleAudioBoost(bool enable);
+void toggleMusicLoop(bool enable);
+void toggleMusicShuffle(bool enable);
 SYSTEM_THEMES getSystemYearMode();
 SYSTEM_THEMES getNeutronaWandYearMode();
 
@@ -611,6 +617,35 @@ void fadeoutEffect(uint16_t i_track_id, uint16_t i_fade_time) {
   }
 }
 
+// Returns the correct audio gain value for a given percentage.
+int8_t getGainValue(uint8_t percentage) {
+  // Range validation: clamp to 0-100
+  if(percentage > 100) {
+    percentage = 100;
+  }
+
+  // Round to nearest VOLUME_MULTIPLIER step (5% increments)
+  if(percentage % VOLUME_MULTIPLIER != 0) {
+    uint8_t step_size = VOLUME_MULTIPLIER;
+    percentage = ((percentage + step_size / 2) / step_size) * step_size;
+  }
+
+  // Ensure we don't exceed 100% after stepping
+  if(percentage > 100) {
+    percentage = 100;
+  }
+
+  // Determine if our gain range is boosted.
+  if(b_audio_boost) {
+    // Return the boosted range value.
+    return PROGMEM_READI8(i_boosted_volume_master_lookup_table[percentage / 5]);
+  }
+  else {
+    // Return the non-boosted range value.
+    return PROGMEM_READI8(i_volume_master_lookup_table[percentage / 5]);
+  }
+}
+
 void updateMasterVolume(bool startup) {
   switch(AUDIO_DEVICE) {
     case A_WAV_TRIGGER:
@@ -654,7 +689,7 @@ void increaseVolumeEEPROM() {
       i_volume_master_percentage += VOLUME_MULTIPLIER;
     }
 
-    i_volume_master_eeprom = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+    i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
     i_volume_master = i_volume_master_eeprom;
     i_volume_revert = i_volume_master_eeprom;
 
@@ -674,7 +709,7 @@ void decreaseVolumeEEPROM() {
       i_volume_master_percentage -= VOLUME_MULTIPLIER;
     }
 
-    i_volume_master_eeprom = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+    i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
     i_volume_master = i_volume_master_eeprom;
     i_volume_revert = i_volume_master_eeprom;
 
@@ -694,7 +729,7 @@ void increaseVolume() {
       i_volume_master_percentage += VOLUME_MULTIPLIER;
     }
 
-    i_volume_master = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+    i_volume_master = getGainValue(i_volume_master_percentage);
     i_volume_revert = i_volume_master;
 
     updateMasterVolume();
@@ -713,7 +748,7 @@ void decreaseVolume() {
       i_volume_master_percentage -= VOLUME_MULTIPLIER;
     }
 
-    i_volume_master = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+    i_volume_master = getGainValue(i_volume_master_percentage);
     i_volume_revert = i_volume_master;
 
     updateMasterVolume();
@@ -722,7 +757,7 @@ void decreaseVolume() {
 
 // Return the percentage value for a particular dB gain
 uint8_t getVolumePercentage(int8_t gain) {
-  if(i_volume_abs_max > 0) {
+  if(b_audio_boost) {
     // We are using the boosted curve so we need special handling.
     if(gain > 0) {
       return PROGMEM_READU8(i_pos_boosted_volume_percentage_lookup_table[gain]);
@@ -759,8 +794,10 @@ bool setMasterVolumePercentage(uint8_t percentage) {
   }
 
   // Round to nearest VOLUME_MULTIPLIER step (5% increments)
-  uint8_t step_size = VOLUME_MULTIPLIER;
-  percentage = ((percentage + step_size / 2) / step_size) * step_size;
+  if(percentage % VOLUME_MULTIPLIER != 0) {
+    uint8_t step_size = VOLUME_MULTIPLIER;
+    percentage = ((percentage + step_size / 2) / step_size) * step_size;
+  }
 
   // Ensure we don't exceed 100% after stepping
   if(percentage > 100) {
@@ -771,7 +808,7 @@ bool setMasterVolumePercentage(uint8_t percentage) {
   i_volume_master_percentage = percentage;
 
   // Convert to decibel value using lookup table
-  i_volume_master = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+  i_volume_master = getGainValue(i_volume_master_percentage);
 
   // Check against system min/max bounds
   if(i_volume_master > i_volume_abs_max) {
@@ -792,24 +829,34 @@ bool setMasterVolumePercentage(uint8_t percentage) {
   return true;
 }
 
-void toggleMute(uint16_t i_value = 0) {
-  if(i_volume_master == i_volume_abs_min) {
-    if(i_value != 2) {
-      i_volume_master = i_volume_revert;
+void toggleMute(bool enable) {
+  if(enable) {
+    i_volume_revert = i_volume_master;
 
-      updateMasterVolume();
-    }
+    // Set the master volume to minimum.
+    i_volume_master = i_volume_abs_min;
+
+    updateMasterVolume();
   }
   else {
-    if(i_value != 1) {
-      i_volume_revert = i_volume_master;
+    i_volume_master = i_volume_revert;
 
-      // Set the master volume to minimum.
-      i_volume_master = i_volume_abs_min;
-
-      updateMasterVolume();
-    }
+    updateMasterVolume();
   }
+}
+
+// Toggles doubling the volume output on or off.
+void toggleAudioBoost(bool enable) {
+  // Set the flag.
+  b_audio_boost = enable;
+
+  // If enabled, max gain is +10dB, otherwise unity gain.
+  i_volume_abs_max = b_audio_boost ? 10 : 0;
+
+  // Finally, reset out current volume to the new paradigm.
+  i_volume_master = getGainValue(i_volume_master_percentage);
+  i_volume_revert = i_volume_master;
+  updateMasterVolume(true); // set to true to stop sound playback
 }
 
 void updateEffectsVolume() {
@@ -1160,35 +1207,17 @@ void checkMusic() {
   }
 }
 
-void toggleMusicLoop(uint16_t i_value = 0) {
-  // Loop the music track.
-  if(i_value != 0) {
-    // If parameter provided, toggle to explicit state.
-    b_repeat_track = i_value == 2;
+void toggleMusicLoop(bool enable) {
+  b_repeat_track = enable;
 
-    if(i_music_track_count > 0) {
-      audio.trackLoop(i_current_music_track, b_repeat_track);
-    }
-  }
-  else {
-    // If no parameter provided, just blindly toggle.
-    b_repeat_track = !b_repeat_track;
-
-    if(i_music_track_count > 0) {
-      audio.trackLoop(i_current_music_track, b_repeat_track);
-    }
+  if(i_music_track_count > 0) {
+    // Loop the current music track.
+    audio.trackLoop(i_current_music_track, b_repeat_track);
   }
 }
 
-void toggleMusicShuffle(uint16_t i_value = 0) {
-  if(i_value != 0) {
-    // If parameter provided, toggle to explicit state.
-    b_shuffle_tracks = i_value == 2;
-  }
-  else {
-    // If no parameter provided, just blindly toggle.
-    b_shuffle_tracks = !b_shuffle_tracks;
-  }
+void toggleMusicShuffle(bool enable) {
+  b_shuffle_tracks = enable;
 }
 
 void setAudioLED(bool on) {
@@ -1269,10 +1298,10 @@ bool setupAudioDevice() {
     }
 
     if(!b_wand_standalone) {
-      i_volume_abs_max = 10; // Allow GPStar Audio to use +10dB if on external power.
+      b_audio_boost = true; // Allow GPStar Audio to use +10dB if on external power.
 
       // Recalculate our volume parameters based on the boosted curve.
-      i_volume_master = PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]); // Master overall volume.
+      i_volume_master = getGainValue(i_volume_master_percentage); // Master overall volume.
       i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup.
       i_volume_revert = i_volume_master; // Used to restore volume level from a muted state.
     }

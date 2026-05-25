@@ -85,6 +85,7 @@ struct objConfigEEPROM {
   uint8_t CTS_mode;
   uint8_t system_mode;
   uint8_t beep_loop;
+  uint8_t audio_volume_boost;
   uint8_t default_wand_volume;
   uint8_t overheat_start_timer_level_5;
   uint8_t overheat_start_timer_level_4;
@@ -251,10 +252,15 @@ void readEEPROM() {
       b_beep_loop = (obj_config_eeprom.beep_loop > 1);
     }
 
+    // Make sure we set this before trying to set the volume level.
+    if(obj_config_eeprom.audio_volume_boost > 0 && obj_config_eeprom.audio_volume_boost < 3) {
+      b_audio_boost = (obj_config_eeprom.audio_volume_boost > 1);
+    }
+
     if(obj_config_eeprom.default_wand_volume > 0 && obj_config_eeprom.default_wand_volume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = obj_config_eeprom.default_wand_volume - 1;
-      i_volume_master_eeprom = (i_volume_abs_max > 0) ? PROGMEM_READI8(i_boosted_volume_master_lookup_table[i_volume_master_percentage / 5]) : PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]);
+      i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }
@@ -510,6 +516,7 @@ void saveConfigEEPROM() {
   uint8_t i_cts_mode = 1; // 1 = default, 2 = 1984, 3 = 1989, 4 = Afterlife, 5 = Frozen Empire.
   uint8_t i_system_mode = (gpstarWand.getSystemMode() == MODE_ORIGINAL) ? 2 : 1; // 1 = super hero, 2 = original.
   uint8_t i_beep_loop = b_beep_loop ? 2 : 1;
+  uint8_t i_audio_volume_boost = b_audio_boost ? 2 : 1;
   uint8_t i_default_wand_volume = 101; // <- i_eeprom_volume_master_percentage + 1
   uint8_t i_overheat_start_timer_level_5 = i_ms_overheat_initiate_level_5 / 1000;
   uint8_t i_overheat_start_timer_level_4 = i_ms_overheat_initiate_level_4 / 1000;
@@ -656,6 +663,7 @@ void saveConfigEEPROM() {
     i_cts_mode,
     i_system_mode,
     i_beep_loop,
+    i_audio_volume_boost,
     i_default_wand_volume,
     i_overheat_start_timer_level_5,
     i_overheat_start_timer_level_4,
