@@ -837,7 +837,7 @@ void toggleAudioBoost(bool enable) {
   // If enabled, max gain is +10dB, otherwise unity gain.
   i_volume_abs_max = b_audio_boost ? 10 : 0;
 
-  // Finally, reset out current volume to the new paradigm.
+  // Finally, reset our current volume to the new paradigm.
   i_volume_master = getGainValue(i_volume_master_percentage);
   i_volume_revert = i_volume_master;
   updateMasterVolume(true); // set to true to stop sound playback

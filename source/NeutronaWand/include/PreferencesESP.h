@@ -507,7 +507,7 @@ void readEEPROM() {
 
     // Make sure we set this before trying to set the volume level.
     if(gObjConfigEEPROM.audio_volume_boost > 0 && gObjConfigEEPROM.audio_volume_boost < 3) {
-      b_audio_boost = (gObjConfigEEPROM.audio_volume_boost > 1);
+      toggleAudioBoost(gObjConfigEEPROM.audio_volume_boost > 1);
     }
 
     if(gObjConfigEEPROM.defaultWandVolume > 0 && gObjConfigEEPROM.defaultWandVolume < 102) {

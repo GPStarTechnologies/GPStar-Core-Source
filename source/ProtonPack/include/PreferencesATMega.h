@@ -411,7 +411,7 @@ void readEEPROM() {
 
     // Make sure we set this before trying to set the volume level.
     if(obj_config_eeprom.audio_volume_boost > 0 && obj_config_eeprom.audio_volume_boost < 3) {
-      b_audio_boost = (obj_config_eeprom.audio_volume_boost > 1);
+      toggleAudioBoost(obj_config_eeprom.audio_volume_boost > 1);
     }
 
     if(obj_config_eeprom.default_system_volume > 0 && obj_config_eeprom.default_system_volume < 102) {

@@ -84,7 +84,7 @@ void readEEPROM() {
 
   if(b_config_loaded) {
     // Successfully loaded a valid configuration, apply to other variables.
-    b_audio_boost = blasterConfig.audioVolumeBoosted;
+    toggleAudioBoost(blasterConfig.audioVolumeBoosted);
     i_volume_master_percentage = blasterConfig.defaultSystemVolume;
     i_volume_master = getGainValue(i_volume_master_percentage);
     i_volume_revert = i_volume_master;
