@@ -615,7 +615,7 @@ void loop() {
   checkAttenuator();
 
   if(b_pack_post_finish) {
-    if(!b_demo_light_mode || !b_first_boot || (b_demo_light_mode && b_wand_connected) || (b_demo_light_mode && !b_wand_connected && !b_wand_syncing && ms_wand_check.remaining() < 1)) {
+    if(!b_demo_light_mode || !b_first_boot || (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || (b_demo_light_mode && WAND_CONN_STATE == WAND_DISCONNECTED && ms_wand_check.remaining() < 1)) {
       // Handle any actions after POST event.
       mainLoop();
 
@@ -657,11 +657,11 @@ void loop() {
     case WIFI_DEFAULT:
     default:
       // Take action based solely on the presence of the Attenuator (Connected = WiFi Off, Disconnected = WiFi On).
-      if(b_attenuator_connected) {
+      if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED) {
         // Turn off WiFi and the web server if the Attenuator is connected.
         shutdownWireless();
       }
-      else if(!b_attenuator_connected && !b_attenuator_syncing && !b_httpd_started && b_pack_post_finish) {
+      else if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED && !b_httpd_started && b_pack_post_finish) {
         // Begin by setting up WiFi as a prerequisite to all else.
         restartWireless();
       }

@@ -1248,7 +1248,7 @@ void packShutdown() {
     b_vent_sounds_playing = false;
   }
 
-  if(!b_wand_connected) {
+  if(WAND_CONN_STATE != WAND_CONNECTED) {
     // If we lost connection to the wand, make sure these are stopped!
     wandExtraSoundsStop();
     wandExtraSoundsBeepLoopStop(false);
@@ -3716,7 +3716,7 @@ void cyclotron1984Alarm() {
 }
 
 void packOverheatingFinished() {
-  if(!b_wand_syncing) {
+  if(WAND_CONN_STATE != WAND_SYNCING) {
     packSerialSend(P_OVERHEATING_FINISHED);
   }
 
@@ -5767,7 +5767,7 @@ void systemPOST() {
 void resetWifiCommand() {
   bool b_reset_success = false;
   // If not ESP32, send a message to the wireless module to have it reset its password.
-  if(b_attenuator_connected) {
+  if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED) {
     attenuatorSerialSend(A_RESET_WIFI_PASSWORD);
     b_reset_success = true;
   }

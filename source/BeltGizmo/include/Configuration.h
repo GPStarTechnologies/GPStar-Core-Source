@@ -45,7 +45,7 @@
 /*
  * Custom values from pack EEPROM.
  *
- * Override as desired if b_wait_for_pack is false.
+ * Override as desired if using in a standalone mode.
  */
 uint8_t i_spectral_custom_colour = 0;
 uint8_t i_spectral_custom_saturation = 254;

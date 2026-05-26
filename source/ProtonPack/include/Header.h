@@ -409,10 +409,18 @@ bool b_firing_alt = false;
 bool b_firing_intensify = false;
 bool b_sound_firing_intensify_trigger = false;
 bool b_sound_firing_alt_trigger = false;
-bool b_wand_connected = false;
-bool b_wand_syncing = false;
 bool b_wand_on = false;
 bool b_wand_mash_lockout = false;
+
+// Wand connection state
+enum WAND_CONN_STATES { 
+  WAND_DISCONNECTED,  // No wand detected or connection lost
+  WAND_MISMATCH,      // Wand detected but firmware incompatible
+  WAND_SYNCING,       // Wand synchronization in progress
+  WAND_CONNECTED      // Wand connected and synchronized
+};
+enum WAND_CONN_STATES WAND_CONN_STATE = WAND_DISCONNECTED;
+
 millisDelay ms_wand_check; // Timer used to determine whether the wand has been disconnected.
 millisDelay ms_mash_lockout; // Timer for tracking the expected button-mash lockout on the wand.
 const uint16_t i_wand_disconnect_delay = 8000; // Time until the pack considers a wand as disconnected.
@@ -420,8 +428,15 @@ const uint16_t i_wand_disconnect_delay = 8000; // Time until the pack considers 
 /*
  * Attenuator Status
  */
-bool b_attenuator_connected = false;
-bool b_attenuator_syncing = false;
+// Attenuator connection state
+enum ATTENUATOR_CONN_STATES { 
+  ATTENUATOR_DISCONNECTED,  // No attenuator detected or connection lost
+  ATTENUATOR_MISMATCH,      // Attenuator detected but firmware incompatible
+  ATTENUATOR_SYNCING,       // Attenuator synchronization in progress
+  ATTENUATOR_CONNECTED      // Attenuator connected and synchronized
+};
+enum ATTENUATOR_CONN_STATES ATTENUATOR_CONN_STATE = ATTENUATOR_DISCONNECTED;
+
 millisDelay ms_attenuator_check;
 const uint16_t i_attenuator_disconnect_delay = 8000; // Time until the pack considers the Attenuator disconnected.
 

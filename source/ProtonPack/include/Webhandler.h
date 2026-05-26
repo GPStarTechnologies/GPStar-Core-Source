@@ -271,7 +271,7 @@ String getWandConfig() {
     // Return current powered state for pack and wand.
     jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down);
     jsonBody["wandPowered"] = b_wand_on;
-    jsonBody["wandConnected"] = b_wand_connected;
+    jsonBody["wandConnected"] = (WAND_CONN_STATE == WAND_CONNECTED);
 
     // Neutrona Wand LED Options
     jsonBody["ledWandCount"] = wandConfig.ledWandCount; // [0=5 (Stock), 1=48 (Frutto), 2=50 (GPStar), 3=2 (Tip)]
@@ -333,7 +333,7 @@ String getSmokeConfig() {
     // Return current powered state for pack and wand.
     jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down);
     jsonBody["wandPowered"] = b_wand_on;
-    jsonBody["wandConnected"] = b_wand_connected;
+    jsonBody["wandConnected"] = (WAND_CONN_STATE == WAND_CONNECTED);
 
     // Proton Pack
     jsonBody["smokeEnabled"] = smokeConfig.smokeEnabled; // true|false
@@ -399,7 +399,7 @@ String getEquipmentStatus() {
     jsonBody["modeID"] = gpstarPack.getSystemMode();
     jsonBody["theme"] = gpstarPack.getThemeName();
     jsonBody["themeID"] = gpstarPack.getSystemTheme();
-    jsonBody["vgMode"] = (wandConfig.defaultFiringMode == FLAG_VG_MODE || !b_wand_connected);
+    jsonBody["vgMode"] = (wandConfig.defaultFiringMode == FLAG_VG_MODE || WAND_CONN_STATE != WAND_CONNECTED);
     jsonBody["smoke"] = b_smoke_enabled;
     jsonBody["vibration"] = b_vibration_switch_on;
     jsonBody["direction"] = b_clockwise;
@@ -408,7 +408,7 @@ String getEquipmentStatus() {
     jsonBody["ramping"] = b_pack_shutting_down;
     jsonBody["power"] = gpstarPack.getPowerLevelName();
     jsonBody["safety"] = gpstarPack.getBarrelStateName();
-    jsonBody["wand"] = (b_wand_connected ? "Connected" : "Not Connected");
+    jsonBody["wand"] = (WAND_CONN_STATE == WAND_CONNECTED ? "Connected" : "Not Connected");
     jsonBody["wandPower"] = (b_wand_on ? "Powered" : "Idle");
     jsonBody["wandMode"] = gpstarPack.getStreamModeName();
     jsonBody["firing"] = (b_wand_firing ? "Firing" : "Idle");

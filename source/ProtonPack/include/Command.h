@@ -36,12 +36,14 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
   switch(i_command) {
     case A_SYNC_START:
       // Attenuator has explicitly asked to be synchronized.
-      doAttenuatorSync();
+      // Don't restart sync if already in progress (Attenuator doesn't stop its retry timer).
+      if(ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
+        doAttenuatorSync();
+      }
     break;
 
     case A_HANDSHAKE:
-      b_attenuator_syncing = false; // No longer attempting to force a sync w/ Attenuator.
-      b_attenuator_connected = true; // If we're receiving handshake instead of SYNC_NOW we must be connected.
+      ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED; // If we're receiving handshake instead of SYNC_NOW we must be connected.
 
       if(b_diagnostic) {
         // While in diagnostic mode, play a sound to indicate the wand is connected.
@@ -51,8 +53,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
     case A_SYNC_END:
       sendDebug(F("Attenuator Synchronized"));
-      b_attenuator_syncing = false;
-      b_attenuator_connected = true;
+      ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED;
       ms_attenuator_check.start(i_attenuator_disconnect_delay);
       #ifdef ESP32
       if(WIFI_USER_MODE == WIFI_DEFAULT) {
@@ -70,7 +71,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is on.
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         packSerialSend(P_ION_ARM_SWITCH_ON);
       }
 
@@ -90,7 +91,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is off.
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         packSerialSend(P_ION_ARM_SWITCH_OFF);
       }
 
@@ -105,7 +106,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
     case A_MANUAL_OVERHEAT:
       // Trigger a manual overheat vent.
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         packSerialSend(P_MANUAL_OVERHEAT);
       }
       else if(PACK_STATE == MODE_ON) {
@@ -115,7 +116,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
     case A_MANUAL_QUICK_VENT:
       // Trigger a manual quick vent.
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         packSerialSend(P_MANUAL_QUICK_VENT);
       }
       else if(PACK_STATE == MODE_ON) {
@@ -141,7 +142,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
     case A_SYSTEM_LOCKOUT:
       // Simulate a lockout as if by repeated button presses on the wand.
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Tell the wand to lock us out.
         packSerialSend(P_SYSTEM_LOCKOUT);
       }
@@ -164,7 +165,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
     case A_CANCEL_LOCKOUT:
       // Initiate a restart of the pack after a lockout event has occurred.
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Tell the wand to restart us.
         packSerialSend(P_CANCEL_LOCKOUT);
       }
@@ -552,13 +553,13 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
       // This is merely a command to the wand which tells it to send back a data payload.
       b_received_prefs_wand = false;
 
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         packSerialSend(P_SEND_PREFERENCES_WAND);
       }
     break;
 
     case A_REQUEST_PREFERENCES_SMOKE:
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         // If requested by the Attenuator, tell the wand we need its EEPROM preferences.
         // This is merely a command to the wand which tells it to send back a data payload.
         packSerialSend(P_SEND_PREFERENCES_SMOKE);

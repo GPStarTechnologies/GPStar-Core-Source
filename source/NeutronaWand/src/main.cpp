@@ -651,10 +651,12 @@ void mainLoop() {
 void loop() {
   switch(WAND_CONN_STATE) {
     case PACK_DISCONNECTED:
-      // While waiting for a proton pack, issue a request for synchronization.
+    case PACK_MISMATCH:
+      // While waiting for a proton pack (or waiting for firmware compatibility),
+      // issue regular requests for synchronization.
       if(ms_packsync.justFinished()) {
         // If not already doing so, explicitly tell the pack a wand is here to sync.
-        wandSerialSend(W_SYNC_NOW);
+        wandSerialSend(W_SYNC_NOW, PROTOCOL_SIGNATURE);
         ms_packsync.start(i_sync_initial_delay); // Prepare for the next sync attempt.
         vent_leds[1] ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
         digitalWriteFast(WAND_STATUS_LED_PIN, (digitalReadFast(WAND_STATUS_LED_PIN) == LOW) ? HIGH : LOW); // Blink the onboard LED on the Neutrona Wand board.
@@ -671,7 +673,7 @@ void loop() {
     case PACK_CONNECTED:
       // When connected to a pack, prepare to send a regular handshake to indicate presence.
       if(ms_handshake.justFinished()) {
-        wandSerialSend(W_HANDSHAKE); // Remind the pack that a wand is still present.
+        wandSerialSend(W_HANDSHAKE, PROTOCOL_SIGNATURE); // Remind the pack that a wand is still present.
         ms_handshake.restart(); // Restart the handshake timer.
       }
 

@@ -20,6 +20,7 @@
 
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 
 /**
  * Devices send serial (UART) data using SerialTransfer and packed structs.
@@ -595,3 +596,44 @@ enum API_MESSAGE : uint8_t {
 
 // Output a compiler message if the final ENUM exceeds the datatype expected.
 static_assert(A_NO_OP < 255, "WARNING: API_MESSAGE has grown too large for uint8_t!");
+
+/**
+ * Generate a signature value that changes when packet sizes or message types change.
+ * This helps detect incompatible firmware versions during device synchronization.
+ * 
+ * The function adds up:
+ *   - Sizes of command and message packets
+ *   - Sizes of preference and sync data structures
+ *   - Maximum values from each message type (API) list
+ * 
+ * Returns a 16-bit signature value.
+ * 
+ * When devices sync, they compare these calculated signature values:
+ *   - Matching signatures: firmware is compatible, sync proceeds like normal
+ *   - Different signatures: incompatible firmware, block sync and set error flag
+ */
+constexpr uint16_t calculateProtocolSignature(
+  size_t cmd_packet_size,
+  size_t msg_packet_size,
+  size_t pack_prefs_size,
+  size_t wand_prefs_size,
+  size_t smoke_prefs_size,
+  size_t wand_sync_size,
+  size_t atten_sync_size,
+  uint8_t pack_msg_max,
+  uint8_t wand_msg_max,
+  uint8_t api_msg_max)
+{
+  return static_cast<uint16_t>(
+    cmd_packet_size +
+    msg_packet_size +
+    pack_prefs_size +
+    wand_prefs_size +
+    smoke_prefs_size +
+    wand_sync_size +
+    atten_sync_size +
+    pack_msg_max +
+    wand_msg_max +
+    api_msg_max
+  );
+}

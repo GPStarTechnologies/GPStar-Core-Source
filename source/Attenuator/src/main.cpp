@@ -243,7 +243,7 @@ void PreferencesTask(void *parameter) {
     b_overheat_feedback = preferences.getBool("use_overheat", true);
     b_firing_feedback = preferences.getBool("fire_feedback", false);
     b_enable_ui_animations = preferences.getBool("use_animations", true);
-    b_wait_for_pack = !preferences.getBool("standalone", false); // Inverted logic; standalone means not waiting for pack
+    PACK_CONN_STATE = preferences.getBool("standalone", false) ? PACK_CONNECTED : PACK_DISCONNECTED; // Standalone means pack is "connected" (no wait)
 
     switch(preferences.getUChar("radiation_idle", 0)) {
       case 0:
@@ -319,7 +319,7 @@ void SerialCommsTask(void *parameter) {
   #endif
 
   while(true) {
-    if(b_wait_for_pack) {
+    if(PACK_CONN_STATE != PACK_CONNECTED) {
       if(ms_packsync.justFinished()) {
         // Tell the pack we are trying to sync.
         attenuatorSerialSend(A_SYNC_START);
@@ -333,7 +333,7 @@ void SerialCommsTask(void *parameter) {
 
       checkPack();
 
-      if(!b_wait_for_pack) {
+      if(PACK_CONN_STATE == PACK_CONNECTED) {
         // Indicate that we are no longer waiting on the pack.
         digitalWrite(BUILT_IN_LED, HIGH);
       }
@@ -353,7 +353,7 @@ void SerialCommsTask(void *parameter) {
 
       if(ms_packsync.justFinished()) {
         // The pack just went missing, so treat as disconnected.
-        b_wait_for_pack = true;
+        PACK_CONN_STATE = PACK_DISCONNECTED;
         b_notify = true; // set to true here to trigger a web UI update
         ms_packsync.start(i_sync_initial_delay);
       }
@@ -386,7 +386,7 @@ void UserInputTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
-    if(!b_wait_for_pack) {
+    if(PACK_CONN_STATE == PACK_CONNECTED) {
       // When not waiting for the pack go directly to checking user inputs.
       checkUserInputs();
     }
@@ -568,7 +568,7 @@ void setup() {
   xTaskCreatePinnedToCore(idleTaskCore1, "Idle Task Core 1", 1000, NULL, 1, NULL, 1);
   #endif
 
-  if(!b_wait_for_pack) {
+  if(PACK_CONN_STATE == PACK_CONNECTED) {
     // If not waiting for the pack set power level to 5.
     gpstarSystem.setPowerLevel(LEVEL_5);
   }
