@@ -1978,6 +1978,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         default:
           // Plays the alarm loop as heard on the wand.
           stopMashErrorSounds();
+          playEffect(S_WAND_MASH_ERROR);
           playEffect(S_MASH_ERROR_LOOP, true, i_volume_effects, true, 2500);
         break;
       }

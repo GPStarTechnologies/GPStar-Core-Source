@@ -306,6 +306,7 @@ void wandStopFiringSounds() {
     break;
 
     case CTS_NOT_FIRING:
+    default:
       // Do nothing.
     break;
   }
@@ -1234,7 +1235,7 @@ void packShutdown() {
 
   if(b_wand_firing) {
     // Preemptively stop firing.
-    wandStoppedFiring();
+    wandStoppedFiring(false);
     cyclotronSpeedRevert();
   }
   else {
@@ -4593,46 +4594,6 @@ void modeFireStartSounds() {
     break;
   }
 
-  // Adjust the gain with the Afterlife idling sound effect while firing.
-  if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL && !b_fadeout_idle_sounds) {
-    if(ms_idle_fire_fade.remaining() < 3000) {
-      if(gpstarPack.inStreamMode(SLIME)) {
-        if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-          adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, 100);
-        }
-        else {
-          adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, 100);
-        }
-      }
-      else {
-        if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-          adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_firing_idle_level, true, 100);
-        }
-        else {
-          adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_firing_idle_level, true, 100);
-        }
-      }
-    }
-    else {
-      if(gpstarPack.inStreamMode(SLIME)) {
-        if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-          adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, ms_idle_fire_fade.remaining());
-        }
-        else {
-          adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, ms_idle_fire_fade.remaining());
-        }
-      }
-      else {
-        if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-          adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_firing_idle_level, true, ms_idle_fire_fade.remaining());
-        }
-        else {
-          adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_firing_idle_level, true, ms_idle_fire_fade.remaining());
-        }
-      }
-    }
-  }
-
   if(gpstarPack.inStreamMode(HOLIDAY_HALLOWEEN)) {
     playEffect(S_HALLOWEEN_FIRING_EXTRA, false, i_volume_effects, true, 100, false);
   }
@@ -4764,9 +4725,9 @@ void wandFiring() {
   ms_firing_length_timer.start(i_firing_timer_length);
 }
 
-void modeFireStopSounds() {
+void modeFireStopSounds(bool tailSounds = true) {
   if(b_wand_firing) {
-    if(!ms_mash_lockout.isRunning()) {
+    if(tailSounds) {
       switch(gpstarPack.getStreamMode()) {
         case PROTON:
         default:
@@ -4862,53 +4823,13 @@ void modeFireStopSounds() {
       // Stop meson looping no matter what.
       stopEffectLoop(S_MESON_FIRE_PULSE);
     }
-
-    // Adjust the gain with the Afterlife idling track.
-    if((gpstarPack.isThemeModern()) && gpstarPack.getPowerLevel() < MAX_POWER_LEVEL && !b_fadeout_idle_sounds && !ms_mash_lockout.isRunning()) {
-      if(ms_idle_fire_fade.remaining() < 1000) {
-        if(gpstarPack.inStreamMode(SLIME)) {
-          if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-            adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, 30);
-          }
-          else {
-            adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, 30);
-          }
-        }
-        else {
-          if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-            adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects, true, 30);
-          }
-          else {
-            adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects, true, 30);
-          }
-        }
-      }
-      else {
-        if(gpstarPack.inStreamMode(SLIME)) {
-          if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-            adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, ms_idle_fire_fade.remaining());
-          }
-          else {
-            adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level, true, ms_idle_fire_fade.remaining());
-          }
-        }
-        else {
-          if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
-            adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects, true, ms_idle_fire_fade.remaining());
-          }
-          else {
-            adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects, true, ms_idle_fire_fade.remaining());
-          }
-        }
-      }
-    }
   }
 
   wandStopFiringSounds();
 }
 
-void wandStoppedFiring() {
-  modeFireStopSounds();
+void wandStoppedFiring(bool playSounds) {
+  modeFireStopSounds(playSounds);
 
   ms_firing_sound_mix.stop();
 
@@ -4942,7 +4863,7 @@ void wandStoppedFiring() {
   // Stop overheat beeps.
   stopOverheatBeepWarnings();
 
-  if(b_fadeout_idle_sounds && !ms_mash_lockout.isRunning()) {
+  if(b_fadeout_idle_sounds && playSounds) {
     // Restart the idle sounds if the timer is not already running.
     if(!ms_delay_post.isRunning()) {
       switch(gpstarPack.getSystemTheme()) {
@@ -5392,7 +5313,7 @@ void startWandMashLockout(uint16_t i_timeout) {
       }
 
       if(b_wand_firing) {
-        wandStoppedFiring();
+        wandStoppedFiring(false);
       }
 
       switch(gpstarPack.getStreamMode()) {
