@@ -1,0 +1,32 @@
+{
+  "name": "Sounds",
+  "version": "1.0.0",
+  "description": "Common library for system and effect sound enums for GPStar projects.",
+  "keywords": [
+    "enumerations",
+    "structs",
+    "sounds",
+    "effects",
+    "gpstar"
+  ],
+  "authors": [
+    {
+      "name": "Michael Rajotte",
+      "email": "michael.rajotte@gpstartechnologies.com"
+    },
+    {
+      "name": "Dustin Grau",
+      "email": "dustin.grau@gmail.com"
+    },
+    {
+      "name": "Nomake Wan",
+      "email": "nomake_wan@yahoo.co.jp"
+    }
+  ],
+  "license": "GPL-3.0-or-later",
+  "frameworks": ["arduino"],
+  "platforms": "*",
+  "build": {
+    "includeDir": "include"
+  }
+}

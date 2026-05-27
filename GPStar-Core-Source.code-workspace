@@ -37,6 +37,10 @@
 			"path": "source/SharedLib/ShuffleMusic"
 		},
 		{
+			"name": "SharedLib-Sounds",
+			"path": "source/SharedLib/Sounds"
+		},
+		{
 			"name": "SharedLib-WebAssets",
 			"path": "source/SharedLib/WebAssets"
 		},
@@ -80,9 +84,14 @@
 			"name": "StreamEffects",
 			"path": "source/StreamEffects"
 		},
-    		{
-      			"path": "source/PSTT"
-    		}
+		{
+			"name": "PSTT",
+			"path": "source/PSTT"
+		},
+		{
+			"name": "Sounds",
+			"path": "../GPStar-Sounds"
+		}
 	],
 	"settings": {
 		"C_Cpp.files.exclude": {
