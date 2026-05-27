@@ -1456,50 +1456,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_1, S_AFTERLIFE_WAND_IDLE_1, true, 5, i_volume_effects - i_wand_idle_level);
         }
 
-        if(b_fadeout_idle_sounds) {
-          // Restart the idle sounds if the timer is not already running.
-          if(!ms_delay_post.isRunning()) {
-            switch(gpstarPack.getSystemTheme()) {
-              default:
-                // We should not be here, so do nothing.
-              break;
-              case SYSTEM_AFTERLIFE:
-                stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
-                }
-              break;
-              case SYSTEM_FROZEN_EMPIRE:
-                stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-                }
-
-                if(isBrassPack()) {
-                  if(b_brass_startup_loop) {
-                    stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
-                    playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
-                  }
-                  else {
-                    stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
-                    playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
-                  }
-                }
-              break;
-            }
-          }
-
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
-        }
+        restartFadeoutIdleSounds();
       }
       else {
         if(gpstarPack.inStreamMode(SLIME)) {
@@ -1526,50 +1483,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2, S_AFTERLIFE_WAND_IDLE_2, true, 5, i_volume_effects - i_wand_idle_level);
         }
 
-        if(b_fadeout_idle_sounds) {
-          // Restart the idle sounds if the timer is not already running.
-          if(!ms_delay_post.isRunning()) {
-            switch(gpstarPack.getSystemTheme()) {
-              default:
-                // We should not be here, so do nothing.
-              break;
-              case SYSTEM_AFTERLIFE:
-                stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
-                }
-              break;
-              case SYSTEM_FROZEN_EMPIRE:
-                stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-                }
-
-                if(isBrassPack()) {
-                  if(b_brass_startup_loop) {
-                    stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
-                    playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
-                  }
-                  else {
-                    stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
-                    playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
-                  }
-                }
-              break;
-            }
-          }
-
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
-        }
+        restartFadeoutIdleSounds();
       }
       else {
         stopEffect(S_AFTERLIFE_WAND_RAMP_2);
@@ -1604,50 +1518,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2_FADE_IN, S_AFTERLIFE_WAND_IDLE_2, true, 5, i_volume_effects - i_wand_idle_level);
         }
 
-        if(b_fadeout_idle_sounds) {
-          // Restart the idle sounds if the timer is not already running.
-          if(!ms_delay_post.isRunning()) {
-            switch(gpstarPack.getSystemTheme()) {
-              default:
-                // We should not be here, so do nothing.
-              break;
-              case SYSTEM_AFTERLIFE:
-                stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
-                }
-              break;
-              case SYSTEM_FROZEN_EMPIRE:
-                stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-                }
-
-                if(isBrassPack()) {
-                  if(b_brass_startup_loop) {
-                    stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
-                    playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
-                  }
-                  else {
-                    stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
-                    playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
-                  }
-                }
-              break;
-            }
-          }
-
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
-        }
+        restartFadeoutIdleSounds();
       }
       else {
         stopEffect(S_AFTERLIFE_WAND_RAMP_2_FADE_IN);
@@ -1683,50 +1554,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playEffect(S_AFTERLIFE_WAND_IDLE_1, true, i_volume_effects - i_wand_idle_level);
         }
 
-        if(b_fadeout_idle_sounds) {
-          // Restart the idle sounds if the timer is not already running.
-          if(!ms_delay_post.isRunning()) {
-            switch(gpstarPack.getSystemTheme()) {
-              default:
-                // We should not be here, so do nothing.
-              break;
-              case SYSTEM_AFTERLIFE:
-                stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
-                }
-              break;
-              case SYSTEM_FROZEN_EMPIRE:
-                stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-                }
-
-                if(isBrassPack()) {
-                  if(b_brass_startup_loop) {
-                    stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
-                    playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
-                  }
-                  else {
-                    stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
-                    playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
-                  }
-                }
-              break;
-            }
-          }
-
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
-        }
+        restartFadeoutIdleSounds();
       }
     break;
 
@@ -1743,50 +1571,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playEffect(S_AFTERLIFE_WAND_IDLE_2, true, i_volume_effects - i_wand_idle_level);
         }
 
-        if(b_fadeout_idle_sounds) {
-          // Restart the idle sounds if the timer is not already running.
-          if(!ms_delay_post.isRunning()) {
-            switch(gpstarPack.getSystemTheme()) {
-              default:
-                // We should not be here, so do nothing.
-              break;
-              case SYSTEM_AFTERLIFE:
-                stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
-                }
-              break;
-              case SYSTEM_FROZEN_EMPIRE:
-                stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-                }
-
-                if(isBrassPack()) {
-                  if(b_brass_startup_loop) {
-                    stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
-                    playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
-                  }
-                  else {
-                    stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
-                    playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
-                  }
-                }
-              break;
-            }
-          }
-
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
-        }
+        restartFadeoutIdleSounds();
       }
     break;
 
@@ -1802,50 +1587,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2, S_AFTERLIFE_WAND_IDLE_1, true, 5, i_volume_effects - i_wand_idle_level);
         }
 
-        if(b_fadeout_idle_sounds) {
-          // Restart the idle sounds if the timer is not already running.
-          if(!ms_delay_post.isRunning()) {
-            switch(gpstarPack.getSystemTheme()) {
-              default:
-                // We should not be here, so do nothing.
-              break;
-              case SYSTEM_AFTERLIFE:
-                stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
-                }
-              break;
-              case SYSTEM_FROZEN_EMPIRE:
-                stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
-
-                if(gpstarPack.inStreamMode(SLIME)) {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level);
-                }
-                else {
-                  playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true);
-                }
-
-                if(isBrassPack()) {
-                  if(b_brass_startup_loop) {
-                    stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
-                    playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
-                  }
-                  else {
-                    stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
-                    playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
-                  }
-                }
-              break;
-            }
-          }
-
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
-        }
+        restartFadeoutIdleSounds();
       }
       else {
         stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2);
