@@ -854,20 +854,6 @@ void stopCyclotronSlimeEffects(STREAM_MODES previousMode) {
   if(usingSlimeCyclotron(previousMode)) {
     resetCyclotronState();
     clearCyclotronFades();
-
-    switch(gpstarPack.getSystemTheme()) {
-      case SYSTEM_AFTERLIFE:
-        adjustGainEffect(S_AFTERLIFE_PACK_STARTUP, i_volume_effects, true, 100);
-        adjustGainEffect(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects, true, 100);
-      break;
-      case SYSTEM_FROZEN_EMPIRE:
-        adjustGainEffect(S_FROZEN_EMPIRE_PACK_STARTUP, i_volume_effects, true, 100);
-        adjustGainEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects, true, 100);
-      break;
-      default:
-        // Do nothing otherwise.
-      break;
-    }
   }
 }
 

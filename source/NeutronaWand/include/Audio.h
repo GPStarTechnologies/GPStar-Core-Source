@@ -881,9 +881,20 @@ void updateEffectsVolume() {
 
       // Standalone wand has additional idle effects.
       if(b_wand_standalone) {
-        audio.trackGain(S_WAND_SLIME_IDLE_LOOP, i_volume_effects);
-        audio.trackGain(S_WAND_STASIS_IDLE_LOOP, i_volume_effects);
-        audio.trackGain(S_MESON_IDLE_LOOP, i_volume_effects);
+        switch(gpstarWand.getStreamMode()) {
+          case SLIME:
+            audio.trackGain(S_WAND_SLIME_IDLE_LOOP, i_volume_effects);
+          break;
+          case STASIS:
+            audio.trackGain(S_WAND_STASIS_IDLE_LOOP, i_volume_effects);
+          break;
+          case MESON:
+            audio.trackGain(S_MESON_IDLE_LOOP, i_volume_effects);
+          break;
+          default:
+            // Do nothing.
+          break;
+        }
       }
 
       if(b_firing) {
@@ -912,11 +923,13 @@ void updateEffectsVolume() {
       }
 
       // Special volume in use.
-      if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE) {
-        audio.trackGain(S_WAND_STASIS_IDLE_LOOP, i_volume_effects);
-      }
-      else {
-        audio.trackGain(S_MASH_ERROR_LOOP, i_volume_effects);
+      if(b_wand_mash_lockout) {
+        if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE) {
+          audio.trackGain(S_WAND_STASIS_IDLE_LOOP, i_volume_effects);
+        }
+        else {
+          audio.trackGain(S_MASH_ERROR_LOOP, i_volume_effects);
+        }
       }
 
       // AL/FE wand idle loops in use.

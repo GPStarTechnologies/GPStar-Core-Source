@@ -898,11 +898,13 @@ void updateEffectsVolume() {
       audio.trackGain(S_STEAM_LOOP, i_volume_effects);
       audio.trackGain(S_SHUTDOWN, i_volume_effects);
 
-      if(gpstarPack.getSystemTheme() == SYSTEM_FROZEN_EMPIRE) {
-        audio.trackGain(S_STASIS_IDLE_LOOP, i_volume_effects);
-      }
-      else {
-        audio.trackGain(S_MASH_ERROR_LOOP, i_volume_effects);
+      if(b_wand_mash_lockout) {
+        if(gpstarPack.getSystemTheme() == SYSTEM_FROZEN_EMPIRE) {
+          audio.trackGain(S_STASIS_IDLE_LOOP, i_volume_effects);
+        }
+        else {
+          audio.trackGain(S_MASH_ERROR_LOOP, i_volume_effects);
+        }
       }
 
       switch(gpstarPack.getSystemTheme()) {
@@ -923,11 +925,15 @@ void updateEffectsVolume() {
 
           if(gpstarPack.inStreamMode(SLIME)) {
             // In slime blower mode these sounds have lower volume than normal.
+            if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
+              audio.trackGain(S_AFTERLIFE_PACK_STARTUP, i_volume_effects - i_slime_bootup_level);
+              audio.trackGain(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level);
+            }
+            else {
+              audio.trackGain(S_FROZEN_EMPIRE_PACK_STARTUP, i_volume_effects - i_slime_bootup_level);
+              audio.trackGain(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level);
+            }
             audio.trackGain(S_BOOTUP, i_volume_effects - i_slime_bootup_level);
-            audio.trackGain(S_AFTERLIFE_PACK_STARTUP, i_volume_effects - i_slime_bootup_level);
-            audio.trackGain(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level);
-            audio.trackGain(S_FROZEN_EMPIRE_PACK_STARTUP, i_volume_effects - i_slime_bootup_level);
-            audio.trackGain(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_slime_idle_level);
             audio.trackGain(S_AFTERLIFE_BEEP_WAND_S1, i_volume_effects - i_slime_idle_level);
             audio.trackGain(S_AFTERLIFE_BEEP_WAND_S2, i_volume_effects - i_slime_idle_level);
             audio.trackGain(S_AFTERLIFE_BEEP_WAND_S3, i_volume_effects - i_slime_idle_level);
@@ -943,23 +949,15 @@ void updateEffectsVolume() {
             audio.trackGain(S_AFTERLIFE_WAND_RAMP_DOWN_1, i_volume_effects - i_slime_idle_level);
           }
           else {
-            audio.trackGain(S_BOOTUP, i_volume_effects);
-            audio.trackGain(S_AFTERLIFE_PACK_STARTUP, i_volume_effects);
-            audio.trackGain(S_FROZEN_EMPIRE_PACK_STARTUP, i_volume_effects);
-            audio.trackGain(S_AFTERLIFE_BEEP_WAND_S1, i_volume_effects - i_wand_idle_level);
-            audio.trackGain(S_AFTERLIFE_BEEP_WAND_S2, i_volume_effects - i_wand_idle_level);
-            audio.trackGain(S_AFTERLIFE_BEEP_WAND_S3, i_volume_effects - i_wand_idle_level);
-            audio.trackGain(S_AFTERLIFE_BEEP_WAND_S4, i_volume_effects - i_wand_idle_level);
-            audio.trackGain(S_AFTERLIFE_BEEP_WAND_S5, i_volume_effects - i_wand_idle_level);
-
-            if(b_wand_firing) {
-              audio.trackGain(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects - i_firing_idle_level);
-              audio.trackGain(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects - i_firing_idle_level);
+            if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
+              audio.trackGain(S_AFTERLIFE_PACK_STARTUP, i_volume_effects);
+              audio.trackGain(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects);
             }
             else {
-              audio.trackGain(S_AFTERLIFE_PACK_IDLE_LOOP, i_volume_effects);
+              audio.trackGain(S_FROZEN_EMPIRE_PACK_STARTUP, i_volume_effects);
               audio.trackGain(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, i_volume_effects);
             }
+            audio.trackGain(S_BOOTUP, i_volume_effects);
 
             if(b_brass_pack_sound_loop) {
               audio.trackGain(S_AFTERLIFE_WAND_RAMP_1, i_volume_effects - i_brass_idle_level);
@@ -972,6 +970,11 @@ void updateEffectsVolume() {
               audio.trackGain(S_AFTERLIFE_WAND_RAMP_DOWN_1, i_volume_effects - i_brass_idle_level);
             }
             else {
+              audio.trackGain(S_AFTERLIFE_BEEP_WAND_S1, i_volume_effects - i_wand_idle_level);
+              audio.trackGain(S_AFTERLIFE_BEEP_WAND_S2, i_volume_effects - i_wand_idle_level);
+              audio.trackGain(S_AFTERLIFE_BEEP_WAND_S3, i_volume_effects - i_wand_idle_level);
+              audio.trackGain(S_AFTERLIFE_BEEP_WAND_S4, i_volume_effects - i_wand_idle_level);
+              audio.trackGain(S_AFTERLIFE_BEEP_WAND_S5, i_volume_effects - i_wand_idle_level);
               audio.trackGain(S_AFTERLIFE_WAND_RAMP_1, i_volume_effects - i_wand_idle_level);
               audio.trackGain(S_AFTERLIFE_WAND_RAMP_2, i_volume_effects - i_wand_idle_level);
               audio.trackGain(S_AFTERLIFE_WAND_RAMP_2_FADE_IN, i_volume_effects - i_wand_idle_level);
@@ -983,10 +986,14 @@ void updateEffectsVolume() {
             }
           }
 
-          audio.trackGain(S_PACK_SHUTDOWN_AFTERLIFE_ALT, i_volume_effects);
-          audio.trackGain(S_FROZEN_EMPIRE_PACK_SHUTDOWN, i_volume_effects);
-          audio.trackGain(S_FROZEN_EMPIRE_BRASS_SHUTDOWN, i_volume_effects);
-          audio.trackGain(S_AFTERLIFE_FIRE_END_LONG, i_volume_effects);
+          if(gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
+            audio.trackGain(S_PACK_SHUTDOWN_AFTERLIFE_ALT, i_volume_effects);
+            audio.trackGain(S_AFTERLIFE_FIRE_END_LONG, i_volume_effects);
+          }
+          else {
+            audio.trackGain(S_FROZEN_EMPIRE_PACK_SHUTDOWN, i_volume_effects);
+            audio.trackGain(S_FROZEN_EMPIRE_BRASS_SHUTDOWN, i_volume_effects);
+          }
           audio.trackGain(S_PACK_BEEPS_OVERHEAT, i_volume_effects);
           audio.trackGain(S_PACK_OVERHEAT_HOT, i_volume_effects);
 
