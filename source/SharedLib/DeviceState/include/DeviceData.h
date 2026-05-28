@@ -33,11 +33,11 @@ struct __attribute__((packed)) PackPrefs {
   VIBRATION_MODES packVibration = VIBRATION_DEFAULT; // [1=ALWAYS,2=FIRING_ONLY,3=NEVER,4=DEFAULT,5=CYCLOTRON_MOTOR]
   uint8_t defaultPackVolume = 50; // 5-100
   bool fadeoutIdleSounds = false;
+  uint8_t fadeoutIdleDelay = 30; // 10-60
   bool ribbonCableAlarm = false; // Ignore ribbon cable switch state
   bool wandQuickBootup = false;
   bool cyclotronDirection = false;
   bool demoLightMode = false;
-  bool protonStreamEffects = false;
   bool brassStartupLoop = false;
   bool overheatStrobeNF = false;
   bool overheatSyncToFan = false;
@@ -66,6 +66,7 @@ struct __attribute__((packed)) PackPrefs {
   uint8_t ledPowercellSat = 2; // Spectral custom saturation 2-254
   uint8_t ledPowercellLum = 50; // Brightness 20-100
   bool ledVGPowercell = false;
+  bool audioVolumeBoosted = false; // Whether audio is boosted by +10dB or not
   bool gpstarAudioLed = false;
   bool isWiFiEnabled = false; // WiFi Enabled (true) or Disabled (false)
   bool resetWifiPassword = false;
@@ -85,6 +86,7 @@ struct __attribute__((packed)) WandPrefs {
   uint8_t streamFlags = FLAG_PROTON; // Represents STREAM_MODE_FLAGS (managed by a DeviceState)
   uint8_t defaultStreamMode = PROTON;
   uint8_t defaultFiringMode = 0; // [0=VG,1=CTS,3=CTS_MIX]
+  bool extraProtonSounds = false;
   VIBRATION_MODES wandVibration = VIBRATION_DEFAULT; // [1=ALWAYS,2=FIRING_ONLY,3=NEVER,4=DEFAULT]
   uint8_t barrelSwitchPolarity = 1; // [1=DEFAULT,2=INVERTED,3=DISABLED]
   bool wandSoundsToPack = false;
@@ -101,6 +103,7 @@ struct __attribute__((packed)) WandPrefs {
   bool bargraphOverheatBlink = false;
   uint8_t bargraphIdleAnimation = 1; // [1=System,2=SuperHero,3=ModeOriginal]
   uint8_t bargraphFireAnimation = 1; // [1=System,2=SuperHero,3=ModeOriginal]
+  bool audioVolumeBoosted = false; // Whether audio is boosted by +10dB or not
   bool gpstarAudioLed = false;
   bool isWiFiEnabled = false; // WiFi Enabled (true) or Disabled (false)
   bool resetWifiPassword = false;

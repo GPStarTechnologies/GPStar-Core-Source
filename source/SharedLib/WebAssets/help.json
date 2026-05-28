@@ -79,8 +79,9 @@
     "demoLightMode": "When enabled, the pack automatically powers on and starts its lighting effects when battery power is connected (useful for static displays).",
     "defaultPackVolume": "Sets the master audio volume percentage (5-100%) for all pack sounds at startup. Can be adjusted later via controls.",
     "fadeoutIdleSounds": "When enabled, idle loop sounds (like the pack hum) will fade out after 30 seconds (useful for conventions).",
-    "protonStreamEffects": "When enabled, adds impact sound effects when the proton stream is active, simulating the stream hitting surrounding surfaces.",
+    "fadeoutIdleDelay": "Set how long to wait (10-60 seconds) before fading out the idle loop sounds, if enabled.",
     "brassStartupLoop": "When enabled, loops the distinctive startup sound (as heard in Frozen Empire) while the cyclotron lid is removed rather than only playing it once.",
+    "audioVolumeBoosted": "Allows the connected audio board to reach a maximum of +10dB (200%) if enabled. Otherwise, maximum amplification is 0dB (100%).",
     "gpstarAudioLed": "Controls the status LED on GPStar audio boards, which indicates audio playback activity. Useful for troubleshooting audio issues.",
     "ledCycLidCount": "Specifies the number of LEDs in the cyclotron lid: 12 (Hasbro), 20 (Frutto 4x5), 36 (GPStar 4x9), or 40 (NeoPixel ring).",
     "ledCycLidHue": "Sets the custom colour hue (2-360 degrees) for the cyclotron lid LEDs when in Spectral Custom stream mode.",
@@ -133,6 +134,8 @@
     "defaultWandVolume": "Sets the master audio volume percentage (5-100%) for all wand sounds at startup. Can be adjusted later via controls.",
     "wandSoundsToPack": "When enabled, routes wand sound effects to play through the pack's speaker system in addition to the wand speaker (if equipped).",
     "wandBeepLoop": "When enabled, plays the distinctive beep sound from Afterlife/Frozen Empire while the wand is idle and armed.",
+    "extraProtonSounds": "When enabled, adds impact sound effects when the proton stream is active, simulating the stream hitting surrounding surfaces.",
+    "audioVolumeBoosted": "Allows the connected audio board to reach a maximum of +10dB (200%) if enabled. Otherwise, maximum amplification is 0dB (100%).",
     "gpstarAudioLed": "Controls the status LED on GPStar audio boards, which indicates audio playback activity. Useful for troubleshooting audio issues.",
     "numBargraphSegments": "Specifies the number of LED segments in the bargraph: 28 or 30, depending on your hardware configuration.",
     "bargraphIdleAnimation": "Sets which animation style the bargraph uses when idle: Default (theme-appropriate), Super Hero, or Mode Original.",
@@ -173,6 +176,7 @@
     "ventLightAutoIntensity": "When enabled, the vent light brightness will change with power level and go full brightness when firing.",
     "deviceBootErrorBeep": "When enabled, attempting to activate the blaster while the top switch is already on will result in an error state.",
     "defaultSystemVolume": "Sets the master audio volume percentage (5-100%) for all blaster sounds at startup. Can be adjusted later via controls.",
+    "audioVolumeBoosted": "Allows the connected audio board to reach a maximum of +10dB (200%) if enabled. Otherwise, maximum amplification is 0dB (100%).",
     "gpstarAudioLed": "Controls the status LED on GPStar audio boards, which indicates audio playback activity. Useful for troubleshooting audio issues.",
     "invertBlasterBargraph": "When enabled, reverses the direction of bargraph animations (useful if the bargraph was installed upside-down)."
   }

@@ -131,13 +131,10 @@
         </label>
       </div>
       <div class="setting">
-        <label class="toggle-switchy" data-label="left">
-          <input id="protonStreamEffects" name="protonStreamEffects" type="checkbox" />
-          <span class="toggle">
-            <span class="switch"></span>
-          </span>
-          <span class="label">Proton Stream Impact Effects:</span>
-        </label>
+        <b>Idle Loop Fade Out Delay:</b>
+        <br />
+        <input type="range" id="fadeoutIdleDelay" name="fadeoutIdleDelay" min="10" max="60" value="30" step="5" oninput="fadeoutDelayOut.value = fadeoutIdleDelay.value" />
+        <output class="labelSlider" id="fadeoutDelayOut" for="fadeoutIdleDelay"></output>
       </div>
       <div class="setting">
         <label class="toggle-switchy" data-label="left">
@@ -146,6 +143,15 @@
             <span class="switch"></span>
           </span>
           <span class="label">Brass Pack Startup Loop:</span>
+        </label>
+      </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-label="left">
+          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">+10dB Amplification Boost:</span>
         </label>
       </div>
       <div class="setting" id="gpstarAudioLedToggle">
@@ -494,7 +500,8 @@
         setHtml("masterVolOut", getValue("defaultPackVolume"));
         setValue("packVibration", settings.packVibration || 4);
         setToggle("fadeoutIdleSounds", settings.fadeoutIdleSounds);
-        setToggle("protonStreamEffects", settings.protonStreamEffects);
+        setValue("fadeoutIdleDelay", settings.fadeoutIdleDelay || 30);
+        setHtml("fadeoutDelayOut", getValue("fadeoutIdleDelay"));
         setToggle("brassStartupLoop", settings.brassStartupLoop);
         setToggle("ribbonCableAlarm", settings.ribbonCableAlarm);
         setToggle("wandQuickBootup", settings.wandQuickBootup);
@@ -502,6 +509,7 @@
         setToggle("overheatLightsOff", settings.overheatLightsOff);
         setToggle("overheatSyncToFan", settings.overheatSyncToFan);
         setToggle("demoLightMode", settings.demoLightMode);
+        setToggle("audioVolumeBoosted", settings.audioVolumeBoosted);
         setToggle("gpstarAudioLed", settings.gpstarAudioLed);
 
         setValue("ledCycLidCount", settings.ledCycLidCount || 36);
@@ -636,7 +644,7 @@
           defaultPackVolume: getInt("defaultPackVolume") || 100,
           packVibration: getInt("packVibration") || 4,
           fadeoutIdleSounds: getToggle("fadeoutIdleSounds"),
-          protonStreamEffects: getToggle("protonStreamEffects"),
+          fadeoutIdleDelay: getInt("fadeoutIdleDelay") || 30,
           brassStartupLoop: getToggle("brassStartupLoop"),
           ribbonCableAlarm: getToggle("ribbonCableAlarm"),
           wandQuickBootup: getToggle("wandQuickBootup"),
@@ -644,6 +652,7 @@
           overheatLightsOff: getToggle("overheatLightsOff"),
           overheatSyncToFan: getToggle("overheatSyncToFan"),
           demoLightMode: getToggle("demoLightMode"),
+          audioVolumeBoosted: getToggle("audioVolumeBoosted"),
           gpstarAudioLed: getToggle("gpstarAudioLed"),
 
           ledCycLidCount: getInt("ledCycLidCount") || 12,

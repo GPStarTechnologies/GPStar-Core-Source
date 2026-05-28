@@ -245,6 +245,7 @@ uint16_t i_ms_overheat_initiate_level_5 = 30000;
 
 /*
  * When set to true, various impact and other stream effects will overlap and mix randomly into the Proton Stream for an added experience.
+ * Note this will be overridden by the setting in the EEPROM if b_eeprom is set to true.
  */
 bool b_stream_effects = true;
 

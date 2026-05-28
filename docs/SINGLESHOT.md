@@ -240,7 +240,7 @@ To access Menu Level 2, use the `Top Dial` on the top of the blaster to move dow
 | 5️⃣ | Vent&nbsp;Light&nbsp;Toggles | Toggle whether the vent light on the Single Shot Blaster will change brightness depending on power | Enable/Disable the optional addressable RGB LED vent/top light |
 | 4️⃣ | Boot&nbsp;Errors / Invert&nbsp;Bargraph | Enable/Disable boot-up error if switches are flipped in the wrong order | Toggle bargraph animation direction |
 | 3️⃣ | Vibration&nbsp;Settings / GPStar&nbsp;Audio&nbsp;LED&nbsp;Control | Enable/Disable the status LED on GPStar Audio (if equipped) | Cycle through Single Shot Blaster vibration options |
-| 2️⃣ | `unused` | `unused` | `unused` |
+| 2️⃣ | Audio&nbsp;Boost | Toggles whether the audio amplifier outputs a maximum of +10dB (200%) or +0dB (100%) amplification. | `unused` |
 | 1️⃣ | `unused` | `unused` | `unused` |
 
 ## Firmware Updates

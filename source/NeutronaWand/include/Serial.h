@@ -74,7 +74,7 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
 void getWandPrefsObject() {
   sendDebug(F("Getting Wand Preferences"));
 
-  uint8_t i_eeprom_volume_master_percentage = 100 * (MINIMUM_VOLUME - i_volume_master_eeprom) / MINIMUM_VOLUME;
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   // Return an indication of whether the device is an ESP32 or not.
 #ifdef ESP32
@@ -121,6 +121,8 @@ void getWandPrefsObject() {
   wandConfig.autoVentLight = b_vent_light_control;
   wandConfig.wandBeepLoop = b_beep_loop;
   wandConfig.wandBootError = b_wand_boot_errors;
+  wandConfig.extraProtonSounds = b_stream_effects;
+  wandConfig.audioVolumeBoosted = b_audio_boost;
   wandConfig.gpstarAudioLed = b_gpstar_audio_led_enabled;
 
   switch(WAND_YEAR_MODE) {
@@ -508,6 +510,7 @@ void handleWandPrefsUpdate() {
   b_vent_light_control = wandConfig.autoVentLight;
   b_beep_loop = wandConfig.wandBeepLoop;
   b_wand_boot_errors = wandConfig.wandBootError;
+  b_stream_effects = wandConfig.extraProtonSounds;
   b_gpstar_audio_led_enabled = wandConfig.gpstarAudioLed;
 
   switch(wandConfig.defaultYearModeWand) {
@@ -590,17 +593,17 @@ void handleWandPrefsUpdate() {
     break;
   }
 
-  i_volume_master_eeprom = MINIMUM_VOLUME - (MINIMUM_VOLUME * wandConfig.defaultWandVolume / 100);
+  // Update and reset wand components.
+  setAudioLED(b_gpstar_audio_led_enabled);
+  toggleAudioBoost(wandConfig.audioVolumeBoosted);
+  i_volume_master_eeprom = getGainValue(wandConfig.defaultWandVolume);
+  bargraphYearModeUpdate();
+  updateOverheatLevels();
+  resetWhiteLEDBlinkRate();
 
   // Offer some feedback to the user
   stopEffect(S_BEEPS);
   playEffect(S_BEEPS);
-
-  // Update and reset wand components.
-  setAudioLED(b_gpstar_audio_led_enabled);
-  bargraphYearModeUpdate();
-  updateOverheatLevels();
-  resetWhiteLEDBlinkRate();
 
   // Inform the pack of our current stream flags.
   wandSerialSend(W_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
@@ -813,7 +816,7 @@ void checkPack() {
           i_volume_effects_percentage = wandSyncData.effectsVolume;
 
           // Set the decibel volume.
-          i_volume_effects = i_volume_abs_min - (i_volume_abs_min * i_volume_effects_percentage / 100);
+          i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
           updateEffectsVolume();
 
           if(wandSyncData.masterMuted) {
@@ -898,6 +901,9 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
           wandSerialSend(W_SET_FIRING_MODE, FLAG_VG_MODE);
         }
       }
+
+      // Tell the pack the status of the proton stream effects flag.
+      wandSerialSend(W_PROTON_STREAM_IMPACT_TOGGLE, b_stream_effects ? 4 : 3);
 
       // Tell the pack the status of the Neutrona Wand barrel.
       if(gpstarWand.getBarrelState() != BARREL_UNKNOWN) {

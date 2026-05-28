@@ -143,7 +143,7 @@ PowerMeter packReading;
 // Forward function declarations.
 void packStartup(bool fullStartup);
 void wandFiring();
-void wandStoppedFiring();
+void wandStoppedFiring(bool playSounds = true);
 void cyclotronSpeedRevert();
 void packOverheatingStart();
 

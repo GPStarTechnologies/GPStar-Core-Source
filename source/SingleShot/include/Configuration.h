@@ -149,6 +149,7 @@ struct __attribute__((packed)) UserDeviceConfig {
   bool ventLightAutoIntensity = true; // Enables special brightness controls during idle and firing modes.
   bool ventLightRGB = b_rgb_vent_light; // Enables the addressable RGB vent/top light board.
   bool gpstarAudioLed = false; // When set to true, the LED on the GPStar Audio stay on while the system is running.
+  bool audioVolumeBoosted = false; // Whether audio is boosted by +10dB or not.
   uint8_t defaultSystemVolume = STARTUP_VOLUME; // Sets the default system volume percentage (0-100).
   VIBRATION_MODES deviceVibration = VIBRATION_FIRING_ONLY; // Sets the vibration mode (default: only when firing).
 } blasterConfig;

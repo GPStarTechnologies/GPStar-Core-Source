@@ -30,6 +30,8 @@ enum sound_fx {
   S_EMPTY,
   S_BOOTUP,
   S_SHUTDOWN,
+  S_BEEPS,
+  S_BEEPS_ALT,
   S_BEEP_8
 };
 

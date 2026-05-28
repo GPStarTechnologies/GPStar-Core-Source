@@ -265,7 +265,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
     break;
 
     case A_TOGGLE_MUTE:
-      toggleMute(i_value);
+      toggleMute(i_value == 2);
       attenuatorSerialSend(A_TOGGLE_MUTE, i_volume_master == i_volume_abs_min ? 2 : 1);
       packSerialSend(P_MASTER_AUDIO_STATUS, i_volume_master == i_volume_abs_min ? 2 : 1);
     break;
@@ -345,13 +345,13 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
     break;
 
     case A_MUSIC_TRACK_LOOP_TOGGLE:
-      toggleMusicLoop(i_value);
+      toggleMusicLoop(i_value == 2);
       attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, b_repeat_track ? 2 : 1);
       packSerialSend(P_MUSIC_LOOP_STATUS, b_repeat_track ? 2 : 1);
     break;
 
     case A_MUSIC_TRACK_SHUFFLE_TOGGLE:
-      toggleMusicShuffle(i_value);
+      toggleMusicShuffle(i_value == 2);
       attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, b_shuffle_tracks ? 2 : 1);
       packSerialSend(P_MUSIC_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
     break;
@@ -480,7 +480,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
             break;
           }
 
-          ms_delay_post.start(i_idle_fadeout_time);
+          ms_delay_post.start(i_idle_fadeout_delay);
         }
 
         // Trigger the proper sound effect(s) for the new stream mode.

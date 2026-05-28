@@ -1389,26 +1389,14 @@ void checkWandAction() {
           }
           else if(switch_mode.pushed()) {
             if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
+              b_stream_effects = !b_stream_effects;
+
+              stopEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
+              stopEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
+              b_stream_effects ? playEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED) : playEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
+
               // Tell the Proton Pack to toggle the Proton Stream impact effects.
-              wandSerialSend(W_PROTON_STREAM_IMPACT_TOGGLE);
-
-              // Standalone Neutrona Wand has to change this setting on its own.
-              if(b_wand_standalone) {
-                if(b_stream_effects) {
-                  b_stream_effects = false;
-
-                  stopEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-                  stopEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-                  playEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-                }
-                else {
-                  b_stream_effects = true;
-
-                  stopEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-                  stopEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
-                  playEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED);
-                }
-              }
+              wandSerialSend(W_PROTON_STREAM_IMPACT_TOGGLE, b_stream_effects ? 2 : 1);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
               wandSerialSend(W_OVERHEAT_SYNC_TO_FAN_TOGGLE);
@@ -1493,7 +1481,7 @@ void checkWandAction() {
 
               // Standalone Neutrona Wand has to change this setting on its own.
               if(b_wand_standalone) {
-                toggleMusicLoop();
+                toggleMusicLoop(!b_repeat_track);
               }
             }
           }
@@ -1691,18 +1679,21 @@ void checkWandAction() {
             }
             else if(switch_mode.pushed()) {
               // Silence the Proton Pack and Neutrona Wand or revert back to previously-selected volume.
-              if(i_volume_master == i_volume_abs_min) {
-                i_volume_master = i_volume_revert;
-              }
-              else {
-                i_volume_revert = i_volume_master;
-
-                // Set the master volume to silent.
-                i_volume_master = i_volume_abs_min;
-              }
-
               wandSerialSend(W_TOGGLE_MUTE);
-              updateMasterVolume();
+
+              if(b_wand_standalone) {
+                if(i_volume_master == i_volume_abs_min) {
+                  i_volume_master = i_volume_revert;
+                }
+                else {
+                  i_volume_revert = i_volume_master;
+
+                  // Set the master volume to silent.
+                  i_volume_master = i_volume_abs_min;
+                }
+
+                updateMasterVolume();
+              }
             }
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
@@ -1774,7 +1765,7 @@ void checkWandAction() {
 
               // Standalone Neutrona Wand has to change this setting on its own.
               if(b_wand_standalone) {
-                toggleMusicShuffle();
+                toggleMusicShuffle(!b_shuffle_tracks);
               }
             }
           }

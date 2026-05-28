@@ -82,7 +82,6 @@ struct objLEDEEPROM {
  * Data structure object for customizations which are saved into the EEPROM memory.
  */
 struct objConfigEEPROM {
-  uint8_t stream_effects;
   uint8_t brass_startup_loop;
   uint8_t cyclotron_direction;
   uint8_t center_led_fade; // Used for the 1984/1989 themes.
@@ -95,6 +94,7 @@ struct objConfigEEPROM {
   uint8_t system_mode; // Super Hero or Mode Original.
   uint8_t demo_light_mode; // Enables pack startup automatically at bootup (battery power-on).
   uint8_t wand_quick_bootup; // Controls whether pack does short or full bootup from wand in AL/FE.
+  uint8_t audio_volume_boost; // Whether to enable +10dB (200%) amplification.
   uint8_t default_system_volume; // Default master volume at bootup (battery power-on).
   uint8_t overheat_smoke_duration_level_5;
   uint8_t overheat_smoke_duration_level_4;
@@ -110,6 +110,7 @@ struct objConfigEEPROM {
   uint8_t use_ribbon_cable; // Enable/disable the ribbon cable alarm (useful for DIY packs).
   uint8_t disable_lid_detection; // Enable/disable cyclotron lid detection (useful for DIY packs).
   uint8_t fadeout_idle_sounds; // Enable/disable fading out of idle SFX after booting.
+  uint8_t fadeout_idle_delay; // How long before the idle fadeout takes place (10-60 seconds).
 };
 
 /*
@@ -318,10 +319,6 @@ void readEEPROM() {
 
     EEPROM.get(i_eepromConfigAddress, obj_config_eeprom);
 
-    if(obj_config_eeprom.stream_effects > 0 && obj_config_eeprom.stream_effects < 3) {
-      b_stream_effects = (obj_config_eeprom.stream_effects > 1);
-    }
-
     if(obj_config_eeprom.brass_startup_loop > 0 && obj_config_eeprom.brass_startup_loop < 3) {
       b_brass_startup_loop = (obj_config_eeprom.brass_startup_loop > 1);
     }
@@ -408,10 +405,19 @@ void readEEPROM() {
       b_fadeout_idle_sounds = (obj_config_eeprom.fadeout_idle_sounds > 1);
     }
 
+    if(obj_config_eeprom.fadeout_idle_delay > 9 && obj_config_eeprom.fadeout_idle_delay < 61) {
+      i_idle_fadeout_delay = obj_config_eeprom.fadeout_idle_delay * 1000;
+    }
+
+    // Make sure we set this before trying to set the volume level.
+    if(obj_config_eeprom.audio_volume_boost > 0 && obj_config_eeprom.audio_volume_boost < 3) {
+      toggleAudioBoost(obj_config_eeprom.audio_volume_boost > 1);
+    }
+
     if(obj_config_eeprom.default_system_volume > 0 && obj_config_eeprom.default_system_volume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = obj_config_eeprom.default_system_volume - 1;
-      i_volume_master_eeprom = (MINIMUM_VOLUME + i_volume_min_adj) - ((MINIMUM_VOLUME + i_volume_min_adj) * i_volume_master_percentage / 100);
+      i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }
@@ -610,10 +616,9 @@ void clearConfigEEPROM() {
 
 void saveConfigEEPROM() {
   // Convert the current EEPROM volume value into a percentage.
-  uint8_t i_eeprom_volume_master_percentage = 100 * ((MINIMUM_VOLUME + i_volume_min_adj) - i_volume_master_eeprom) / (MINIMUM_VOLUME + i_volume_min_adj);
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   // 1 = false, 2 = true.
-  uint8_t i_proton_stream_effects = b_stream_effects ? 2 : 1;
   uint8_t i_brass_startup_loop = b_brass_startup_loop ? 2 : 1;
   uint8_t i_cyclotron_direction = b_clockwise ? 2 : 1; // 1 = counter-clockwise, 2 = clockwise.
   uint8_t i_center_led_fade = b_fade_cyclotron_led ? 2 : 1;
@@ -631,6 +636,8 @@ void saveConfigEEPROM() {
   uint8_t i_use_ribbon_cable = b_use_ribbon_cable ? 2 : 1;
   uint8_t i_disable_lid_detection = b_disable_lid_detection ? 2 : 1;
   uint8_t i_fadeout_idle_sounds = b_fadeout_idle_sounds ? 2 : 1;
+  uint8_t i_fadeout_idle_delay = i_idle_fadeout_delay / 1000;
+  uint8_t i_audio_volume_boost = b_audio_boost ? 2 : 1;
   uint8_t i_default_system_volume = 101; // <- i_eeprom_volume_master_percentage + 1
   uint8_t i_overheat_smoke_duration_level_5 = i_ms_overheating_length_5 / 1000;
   uint8_t i_overheat_smoke_duration_level_4 = i_ms_overheating_length_4 / 1000;
@@ -677,7 +684,6 @@ void saveConfigEEPROM() {
   uint16_t i_eepromConfigAddress = i_eepromAddress + sizeof(objLEDEEPROM);
 
   objConfigEEPROM obj_config_eeprom = {
-    i_proton_stream_effects,
     i_brass_startup_loop,
     i_cyclotron_direction,
     i_center_led_fade,
@@ -690,6 +696,7 @@ void saveConfigEEPROM() {
     i_system_mode,
     i_demo_light_mode,
     i_wand_quick_bootup,
+    i_audio_volume_boost,
     i_default_system_volume,
     i_overheat_smoke_duration_level_5,
     i_overheat_smoke_duration_level_4,
@@ -704,7 +711,8 @@ void saveConfigEEPROM() {
     i_pack_vibration,
     i_use_ribbon_cable,
     i_disable_lid_detection,
-    i_fadeout_idle_sounds
+    i_fadeout_idle_sounds,
+    i_fadeout_idle_delay
   };
 
   // Save and update our object in the EEPROM.

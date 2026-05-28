@@ -73,6 +73,7 @@ struct objConfigEEPROM {
   uint8_t ctsMode;
   uint8_t systemMode;
   uint8_t beepLoop;
+  uint8_t audio_volume_boost;
   uint8_t defaultWandVolume;
   uint8_t overheatStartTimerLevel5;
   uint8_t overheatStartTimerLevel4;
@@ -140,7 +141,7 @@ void clearLEDEEPROM() {
 // Save config settings to Preferences
 void saveConfigEEPROM() {
   // Convert the current EEPROM volume value into a percentage.
-  uint8_t i_eeprom_volume_master_percentage = 100 * (MINIMUM_VOLUME - i_volume_master_eeprom) / MINIMUM_VOLUME;
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   uint8_t i_bargraph_mode = 1; // 1 = default, 2 = super hero, 3 = original.
   switch(BARGRAPH_MODE_EEPROM) {
@@ -273,6 +274,7 @@ void saveConfigEEPROM() {
   gObjConfigEEPROM.ctsMode = i_cts_mode;
   gObjConfigEEPROM.systemMode = gpstarWand.getSystemMode() == MODE_ORIGINAL ? 2 : 1;
   gObjConfigEEPROM.beepLoop = b_beep_loop ? 2 : 1;
+  gObjConfigEEPROM.audio_volume_boost = b_audio_boost ? 2 : 1;
   gObjConfigEEPROM.defaultWandVolume = (i_eeprom_volume_master_percentage < 101) ? (i_eeprom_volume_master_percentage + 1) : 101;
   gObjConfigEEPROM.overheatStartTimerLevel5 = i_ms_overheat_initiate_level_5 / 1000;
   gObjConfigEEPROM.overheatStartTimerLevel4 = i_ms_overheat_initiate_level_4 / 1000;
@@ -503,10 +505,15 @@ void readEEPROM() {
       b_beep_loop = (gObjConfigEEPROM.beepLoop > 1);
     }
 
+    // Make sure we set this before trying to set the volume level.
+    if(gObjConfigEEPROM.audio_volume_boost > 0 && gObjConfigEEPROM.audio_volume_boost < 3) {
+      toggleAudioBoost(gObjConfigEEPROM.audio_volume_boost > 1);
+    }
+
     if(gObjConfigEEPROM.defaultWandVolume > 0 && gObjConfigEEPROM.defaultWandVolume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = gObjConfigEEPROM.defaultWandVolume - 1;
-      i_volume_master_eeprom = MINIMUM_VOLUME - ((MINIMUM_VOLUME - i_volume_abs_max) * i_volume_master_percentage / 100);
+      i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }

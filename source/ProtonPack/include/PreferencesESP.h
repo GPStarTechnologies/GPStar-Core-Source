@@ -69,7 +69,6 @@ struct objLEDEEPROM {
 } gObjLEDEEPROM;
 
 struct objConfigEEPROM {
-  uint8_t stream_effects;
   uint8_t brass_startup_loop;
   uint8_t cyclotron_direction;
   uint8_t center_led_fade;
@@ -82,6 +81,7 @@ struct objConfigEEPROM {
   uint8_t system_mode;
   uint8_t demo_light_mode;
   uint8_t wand_quick_bootup;
+  uint8_t audio_volume_boost;
   uint8_t default_system_volume;
   uint8_t overheat_smoke_duration_level_5;
   uint8_t overheat_smoke_duration_level_4;
@@ -97,6 +97,7 @@ struct objConfigEEPROM {
   uint8_t use_ribbon_cable;
   uint8_t disable_lid_detection;
   uint8_t fadeout_idle_sounds;
+  uint8_t fadeout_idle_delay;
 } gObjConfigEEPROM;
 
 // Save LED settings to Preferences
@@ -192,7 +193,7 @@ void clearLEDEEPROM() {
 // Save config settings to Preferences
 void saveConfigEEPROM() {
   // Convert the current EEPROM volume value into a percentage.
-  uint8_t i_eeprom_volume_master_percentage = 100 * ((MINIMUM_VOLUME + i_volume_min_adj) - i_volume_master_eeprom) / (MINIMUM_VOLUME + i_volume_min_adj);
+  uint8_t i_eeprom_volume_master_percentage = getVolumePercentage(i_volume_master_eeprom);
 
   uint8_t i_pack_vibration = 4; // 1 = always, 2 = when firing, 3 = off, 4 = default.
   switch(VIBRATION_MODE_EEPROM) {
@@ -218,7 +219,6 @@ void saveConfigEEPROM() {
     break;
   }
 
-  gObjConfigEEPROM.stream_effects = b_stream_effects ? 2 : 1;
   gObjConfigEEPROM.brass_startup_loop = b_brass_startup_loop ? 2 : 1;
   gObjConfigEEPROM.cyclotron_direction = b_clockwise ? 2 : 1;
   gObjConfigEEPROM.center_led_fade = b_fade_cyclotron_led ? 2 : 1;
@@ -231,6 +231,7 @@ void saveConfigEEPROM() {
   gObjConfigEEPROM.system_mode = gpstarPack.getSystemMode() == MODE_ORIGINAL ? 2 : 1;
   gObjConfigEEPROM.demo_light_mode = b_demo_light_mode ? 2 : 1;
   gObjConfigEEPROM.wand_quick_bootup = !b_wand_long_startup ? 2 : 1; // Have to invert this one!
+  gObjConfigEEPROM.audio_volume_boost = b_audio_boost ? 2 : 1;
   gObjConfigEEPROM.default_system_volume = (i_eeprom_volume_master_percentage < 101) ? (i_eeprom_volume_master_percentage + 1) : 101;
   gObjConfigEEPROM.overheat_smoke_duration_level_5 = i_ms_overheating_length_5 / 1000;
   gObjConfigEEPROM.overheat_smoke_duration_level_4 = i_ms_overheating_length_4 / 1000;
@@ -246,6 +247,7 @@ void saveConfigEEPROM() {
   gObjConfigEEPROM.use_ribbon_cable = b_use_ribbon_cable ? 2 : 1;
   gObjConfigEEPROM.disable_lid_detection = b_disable_lid_detection ? 2 : 1;
   gObjConfigEEPROM.fadeout_idle_sounds = b_fadeout_idle_sounds ? 2 : 1;
+  gObjConfigEEPROM.fadeout_idle_delay = i_idle_fadeout_delay / 1000;
 
   if(preferences.begin("config", false)) {
     preferences.putBytes("config", &gObjConfigEEPROM, sizeof(gObjConfigEEPROM));
@@ -459,11 +461,6 @@ void readEEPROM() {
     resetInnerCyclotronLEDs();
     updateProtonPackLEDCounts();
 
-
-    if(gObjConfigEEPROM.stream_effects > 0 && gObjConfigEEPROM.stream_effects < 3) {
-      b_stream_effects = (gObjConfigEEPROM.stream_effects > 1);
-    }
-
     if(gObjConfigEEPROM.brass_startup_loop > 0 && gObjConfigEEPROM.brass_startup_loop < 3) {
       b_brass_startup_loop = (gObjConfigEEPROM.brass_startup_loop > 1);
     }
@@ -550,10 +547,19 @@ void readEEPROM() {
       b_fadeout_idle_sounds = (gObjConfigEEPROM.fadeout_idle_sounds > 1);
     }
 
+    if(gObjConfigEEPROM.fadeout_idle_delay > 9 && gObjConfigEEPROM.fadeout_idle_delay < 61) {
+      i_idle_fadeout_delay = gObjConfigEEPROM.fadeout_idle_delay * 1000;
+    }
+
+    // Make sure we set this before trying to set the volume level.
+    if(gObjConfigEEPROM.audio_volume_boost > 0 && gObjConfigEEPROM.audio_volume_boost < 3) {
+      toggleAudioBoost(gObjConfigEEPROM.audio_volume_boost > 1);
+    }
+
     if(gObjConfigEEPROM.default_system_volume > 0 && gObjConfigEEPROM.default_system_volume < 102) {
       // EEPROM value is from 1 to 101; subtract 1 to get the correct percentage.
       i_volume_master_percentage = gObjConfigEEPROM.default_system_volume - 1;
-      i_volume_master_eeprom = (MINIMUM_VOLUME + i_volume_min_adj) - ((MINIMUM_VOLUME + i_volume_min_adj) * i_volume_master_percentage / 100);
+      i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
       i_volume_revert = i_volume_master_eeprom;
       i_volume_master = i_volume_master_eeprom;
     }
