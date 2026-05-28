@@ -373,6 +373,7 @@ bool b_wand_long_startup = false;
 /*
  * When set to true, various impact and other stream effects will overlap and mix randomly into the Proton Stream for an added experience.
  * For the Wand II board this will utilize motion sensors to help enhance when effects are triggered as opposed to using a random timing.
+ * Note that this setting will be overridden by the Neutrona Wand upon successful synchronization.
  */
 bool b_stream_effects = true;
 

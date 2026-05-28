@@ -280,6 +280,7 @@ String getBlasterConfig() {
     jsonBody["deviceBootErrorBeep"] = blasterConfig.deviceBootErrorBeep; // true|false
     jsonBody["deviceVibration"] = blasterConfig.deviceVibration; // [1=ALWAYS,2=FIRING,3=NEVER]
     jsonBody["gpstarAudioLed"] = blasterConfig.gpstarAudioLed; // true|false
+    jsonBody["audioVolumeBoosted"] = blasterConfig.audioVolumeBoosted; // true|false
     jsonBody["invertBlasterBargraph"] = blasterConfig.invertBlasterBargraph; // true|false
   }
   catch (...) {
@@ -966,13 +967,13 @@ void handleToggleMute(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "mute") {
-        toggleMute(2);
+        toggleMute(true);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "unmute") {
-        toggleMute(1);
+        toggleMute(false);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
@@ -1113,13 +1114,13 @@ void handleLoopMusicTrack(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "one") {
-        toggleMusicLoop(2);
+        toggleMusicLoop(true);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "all") {
-        toggleMusicLoop(1);
+        toggleMusicLoop(false);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
@@ -1140,13 +1141,13 @@ void handleShuffleMusicTracks(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "on") {
-        toggleMusicShuffle(2);
+        toggleMusicShuffle(true);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "off") {
-        toggleMusicShuffle(1);
+        toggleMusicShuffle(false);
         notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
@@ -1470,7 +1471,9 @@ AsyncCallbackJsonWebHandler *handleSaveBlasterConfig = new AsyncCallbackJsonWebH
       updateJsonBool(blasterConfig.invertBlasterBargraph, jsonBody, "invertBlasterBargraph");
       updateJsonBool(blasterConfig.ventLightAutoIntensity, jsonBody, "ventLightAutoIntensity");
       updateJsonBool(blasterConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
+      updateJsonBool(blasterConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
       setAudioLED(blasterConfig.gpstarAudioLed);
+      toggleAudioBoost(blasterConfig.audioVolumeBoosted);
 
       // Get user-selected volume and constrain to an acceptable range (5-100).
       uint8_t i_volume = jsonBody["defaultSystemVolume"].as<uint8_t>() | blasterConfig.defaultSystemVolume;

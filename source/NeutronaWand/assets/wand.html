@@ -240,6 +240,24 @@
           <span class="label">AL/FE Beep Loop:</span>
         </label>
       </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-label="left">
+          <input id="extraProtonSounds" name="extraProtonSounds" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">Proton Stream Impact Effects:</span>
+        </label>
+      </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-label="left">
+          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">+10dB Amplification Boost:</span>
+        </label>
+      </div>
       <div class="setting" id="gpstarAudioLedToggle">
         <label class="toggle-switchy" data-label="left">
           <input id="gpstarAudioLed" name="gpstarAudioLed" type="checkbox" />
@@ -418,6 +436,8 @@
         setToggle("autoVentLight", settings.autoVentLight);
         setToggle("wandBeepLoop", settings.wandBeepLoop);
         setToggle("wandBootError", settings.wandBootError);
+        setToggle("extraProtonSounds", settings.extraProtonSounds);
+        setToggle("audioVolumeBoosted", settings.audioVolumeBoosted);
         setToggle("gpstarAudioLed", settings.gpstarAudioLed);
         setValue("defaultYearModeWand", settings.defaultYearModeWand ?? 1);
         setValue("defaultYearModeCTS", settings.defaultYearModeCTS ?? 1);
@@ -563,6 +583,8 @@
           autoVentLight: getToggle("autoVentLight"),
           wandBeepLoop: getToggle("wandBeepLoop"),
           wandBootError: getToggle("wandBootError"),
+          extraProtonSounds: getToggle("extraProtonSounds"),
+          audioVolumeBoosted: getToggle("audioVolumeBoosted"),
           gpstarAudioLed: getToggle("gpstarAudioLed"),
           defaultYearModeWand: getInt("defaultYearModeWand") ?? 1,
           defaultYearModeCTS: getInt("defaultYearModeCTS") ?? 1,

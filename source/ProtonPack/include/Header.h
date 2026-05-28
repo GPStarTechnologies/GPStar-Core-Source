@@ -251,6 +251,15 @@ const uint16_t i_brass_ramp_down_length = 8800;
 const uint16_t i_2021_ramp_down_length = 10500;
 const uint16_t i_1984_ramp_down_length = 2500;
 const uint16_t i_1989_ramp_down_length = 100;
+const uint8_t i_slime_effect_idle_lower_delay = 70;
+const uint8_t i_slime_effect_idle_upper_delay = 101;
+const uint8_t i_slime_effect_pl1_delay = 100;
+const uint8_t i_slime_effect_pl2_delay = 90;
+const uint8_t i_slime_effect_pl3_delay = 80;
+const uint8_t i_slime_effect_pl4_delay = 70;
+const uint8_t i_slime_effect_pl5_delay = 60;
+const uint8_t i_slime_effect_shutdown_delay = 30;
+const uint8_t i_ice_effect_delay = 5;
 uint16_t i_outer_current_ramp_speed = i_2021_ramp_delay;
 uint8_t i_cyclotron_multiplier = 1;
 bool b_ramp_up = true;
@@ -501,7 +510,7 @@ bool b_spectral_lights_on = false;
 bool b_first_boot = true;
 uint16_t i_wand_audio_version = 0;
 const uint16_t i_gbfe_brass_shutdown_delay = 8796;
-const uint16_t i_idle_fadeout_time = 30000;
+uint16_t i_idle_fadeout_delay = 30000;
 
 /*
  * UI Status Display Type

@@ -209,8 +209,8 @@ String getPackConfig() {
     jsonBody["currentYearThemePack"] = packConfig.currentYearThemePack; // [2=1984,3=1989,4=2021,5=2024]
     jsonBody["defaultPackVolume"] = packConfig.defaultPackVolume; // 5-100
     jsonBody["fadeoutIdleSounds"] = packConfig.fadeoutIdleSounds; // true|false
+    jsonBody["fadeoutIdleDelay"] = packConfig.fadeoutIdleDelay; // 10-60
     jsonBody["packVibration"] = packConfig.packVibration; // [1=ALWAYS,2=FIRING,3=NEVER,4=TOGGLE,5=MOTORIZED_CYCLOTRON]
-    jsonBody["protonStreamEffects"] = packConfig.protonStreamEffects; // true|false
     jsonBody["brassStartupLoop"] = packConfig.brassStartupLoop; // true|false
     jsonBody["ribbonCableAlarm"] = packConfig.ribbonCableAlarm; // true|false
     jsonBody["wandQuickBootup"] = packConfig.wandQuickBootup; // true|false
@@ -245,6 +245,7 @@ String getPackConfig() {
     jsonBody["ledPowercellSat"] = packConfig.ledPowercellSat; // Spectral custom saturation 2-254
     jsonBody["ledPowercellLum"] = packConfig.ledPowercellLum; // Brightness 20-100
     jsonBody["ledVGPowercell"] = packConfig.ledVGPowercell; // true|false
+    jsonBody["audioVolumeBoosted"] = packConfig.audioVolumeBoosted; // true|false
     jsonBody["gpstarAudioLed"] = packConfig.gpstarAudioLed; // true|false
   }
   else {
@@ -304,7 +305,9 @@ String getWandConfig() {
     jsonBody["rgbVentEnabled"] = wandConfig.rgbVentEnabled; // true|false
     jsonBody["rgbVentColours"] = wandConfig.rgbVentColours; // true|false
     jsonBody["autoVentLight"] = wandConfig.autoVentLight; // true|false
+    jsonBody["audioVolumeBoosted"] = wandConfig.audioVolumeBoosted; // true|false
     jsonBody["gpstarAudioLed"] = wandConfig.gpstarAudioLed; // true|false
+    jsonBody["extraProtonSounds"] = wandConfig.extraProtonSounds; // true|false
     jsonBody["wandBeepLoop"] = wandConfig.wandBeepLoop; // true|false (Afterlife/Frozen Empire Only)
     jsonBody["wandBootError"] = wandConfig.wandBootError; // true|false (Super-Hero Mode Only)
     jsonBody["defaultYearModeWand"] = wandConfig.defaultYearModeWand; // [1=TOGGLE,2=1984,3=1989,4=2021,5=2024]
@@ -1690,18 +1693,19 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.defaultYearThemePack = (SYSTEM_THEMES)jsonBody["defaultYearThemePack"].as<uint8_t>();
       packConfig.currentYearThemePack = (SYSTEM_THEMES)jsonBody["currentYearThemePack"].as<uint8_t>();
       packConfig.packVibration = (VIBRATION_MODES)jsonBody["packVibration"].as<uint8_t>();
+      packConfig.fadeoutIdleDelay = jsonBody["fadeoutIdleDelay"].as<uint8_t>();
       packConfig.defaultPackVolume = jsonBody["defaultPackVolume"].as<uint8_t>();
 
       // Boolean fields - Effect toggles
       updateJsonBool(packConfig.ribbonCableAlarm, jsonBody, "ribbonCableAlarm");
       updateJsonBool(packConfig.wandQuickBootup, jsonBody, "wandQuickBootup");
-      updateJsonBool(packConfig.protonStreamEffects, jsonBody, "protonStreamEffects");
       updateJsonBool(packConfig.brassStartupLoop, jsonBody, "brassStartupLoop");
       updateJsonBool(packConfig.overheatStrobeNF, jsonBody, "overheatStrobeNF");
       updateJsonBool(packConfig.overheatLightsOff, jsonBody, "overheatLightsOff");
       updateJsonBool(packConfig.overheatSyncToFan, jsonBody, "overheatSyncToFan");
       updateJsonBool(packConfig.demoLightMode, jsonBody, "demoLightMode");
       updateJsonBool(packConfig.fadeoutIdleSounds, jsonBody, "fadeoutIdleSounds");
+      updateJsonBool(packConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
       updateJsonBool(packConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
 
       // Update certain operational values immediately.
@@ -1829,6 +1833,8 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       updateJsonBool(wandConfig.quickVenting, jsonBody, "quickVenting");
       updateJsonBool(wandConfig.wandBeepLoop, jsonBody, "wandBeepLoop");
       updateJsonBool(wandConfig.wandBootError, jsonBody, "wandBootError");
+      updateJsonBool(wandConfig.extraProtonSounds, jsonBody, "extraProtonSounds");
+      updateJsonBool(wandConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
       updateJsonBool(wandConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
 
       // Numeric fields - Bargraph options

@@ -86,7 +86,7 @@ void settingsMenuCheck() {
         case OPTION_5:
           // Intensify: Enable/Disable Music Track Looping.
           if(b_playing_music && switch_intensify.pushed()) {
-            toggleMusicLoop();
+            toggleMusicLoop(!b_repeat_track);
             sendDebug(F("Toggle Music Loop"));
           }
 
@@ -127,7 +127,7 @@ void settingsMenuCheck() {
         case OPTION_3:
           // Intensify: Enable/Disable shuffle play.
           if(switch_intensify.pushed()) {
-            toggleMusicShuffle();
+            toggleMusicShuffle(!b_shuffle_tracks);
             sendDebug(F("Toggle Music Shuffle"));
           }
           // Grip + Dial = Effects Volume
@@ -342,6 +342,15 @@ void settingsMenuCheck() {
                 ms_menu_vibration.start(250); // Confirmation buzz for 250ms.
               break;
             }
+          }
+        break;
+        case OPTION_2:
+          // Intensify: Enable/Disable +10dB audio amplification.
+          if(switch_intensify.pushed()) {
+            stopEffect(S_VOICE_AUDIO_BOOST_ENABLED);
+            stopEffect(S_VOICE_AUDIO_BOOST_DISABLED);
+            toggleAudioBoost(!b_audio_boost);
+            b_audio_boost ? playEffect(S_VOICE_AUDIO_BOOST_ENABLED) : playEffect(S_VOICE_AUDIO_BOOST_DISABLED);
           }
         break;
         default:

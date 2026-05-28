@@ -332,27 +332,16 @@ void wandTipOn() {
       colours c_temp = C_WHITE;
 
       if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE) {
-        if(b_wand_mash_lockout || b_pack_alarm) {
-          if(gpstarWand.inStreamMode(PROTON) && !b_pack_cyclotron_lid_on) {
-            // Green goop effect if in Proton Stream mode and pack's cyclotron lid is off.
-            c_temp = C_CHARTREUSE;
-          }
-          else {
-            // Set the tip of the GPStar Neutrona Barrel LED array to beige if playing the lockout/cable spark animation.
-            c_temp = C_BEIGE;
-          }
-        }
-        else if(b_firing_cross_streams && !b_pack_cyclotron_lid_on) {
-          // Set the tip of the GPStar Neutrona Barrel LED array to greenish if in Frozen Empire and using CTS mode.
+        if(isBrassPack()) {
+          // Green goop effect if in Proton Stream mode and pack's cyclotron lid is off.
           c_temp = C_CHARTREUSE;
         }
+        else if(b_wand_mash_lockout || b_pack_alarm) {
+          // Set the tip of the GPStar Neutrona Barrel LED array to beige if playing the lockout/cable spark animation.
+          c_temp = C_BEIGE;
+        }
         else if(gpstarWand.inStreamMode(SLIME)) {
-          if(getSystemYearMode() == SYSTEM_1989) {
-            c_temp = C_PASTEL_PINK;
-          }
-          else {
-            c_temp = C_DARK_GREEN;
-          }
+          c_temp = C_DARK_GREEN;
         }
       }
       else {
@@ -2244,95 +2233,101 @@ void modeFireStopSounds() {
 
   ms_meson_blast.stop();
 
-  switch(gpstarWand.getStreamMode()) {
-    case PROTON:
-    default:
-      switch(getSystemYearMode()) {
-        case SYSTEM_1984:
-          if(gpstarWand.getPowerLevel() != MAX_POWER_LEVEL) {
+  if(!b_wand_mash_lockout) {
+    switch(gpstarWand.getStreamMode()) {
+      case PROTON:
+      default:
+        switch(getSystemYearMode()) {
+          case SYSTEM_1984:
+            if(gpstarWand.getPowerLevel() != MAX_POWER_LEVEL) {
+              // Play different firing end stream sound depending on how long we have been firing for.
+              if(ms_firing_length_timer.remaining() < 5000) {
+                // Long firing tail end.
+                playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
+              }
+              else if(ms_firing_length_timer.remaining() < 10000) {
+                // Mid firing tail end.
+                playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
+              }
+              else {
+                // Short firing tail end.
+                playEffect(S_GB1_1984_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
+              }
+            }
+            else {
+                // Play different firing end stream sound depending on how long we have been firing for.
+                if(ms_firing_length_timer.remaining() < 5000) {
+                  // Long tail end.
+                  playEffect(S_GB1_1984_FIRE_END_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                }
+                else if(ms_firing_length_timer.remaining() < 10000) {
+                  // Mid tail end.
+                  playEffect(S_GB1_1984_FIRE_END_MID_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                }
+                else {
+                  // Short tail end.
+                  playEffect(S_GB1_1984_FIRE_END_SHORT_HIGH_POWER, false, i_volume_effects, false, 0, false);
+                }
+            }
+          break;
+
+          case SYSTEM_1989:
+            // Play different firing end stream sound depending on how long we have been firing for.
+            if(ms_firing_length_timer.remaining() < 5000) {
+              // Long tail end.
+              playEffect(S_FIRING_END_GUN, false, i_volume_effects, false, 0, false);
+            }
+            else if(ms_firing_length_timer.remaining() < 10000) {
+              // Mid tail end.
+              playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
+            }
+            else {
+              // Short tail end.
+              playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
+            }
+          break;
+
+          case SYSTEM_AFTERLIFE:
+          default:
             // Play different firing end stream sound depending on how long we have been firing for.
             if(ms_firing_length_timer.remaining() < 5000) {
               // Long firing tail end.
-              playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
+              playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
             }
             else if(ms_firing_length_timer.remaining() < 10000) {
               // Mid firing tail end.
-              playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
+              playEffect(S_AFTERLIFE_FIRE_END_MID, false, i_volume_effects, false, 0, false);
             }
             else {
               // Short firing tail end.
-              playEffect(S_GB1_1984_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
+              playEffect(S_AFTERLIFE_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
             }
-          }
-          else {
-              // Play different firing end stream sound depending on how long we have been firing for.
-              if(ms_firing_length_timer.remaining() < 5000) {
-                // Long tail end.
-                playEffect(S_GB1_1984_FIRE_END_HIGH_POWER, false, i_volume_effects, false, 0, false);
-              }
-              else if(ms_firing_length_timer.remaining() < 10000) {
-                // Mid tail end.
-                playEffect(S_GB1_1984_FIRE_END_MID_HIGH_POWER, false, i_volume_effects, false, 0, false);
-              }
-              else {
-                // Short tail end.
-                playEffect(S_GB1_1984_FIRE_END_SHORT_HIGH_POWER, false, i_volume_effects, false, 0, false);
-              }
-          }
-        break;
+          break;
 
-        case SYSTEM_1989:
-          // Play different firing end stream sound depending on how long we have been firing for.
-          if(ms_firing_length_timer.remaining() < 5000) {
-            // Long tail end.
-            playEffect(S_FIRING_END_GUN, false, i_volume_effects, false, 0, false);
-          }
-          else if(ms_firing_length_timer.remaining() < 10000) {
-            // Mid tail end.
-            playEffect(S_FIRING_END_MID, false, i_volume_effects, false, 0, false);
-          }
-          else {
-            // Short tail end.
-            playEffect(S_FIRING_END, false, i_volume_effects, false, 0, false);
-          }
-        break;
-
-        case SYSTEM_AFTERLIFE:
-        default:
-          // Play different firing end stream sound depending on how long we have been firing for.
-          if(ms_firing_length_timer.remaining() < 5000) {
-            // Long firing tail end.
-            playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
-          }
-          else if(ms_firing_length_timer.remaining() < 10000) {
-            // Mid firing tail end.
+          case SYSTEM_FROZEN_EMPIRE:
+            // Frozen Empire replaces all firing tail sounds with just a "thump".
             playEffect(S_AFTERLIFE_FIRE_END_MID, false, i_volume_effects, false, 0, false);
-          }
-          else {
-            // Short firing tail end.
-            playEffect(S_AFTERLIFE_FIRE_END_SHORT, false, i_volume_effects, false, 0, false);
-          }
-        break;
+          break;
+        }
+      break;
 
-        case SYSTEM_FROZEN_EMPIRE:
-          // Frozen Empire replaces all firing tail sounds with just a "thump".
-          playEffect(S_AFTERLIFE_FIRE_END_MID, false, i_volume_effects, false, 0, false);
-        break;
-      }
-    break;
+      case SLIME:
+        playEffect(S_SLIME_END, false, i_volume_effects, false, 0, false);
+      break;
 
-    case SLIME:
-      playEffect(S_SLIME_END, false, i_volume_effects, false, 0, false);
-    break;
+      case STASIS:
+        playEffect(S_STASIS_END, false, i_volume_effects, false, 0, false);
+      break;
 
-    case STASIS:
-      playEffect(S_STASIS_END, false, i_volume_effects, false, 0, false);
-    break;
+      case MESON:
+        // Do nothing; this is handled later.
+      break;
+    }
+  }
 
-    case MESON:
-      // Set the pulse to stop looping.
-      stopEffectLoop(S_MESON_FIRE_PULSE);
-    break;
+  if(gpstarWand.getStreamMode() == MESON) {
+    // Stop meson looping no matter what.
+    stopEffectLoop(S_MESON_FIRE_PULSE);
   }
 
   // Stop all other firing sounds.
@@ -2419,16 +2414,18 @@ void modeFireStopSounds() {
         stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_START);
         stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END);
 
-        playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
+        if(!b_wand_mash_lockout) {
+          playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
+        }
       break;
 
       case CTS_1984:
-        if(AUDIO_DEVICE == A_WAV_TRIGGER) {
-          stopEffect(S_CROSS_STREAMS_START);
-          stopEffect(S_CROSS_STREAMS_END);
-        }
+        stopEffect(S_CROSS_STREAMS_START);
+        stopEffect(S_CROSS_STREAMS_END);
 
-        playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
+        if(!b_wand_mash_lockout) {
+          playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
+        }
       break;
 
       case CTS_DEFAULT:
@@ -2440,17 +2437,19 @@ void modeFireStopSounds() {
             stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_START);
             stopEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END);
 
-            playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
+            if(!b_wand_mash_lockout) {
+              playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
+            }
           break;
 
           case SYSTEM_1984:
           case SYSTEM_1989:
-            if(AUDIO_DEVICE == A_WAV_TRIGGER) {
-              stopEffect(S_CROSS_STREAMS_START);
-              stopEffect(S_CROSS_STREAMS_END);
-            }
+            stopEffect(S_CROSS_STREAMS_START);
+            stopEffect(S_CROSS_STREAMS_END);
 
-            playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
+            if(!b_wand_mash_lockout) {
+              playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
+            }
           break;
         }
       break;
@@ -2464,7 +2463,9 @@ void modeFireStop() {
   ms_overheat_initiate.stop();
 
   // Tell the pack the wand stopped firing.
-  wandSerialSend(W_FIRING_STOPPED);
+  if(!b_wand_mash_lockout) {
+    wandSerialSend(W_FIRING_STOPPED);
+  }
 
   WAND_ACTION_STATUS = ACTION_IDLE;
 
@@ -3603,7 +3604,6 @@ void fireControlCheck() {
       else {
         // Use the standard error alarm for this effect.
         if(b_extra_pack_sounds) {
-          wandSerialSend(W_WAND_MASH_ERROR_SOUND);
           wandSerialSend(W_MASH_ERROR_LOOP);
         }
 
@@ -6119,13 +6119,18 @@ void modeFireStart() {
 
   bargraphRampFiring();
 
-  if(gpstarWand.inStreamMode(PROTON) && b_stream_effects) {
+  if(b_stream_effects) {
     ms_impact.start(random(10,16) * 1000);
 
-    // Standalone wand plays additional SFX from Proton Pack.
+    #ifdef ESP32
+    // Start the IMU debounce timer.
+    ms_firing_sound_mix.start(0);
+    #else
     if(b_wand_standalone) {
+      // Standalone wand plays additional SFX from Proton Pack.
       ms_firing_sound_mix.start(random(7,15) * 1000);
     }
+    #endif
   }
 
   ms_firing_length_timer.start(i_firing_timer_length);
@@ -7086,76 +7091,83 @@ uint8_t getRandomFiringEffect() {
 void mixExtraFiringEffects() {
 #ifdef ESP32
   // Mix some impact sound based on user-initiated motions while firing.
-  if(gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects && filteredMotionData.shaken) {
+  if((gpstarWand.inStreamMode(PROTON) || gpstarWand.inStreamMode(SPECTRAL_CUSTOM)) && !b_firing_cross_streams && b_stream_effects && filteredMotionData.shaken) {
     // Only play impact sound if firing, in Proton mode, and threshold exceeded.
-    uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
-    switch(i_random_effect) {
-      case 3:
-        playEffect(S_FIRE_SPARKS_5, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_5;
-      break;
+    if(ms_firing_sound_mix.justFinished()) {
+      uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
+      switch(i_random_effect) {
+        case 3:
+          playEffect(S_FIRE_SPARKS_5, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_5;
+        break;
 
-      case 2:
-        playEffect(S_FIRE_SPARKS_4, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_4;
-      break;
+        case 2:
+          playEffect(S_FIRE_SPARKS_4, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_4;
+        break;
 
-      case 1:
-        playEffect(S_FIRE_SPARKS_3, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_3;
-      break;
+        case 1:
+          playEffect(S_FIRE_SPARKS_3, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_3;
+        break;
 
-      case 0:
-      default:
-        playEffect(S_FIRE_SPARKS_2, false, i_volume_effects - 10, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_2;
-      break;
+        case 0:
+        default:
+          playEffect(S_FIRE_SPARKS_2, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_2;
+        break;
+      }
+
+      wandSerialSend(W_IMPACT_SOUND, i_random_effect); // Trigger an impact sound to play on the pack (matched to the random value chosen here).
+      ms_firing_sound_mix.start(i_impact_sound_debounce); // Restart the debounce timer.
     }
+  }
+#else
+  // Standalone Neutrona Wand gets additional effects which would normally be played by Proton Pack.
+  if((gpstarWand.inStreamMode(PROTON) || gpstarWand.inStreamMode(SPECTRAL_CUSTOM)) && !b_firing_cross_streams && b_stream_effects && b_wand_standalone) {
+    if(ms_firing_sound_mix.justFinished()) {
+      uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
+      uint16_t i_s_random = random(2,4) * 1000; // Affects mix timer, not effect chosen.
 
-    wandSerialSend(W_IMPACT_SOUND, i_random_effect); // Trigger an impact sound to play on the pack (matched to the random value chosen here).
+      switch(i_random_effect) {
+        case 3:
+          playEffect(S_FIRE_SPARKS, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS;
+
+          ms_firing_sound_mix.start(i_s_random * 5);
+        break;
+
+        case 2:
+          playEffect(S_FIRE_SPARKS_4, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_4;
+
+          ms_firing_sound_mix.start(i_s_random);
+        break;
+
+        case 1:
+          playEffect(S_FIRE_SPARKS_3, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_3;
+
+          ms_firing_sound_mix.start(i_s_random);
+        break;
+
+        case 0:
+        default:
+          playEffect(S_FIRE_SPARKS_2, false, i_volume_effects, false, 0, false);
+          playEffect(S_FIRE_SPARKS_5, false, i_volume_effects, false, 0, false);
+          i_last_firing_effect_mix = S_FIRE_SPARKS_5;
+
+          ms_firing_sound_mix.start(1800);
+        break;
+      }
+    }
   }
 #endif
   // Mix some impact sound every 10-15 seconds while firing.
-  if(ms_impact.justFinished() && gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects) {
-    playEffect(S_FIRE_LOOP_IMPACT, false, i_volume_effects, false, 0, false);
-    ms_impact.start(random(10,16) * 1000);
-  }
-
-  // Standalone Neutrona Wand gets additional effects which would normally be played by Proton Pack.
-  if(ms_firing_sound_mix.justFinished() && gpstarWand.inStreamMode(PROTON) && !b_firing_cross_streams && b_stream_effects) {
-    uint8_t i_random_effect = getRandomFiringEffect(); // Use last-played effect to choose another.
-    uint16_t i_s_random = random(2,4) * 1000; // Affects mix timer, not effect chosen.
-
-    switch(i_random_effect) {
-      case 3:
-        playEffect(S_FIRE_SPARKS, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS;
-
-        ms_firing_sound_mix.start(i_s_random * 5);
-      break;
-
-      case 2:
-        playEffect(S_FIRE_SPARKS_4, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_4;
-
-        ms_firing_sound_mix.start(i_s_random);
-      break;
-
-      case 1:
-        playEffect(S_FIRE_SPARKS_3, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_3;
-
-        ms_firing_sound_mix.start(i_s_random);
-      break;
-
-      case 0:
-      default:
-        playEffect(S_FIRE_SPARKS_2, false, i_volume_effects, false, 0, false);
-        playEffect(S_FIRE_SPARKS_5, false, i_volume_effects, false, 0, false);
-        i_last_firing_effect_mix = S_FIRE_SPARKS_5;
-
-        ms_firing_sound_mix.start(1800);
-      break;
+  if((gpstarWand.inStreamMode(PROTON) || gpstarWand.inStreamMode(SPECTRAL_CUSTOM)) && !b_firing_cross_streams && b_stream_effects) {
+    if(ms_impact.justFinished()) {
+      playEffect(S_FIRE_LOOP_IMPACT, false, i_volume_effects, false, 0, false);
+      ms_impact.start(random(10,16) * 1000);
     }
   }
 }
@@ -7256,6 +7268,8 @@ void modeFiring() {
   if(b_firing_alt && b_firing_intensify && !b_sound_firing_cross_the_streams && !b_firing_cross_streams) {
     b_firing_cross_streams = true;
     b_sound_firing_cross_the_streams = true;
+    ms_impact.stop();
+    ms_firing_sound_mix.stop();
 
     switch(WAND_YEAR_CTS) {
       case CTS_AFTERLIFE:
@@ -7334,10 +7348,6 @@ void modeFiring() {
         }
       break;
     }
-
-    if(b_stream_effects) {
-      ms_impact.start(random(10,16) * 1000);
-    }
   }
 
   if((!b_firing_alt || !b_firing_intensify) && b_firing_cross_streams && gpstarWand.isFiringModeCTSMix()) {
@@ -7395,9 +7405,19 @@ void modeFiring() {
       break;
     }
 
-    // Restart the impact sound timer for the standalone wand.
-    if(b_stream_effects && b_wand_standalone) {
-      ms_firing_sound_mix.start(random(7,15) * 1000);
+    // Restart the impact sound timers.
+    if(b_stream_effects) {
+      ms_impact.start(random(10,16) * 1000);
+
+      #ifdef ESP32
+      // Restart the IMU debounce timer.
+      ms_firing_sound_mix.start(0);
+      #else
+      if(b_wand_standalone) {
+        // Standalone wand plays additional SFX from Proton Pack.
+        ms_firing_sound_mix.start(random(7,15) * 1000);
+      }
+      #endif
     }
   }
 
@@ -7603,9 +7623,8 @@ void wandBarrelHeatDown() {
 
   if(b_wand_mash_lockout || b_pack_alarm) {
     // Special spark effect handling for button mash lockout and ribbon cable removal.
-
     if(ms_wand_heatup_fade.justFinished() && i_heatdown_counter > 0) {
-      if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE && gpstarWand.inStreamMode(PROTON) && !b_pack_cyclotron_lid_on) {
+      if(isBrassPack()) {
         // Green goop effect in FE mode if the cyclotron lid is off.
         c_temp = C_CHARTREUSE;
       }
@@ -7669,7 +7688,10 @@ void wandBarrelHeatDown() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        // Do nothing since c_temp is already C_WHITE.
+        if(isBrassPack()) {
+          // Green goop effect in FE mode if the cyclotron lid is off.
+          c_temp = C_CHARTREUSE;
+        }
       break;
 
       case SLIME:
@@ -7771,12 +7793,11 @@ void wandBarrelHeatUp() {
 
   if(b_wand_mash_lockout || b_pack_alarm) {
     // Special spark effect handling for button mash lockout and ribbon cable removal.
-
     if((i_bmash_spark_index < 1 && i_heatup_counter > 100) || (i_bmash_spark_index > 0 && i_heatup_counter > 75)) {
       wandBarrelHeatDown();
     }
     else if(ms_wand_heatup_fade.justFinished() && ((i_bmash_spark_index < 1 && i_heatup_counter <= 100) || (i_bmash_spark_index > 0 && i_heatup_counter <= 75))) {
-      if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE && gpstarWand.inStreamMode(PROTON) && !b_pack_cyclotron_lid_on) {
+      if(isBrassPack()) {
         // Green goop effect in FE mode if the cyclotron lid is off.
         c_temp = C_CHARTREUSE;
       }
@@ -7831,7 +7852,10 @@ void wandBarrelHeatUp() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        // Do nothing since c_temp is already C_WHITE.
+        if(isBrassPack()) {
+          // Green goop effect in FE mode if the cyclotron lid is off.
+          c_temp = C_CHARTREUSE;
+        }
       break;
 
       case SLIME:
@@ -8448,13 +8472,11 @@ void fireEffectEnd() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        if(b_firing_cross_streams) {
-          if(isBrassPack()) {
-            c_temp = C_ORANGE;
-          }
-          else {
-            c_temp = C_YELLOW;
-          }
+        if(isBrassPack()) {
+          c_temp = C_ORANGE;
+        }
+        else if(b_firing_cross_streams) {
+          c_temp = C_YELLOW;
         }
         else if(getSystemYearMode() == SYSTEM_1989) {
           // Shift the stream from orange to red on higher power levels.
@@ -8656,13 +8678,11 @@ void fireEffectEnd() {
     switch(gpstarWand.getStreamMode()) {
       case PROTON:
       default:
-        if(b_firing_cross_streams) {
-          if(isBrassPack()) {
-            c_temp = C_CHARTREUSE;
-          }
-          else {
-            c_temp = C_WHITE;
-          }
+        if(isBrassPack()) {
+          c_temp = C_CHARTREUSE;
+        }
+        else if(b_firing_cross_streams) {
+          c_temp = C_WHITE;
         }
         else if(getSystemYearMode() == SYSTEM_1989) {
           // Shift the stream from orange to red on higher power levels.
