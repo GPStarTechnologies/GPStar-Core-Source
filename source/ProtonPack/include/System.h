@@ -1538,7 +1538,7 @@ void packOffReset() {
 }
 
 void setYearModeByToggle() {
-  // We have 4 year modes but only 2 toggle states, so these get grouped by their Haslab defaults.
+  // We have 4 year modes but only 2 toggle states, so these get grouped by their HasLab defaults.
   // Toggling the switch up/down will cycle through 1984 -> Afterlife -> 1989 -> Frozen Empire.
   if(switch_mode.getState() == LOW) {
     if(gpstarPack.isThemeModern()) {
@@ -3165,7 +3165,7 @@ void cyclotron84LightOff(uint8_t cLed) {
 }
 
 // Returns true if we should use sequential (lens-by-lens) style cyclotron animations.
-// The stock 1984 Haslab packs must always use this animation, regardless of theme.
+// The stock 1984 HasLab packs must always use this animation, regardless of theme.
 bool useSequentialCyclotronAnimation() {
   // Force 1984 animation for stock 1984 packs (LEDs are not arranged in a ring)
   if(i_stock_pack_type == 1 && i_cyclotron_num_leds == 12) {

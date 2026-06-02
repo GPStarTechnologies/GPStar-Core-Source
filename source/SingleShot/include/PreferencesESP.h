@@ -124,7 +124,7 @@ void getSpecialPreferences() {
           INSTALL_ORIENTATION = COMPONENTS_UP_USB_REAR;
         break;
         case 3:
-          // Default for Haslab.
+          // Default for HasLab.
           INSTALL_ORIENTATION = COMPONENTS_DOWN_USB_FRONT;
         break;
         case 4:
@@ -181,7 +181,7 @@ void getSpecialPreferences() {
     }
   }
 
-  // Fallback to the Haslab as default if not set.
+  // Fallback to the HasLab as default if not set.
   if(INSTALL_ORIENTATION == COMPONENTS_NOT_ORIENTED) {
     INSTALL_ORIENTATION = COMPONENTS_DOWN_USB_FRONT;
   }

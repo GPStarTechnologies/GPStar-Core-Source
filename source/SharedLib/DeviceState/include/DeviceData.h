@@ -43,11 +43,11 @@ struct __attribute__((packed)) PackPrefs {
   bool overheatSyncToFan = false;
   bool overheatLightsOff = false;
   uint8_t ledCycLidCount = 12; // Cyclotron Lid LED Count [12,20,36,40]
-  uint8_t stockPackType = 0; // Haslab Pack Type [0=Afterlife,1=1984]
+  uint8_t stockPackType = 0; // HasLab Pack Type [0=Afterlife,1=1984]
   uint8_t ledCycLidHue = 2; // Spectral custom colour/hue 2-254
   uint8_t ledCycLidSat = 2; // Spectral custom saturation 2-254
   uint8_t ledCycLidLum = 50; // Brightness 20-100
-  uint8_t ledCycLidCenter = 0; // [0=3,1=1]
+  uint8_t ledCycLidCenter = 0; // [0=3 LED, 1=1 LED]
   bool ledCycLidFade = false;
   bool ledCycLidSimRing = false;
   bool disableLidDetection = false; // Ignore cyclotron lid switch state

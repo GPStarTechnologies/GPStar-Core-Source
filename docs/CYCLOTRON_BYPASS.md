@@ -1,6 +1,6 @@
 # GPStar Cyclotron Bypass (DIY Packs)
 
-This device is only necessary for a DIY (non-Haslab) Proton Pack which does not have a removable cyclotron lid.
+This device is only necessary for a DIY (non-HasLab) Proton Pack which does not have a removable cyclotron lid.
 
 The GPStar Cyclotron Bypass is used to connect your GPStar Cyclotron Lid LEDs (or any addressable LED ring or lights) to the GPStar Proton Pack electronics. As the kit was designed to work with the removable lid features on the Hasbro packs, we need a way to make the system think a lid is always attached which is what this bypass board can do.
 

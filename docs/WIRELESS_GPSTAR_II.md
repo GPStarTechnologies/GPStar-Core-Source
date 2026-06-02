@@ -52,7 +52,7 @@ When using the graphical display, most components of the Proton pack and Neutron
     - Dark Matter Gen.: Blue
     - Particle System: Orange
     - Settings: Gray
-- When using the power-detection feature with a stock Haslab Neutrona Wand the default stream will be Proton with a power level of 5. Instead of the stream type being displayed, there will be a wattage value displayed as Gigawatts (GW).
+- When using the power-detection feature with a stock HasLab Neutrona Wand the default stream will be Proton with a power level of 5. Instead of the stream type being displayed, there will be a wattage value displayed as Gigawatts (GW).
 - If the Ribbon Cable is removed, a warning icon will appear over that component to indicate an alarm state.
 - When the Cyclotron lid is removed a radiation exposure warning will be displayed at the bottom of the CRT display.
 
@@ -134,7 +134,7 @@ The special device settings allows you to change the graphical user interface, c
 
 ![Menu-Display](images/WebUI-Pack.jpg)
 
-Set options related specifically to the Proton Pack. Options such as the color/saturation sliders will only take effect if you have installed upgrades to the RGB Power Cell and Cyclotron lid light kits. Similarly, the Video Game mode option will have no effect on the stock Haslab LEDs.
+Set options related specifically to the Proton Pack. Options such as the color/saturation sliders will only take effect if you have installed upgrades to the RGB Power Cell and Cyclotron lid light kits. Similarly, the Video Game mode option will have no effect on the stock HasLab LEDs.
 
 **Reminder:** The ability to update settings or save to EEPROM will be disabled so long as the pack and wand are running. Turn off all physical toggles to set these devices to an idle state before adjusting settings. Refresh the page to get the latest values for preferences.
 

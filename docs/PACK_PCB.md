@@ -2,7 +2,7 @@
 
 &starf; For a comparison of the original GPStar and GPStar II controllers please see [this comparison guide](https://gpstartechnologies.com/blogs/gpstar-blog/gpstar-ii-vs-gpstar) on the main GPStar website.
 
-This is the guide for all first-generation PCB kits which fully **supports all stock devices** within the Haslab Proton Pack.
+This is the guide for all first-generation PCB kits which fully **supports all stock devices** within the HasLab Proton Pack.
 
 The goal of this kit is to provide a minimally-invasive upgrade to the stock controllers. For the Proton Pack all stock connections can be made using the available JST-XH connectors on all existing wiring. The diagram below details the standard HasLab connections.
 
@@ -20,7 +20,7 @@ Connections for the pack should be made according to the tables below.
 
 ### Stock Connectors
 
-These are connections which should match 1:1 on the original Haslab Proton Pack if upgrading from that product.
+These are connections which should match 1:1 on the original HasLab Proton Pack if upgrading from that product.
 
 | Label | Pins | Notes |
 |-------|------|-------|

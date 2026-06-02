@@ -25,7 +25,7 @@ You may wish to refer to this PCB drawing and the following table to help identi
 
 ![Stock PCB Layout](images/WandPCBs.png)
 
-*[Wand Reference Diagrams](https://github.com/Tomdf/Ghostbusters/tree/main/Haslab%20Pack%20Illustrations/Neutrona_Wand_Illustration) by Tomdf*
+*[Wand Reference Diagrams](https://github.com/Tomdf/Ghostbusters/tree/main/HasLab%20Pack%20Illustrations/Neutrona_Wand_Illustration) by Tomdf*
 
 | Name | Socket | Color | Hasbro Pin | Notes |
 |------|--------|-------|------------|-------|

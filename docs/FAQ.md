@@ -24,7 +24,7 @@
 
 ## Q: Is a GPStar Neutrona Wand required?
 
-**A:** For a pack-only conversion a wand with a GPStar Neutrona Wand board is not required. However, a modified wand is required if you want full control of the pack from the wand. We now offer a "Lite" kit through Frutto Technologies which will allow an unmodified Hasbro wand to turn the Pack on and off and have the Pack respond to firing, similar to the original behavior of the stock Haslab equipment.
+**A:** For a pack-only conversion a wand with a GPStar Neutrona Wand board is not required. However, a modified wand is required if you want full control of the pack from the wand. We now offer a "Lite" kit through Frutto Technologies which will allow an unmodified Hasbro wand to turn the Pack on and off and have the Pack respond to firing, similar to the original behavior of the stock HasLab equipment.
 
 ## Q: How many wires / pins are required for the connection between the Proton Pack and Neutrona Wand?
 

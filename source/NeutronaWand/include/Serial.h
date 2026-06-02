@@ -338,7 +338,7 @@ void handleWandPrefsUpdate() {
   switch(wandConfig.ledWandCount) {
     case 0:
       WAND_BARREL_LED_COUNT = LEDS_5;
-      i_num_barrel_leds = 5; // Stock count for Haslab equipment.
+      i_num_barrel_leds = 5; // Stock count for HasLab equipment.
     break;
 
     case 1:

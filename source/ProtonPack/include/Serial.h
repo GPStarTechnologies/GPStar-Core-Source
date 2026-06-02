@@ -715,7 +715,7 @@ void handlePackPrefsUpdate() {
   b_clockwise = packConfig.cyclotronDirection;
   b_cyclotron_single_led = packConfig.ledCycLidCenter;
 
-  // Force the Haslab 1984 stock pack to use 3 center LEDs.
+  // Force the HasLab 1984 stock pack to use 3 center LEDs.
   if(i_stock_pack_type == 1 && i_cyclotron_num_leds == 12) {
     b_cyclotron_single_led = false;
   }
@@ -3735,8 +3735,19 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         break;
 
         case FRUTTO_CYCLOTRON_LED_COUNT:
-          // Switch to 12 LEDs. Default HasLab.
+          // Switch to stock 12 LEDs configuration.
           i_cyclotron_num_leds = HASLAB_CYCLOTRON_LED_COUNT;
+
+          /**
+           * Functionality Note:
+           *
+           * It is assumed that any user who is utilizing the wand menus
+           * either does not have an Attenuator device nor a GPStar II
+           * system capable of using the web UI to fine-tune those options.
+           *
+           * Therefore, this state should only affect the LED count and not
+           * the choice of stock pack, nor 3 vs. 1 LED center configuration.
+           */
 
           resetCyclotronState();
 
@@ -3745,7 +3756,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         break;
 
         case HASLAB_CYCLOTRON_LED_COUNT:
-          // Switch to 40 LEDs.
+          // Switch to 40 LEDs (true LED ring).
           i_cyclotron_num_leds = OUTER_CYCLOTRON_LED_MAX;
 
           resetCyclotronState();
