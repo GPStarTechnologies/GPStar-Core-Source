@@ -714,6 +714,12 @@ void handlePackPrefsUpdate() {
   i_cyclotron_brightness = packConfig.ledCycLidLum;
   b_clockwise = packConfig.cyclotronDirection;
   b_cyclotron_single_led = packConfig.ledCycLidCenter;
+
+  // Force the Haslab 1984 stock pack to use 3 center LEDs.
+  if(i_stock_pack_type == 1 && i_cyclotron_num_leds == 12) {
+    b_cyclotron_single_led = false;
+  }
+
   b_fade_cyclotron_led = packConfig.ledCycLidFade;
   b_cyclotron_colour_toggle = packConfig.ledVGCyclotron;
   b_cyclotron_simulate_ring = packConfig.ledCycLidSimRing;

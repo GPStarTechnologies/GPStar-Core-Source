@@ -385,6 +385,11 @@ void readEEPROM() {
       i_stock_pack_type = gObjLEDEEPROM.stock_pack_type;
     }
 
+    // Force the Haslab 1984 stock pack to use 3 center LEDs.
+    if(i_stock_pack_type == 1 && i_cyclotron_num_leds == 12) {
+      b_cyclotron_single_led = false;
+    }
+
     if(gObjLEDEEPROM.vg_powercell > 0 && gObjLEDEEPROM.vg_powercell < 3) {
       b_powercell_colour_toggle = (gObjLEDEEPROM.vg_powercell > 1);
     }

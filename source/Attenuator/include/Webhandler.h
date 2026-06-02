@@ -1735,6 +1735,11 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.ledCycLidLum = jsonBody["ledCycLidLum"].as<uint8_t>();
       packConfig.ledCycLidCenter = jsonBody["ledCycLidCenter"].as<uint8_t>();
 
+      // Force the Haslab 1984 stock pack to use 3 center LEDs.
+      if(packConfig.stockPackType == 1 && packConfig.ledCycLidCount == 12) {
+        packConfig.ledCycLidCenter = false;
+      }
+
       // Boolean fields - Cyclotron Lid toggles
       updateJsonBool(packConfig.cyclotronDirection, jsonBody, "cyclotronDirection");
       updateJsonBool(packConfig.ledCycLidFade, jsonBody, "ledCycLidFade");
