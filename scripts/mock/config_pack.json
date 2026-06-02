@@ -21,6 +21,7 @@
   "overheatSyncToFan": false,
   "demoLightMode": false,
   "ledCycLidCount": 40,
+  "stockPackType": 0,
   "ledCycLidHue": 8,
   "ledCycLidSat": 254,
   "ledCycLidLum": 100,

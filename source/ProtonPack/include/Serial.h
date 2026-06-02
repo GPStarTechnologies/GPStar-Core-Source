@@ -201,6 +201,7 @@ void getPackPrefsObject() {
 
   // Cyclotron Lid
   packConfig.ledCycLidCount = i_cyclotron_num_leds;
+  packConfig.stockPackType = i_stock_pack_type;
   packConfig.ledCycLidHue = i_spectral_cyclotron_custom_colour;
   packConfig.ledCycLidSat = i_spectral_cyclotron_custom_saturation;
   packConfig.ledCycLidLum = i_cyclotron_brightness;
@@ -707,6 +708,7 @@ void handlePackPrefsUpdate() {
   }
 
   sendDebug(F("Updating outer cyclotron variables..."));
+  i_stock_pack_type = packConfig.stockPackType;
   i_spectral_cyclotron_custom_colour = packConfig.ledCycLidHue;
   i_spectral_cyclotron_custom_saturation = packConfig.ledCycLidSat;
   i_cyclotron_brightness = packConfig.ledCycLidLum;

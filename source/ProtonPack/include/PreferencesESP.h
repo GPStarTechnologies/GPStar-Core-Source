@@ -66,6 +66,7 @@ struct objLEDEEPROM {
   uint8_t vg_powercell;
   uint8_t vg_cyclotron;
   uint8_t gpstar_audio_led;
+  uint8_t stock_pack_type;
 } gObjLEDEEPROM;
 
 struct objConfigEEPROM {
@@ -158,6 +159,7 @@ void saveLEDEEPROM() {
   gObjLEDEEPROM.vg_powercell = b_powercell_colour_toggle ? 2 : 1;
   gObjLEDEEPROM.vg_cyclotron = b_cyclotron_colour_toggle ? 2 : 1;
   gObjLEDEEPROM.gpstar_audio_led = b_gpstar_audio_led_enabled ? 2 : 1;
+  gObjLEDEEPROM.stock_pack_type = i_stock_pack_type;
 
   if(preferences.begin("led", false)) {
     preferences.putBytes("led", &gObjLEDEEPROM, sizeof(gObjLEDEEPROM));
@@ -377,6 +379,10 @@ void readEEPROM() {
 
     if(gObjLEDEEPROM.cyclotron_single_center_led > 0 && gObjLEDEEPROM.cyclotron_single_center_led < 3) {
       b_cyclotron_single_led = (gObjLEDEEPROM.cyclotron_single_center_led > 1);
+    }
+
+    if(gObjLEDEEPROM.stock_pack_type < 2) {
+      i_stock_pack_type = gObjLEDEEPROM.stock_pack_type;
     }
 
     if(gObjLEDEEPROM.vg_powercell > 0 && gObjLEDEEPROM.vg_powercell < 3) {
