@@ -3164,6 +3164,18 @@ void cyclotron84LightOff(uint8_t cLed) {
   }
 }
 
+// Returns true if we should use sequential (lens-by-lens) style cyclotron animations.
+// The stock 1984 Haslab packs must always use this animation, regardless of theme.
+bool useSequentialCyclotronAnimation() {
+  // Force 1984 animation for stock 1984 packs (LEDs are not arranged in a ring)
+  if(i_stock_pack_type == 1 && i_cyclotron_num_leds == 12) {
+    return true;
+  }
+
+  // Otherwise, respect the current theme (only applies to 1984 or 1989).
+  return gpstarPack.isTheme80s();
+}
+
 void cyclotron1984(uint16_t iRampDelay) {
   i_fast_led_delay = FAST_LED_UPDATE_MS;
 
@@ -3552,50 +3564,44 @@ void cyclotronNoCable() {
     innerCyclotronRingUpdate(i_2021_inner_delay * 16);
   }
 
-  switch(gpstarPack.getSystemTheme()) {
-    case SYSTEM_AFTERLIFE:
-    case SYSTEM_FROZEN_EMPIRE:
-    default:
-      cyclotron2021(i_2021_delay * 10);
+  if(!useSequentialCyclotronAnimation()) {
+    cyclotron2021(i_2021_delay * 10);
 
-      if(ms_alarm.justFinished()) {
-        ventLight(false);
-        ventLightLEDW(false);
-        ms_alarm.start(i_1984_delay);
+    if(ms_alarm.justFinished()) {
+      ventLight(false);
+      ventLightLEDW(false);
+      ms_alarm.start(i_1984_delay);
+    }
+    else {
+      if(ms_alarm.remaining() < i_1984_delay / 2) {
+        ventLight(true);
+        ventLightLEDW(true);
       }
-      else {
-        if(ms_alarm.remaining() < i_1984_delay / 2) {
-          ventLight(true);
-          ventLightLEDW(true);
-        }
+    }
+
+    vibrationPack(i_vibration_level_min * 3);
+  }
+  else {
+    cyclotron1984(i_1984_delay * 3);
+
+    if(ms_alarm.justFinished()) {
+      ms_alarm.start(i_1984_delay / 2);
+
+      // Turn off the N-Filter lights.
+      ventLight(false);
+      ventLightLEDW(false);
+
+      vibrationPack(i_vibration_level_min);
+    }
+    else {
+      if(ms_alarm.remaining() < i_1984_delay / 4) {
+        vibrationPack(i_vibration_idle_level_1984);
+
+        // Turn on the N-Filter lights.
+        ventLight(true);
+        ventLightLEDW(true);
       }
-
-      vibrationPack(i_vibration_level_min * 3);
-    break;
-
-    case SYSTEM_1984:
-    case SYSTEM_1989:
-      cyclotron1984(i_1984_delay * 3);
-
-      if(ms_alarm.justFinished()) {
-        ms_alarm.start(i_1984_delay / 2);
-
-        // Turn off the N-Filter lights.
-        ventLight(false);
-        ventLightLEDW(false);
-
-        vibrationPack(i_vibration_level_min);
-      }
-      else {
-        if(ms_alarm.remaining() < i_1984_delay / 4) {
-          vibrationPack(i_vibration_idle_level_1984);
-
-          // Turn on the N-Filter lights.
-          ventLight(true);
-          ventLightLEDW(true);
-        }
-      }
-    break;
+    }
   }
 }
 
@@ -3800,7 +3806,7 @@ void packOverheatingFinished() {
   fanNFilter(false);
 
   // Reset the LEDs before resetting the alarm flag.
-  if((gpstarPack.isTheme80s()) && !usingSlimeCyclotron(gpstarPack.getStreamMode())) {
+  if(useSequentialCyclotronAnimation() && !usingSlimeCyclotron(gpstarPack.getStreamMode())) {
     resetCyclotronState();
   }
 
@@ -3858,7 +3864,7 @@ void packOverheatingStart() {
   }
 
   // Reset the Inner Cyclotron speed.
-  if(gpstarPack.isTheme80s()) {
+  if(useSequentialCyclotronAnimation()) {
     i_inner_current_ramp_speed = i_inner_ramp_delay;
     clearCyclotronFades();
   }
@@ -3921,65 +3927,59 @@ void cyclotronOverheating() {
   }
 
   // The cyclotron lights during the entire overheating sequence
-  switch(gpstarPack.getSystemTheme()) {
-    case SYSTEM_AFTERLIFE:
-    case SYSTEM_FROZEN_EMPIRE:
-    default:
-      if(!b_overheat_lights_off) {
+  if(!useSequentialCyclotronAnimation()) {
+    if(!b_overheat_lights_off) {
+      cyclotron2021(i_2021_delay * 10);
+
+      vibrationPack(i_vibration_level_min * 2);
+    }
+    else {
+      if(i_powercell_led > 0) {
         cyclotron2021(i_2021_delay * 10);
 
-        vibrationPack(i_vibration_level_min * 2);
+        vibrationPack(i_vibration_level_min);
       }
       else {
-        if(i_powercell_led > 0) {
-          cyclotron2021(i_2021_delay * 10);
+        vibrationPack(0);
+        innerCyclotronCakeOff();
+      }
+    }
+  }
+  else {
+    if(ms_alarm.justFinished()) {
+      ms_alarm.start(i_1984_delay / 2);
 
-          vibrationPack(i_vibration_level_min);
+      if(!usingSlimeCyclotron(gpstarPack.getStreamMode())) {
+        if(!b_fade_cyclotron_led) {
+          resetCyclotronState();
         }
         else {
-          vibrationPack(0);
-          innerCyclotronCakeOff();
+          for(uint8_t i = 0; i < 4; i++) {
+            cyclotron84LightOff(cyclotron84LookupTable(i) + i_cyclotron_led_start);
+          }
         }
       }
-    break;
-
-    case SYSTEM_1984:
-    case SYSTEM_1989:
-      if(ms_alarm.justFinished()) {
-        ms_alarm.start(i_1984_delay / 2);
+    }
+    else if(ms_alarm.remaining() < i_1984_delay / 4) {
+      if(!b_overheat_lights_off) {
+        vibrationPack(i_vibration_level_min);
 
         if(!usingSlimeCyclotron(gpstarPack.getStreamMode())) {
-          if(!b_fade_cyclotron_led) {
-            resetCyclotronState();
-          }
-          else {
-            for(uint8_t i = 0; i < 4; i++) {
-              cyclotron84LightOff(cyclotron84LookupTable(i) + i_cyclotron_led_start);
-            }
-          }
+          cyclotron1984Alarm();
         }
       }
-      else if(ms_alarm.remaining() < i_1984_delay / 4) {
-        if(!b_overheat_lights_off) {
-          vibrationPack(i_vibration_level_min);
+      else if(i_powercell_led > 0) {
+        vibrationPack(i_vibration_level_min);
 
-          if(!usingSlimeCyclotron(gpstarPack.getStreamMode())) {
-            cyclotron1984Alarm();
-          }
-        }
-        else if(i_powercell_led > 0) {
-          vibrationPack(i_vibration_level_min);
-
-          if(!usingSlimeCyclotron(gpstarPack.getStreamMode())) {
-            cyclotron1984Alarm();
-          }
-        }
-        else {
-          vibrationPack(0);
-          innerCyclotronCakeOff();
+        if(!usingSlimeCyclotron(gpstarPack.getStreamMode())) {
+          cyclotron1984Alarm();
         }
       }
-    break;
+      else {
+        vibrationPack(0);
+        innerCyclotronCakeOff();
+      }
+    }
   }
 
   if(ms_overheating_length.isRunning() && !gpstarPack.inStreamMode(SLIME)) {
@@ -4032,22 +4032,16 @@ void cyclotronControl() {
     i_cyclotron_fake_ring_counter = 0;
     i_led_cyclotron_ring = i_ic_cake_start;
 
-    switch(gpstarPack.getSystemTheme()) {
-      case SYSTEM_AFTERLIFE:
-      case SYSTEM_FROZEN_EMPIRE:
-      default:
-        if(b_clockwise) {
-          i_led_cyclotron = i_cyclotron_led_start;
-        }
-        else {
-          i_led_cyclotron = i_cyclotron_led_start + 2; // Start on LED #2 in counter-clockwise mode in 2021 mode.
-        }
-      break;
-
-      case SYSTEM_1984:
-      case SYSTEM_1989:
-        i_1984_counter = 3;
-      break;
+    if(!useSequentialCyclotronAnimation()) {
+      if(b_clockwise) {
+        i_led_cyclotron = i_cyclotron_led_start;
+      }
+      else {
+        i_led_cyclotron = i_cyclotron_led_start + 2; // Start on LED #2 in counter-clockwise mode in 2021 mode.
+      }
+    }
+    else {
+      i_1984_counter = 3;
     }
   }
 
@@ -4057,7 +4051,7 @@ void cyclotronControl() {
       b_inner_ramp_up = false;
       b_pack_alarm = true;
 
-      if(gpstarPack.isTheme80s()) {
+      if(useSequentialCyclotronAnimation()) {
         if(!usingSlimeCyclotron(gpstarPack.getStreamMode())) {
           resetCyclotronState();
         }
@@ -4086,7 +4080,7 @@ void cyclotronControl() {
       b_ramp_up = false;
       b_inner_ramp_up = false;
 
-      if(gpstarPack.isTheme80s()) {
+      if(useSequentialCyclotronAnimation()) {
         if(!usingSlimeCyclotron(gpstarPack.getStreamMode())) {
           resetCyclotronState();
         }
@@ -4183,7 +4177,7 @@ void cyclotronControl() {
       }
     }
 
-    if(gpstarPack.isTheme80s()) {
+    if(useSequentialCyclotronAnimation()) {
       cyclotron1984(i_outer_current_ramp_speed);
     }
     else {
