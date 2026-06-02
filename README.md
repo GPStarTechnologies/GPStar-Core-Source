@@ -57,8 +57,9 @@ This project is made possible by Ghostbusters community makers and volunteers sp
 
 ### Special Thanks
 
+* Kaden Amaden - For the TVG cyclotron slime animation, TVG firing mode rotary knob selection, TVG-related testing, and for conceptualizing the inner cyclotron switch panel RGB LED board.
 * Emre Sahare (GBFans: One Time) - For the original prop mode "Mode Original" operation deciphering.
-* Alexander Hibbs (@BeaulieuDesigns87) - For his equipment schematic as used in the WiFi web UI.
+* Alexander Hibbs (@BeaulieuDesigns87) - For his equipment schematics as used in the WiFi web UI.
 
 Thank you to our supporters on [GBFans.com](https://www.gbfans.com/forum) and the [Facebook group](https://www.facebook.com/groups/gpstartechnologies).
 
