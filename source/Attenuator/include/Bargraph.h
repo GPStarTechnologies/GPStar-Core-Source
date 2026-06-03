@@ -157,8 +157,12 @@ void bargraphPowerCheck(uint8_t i_level) {
   // Ensure bargraph stops at the correct element based on a given power level.
   // Account for uneven division by using the remainder as the base for level 1.
   uint8_t i_bargraph_base = (i_bargraph_elements % i_bargraph_levels);
-  // Remember, the passed level will be 0-based so we must add 1 for calculations.
-  i_bargraph_sim_max = i_bargraph_base + (i_bargraph_levels * (i_level + 1));
+  i_bargraph_sim_max = i_bargraph_base + (i_bargraph_levels * i_level);
+
+  // Protect against integer underflows later on.
+  if(i_bargraph_sim_max > i_bargraph_elements) {
+    i_bargraph_sim_max = i_bargraph_elements;
+  }
 }
 
 // Performs update on bargraph elements based given a pattern.
