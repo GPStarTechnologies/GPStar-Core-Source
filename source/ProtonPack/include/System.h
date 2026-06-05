@@ -4995,25 +4995,29 @@ void restartFromWandMash() {
           stopEffect(S_GB1_1984_BOOT_UP);
           playEffect(S_GB1_1984_BOOT_UP);
 
-          if(b_fadeout_idle_sounds && !ms_delay_post.isRunning()) {
-            stopEffect(S_GB1_1984_PACK_LOOP);
-            playEffect(S_GB1_1984_PACK_LOOP, true, i_volume_effects, true, 3800);
-          }
+          if(b_fadeout_idle_sounds) {
+            if(!ms_delay_post.isRunning()) {
+              stopEffect(S_GB1_1984_PACK_LOOP);
+              playEffect(S_GB1_1984_PACK_LOOP, true, i_volume_effects, true, 3800);
+            }
 
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
+            // Make sure we reset the fadeout counter to account for the new idle sounds.
+            ms_delay_post.start(i_idle_fadeout_delay);
+          }
         break;
         case SYSTEM_1989:
           stopEffect(S_GB2_PACK_START);
           playEffect(S_GB2_PACK_START);
 
-          if(b_fadeout_idle_sounds && !ms_delay_post.isRunning()) {
-            stopEffect(S_GB2_PACK_LOOP);
-            playEffect(S_GB2_PACK_LOOP, true, i_volume_effects, true, 3800);
-          }
+          if(b_fadeout_idle_sounds) {
+            if(!ms_delay_post.isRunning()) {
+              stopEffect(S_GB2_PACK_LOOP);
+              playEffect(S_GB2_PACK_LOOP, true, i_volume_effects, true, 3800);
+            }
 
-          // Make sure we reset the fadeout counter to account for the new idle sounds.
-          ms_delay_post.start(i_idle_fadeout_delay);
+            // Make sure we reset the fadeout counter to account for the new idle sounds.
+            ms_delay_post.start(i_idle_fadeout_delay);
+          }
         break;
         case SYSTEM_AFTERLIFE:
         default:

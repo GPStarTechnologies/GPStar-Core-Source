@@ -559,8 +559,11 @@ void mainLoop() {
       }
 
       if(ms_delay_post.justFinished()) {
-        // This controls the idle SFX fadeout.
-        fadeoutIdleSounds();
+        // Separate check makes sure the timer is reset regardless just in case.
+        if(b_fadeout_idle_sounds) {
+          // This controls the idle SFX fadeout.
+          fadeoutIdleSounds();
+        }
       }
 
       cyclotronSwitchLEDLoop(); // Update the cyclotron.
