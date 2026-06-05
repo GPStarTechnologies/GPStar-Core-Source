@@ -168,7 +168,7 @@ resolve_platformio() {
   PIO_MODE="command"
 
   local shebang_line
-  shebang_line="$(sed -n '1p' "$PIO_RESOLVED_COMMAND" 2>/dev/null || true)"
+  shebang_line="$(sed -n '1p' "$PIO_RESOLVED_COMMAND" | tr '\0' '\n' || true)"
   if [[ "$shebang_line" == '#!'* ]]; then
     PIO_ACTUAL_PYTHON="${shebang_line#\#!}"
   else
