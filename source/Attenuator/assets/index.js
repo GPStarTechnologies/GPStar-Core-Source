@@ -825,8 +825,8 @@ function updateGraphics(jObj) {
 
 function updateEquipment(jObj) {
   // Always update pack connection status if available
-  if (jObj && jObj.packConnection) {
-    setHtml("packConnection", "Pack Connection: " + jObj.packConnection);
+  if (jObj && jObj.packConn) {
+    setHtml("packConn", "Pack Connection: " + jObj.packConn);
   }
 
   // Update display if we have the expected data (containing mode and theme at a minimum).

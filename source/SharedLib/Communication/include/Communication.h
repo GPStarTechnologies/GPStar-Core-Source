@@ -611,13 +611,13 @@ static_assert(A_NO_OP < 255, "WARNING: API_MESSAGE has grown too large for uint8
  *   - Different signatures: incompatible firmware, block sync and set error flag
  */
 constexpr uint16_t calculateProtocolSignature(
-  size_t cmd_packet_size,
-  size_t msg_packet_size,
-  size_t pack_prefs_size,
-  size_t wand_prefs_size,
-  size_t smoke_prefs_size,
-  size_t wand_sync_size,
-  size_t atten_sync_size,
+  uint16_t cmd_packet_size,
+  uint16_t msg_packet_size,
+  uint16_t pack_prefs_size,
+  uint16_t wand_prefs_size,
+  uint16_t smoke_prefs_size,
+  uint16_t wand_sync_size,
+  uint16_t atten_sync_size,
   uint8_t pack_msg_max,
   uint8_t wand_msg_max,
   uint8_t api_msg_max)

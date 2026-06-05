@@ -37,10 +37,11 @@ SHOW_USAGE_BEFORE_ENV=0
 
 usage() {
   cat <<EOF
-Usage: ./compile.sh [all|env|pack|wand|att|attenuator|blast|blaster|gizmo|stream|pstt|trap] [NAME=VALUE ...]
+Usage: ./compile.sh [all|help|env|pack|wand|att|attenuator|blast|blaster|gizmo|stream|pstt|trap] [NAME=VALUE ...]
 
 Compile Targets:
-  all          Run tests and compile every device
+  all          Run tests and compile every device (default)
+  help         Show this help message (-h, --help)
   env          Report the resolved build environment and exit
   pack         Compile Proton Pack
   wand         Compile Neutrona Wand
@@ -69,12 +70,6 @@ EOF
 
 apply_environment_overrides() {
   local arg
-
-  if [ $# -eq 0 ]; then
-    TARGET="env"
-    SHOW_USAGE_BEFORE_ENV=1
-    return
-  fi
 
   for arg in "$@"; do
     if [[ "$arg" == *=* ]]; then
@@ -305,12 +300,6 @@ compile_target() {
 
 apply_environment_overrides "$@"
 resolve_target
-
-if [ "$SHOW_USAGE_BEFORE_ENV" -eq 1 ]; then
-  usage
-  echo ""
-fi
-
 resolve_platformio
 collect_platformio_system_info
 report_environment

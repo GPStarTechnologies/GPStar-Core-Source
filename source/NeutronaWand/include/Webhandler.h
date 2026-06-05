@@ -356,21 +356,24 @@ String getEquipmentStatus() {
     // Report pack connection state
     switch(WAND_CONN_STATE) {
       case PACK_DISCONNECTED:
-        jsonBody["packConnection"] = "Disconnected";
+        jsonBody["packConn"] = "Disconnected";
       break;
       case PACK_MISMATCH:
-        jsonBody["packConnection"] = "Version Mismatch";
+        jsonBody["packConn"] = "Version Mismatch";
       break;
       case PACK_CONNECTED:
-        jsonBody["packConnection"] = "Connected";
+        jsonBody["packConn"] = "Connected";
       break;
       case NC_BENCHTEST:
-        jsonBody["packConnection"] = "Benchtest Mode";
+        jsonBody["packConn"] = "Benchtest Mode";
       break;
       default:
-        jsonBody["packConnection"] = "Unknown";
+        jsonBody["packConn"] = "Unknown";
       break;
     }
+
+    // Report calculated protocol for debugging version mismatches.
+    jsonBody["wandProtocol"] = PROTOCOL_SIGNATURE;
 
     jsonBody["standalone"] = b_wand_standalone;
     jsonBody["mode"] = gpstarWand.getModeName();

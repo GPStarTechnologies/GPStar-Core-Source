@@ -402,40 +402,43 @@ String getEquipmentStatus() {
     // Report wand connection state
     switch(WAND_CONN_STATE) {
       case WAND_DISCONNECTED:
-        jsonBody["wandConnection"] = "Disconnected";
+        jsonBody["wandConn"] = "Disconnected";
       break;
       case WAND_MISMATCH:
-        jsonBody["wandConnection"] = "Version Mismatch";
+        jsonBody["wandConn"] = "Version Mismatch";
       break;
       case WAND_SYNCING:
-        jsonBody["wandConnection"] = "Syncing";
+        jsonBody["wandConn"] = "Syncing";
       break;
       case WAND_CONNECTED:
-        jsonBody["wandConnection"] = "Connected";
+        jsonBody["wandConn"] = "Connected";
       break;
       default:
-        jsonBody["wandConnection"] = "Unknown";
+        jsonBody["wandConn"] = "Unknown";
       break;
     }
 
     // Report attenuator connection state
     switch(ATTENUATOR_CONN_STATE) {
       case ATTENUATOR_DISCONNECTED:
-        jsonBody["attenuatorConnection"] = "Disconnected";
+        jsonBody["attenuatorConn"] = "Disconnected";
       break;
       case ATTENUATOR_MISMATCH:
-        jsonBody["attenuatorConnection"] = "Version Mismatch";
+        jsonBody["attenuatorConn"] = "Version Mismatch";
       break;
       case ATTENUATOR_SYNCING:
-        jsonBody["attenuatorConnection"] = "Syncing";
+        jsonBody["attenuatorConn"] = "Syncing";
       break;
       case ATTENUATOR_CONNECTED:
-        jsonBody["attenuatorConnection"] = "Connected";
+        jsonBody["attenuatorConn"] = "Connected";
       break;
       default:
-        jsonBody["attenuatorConnection"] = "Unknown";
+        jsonBody["attenuatorConn"] = "Unknown";
       break;
     }
+
+    // Report calculated protocol for debugging version mismatches.
+    jsonBody["packProtocol"] = PROTOCOL_SIGNATURE;
 
     jsonBody["mode"] = gpstarPack.getModeName();
     jsonBody["modeID"] = gpstarPack.getSystemMode();
