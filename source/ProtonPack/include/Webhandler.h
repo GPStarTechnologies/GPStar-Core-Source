@@ -399,6 +399,44 @@ String getEquipmentStatus() {
   }
 
   try {
+    // Report wand connection state
+    switch(WAND_CONN_STATE) {
+      case WAND_DISCONNECTED:
+        jsonBody["wandConnection"] = "Disconnected";
+      break;
+      case WAND_MISMATCH:
+        jsonBody["wandConnection"] = "Version Mismatch";
+      break;
+      case WAND_SYNCING:
+        jsonBody["wandConnection"] = "Syncing";
+      break;
+      case WAND_CONNECTED:
+        jsonBody["wandConnection"] = "Connected";
+      break;
+      default:
+        jsonBody["wandConnection"] = "Unknown";
+      break;
+    }
+
+    // Report attenuator connection state
+    switch(ATTENUATOR_CONN_STATE) {
+      case ATTENUATOR_DISCONNECTED:
+        jsonBody["attenuatorConnection"] = "Disconnected";
+      break;
+      case ATTENUATOR_MISMATCH:
+        jsonBody["attenuatorConnection"] = "Version Mismatch";
+      break;
+      case ATTENUATOR_SYNCING:
+        jsonBody["attenuatorConnection"] = "Syncing";
+      break;
+      case ATTENUATOR_CONNECTED:
+        jsonBody["attenuatorConnection"] = "Connected";
+      break;
+      default:
+        jsonBody["attenuatorConnection"] = "Unknown";
+      break;
+    }
+
     jsonBody["mode"] = gpstarPack.getModeName();
     jsonBody["modeID"] = gpstarPack.getSystemMode();
     jsonBody["theme"] = gpstarPack.getThemeName();

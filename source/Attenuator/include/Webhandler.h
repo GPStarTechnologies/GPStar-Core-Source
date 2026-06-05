@@ -394,6 +394,22 @@ String getEquipmentStatus() {
   String equipStatus;
   JsonDocument jsonBody;
 
+  // Always report pack connection state
+  switch(PACK_CONN_STATE) {
+    case PACK_DISCONNECTED:
+      jsonBody["packConnection"] = "Disconnected";
+    break;
+    case PACK_MISMATCH:
+      jsonBody["packConnection"] = "Version Mismatch";
+    break;
+    case PACK_CONNECTED:
+      jsonBody["packConnection"] = "Connected";
+    break;
+    default:
+      jsonBody["packConnection"] = "Unknown";
+    break;
+  }
+
   if(PACK_CONN_STATE == PACK_CONNECTED) {
     // Only prepare status when not waiting on the pack
     jsonBody["mode"] = gpstarSystem.getModeName();

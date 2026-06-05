@@ -23,6 +23,9 @@
 void doAttenuatorSync(); // From Serial.h
 void notifyWSClients(); // From Webhandler.h
 
+// External variable from Serial.h
+extern const uint16_t PROTOCOL_SIGNATURE;
+
 /**
  * Centralized handler for commands, allowing the Pack and Attenuator to both perform the same action.
  * This approach is applying the Command Pattern to decouple the sender from the receiver.
@@ -35,6 +38,13 @@ void notifyWSClients(); // From Webhandler.h
 void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
   switch(i_command) {
     case A_SYNC_START:
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Attenuator protocol mismatch!"));
+        ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
+        return; // Block sync due to incompatible firmware.
+      }
+      
       // Attenuator has explicitly asked to be synchronized.
       // Don't restart sync if already in progress (Attenuator doesn't stop its retry timer).
       if(ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
@@ -43,6 +53,13 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
     break;
 
     case A_HANDSHAKE:
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Attenuator protocol mismatch!"));
+        ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
+        return; // Block sync due to incompatible firmware.
+      }
+      
       ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED; // If we're receiving handshake instead of SYNC_NOW we must be connected.
 
       if(b_diagnostic) {
