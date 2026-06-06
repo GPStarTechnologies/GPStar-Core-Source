@@ -619,7 +619,7 @@ void loop() {
   checkAttenuator();
 
   if(b_pack_post_finish) {
-    if(!b_demo_light_mode || !b_first_boot || (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || (b_demo_light_mode && WAND_CONN_STATE == WAND_DISCONNECTED && ms_wand_check.remaining() < 1)) {
+    if(!b_demo_light_mode || !b_first_boot || (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || (b_demo_light_mode && WAND_CONN_STATE == WAND_DISCONNECTED && WAND_CONN_STATE != WAND_SYNCING && ms_wand_check.remaining() < 1)) {
       // Handle any actions after POST event.
       mainLoop();
 
@@ -666,7 +666,7 @@ void loop() {
         shutdownWireless();
       }
       else if((ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_MISMATCH) && !b_httpd_started && b_pack_post_finish) {
-        // Begin by setting up WiFi as a prerequisite to all else.
+        // Begin by setting up WiFi as a prerequisite to all else when either disconnected or there was a known a protocol mismatch.
         restartWireless();
       }
     break;

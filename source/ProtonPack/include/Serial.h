@@ -383,11 +383,12 @@ void wandDisconnectCheck() {
 void attenuatorHandShake() {
   if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED) {
     if(ms_attenuator_check.justFinished()) {
-      // Attenuator has abandoned us.
+      // Attenuator has abandoned us; consider it disconnected until we know otherwise.
       ATTENUATOR_CONN_STATE = ATTENUATOR_DISCONNECTED;
     }
-    else if(ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2) && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
-      // Haven't heard from the Attenuator recently; let's check in.
+    else if(ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2) &&
+	        !(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
+      // Haven't heard from the Attenuator recently (neither connected nor syncing); so let's check in.
       ATTENUATOR_CONN_STATE = ATTENUATOR_SYNCING;
       attenuatorSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
     }
@@ -888,10 +889,9 @@ void checkAttenuator() {
         case PACKET_COMMAND:
           attenuatorComs.rxObj(recvCmdA);
           if(recvCmdA.c > 0 && recvCmdA.s == A_COM_START && recvCmdA.e == A_COM_END) {
-            sendDebug(String(F("Recv. Attenuator Command: ")) + String(recvCmdA.c));
-            sendDebug(String(F("Attenuator Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
+            sendDebug(String(F("Recv. Attenuator Command: ")) + String(recvCmdA.c) + String(F(" | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
 
-            if(!(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
+            if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
               // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
               if(recvCmdA.c != A_SYNC_START && recvCmdA.c != A_HANDSHAKE && recvCmdA.c != A_SYNC_END) {
                 // This applies for any action other than those responsible for sync operations.
@@ -905,7 +905,7 @@ void checkAttenuator() {
         break;
 
         case PACKET_DATA:
-          if(!(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
+          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
             // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
             return;
           }
@@ -918,7 +918,7 @@ void checkAttenuator() {
         break;
 
         case PACKET_PACK:
-          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
             // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
@@ -932,7 +932,7 @@ void checkAttenuator() {
         break;
 
         case PACKET_WAND:
-          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
             // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
@@ -945,7 +945,7 @@ void checkAttenuator() {
         break;
 
         case PACKET_SMOKE:
-          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
             // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
@@ -973,7 +973,7 @@ void doAttenuatorSync() {
   }
 
   sendDebug(F("Attenuator Sync Start"));
-  attenuatorSerialSend(A_SYNC_START);
+  attenuatorSerialSend(A_SYNC_START, PROTOCOL_SIGNATURE);
 
   // Export DeviceState data to sync struct using centralized method
   gpstarPack.exportData(attenuatorSyncData);

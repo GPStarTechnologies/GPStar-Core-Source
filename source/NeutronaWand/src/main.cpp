@@ -652,12 +652,10 @@ void mainLoop() {
 void loop() {
   switch(WAND_CONN_STATE) {
     case PACK_DISCONNECTED:
-    case PACK_MISMATCH:
-      // While waiting for a proton pack (or waiting for firmware compatibility),
-      // issue regular requests for synchronization.
+      // While waiting for a proton pack, issue a request for synchronization.
       if(ms_packsync.justFinished()) {
         // If not already doing so, explicitly tell the pack a wand is here to sync.
-        wandSerialSend(W_SYNC_NOW, PROTOCOL_SIGNATURE);
+        wandSerialSend(W_SYNC_NOW, PROTOCOL_SIGNATURE); // Perform an initial synchronization.
         ms_packsync.start(i_sync_initial_delay); // Prepare for the next sync attempt.
         vent_leds[1] ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
         digitalWriteFast(WAND_STATUS_LED_PIN, (digitalReadFast(WAND_STATUS_LED_PIN) == LOW) ? HIGH : LOW); // Blink the onboard LED on the Neutrona Wand board.
@@ -687,7 +685,17 @@ void loop() {
       }
     break;
 
+    case PACK_MISMATCH:
+	  // Protocol mismatch has been established for the Pack-Wand connection, treat similar to the MC_BENCHTEST state.
+      updateAudio(); // Update the state of the selected sound board.
+
+      checkMusic(); // Music control is here since pack is not present.
+
+      mainLoop(); // Continue on to the main loop.
+	break;
+
     case NC_BENCHTEST:
+	  // User has opted to operate the Neutrona Wand in a standalone manner, without a Proton Pack attached.
       updateAudio(); // Update the state of the selected sound board.
 
       checkMusic(); // Music control is here since pack is not present.

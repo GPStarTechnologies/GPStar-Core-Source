@@ -155,7 +155,7 @@ String getDeviceConfig() {
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
 
-  // Report attenuator connection state
+  // Report the Attenuator connection state (when available).
   switch(ATTENUATOR_CONN_STATE) {
     case ATTENUATOR_DISCONNECTED:
       jsonBody["attenuatorConn"] = "Disconnected";
@@ -174,7 +174,7 @@ String getDeviceConfig() {
     break;
   }
 
-  // Report wand connection state
+  // Report the Neutrona Wand connection state (when available).
   switch(WAND_CONN_STATE) {
     case WAND_DISCONNECTED:
       jsonBody["wandConn"] = "Disconnected";

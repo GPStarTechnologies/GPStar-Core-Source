@@ -164,6 +164,7 @@ bool checkPack() {
         case PACKET_DATA:
           if(PACK_CONN_STATE != PACK_CONNECTED) {
             // Can't proceed if the Pack isn't connected; prevents phantom actions from occurring.
+			// Applies to either the disconnected, syncing, or protocol mismatch states.
             return false;
           }
 
