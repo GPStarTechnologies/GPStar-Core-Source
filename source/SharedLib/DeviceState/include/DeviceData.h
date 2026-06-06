@@ -198,6 +198,7 @@ struct __attribute__((packed)) AttenuatorSyncData {
   uint16_t packVoltage = 0;
   bool audioCorrupt = false;
   bool audioOutdated = false;
+  bool esp32Pack = false;
 };
 
 // Output a compiler message if the final struct exceeds a specific size needed for SerialTransfer.

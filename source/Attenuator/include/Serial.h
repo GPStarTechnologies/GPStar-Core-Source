@@ -259,6 +259,7 @@ bool checkPack() {
 
           // Import sync data into DeviceState using centralized method
           gpstarSystem.importData(attenuatorSyncData);
+          b_esp32_pack = attenuatorSyncData.esp32Pack; // Set ESP32 pack flag for web UI features.
 
           // Set non-DeviceState variables (Attenuator-specific state)
           b_pack_on = attenuatorSyncData.packOn;
@@ -337,9 +338,6 @@ bool handleCommand(uint8_t i_command, uint16_t i_value) {
 
     case A_SYNC_START:
       sendDebug(F("Sync Start"));
-
-      // Indicates whether we are talking to a GPStar Pack II.
-      b_esp32_pack = (i_value == 1);
     break;
 
     case A_SYNC_END:

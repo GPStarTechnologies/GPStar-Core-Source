@@ -39,7 +39,7 @@
  *   - WandPrefs = 28 data bytes, 34 total bytes sent
  *   - SmokePrefs = 21 data bytes, 27 total bytes sent
  *   - WandSyncData = 15 data bytes, 21 total bytes sent
- *   - AttenuatorSyncData = 38 data bytes, 44 total bytes sent
+ *   - AttenuatorSyncData = 39 data bytes, 45 total bytes sent
  *   - These all fit within one SerialTransfer packet.
  *
  * Byte order notes:
@@ -64,7 +64,7 @@
  *       WandPrefs: 34 total bytes, about 35.4 ms (Pack <-> Attenuator, Pack <-> Wand)
  *       SmokePrefs: 27 total bytes, about 28.1 ms (Pack <-> Attenuator, Pack <-> Wand)
  *       WandSyncData: 21 total bytes, about 21.9 ms (Pack <-> Wand)
- *       AttenuatorSyncData: 44 total bytes, about 45.8 ms (Pack <-> Attenuator)
+ *       AttenuatorSyncData: 45 total bytes, about 46.9 ms (Pack <-> Attenuator)
  *
  * Send timing:
  *   - SerialTransfer does not add a pause between packets.

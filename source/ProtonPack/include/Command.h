@@ -38,13 +38,6 @@ extern const uint16_t PROTOCOL_SIGNATURE;
 void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
   switch(i_command) {
     case A_SYNC_START:
-      // Check protocol signature to ensure firmware compatibility.
-      if(i_value != PROTOCOL_SIGNATURE) {
-        sendDebug(F("Attenuator protocol mismatch!"));
-        ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
-        return; // Block sync due to incompatible firmware.
-      }
-      
       // Attenuator has explicitly asked to be synchronized.
       // Don't restart sync if already in progress (Attenuator doesn't stop its retry timer).
       if(ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {

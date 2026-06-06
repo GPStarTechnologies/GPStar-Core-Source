@@ -972,18 +972,19 @@ void doAttenuatorSync() {
   }
 
   sendDebug(F("Attenuator Sync Start"));
+  attenuatorSerialSend(A_SYNC_START);
+
+  // Export DeviceState data to sync struct using centralized method
+  gpstarPack.exportData(attenuatorSyncData);
 
   // Report the hardware type immediately upon sync for identification purposes.
   #ifdef ESP32
     // Notify upstream we are a GPStar Pack II.
-    attenuatorSerialSend(A_SYNC_START, 1);
+    attenuatorSyncData.esp32Pack = true;
   #else
     // Notify upstream we are a GPStar Pack I.
-    attenuatorSerialSend(A_SYNC_START);
+    attenuatorSyncData.esp32Pack = false;
   #endif
-
-  // Export DeviceState data to sync struct using centralized method
-  gpstarPack.exportData(attenuatorSyncData);
 
   // Tell the Attenuator about the pack and wand status (not part of DeviceState).
   attenuatorSyncData.wandPresent = (WAND_CONN_STATE == WAND_CONNECTED) ? true : false;
