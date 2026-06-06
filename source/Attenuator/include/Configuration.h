@@ -71,17 +71,6 @@ bool b_invert_leds = false; // Denotes whether the order should be reversed.
 bool b_grb_leds = false; // Denotes whether to use GRB ordering for LEDs.
 
 /*
- * Pack Connection State
- * Controls whether to wait for pack communication or operate standalone.
- */
-enum PACK_CONN_STATES { 
-  PACK_DISCONNECTED,  // Waiting for pack (or operating standalone)
-  PACK_MISMATCH,      // Pack detected but firmware incompatible
-  PACK_CONNECTED      // Pack connected and synchronized
-};
-enum PACK_CONN_STATES PACK_CONN_STATE = PACK_DISCONNECTED;
-
-/*
  * Custom values from pack EEPROM.
  *
  * Override as desired if operating in standalone mode.

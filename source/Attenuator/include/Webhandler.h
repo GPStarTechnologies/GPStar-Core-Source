@@ -164,9 +164,26 @@ String getDeviceConfig() {
     jsonBody["songList"] = "";
   }
   jsonBody["buildDate"] = build_date;
+  jsonBody["deviceProtocol"] = PROTOCOL_SIGNATURE;
   jsonBody["audioVersion"] = i_pack_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
+
+  // Always report pack connection state
+  switch(PACK_CONN_STATE) {
+    case PACK_DISCONNECTED:
+      jsonBody["packConn"] = "Disconnected";
+    break;
+    case PACK_MISMATCH:
+      jsonBody["packConn"] = "Version Mismatch";
+    break;
+    case PACK_CONNECTED:
+      jsonBody["packConn"] = "Connected";
+    break;
+    default:
+      jsonBody["packConn"] = "Unknown";
+    break;
+  }
 
   // Build list of available stream modes based on device configuration.
   JsonArray streamModes = jsonBody["streamModes"].to<JsonArray>();
@@ -393,25 +410,6 @@ String getEquipmentStatus() {
   // Prepare a JSON object with information we have gleaned from the system.
   String equipStatus;
   JsonDocument jsonBody;
-
-  // Always report pack connection state
-  switch(PACK_CONN_STATE) {
-    case PACK_DISCONNECTED:
-      jsonBody["packConn"] = "Disconnected";
-    break;
-    case PACK_MISMATCH:
-      jsonBody["packConn"] = "Version Mismatch";
-    break;
-    case PACK_CONNECTED:
-      jsonBody["packConn"] = "Connected";
-    break;
-    default:
-      jsonBody["packConn"] = "Unknown";
-    break;
-  }
-
-  // Report calculated protocol for debugging version mismatches.
-  jsonBody["attenuatorProtocol"] = PROTOCOL_SIGNATURE;
 
   if(PACK_CONN_STATE == PACK_CONNECTED) {
     // Only prepare status when not waiting on the pack

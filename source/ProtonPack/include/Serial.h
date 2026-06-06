@@ -889,9 +889,10 @@ void checkAttenuator() {
           attenuatorComs.rxObj(recvCmdA);
           if(recvCmdA.c > 0 && recvCmdA.s == A_COM_START && recvCmdA.e == A_COM_END) {
             sendDebug(String(F("Recv. Attenuator Command: ")) + String(recvCmdA.c));
+            sendDebug(String(F("Attenuator Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
 
-            if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
-              // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+            if(!(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
+              // Can't proceed if the Attenuator isn't connected/synching; prevents phantom actions from occurring.
               if(recvCmdA.c != A_SYNC_START && recvCmdA.c != A_HANDSHAKE && recvCmdA.c != A_SYNC_END) {
                 // This applies for any action other than those responsible for sync operations.
                 return;
@@ -904,8 +905,8 @@ void checkAttenuator() {
         break;
 
         case PACKET_DATA:
-          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+          if(!(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
+            // Can't proceed if the Attenuator isn't connected/synching; prevents phantom actions from occurring.
             return;
           }
 
@@ -918,7 +919,7 @@ void checkAttenuator() {
 
         case PACKET_PACK:
           if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 
@@ -932,7 +933,7 @@ void checkAttenuator() {
 
         case PACKET_WAND:
           if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 
@@ -945,7 +946,7 @@ void checkAttenuator() {
 
         case PACKET_SMOKE:
           if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 

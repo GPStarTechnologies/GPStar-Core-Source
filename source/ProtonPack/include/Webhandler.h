@@ -150,9 +150,48 @@ String getDeviceConfig() {
     jsonBody["songList"] = "";
   }
   jsonBody["buildDate"] = build_date;
+  jsonBody["deviceProtocol"] = PROTOCOL_SIGNATURE;
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
+
+  // Report attenuator connection state
+  switch(ATTENUATOR_CONN_STATE) {
+    case ATTENUATOR_DISCONNECTED:
+      jsonBody["attenuatorConn"] = "Disconnected";
+    break;
+    case ATTENUATOR_MISMATCH:
+      jsonBody["attenuatorConn"] = "Version Mismatch";
+    break;
+    case ATTENUATOR_SYNCING:
+      jsonBody["attenuatorConn"] = "Syncing";
+    break;
+    case ATTENUATOR_CONNECTED:
+      jsonBody["attenuatorConn"] = "Connected";
+    break;
+    default:
+      jsonBody["attenuatorConn"] = "Unknown";
+    break;
+  }
+
+  // Report wand connection state
+  switch(WAND_CONN_STATE) {
+    case WAND_DISCONNECTED:
+      jsonBody["wandConn"] = "Disconnected";
+    break;
+    case WAND_MISMATCH:
+      jsonBody["wandConn"] = "Version Mismatch";
+    break;
+    case WAND_SYNCING:
+      jsonBody["wandConn"] = "Syncing";
+    break;
+    case WAND_CONNECTED:
+      jsonBody["wandConn"] = "Connected";
+    break;
+    default:
+      jsonBody["wandConn"] = "Unknown";
+    break;
+  }
 
   // Build list of available stream modes based on device configuration.
   JsonArray streamModes = jsonBody["streamModes"].to<JsonArray>();
@@ -399,47 +438,6 @@ String getEquipmentStatus() {
   }
 
   try {
-    // Report wand connection state
-    switch(WAND_CONN_STATE) {
-      case WAND_DISCONNECTED:
-        jsonBody["wandConn"] = "Disconnected";
-      break;
-      case WAND_MISMATCH:
-        jsonBody["wandConn"] = "Version Mismatch";
-      break;
-      case WAND_SYNCING:
-        jsonBody["wandConn"] = "Syncing";
-      break;
-      case WAND_CONNECTED:
-        jsonBody["wandConn"] = "Connected";
-      break;
-      default:
-        jsonBody["wandConn"] = "Unknown";
-      break;
-    }
-
-    // Report attenuator connection state
-    switch(ATTENUATOR_CONN_STATE) {
-      case ATTENUATOR_DISCONNECTED:
-        jsonBody["attenuatorConn"] = "Disconnected";
-      break;
-      case ATTENUATOR_MISMATCH:
-        jsonBody["attenuatorConn"] = "Version Mismatch";
-      break;
-      case ATTENUATOR_SYNCING:
-        jsonBody["attenuatorConn"] = "Syncing";
-      break;
-      case ATTENUATOR_CONNECTED:
-        jsonBody["attenuatorConn"] = "Connected";
-      break;
-      default:
-        jsonBody["attenuatorConn"] = "Unknown";
-      break;
-    }
-
-    // Report calculated protocol for debugging version mismatches.
-    jsonBody["packProtocol"] = PROTOCOL_SIGNATURE;
-
     jsonBody["mode"] = gpstarPack.getModeName();
     jsonBody["modeID"] = gpstarPack.getSystemMode();
     jsonBody["theme"] = gpstarPack.getThemeName();
@@ -1491,7 +1489,7 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
 
   if(c_music_track.toInt() != 0 && c_music_track.toInt() >= i_music_track_start) {
     uint16_t i_music_track = c_music_track.toInt();
-    debugln(F("Web: Selected Music Track: ") + String(i_music_track));
+    debugln(String(F("Web: Selected Music Track: ")) + String(i_music_track));
     executeCommand(A_MUSIC_PLAY_TRACK, i_music_track); // Inform the pack of the new track.
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }

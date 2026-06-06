@@ -22,7 +22,7 @@
 
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
-#define GPSTAR_DEBUG 0
+#define GPSTAR_DEBUG 1
 
 // Debug macros
 #if GPSTAR_DEBUG == 1
@@ -665,7 +665,7 @@ void loop() {
         // Turn off WiFi and the web server if the Attenuator is connected.
         shutdownWireless();
       }
-      else if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED && !b_httpd_started && b_pack_post_finish) {
+      else if((ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_MISMATCH) && !b_httpd_started && b_pack_post_finish) {
         // Begin by setting up WiFi as a prerequisite to all else.
         restartWireless();
       }

@@ -156,11 +156,31 @@ String getDeviceConfig() {
     jsonBody["songList"] = "";
   }
   jsonBody["buildDate"] = build_date;
+  jsonBody["deviceProtocol"] = PROTOCOL_SIGNATURE;
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
   jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
+
+  // Report pack connection state
+  switch(WAND_CONN_STATE) {
+    case PACK_DISCONNECTED:
+      jsonBody["packConn"] = "Disconnected";
+    break;
+    case PACK_MISMATCH:
+      jsonBody["packConn"] = "Version Mismatch";
+    break;
+    case PACK_CONNECTED:
+      jsonBody["packConn"] = "Connected";
+    break;
+    case NC_BENCHTEST:
+      jsonBody["packConn"] = "Benchtest Mode";
+    break;
+    default:
+      jsonBody["packConn"] = "Unknown";
+    break;
+  }
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -353,28 +373,6 @@ String getEquipmentStatus() {
   }
 
   try {
-    // Report pack connection state
-    switch(WAND_CONN_STATE) {
-      case PACK_DISCONNECTED:
-        jsonBody["packConn"] = "Disconnected";
-      break;
-      case PACK_MISMATCH:
-        jsonBody["packConn"] = "Version Mismatch";
-      break;
-      case PACK_CONNECTED:
-        jsonBody["packConn"] = "Connected";
-      break;
-      case NC_BENCHTEST:
-        jsonBody["packConn"] = "Benchtest Mode";
-      break;
-      default:
-        jsonBody["packConn"] = "Unknown";
-      break;
-    }
-
-    // Report calculated protocol for debugging version mismatches.
-    jsonBody["wandProtocol"] = PROTOCOL_SIGNATURE;
-
     jsonBody["standalone"] = b_wand_standalone;
     jsonBody["mode"] = gpstarWand.getModeName();
     jsonBody["modeID"] = gpstarWand.getSystemMode();

@@ -96,7 +96,7 @@ function getDevicePrefs() {
         }
 
         // Device Info
-        setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
+        setHtml("buildDate", "Build: " + (jObj.buildDate || "") + " [" + (jObj.deviceProtocol || "-") + "]");
 
         switch (jObj.audioVersion ?? 0) {
           case 0:
@@ -106,10 +106,10 @@ function getDevicePrefs() {
             setHtml("audioInfo", "WAV Trigger");
             break;
           case 100:
-            setHtml("audioInfo", "GPStar Audio v100");
+            setHtml("audioInfo", "GPStar Audio Firmware: v100");
             break;
           default:
-            setHtml("audioInfo", "GPStar Audio v" + (jObj.audioVersion || ""));
+            setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
             break;
         }
 
