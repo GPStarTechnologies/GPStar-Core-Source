@@ -892,7 +892,7 @@ void checkAttenuator() {
             sendDebug(String(F("Attenuator Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
 
             if(!(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
-              // Can't proceed if the Attenuator isn't connected/synching; prevents phantom actions from occurring.
+              // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
               if(recvCmdA.c != A_SYNC_START && recvCmdA.c != A_HANDSHAKE && recvCmdA.c != A_SYNC_END) {
                 // This applies for any action other than those responsible for sync operations.
                 return;
@@ -906,7 +906,7 @@ void checkAttenuator() {
 
         case PACKET_DATA:
           if(!(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
-            // Can't proceed if the Attenuator isn't connected/synching; prevents phantom actions from occurring.
+            // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
             return;
           }
 
