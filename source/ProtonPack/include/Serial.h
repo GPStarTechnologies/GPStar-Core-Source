@@ -379,17 +379,19 @@ void wandDisconnectCheck() {
   }
 }
 
-// Check if the Attenuator is still connected.
+// Check if the Attenuator is still connected via a regular check-in.
 void attenuatorHandShake() {
-  if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED) {
+  if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING) {
     if(ms_attenuator_check.justFinished()) {
-      // Attenuator has abandoned us; consider it disconnected until we know otherwise.
+      // Attenuator has abandoned us.
       ATTENUATOR_CONN_STATE = ATTENUATOR_DISCONNECTED;
+      sendDebug(String(F("Attenuator Disconnected | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
     }
-    else if(ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2) &&
-	        !(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
-      // Haven't heard from the Attenuator recently (neither connected nor syncing); so let's check in.
+    else if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED &&
+            ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2)) {
+      // Haven't heard from the Attenuator recently; let's check in.
       ATTENUATOR_CONN_STATE = ATTENUATOR_SYNCING;
+      sendDebug(String(F("Attenuator Syncing | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
       attenuatorSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
     }
   }
@@ -879,9 +881,14 @@ void checkAttenuator() {
     // sendDebug(String(F("Serial PacketID: ")) + String(i_packet_id));
 
     if(i_packet_id > 0) {
-      if(ms_attenuator_check.isRunning() && ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED) {
+      if(ms_attenuator_check.isRunning() && (ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
         // If the timer is still running and Attenuator is connected, consider any request as proof of life.
         ms_attenuator_check.restart();
+
+		if(ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING) {
+		  // This indicates a response so change state from syncing to connected.
+		  ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED;
+  		}
       }
 
       // Determine the type of packet which was sent by the Attenuator.
@@ -889,7 +896,7 @@ void checkAttenuator() {
         case PACKET_COMMAND:
           attenuatorComs.rxObj(recvCmdA);
           if(recvCmdA.c > 0 && recvCmdA.s == A_COM_START && recvCmdA.e == A_COM_END) {
-            sendDebug(String(F("Recv. Attenuator Command: ")) + String(recvCmdA.c) + String(F(" | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
+            sendDebug(String(F("Recv. Att. Command: ")) + String(recvCmdA.c) + String(F(" | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
 
             if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
               // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
@@ -972,7 +979,7 @@ void doAttenuatorSync() {
     playEffect(S_BEEPS_ALT);
   }
 
-  sendDebug(F("Attenuator Sync Start"));
+  sendDebug(String(F("Attenuator Sync Start | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
   attenuatorSerialSend(A_SYNC_START, PROTOCOL_SIGNATURE);
 
   // Export DeviceState data to sync struct using centralized method
@@ -1048,7 +1055,7 @@ void checkWand() {
         case PACKET_COMMAND:
           wandComs.rxObj(recvCmdW);
           if(recvCmdW.c > 0 && recvCmdW.s == W_COM_START && recvCmdW.e == W_COM_END) {
-            sendDebug(String(F("Recv. Wand Command: ")) + String(recvCmdW.c));
+            sendDebug(String(F("Recv. Wand Command: ")) + String(recvCmdW.c) + String(F(" | Conn. State: ")) + String(WAND_CONN_STATE));
             handleWandCommand(recvCmdW.c, recvCmdW.d1);
           }
         break;

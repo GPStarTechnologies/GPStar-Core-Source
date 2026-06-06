@@ -5789,7 +5789,7 @@ void readTemperature() {
     else if(ms_temp_read.justFinished()) {
       f_temperature_c = tempSensor.getTemperature(); // Read value in Celsius
       f_temperature_f = (f_temperature_c * 1.8) + 32; // Convert Celsius to Fahrenheit
-      debugf("\t\tTemp: %.1f C (%.1f F)\n", f_temperature_c, f_temperature_f);
+      //sendDebug(String(F("Temp: ")) + String(f_temperature_c) + String(F(" C (")) + String(f_temperature_f) + String(F(" F)")));
 
       // Send value to the Attenuator, multiplied by 100 to avoid float issues.
       attenuatorSerialSend(A_TEMPERATURE_PACK, f_temperature_c * 100);

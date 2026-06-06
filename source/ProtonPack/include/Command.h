@@ -48,7 +48,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
     case A_HANDSHAKE:
       // Check protocol signature to ensure firmware compatibility.
       if(i_value != PROTOCOL_SIGNATURE) {
-        sendDebug(F("Attenuator protocol mismatch!"));
+        sendDebug(String(F("Attenuator protocol mismatch! | Received: ")) + String(i_value) + String(F(" | Expected: ")) + String(PROTOCOL_SIGNATURE));
         ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
         return; // Block sync due to incompatible firmware.
       }
@@ -62,8 +62,8 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
     break;
 
     case A_SYNC_END:
-      sendDebug(F("Attenuator Synchronized"));
       ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED;
+      sendDebug(String(F("Attenuator Synchronized | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
       ms_attenuator_check.start(i_attenuator_disconnect_delay);
       #ifdef ESP32
       if(WIFI_USER_MODE == WIFI_DEFAULT) {

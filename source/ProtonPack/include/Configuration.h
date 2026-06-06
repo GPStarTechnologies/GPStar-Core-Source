@@ -32,7 +32,7 @@
  * For console output, must first set GPSTAR_DEBUG 1 in main.cpp to enable debug macros.
  */
 //#define DEBUG_WIRELESS_SETUP    // Output debugs related to the WiFi/network setup.
-#define DEBUG_SEND_TO_CONSOLE   // Send any general messages to the serial (USB) console.
+//#define DEBUG_SEND_TO_CONSOLE   // Send any general messages to the serial (USB) console.
 //#define DEBUG_SEND_TO_WEBSOCKET // Send any messages to connected WebSocket clients.
 //#define DEBUG_SEND_TO_EVENTS    // Send any messages to the server-side events stream.
 
