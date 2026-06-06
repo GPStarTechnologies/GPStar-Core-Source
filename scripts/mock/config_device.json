@@ -15,6 +15,7 @@
   "useAnimation": true,
   "songList": "Track 1\nTrack 2\nTrack 3\nGhostbusters Theme",
   "buildDate": "2026-04-02",
+  "deviceProtocol": 600,
   "audioVersion": 3,
   "audioCorrupt": false,
   "audioOutdated": false,
