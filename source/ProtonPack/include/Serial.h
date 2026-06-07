@@ -283,7 +283,7 @@ void getSmokePrefsObject() {
   // Enable or disable smoke effects overall.
   smokeConfig.smokeEnabled = b_smoke_enabled;
 
-  if(WAND_CONN_STATE != WAND_CONNECTED) {
+  if(WAND_CONN_STATE == WAND_DISCONNECTED) {
     // Provide some default values when a wand is not attached.
     smokeConfig.overheatLevel5 = 1; // true|false
     smokeConfig.overheatLevel4 = 0; // true|false
@@ -322,10 +322,10 @@ bool isExcludedCommand(uint8_t i_command) {
  * Serial API Communication Handlers
  */
 
-// Check if the wand is still connected.
+// Check if the wand is still connected via a regular check-in.
 void wandDisconnectCheck() {
   // A wand was previously considered to be connected.
-  if(WAND_CONN_STATE == WAND_CONNECTED) {
+  if(WAND_CONN_STATE == WAND_CONNECTED || WAND_CONN_STATE == WAND_SYNCING) {
     if(ms_wand_check.justFinished()) {
       // Timer just ran out, so we must assume the wand was disconnected.
       if(b_diagnostic) {
@@ -334,6 +334,7 @@ void wandDisconnectCheck() {
       }
 
       WAND_CONN_STATE = WAND_DISCONNECTED; // Cause the next handshake to trigger a sync.
+      sendDebug(String(F("Wand Disconnected | Conn. State: ")) + String(WAND_CONN_STATE));
       b_wand_on = false; // No wand means the device is no longer powered on.
 
       // Tell the Attenuator the wand was disconnected.
@@ -367,14 +368,14 @@ void wandDisconnectCheck() {
       gpstarPack.enableVGStreams();
       gpstarPack.enableAllSpectralStreams();
     }
-    else {
-      if(ms_wand_check.remaining() < (ms_wand_check.delay() / 5) && WAND_CONN_STATE != WAND_SYNCING) {
-        // If we haven't received a handshake from the wand in over 6.5 seconds, force a handshake with the wand.
-        // This is because the wand is supposed to handshake every 3.25 seconds and we haven't heard back in two pings.
-        // This should be a last-resort check to make sure it's available and responding.
-        WAND_CONN_STATE = WAND_SYNCING;
-        packSerialSend(P_HANDSHAKE, PROTOCOL_SIGNATURE);
-      }
+    else if(WAND_CONN_STATE == WAND_CONNECTED && 
+	        ms_wand_check.remaining() < (ms_wand_check.delay() / 5)) {
+      // If we haven't received a handshake from the wand in over 6.5 seconds, force a handshake with the wand.
+      // This is because the wand is supposed to handshake every 3.25 seconds and we haven't heard back in two pings.
+      // This should be a last-resort check to make sure it's available and responding.
+      WAND_CONN_STATE = WAND_SYNCING;
+      sendDebug(String(F("Wand Syncing | Conn. State: ")) + String(WAND_CONN_STATE));
+      packSerialSend(P_HANDSHAKE, PROTOCOL_SIGNATURE);
     }
   }
 }
