@@ -23,7 +23,7 @@ The next generation is here! The latest version of equipment is named **GPStar I
 
 ### GPStar II Lite
 
-The **GPStar II Lite** kit is intended to provide a direct, plug-and-play upgrade to the stock controller in a Haslab-based Proton Pack ONLY. This allows your stock Spengler Series or 1984 Neutrona Wand to power up the Proton Pack just as the original pack supported. No upgrades to your hose or its wiring is necessary for this kit.
+The **GPStar II Lite** kit is intended to provide a direct, plug-and-play upgrade to the stock controller in a HasLab-based Proton Pack ONLY. This allows your stock Spengler Series or 1984 Neutrona Wand to power up the Proton Pack just as the original pack supported. No upgrades to your hose or its wiring is necessary for this kit.
 
 For clarity, this is not a "keepalive" or cheat device, it is a complete replacement of the stock controller and provides an always-on system that does not shut down nor require power-cycling the Proton Pack after a period of time. Please note that this does not alter the default timeout in the Neutrona Wand, which may still require re-activation when that occurs. For users starting with the basic **GPStar II Lite** system here's how you can begin and later expand your setup:
 
@@ -98,7 +98,7 @@ Just see for yourself what this kit can do, and you'll be ready to believe us!
 *"You know, it just occurred to me that we really haven't had a successful test of this equipment." -Ray Stantz*
 
 Except that we have! Here is a [Walkthrough Video Contributed by JustinDustin](https://www.youtube.com/watch?v=mnfljGd5-uU) (YouTube, March 2023) showcasing several of the stock features in a converted pack/wand combination. Several optional features were implemented as part of this build using the Arduino platform.
-[![Haslab Proton Pack Arduino Powered Walkthrough Video](https://img.youtube.com/vi/mnfljGd5-uU/maxresdefault.jpg)](https://www.youtube.com/watch?v=mnfljGd5-uU)
+[![HasLab Proton Pack Arduino Powered Walkthrough Video](https://img.youtube.com/vi/mnfljGd5-uU/maxresdefault.jpg)](https://www.youtube.com/watch?v=mnfljGd5-uU)
 
 Additionally, this video covers several new updates in the months since, using the new GPStar controllers, as the [Optional Features and Menu Walkthrough](https://www.youtube.com/watch?v=ePXz99UawLQ) (YouTube, July 2023).
 [![Optional Features and Menu Walkthrough Video](https://img.youtube.com/vi/ePXz99UawLQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=mnfljGd5-uU)

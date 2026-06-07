@@ -93,7 +93,10 @@
  #define QUAD_CYCLOTRON_LED_COUNT 4
 
 /*
- * The HasLab Cyclotron Lid has 12 LEDs.
+ * The HasLab Cyclotron Lid has 12 LEDs (4x3)
+ * However, configuration is subject to the stock pack type:
+ * - Afterlife: Each of the 4 lenses has 3 LEDs in an arc.
+ * - 1984: Each of the 4 lenses has 3 LEDs in a triangle.
  */
 #define HASLAB_CYCLOTRON_LED_COUNT 12
 

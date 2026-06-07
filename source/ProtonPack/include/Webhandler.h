@@ -219,6 +219,7 @@ String getPackConfig() {
 
     // Proton Pack LED Options
     jsonBody["ledCycLidCount"] = packConfig.ledCycLidCount; // [12,20,36,40]
+    jsonBody["stockPackType"] = packConfig.stockPackType; // [0=Afterlife,1=1984]
     jsonBody["ledCycLidHue"] = packConfig.ledCycLidHue; // Spectral custom colour/hue 2-254
     jsonBody["ledCycLidSat"] = packConfig.ledCycLidSat; // Spectral custom saturation 2-254
     jsonBody["ledCycLidLum"] = packConfig.ledCycLidLum; // Brightness 20-100
@@ -1449,7 +1450,7 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
 
   if(c_music_track.toInt() != 0 && c_music_track.toInt() >= i_music_track_start) {
     uint16_t i_music_track = c_music_track.toInt();
-    debugln(F("Web: Selected Music Track: ") + String(i_music_track));
+    debugln(String(F("Web: Selected Music Track: ")) + String(i_music_track));
     executeCommand(A_MUSIC_PLAY_TRACK, i_music_track); // Inform the pack of the new track.
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }
@@ -1656,10 +1657,16 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
 
       // Numeric fields - Cyclotron Lid options
       packConfig.ledCycLidCount = jsonBody["ledCycLidCount"].as<uint8_t>();
+      packConfig.stockPackType = jsonBody["stockPackType"].as<uint8_t>();
       packConfig.ledCycLidHue = jsonBody["ledCycLidHue"].as<uint8_t>();
       packConfig.ledCycLidSat = jsonBody["ledCycLidSat"].as<uint8_t>();
       packConfig.ledCycLidLum = jsonBody["ledCycLidLum"].as<uint8_t>();
       packConfig.ledCycLidCenter = jsonBody["ledCycLidCenter"].as<uint8_t>();
+
+      // Force the HasLab 1984 stock pack to use 3 center LEDs.
+      if(packConfig.stockPackType == 1 && packConfig.ledCycLidCount == 12) {
+        packConfig.ledCycLidCenter = false;
+      }
 
       // Boolean fields - Cyclotron Lid toggles
       updateJsonBool(packConfig.cyclotronDirection, jsonBody, "cyclotronDirection");
