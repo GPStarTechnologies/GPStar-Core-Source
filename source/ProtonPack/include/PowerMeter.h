@@ -594,7 +594,7 @@ void wandPowerDisplay() {
 void checkPowerMeter() {
   if(wandReading.ReadTimer.justFinished()) {
     // Only perform GPStar Lite functions if a GPStar Neutrona Wand is not connected/syncing.
-    if(WAND_CONN_STATE == WAND_DISCONNECTED && WAND_CONN_STATE != WAND_SYNCING) {
+    if(WAND_CONN_STATE != WAND_CONNECTED && WAND_CONN_STATE != WAND_SYNCING) {
       doWandPowerReading(); // Get latest V/A readings.
       wandPowerDisplay(); // Show values on serial plotter.
       updateWandPowerState(); // Take action on V/A values.

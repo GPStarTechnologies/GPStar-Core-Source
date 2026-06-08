@@ -40,6 +40,12 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
     case A_SYNC_START:
       // Attenuator has explicitly asked to be synchronized.
       // Don't restart sync if already in progress (Attenuator doesn't stop its retry timer).
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(String(F("Attenuator protocol mismatch! | Received: ")) + String(i_value) + String(F(" | Expected: ")) + String(PROTOCOL_SIGNATURE));
+        ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
+        return; // Block sync due to incompatible firmware.
+      }
+
       if(ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
         doAttenuatorSync();
       }

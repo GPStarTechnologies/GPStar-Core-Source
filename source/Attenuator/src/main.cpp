@@ -323,7 +323,7 @@ void SerialCommsTask(void *parameter) {
     if(PACK_CONN_STATE != PACK_CONNECTED) {
       if(ms_packsync.justFinished()) {
         // Tell the pack we are trying to sync.
-        attenuatorSerialSend(A_SYNC_START);
+        attenuatorSerialSend(A_SYNC_START, PROTOCOL_SIGNATURE);
 
         // Keep the on-board LED dark until sync'd.
         digitalWrite(BUILT_IN_LED, LOW);

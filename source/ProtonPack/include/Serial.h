@@ -283,8 +283,8 @@ void getSmokePrefsObject() {
   // Enable or disable smoke effects overall.
   smokeConfig.smokeEnabled = b_smoke_enabled;
 
-  if(WAND_CONN_STATE == WAND_DISCONNECTED) {
-    // Provide some default values when a wand is not attached.
+  if(WAND_CONN_STATE != WAND_CONNECTED) {
+    // Provide some default values when a compatible wand is not attached.
     smokeConfig.overheatLevel5 = 1; // true|false
     smokeConfig.overheatLevel4 = 0; // true|false
     smokeConfig.overheatLevel3 = 0; // true|false
@@ -368,8 +368,7 @@ void wandDisconnectCheck() {
       gpstarPack.enableVGStreams();
       gpstarPack.enableAllSpectralStreams();
     }
-    else if(WAND_CONN_STATE == WAND_CONNECTED && 
-	        ms_wand_check.remaining() < (ms_wand_check.delay() / 5)) {
+    else if(WAND_CONN_STATE == WAND_CONNECTED && ms_wand_check.remaining() < (ms_wand_check.delay() / 5)) {
       // If we haven't received a handshake from the wand in over 6.5 seconds, force a handshake with the wand.
       // This is because the wand is supposed to handshake every 3.25 seconds and we haven't heard back in two pings.
       // This should be a last-resort check to make sure it's available and responding.
@@ -388,8 +387,7 @@ void attenuatorHandShake() {
       ATTENUATOR_CONN_STATE = ATTENUATOR_DISCONNECTED;
       sendDebug(String(F("Attenuator Disconnected | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
     }
-    else if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED &&
-            ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2)) {
+    else if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED && ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2)) {
       // Haven't heard from the Attenuator recently; let's check in.
       ATTENUATOR_CONN_STATE = ATTENUATOR_SYNCING;
       sendDebug(String(F("Attenuator Syncing | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
@@ -886,10 +884,10 @@ void checkAttenuator() {
         // If the timer is still running and Attenuator is connected, consider any request as proof of life.
         ms_attenuator_check.restart();
 
-		if(ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING) {
-		  // This indicates a response so change state from syncing to connected.
-		  ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED;
-  		}
+        if(ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING) {
+          // This indicates a response so change state from syncing to connected.
+          ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED;
+        }
       }
 
       // Determine the type of packet which was sent by the Attenuator.
@@ -899,7 +897,7 @@ void checkAttenuator() {
           if(recvCmdA.c > 0 && recvCmdA.s == A_COM_START && recvCmdA.e == A_COM_END) {
             sendDebug(String(F("Recv. Att. Command: ")) + String(recvCmdA.c) + String(F(" | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
 
-            if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
+            if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
               // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
               if(recvCmdA.c != A_SYNC_START && recvCmdA.c != A_HANDSHAKE && recvCmdA.c != A_SYNC_END) {
                 // This applies for any action other than those responsible for sync operations.
@@ -913,8 +911,8 @@ void checkAttenuator() {
         break;
 
         case PACKET_DATA:
-          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
-            // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 
@@ -926,7 +924,7 @@ void checkAttenuator() {
         break;
 
         case PACKET_PACK:
-          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
             // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
@@ -940,7 +938,7 @@ void checkAttenuator() {
         break;
 
         case PACKET_WAND:
-          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
             // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
@@ -953,7 +951,7 @@ void checkAttenuator() {
         break;
 
         case PACKET_SMOKE:
-          if(ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED) {
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
             // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }

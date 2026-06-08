@@ -619,7 +619,7 @@ void loop() {
   checkAttenuator();
 
   if(b_pack_post_finish) {
-    if(!b_demo_light_mode || !b_first_boot || (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || (b_demo_light_mode && WAND_CONN_STATE == WAND_DISCONNECTED && WAND_CONN_STATE != WAND_SYNCING && ms_wand_check.remaining() < 1)) {
+    if(!b_demo_light_mode || !b_first_boot || (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || (b_demo_light_mode && WAND_CONN_STATE != WAND_CONNECTED && WAND_CONN_STATE != WAND_SYNCING && ms_wand_check.remaining() < 1)) {
       // Handle any actions after POST event.
       mainLoop();
 

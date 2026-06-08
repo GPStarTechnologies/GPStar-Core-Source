@@ -338,6 +338,13 @@ bool handleCommand(uint8_t i_command, uint16_t i_value) {
     break;
 
     case A_SYNC_START:
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Pack protocol mismatch!"));
+        PACK_CONN_STATE = PACK_MISMATCH;
+        return false; // Block sync due to incompatible firmware.
+      }
+
       sendDebug(F("Sync Start"));
     break;
 
