@@ -476,8 +476,6 @@ String getEquipmentStatus() {
     jsonBody["packTempC"] = roundFloat(f_temperature_c);
     jsonBody["packTempF"] = roundFloat(f_temperature_f);
     jsonBody["wandAmps"] = roundFloat(f_wand_amps);
-    jsonBody["apClients"] = i_ap_client_count;
-    jsonBody["wsClients"] = i_ws_client_count;
     jsonBody["canChangeStream"] = canChangeStreamMode();
   }
   catch (...) {
@@ -977,6 +975,27 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
   // Serialize JSON object to string.
   serializeJson(jsonBody, wifiNetworks);
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, wifiNetworks);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  request->send(response);
+}
+
+void handleGetNetworkStatus(AsyncWebServerRequest *request) {
+  // Return network status and statistics including DNS request count and connected clients.
+  String statusJson;
+  JsonDocument jsonBody;
+  JsonObject statusObj = jsonBody.to<JsonObject>();
+
+  // Populate with current network configuration and statistics.
+  wirelessMgr->getNetworkStatus(statusObj);
+
+  // Add device-specific client connection counts.
+  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
+  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
+  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, statusJson);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, statusJson);
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }
