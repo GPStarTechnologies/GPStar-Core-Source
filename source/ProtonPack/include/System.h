@@ -109,12 +109,7 @@ bool isBrassPack() {
 void vibrationOff() {
   ms_menu_vibration.stop();
   i_vibration_level_prev = i_vibration_level_min;
-  if(gpstarPack.getVibrationMode() == CYCLOTRON_MOTOR) {
-    digitalWrite(VIBRATION_PIN, LOW);
-  }
-  else {
-    analogWrite(VIBRATION_PIN, LOW);
-  }
+  analogWrite(VIBRATION_PIN, LOW);
 }
 
 void ventLightLEDW(bool b_on) {
@@ -1014,7 +1009,7 @@ void packStartup(bool fullStartup) {
 
   // Start up the Cyclotron motor, if enabled.
   if(gpstarPack.getVibrationMode() == CYCLOTRON_MOTOR && b_vibration_switch_on) {
-    digitalWrite(VIBRATION_PIN, HIGH);
+    analogWrite(VIBRATION_PIN, 255);
   }
 
   stopEffect(S_PACK_RIBBON_ALARM_1);
@@ -5063,7 +5058,7 @@ void restartFromWandMash() {
 
           // Restart the Cyclotron motor, if enabled.
           if(gpstarPack.getVibrationMode() == CYCLOTRON_MOTOR && b_vibration_switch_on) {
-            digitalWrite(VIBRATION_PIN, HIGH);
+            analogWrite(VIBRATION_PIN, 255);
           }
         break;
       }
