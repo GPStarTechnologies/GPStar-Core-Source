@@ -660,17 +660,9 @@ void handlePackPrefsUpdate() {
     break;
 
     case 5:
+      b_vibration_switch_on = true; // Override the vibration toggle switch.
       VIBRATION_MODE_EEPROM = CYCLOTRON_MOTOR;
       gpstarPack.setVibrationMode(VIBRATION_MODE_EEPROM);
-      pinMode(VIBRATION_PIN, OUTPUT); // Need to explicitly switch to GPIO from LEDC on ESP32.
-
-      // Reset the vibration switch state.
-      if(switch_vibration.getState() == LOW) {
-        b_vibration_switch_on = true;
-      }
-      else {
-        b_vibration_switch_on = false;
-      }
     break;
   }
 
@@ -2663,15 +2655,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         case VIBRATION_NEVER:
           VIBRATION_MODE_EEPROM = CYCLOTRON_MOTOR;
           gpstarPack.setVibrationMode(VIBRATION_MODE_EEPROM);
-          pinMode(VIBRATION_PIN, OUTPUT); // Need to explicitly switch to GPIO from LEDC on ESP32.
-
-          // Reset the vibration switch state.
-          if(switch_vibration.getState() == LOW) {
-            b_vibration_switch_on = true;
-          }
-          else {
-            b_vibration_switch_on = false;
-          }
+          b_vibration_switch_on = true; // Override the Proton Pack vibration toggle switch.
 
           // Proton Pack motorized cyclotron support enabled.
           stopEffect(S_VOICE_PROTON_PACK_VIBRATION_FIRING_ENABLED);
