@@ -465,6 +465,7 @@ void readEEPROM() {
     if(obj_config_eeprom.pack_vibration > 0 && obj_config_eeprom.pack_vibration < 6) {
       switch(obj_config_eeprom.pack_vibration) {
         case 5:
+          b_vibration_switch_on = true; // Override the vibration toggle switch.
           VIBRATION_MODE_EEPROM = CYCLOTRON_MOTOR;
           gpstarPack.setVibrationMode(VIBRATION_MODE_EEPROM);
         break;
