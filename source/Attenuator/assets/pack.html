@@ -147,7 +147,7 @@
       </div>
       <div class="setting">
         <label class="toggle-switchy" data-label="left">
-          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" />
+          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" onclick="volumeWarning()" />
           <span class="toggle">
             <span class="switch"></span>
           </span>
@@ -489,6 +489,21 @@
       // Converts a value from one range to another: eg. convertRange(160, [2,254], [0,360])
       function convertRange(value, r1, r2) {
         return Math.round(((value - r1[0]) * (r2[1] - r2[0])) / (r1[1] - r1[0]) + r2[0]);
+      }
+
+      function volumeWarning(event) {
+        if(getToggle("audioVolumeBoosted")) {
+          // If the user just toggled the +10dB boost, warn them of the consequences.
+          if (confirm(
+            "At maximum amplification, sound levels capable of causing hearing impairment can be achieved. Please be sure to use appropriate hearing protection."
+          )) {
+            // Do nothing; toggle is already being set to on.
+          }
+          else {
+            // User selected Cancel, force toggle back to off.
+            setToggle("audioVolumeBoosted", false);
+          }
+        }
       }
 
       function populateFormFields(settings) {

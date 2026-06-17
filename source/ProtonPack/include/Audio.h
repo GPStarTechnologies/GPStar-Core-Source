@@ -878,6 +878,11 @@ void toggleAudioBoost(bool enable) {
   // If enabled, max gain is +10dB, otherwise unity gain.
   i_volume_abs_max = b_audio_boost ? 10 : 0;
 
+  // If current volume percentage is greater than 50%, force to 50%.
+  if(enable && i_volume_master_percentage > 50) {
+    i_volume_master_percentage = 50;
+  }
+
   // Finally, reset our current volume to the new paradigm.
   i_volume_master = getGainValue(i_volume_master_percentage);
   i_volume_revert = i_volume_master;
