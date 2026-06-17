@@ -405,7 +405,7 @@ void readEEPROM() {
       b_fadeout_idle_sounds = (obj_config_eeprom.fadeout_idle_sounds > 1);
     }
 
-    if(obj_config_eeprom.fadeout_idle_delay > 9 && obj_config_eeprom.fadeout_idle_delay < 61) {
+    if(obj_config_eeprom.fadeout_idle_delay > 14 && obj_config_eeprom.fadeout_idle_delay < 61) {
       i_idle_fadeout_delay = obj_config_eeprom.fadeout_idle_delay * 1000;
     }
 
