@@ -133,7 +133,7 @@
       <div class="setting">
         <b>Idle Loop Fade Out Delay:</b>
         <br />
-        <input type="range" id="fadeoutIdleDelay" name="fadeoutIdleDelay" min="10" max="60" value="30" step="5" oninput="fadeoutDelayOut.value = fadeoutIdleDelay.value" />
+        <input type="range" id="fadeoutIdleDelay" name="fadeoutIdleDelay" min="15" max="60" value="30" step="5" oninput="fadeoutDelayOut.value = fadeoutIdleDelay.value" />
         <output class="labelSlider" id="fadeoutDelayOut" for="fadeoutIdleDelay"></output>
       </div>
       <div class="setting">
@@ -147,7 +147,7 @@
       </div>
       <div class="setting">
         <label class="toggle-switchy" data-label="left">
-          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" />
+          <input id="audioVolumeBoosted" name="audioVolumeBoosted" type="checkbox" onclick="volumeWarning()" />
           <span class="toggle">
             <span class="switch"></span>
           </span>
@@ -169,18 +169,11 @@
     <div class="block left">
       <div class="setting">
         <b>LED Count:</b>
-        <select id="ledCycLidCount" name="ledCycLidCount" style="width: 200px" onchange="toggleStockPackType()">
+        <select id="ledCycLidCount" name="ledCycLidCount" style="width: 200px">
           <option value="12">12 - Stock</option>
           <option value="20">20 - Frutto (4x5)</option>
           <option selected value="36">36 - GPStar (4x9)</option>
           <option value="40">40 - RGB Ring</option>
-        </select>
-      </div>
-      <div class="setting" id="stockPackTypeSetting">
-        <b>Stock Pack Type:</b>
-        <select id="stockPackType" name="stockPackType" onchange="updateCenterLEDState()">
-          <option value="0">Afterlife</option>
-          <option value="1">1984</option>
         </select>
       </div>
       <div class="setting">
@@ -230,7 +223,7 @@
           <span class="label">Spin Direction:</span>
         </label>
       </div>
-      <div class="setting" id="ledCycLidCenterSetting">
+      <div class="setting">
         <b>&nbsp;&nbsp;&nbsp;Center LEDs:</b>
         <select id="ledCycLidCenter" name="ledCycLidCenter">
           <option value="1">1 LED</option>
@@ -485,30 +478,18 @@
         return Math.round(((value - r1[0]) * (r2[1] - r2[0])) / (r1[1] - r1[0]) + r2[0]);
       }
 
-      function toggleStockPackType() {
-        // Show/hide the stock pack type field when LED count is 12
-        var ledCount = getInt("ledCycLidCount");
-        if (ledCount === 12) {
-          showEl("stockPackTypeSetting");
-        } else {
-          hideEl("stockPackTypeSetting");
-        }
-        // Update center LED state whenever LED count changes
-        updateCenterLEDState();
-      }
-
-      function updateCenterLEDState() {
-        // Hide center LED selection and force to 3 LED (value 0) when 1984 stock type is selected
-        var ledCount = getInt("ledCycLidCount");
-        var stockType = getInt("stockPackType");
-        
-        if (ledCount === 12 && stockType === 1) {
-          // 1984 configuration: hide center LED choice and force to 3 LED (0)
-          setValue("ledCycLidCenter", 0);
-          hideEl("ledCycLidCenterSetting");
-        } else {
-          // All other configurations: show center LED choice
-          showEl("ledCycLidCenterSetting");
+      function volumeWarning(event) {
+        if(getToggle("audioVolumeBoosted")) {
+          // If the user just toggled the +10dB boost, warn them of the consequences.
+          if (confirm(
+            "At maximum amplification, sound levels capable of causing hearing impairment can be achieved. Please be sure to use appropriate hearing protection."
+          )) {
+            // Do nothing; toggle is already being set to on.
+          }
+          else {
+            // User selected Cancel, force toggle back to off.
+            setToggle("audioVolumeBoosted", false);
+          }
         }
       }
 
@@ -534,7 +515,6 @@
         setToggle("gpstarAudioLed", settings.gpstarAudioLed);
 
         setValue("ledCycLidCount", settings.ledCycLidCount || 36);
-        setValue("stockPackType", settings.stockPackType ?? 0);
         setValue("ledCycLidHue", convertRange(settings.ledCycLidHue || 254, [1, 254], [0, 360]));
         setValue("ledCycLidSat", convertRange(settings.ledCycLidSat || 254, [1, 254], [0, 100]));
         setValue("ledCycLidLum", settings.ledCycLidLum || 100);
@@ -545,9 +525,6 @@
         setToggle("ledVGCyclotron", settings.ledVGCyclotron);
         setToggle("ledCycLidSimRing", settings.ledCycLidSimRing);
         setToggle("disableLidDetection", settings.disableLidDetection);
-
-        // Update visibility of stock pack type field (which also updates center LED state)
-        toggleStockPackType();
 
         setValue("ledCycCakeCount", settings.ledCycCakeCount || 35);
         setValue("ledCycCakeHue", convertRange(settings.ledCycCakeHue || 254, [1, 254], [0, 360]));
@@ -666,7 +643,6 @@
           gpstarAudioLed: getToggle("gpstarAudioLed"),
 
           ledCycLidCount: getInt("ledCycLidCount") || 12,
-          stockPackType: getInt("stockPackType") ?? 0,
           ledCycLidHue: convertRange(getInt("ledCycLidHue"), [0, 360], [1, 254]) || 254,
           ledCycLidSat: convertRange(getInt("ledCycLidSat"), [0, 100], [1, 254]) || 254,
           ledCycLidLum: getInt("ledCycLidLum") || 100,

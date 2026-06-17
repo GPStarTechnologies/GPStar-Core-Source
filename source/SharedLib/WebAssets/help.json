@@ -79,7 +79,7 @@
     "demoLightMode": "When enabled, the pack automatically powers on and starts its lighting effects when battery power is connected (useful for static displays).",
     "defaultPackVolume": "Sets the master audio volume percentage (5-100%) for all pack sounds at startup. Can be adjusted later via controls.",
     "fadeoutIdleSounds": "When enabled, idle loop sounds (like the pack hum) will fade out after 30 seconds (useful for conventions).",
-    "fadeoutIdleDelay": "Set how long to wait (10-60 seconds) before fading out the idle loop sounds, if enabled.",
+    "fadeoutIdleDelay": "Set how long to wait (15-60 seconds) before fading out the idle loop sounds, if enabled.",
     "brassStartupLoop": "When enabled, loops the distinctive startup sound (as heard in Frozen Empire) while the cyclotron lid is removed rather than only playing it once.",
     "audioVolumeBoosted": "Allows the connected audio board to reach a maximum of +10dB (200%) if enabled. Otherwise, maximum amplification is 0dB (100%).",
     "gpstarAudioLed": "Controls the status LED on GPStar audio boards, which indicates audio playback activity. Useful for troubleshooting audio issues.",
