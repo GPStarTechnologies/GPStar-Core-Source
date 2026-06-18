@@ -61,37 +61,38 @@ i_library_count=0
 while IFS= read -r s_platformio_file; do
   s_project_name="$(basename "$(dirname "$s_platformio_file")")"
   printf "Processing libraries in project: %s\n" "$s_project_name" >&2
-  
+
   # Extract lib_deps entries using sed
   while IFS= read -r s_lib_line; do
     # Skip empty lines
     [ -z "$s_lib_line" ] && continue
-    
+
     # Remove inline comments (semicolon or hash)
     s_lib_clean="${s_lib_line%%;*}"
     s_lib_clean="${s_lib_clean%%#*}"
-    
+
     # Trim whitespace
     s_lib_clean="$(printf '%s' "$s_lib_clean" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
     [ -z "$s_lib_clean" ] && continue
-    
+
     # Extract library name (before @) and version spec (after @)
     s_lib_name="${s_lib_clean%%@*}"
     s_lib_spec=""
     if [[ "$s_lib_clean" == *"@"* ]]; then
       s_lib_spec="${s_lib_clean#*@}"
+      s_lib_spec="${s_lib_spec#*^}"
     fi
-    
+
     # Trim library name
     s_lib_name="$(printf '%s' "$s_lib_name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
     [ -z "$s_lib_name" ] && continue
-    
+
     #printf "  Found library: %s@%s\n" "$s_lib_name" "$s_lib_spec" >&2
     printf "%s|%s|%s\n" "$s_lib_name" "$s_lib_spec" "$s_project_name" >> "$s_tmp_libraries"
     i_library_count=$((i_library_count + 1))
-    
+
   done < <(sed -n '/^lib_deps/,/^[^[:space:]]/{/^lib_deps/d; /^[[:space:]]/p;}' "$s_platformio_file")
-  
+
 done < "$s_tmp_projects"
 
 printf "Phase 2 Complete: Extracted %d library entries\n\n" "$i_library_count" >&2
@@ -103,38 +104,38 @@ s_tmp_version_cache="$(mktemp)"
 trap 'rm -f "$s_tmp_projects" "$s_tmp_libraries" "$s_tmp_version_cache"' EXIT
 
 # Generate report header
-printf "%-37s %-15s %-12s %-15s %s\n" "Library" "Current" "Latest" "Status" "Projects"
-printf "%-37s %-15s %-12s %-15s %s\n" "-------" "-------" "------" "------" "--------"
+printf "%-40s %-15s %-12s %-15s %s\n" "Library" "Current" "Latest" "Status" "Projects"
+printf "%-40s %-15s %-12s %-15s %s\n" "-------" "-------" "------" "------" "--------"
 
 # Process unique libraries using individual searches with caching
 awk -F'|' '{print $1}' "$s_tmp_libraries" | sort -u | while IFS= read -r s_unique_lib; do
   #printf "Checking library: '%s'\n" "$s_unique_lib" >&2
-  
+
   # Get first version spec for this library (for comparison)
   s_current_spec="$(awk -F'|' -v lib="$s_unique_lib" '$1==lib{print $2; exit}' "$s_tmp_libraries")"
-  
+
   # Get all projects using this library
   s_projects="$(awk -F'|' -v lib="$s_unique_lib" '$1==lib{print $3}' "$s_tmp_libraries" | sort -u | tr '\n' ',' | sed 's/,$//')"
-  
+
   # For libraries with author/name format, search by just the library name
   s_search_name="$s_unique_lib"
   if [[ "$s_unique_lib" == *"/"* ]]; then
     s_search_name="${s_unique_lib#*/}"  # Remove author prefix for search
     #printf "  Searching for library name only: '%s'\n" "$s_search_name" >&2
   fi
-  
+
   # Check if we already have this library's version cached
   s_cached_version="$(grep "^${s_search_name}|" "$s_tmp_version_cache" 2>/dev/null | cut -d'|' -f2 || echo "")"
-  
+
   if [ -n "$s_cached_version" ]; then
     #printf "  Using cached version: '%s'\n" "$s_cached_version" >&2
     s_latest_version="$s_cached_version"
   else
     #printf "  Querying PlatformIO registry for: '%s'\n" "$s_search_name" >&2
-    
+
     # Query PlatformIO using individual search
     s_pio_raw_output="$(pio lib search "$s_search_name" --json-output 2>/dev/null || echo '{"items":[]}')"
-    
+
     # Find exact match in search results, then try partial match (take only first result)
     s_latest_version="$(printf '%s' "$s_pio_raw_output" | jq -r --arg search_name "$s_search_name" '
       if (.items and (.items | length > 0)) then
@@ -146,7 +147,11 @@ awk -F'|' '{print $1}' "$s_tmp_libraries" | sort -u | while IFS= read -r s_uniqu
         "n/a"
       end
     ' 2>/dev/null | head -n1 || echo "n/a")"
-    
+
+    # Trim whitespace
+    s_latest_version="$(printf '%s' "$s_latest_version" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    [ -z "$s_latest_version" ] && continue
+
     # If no match found and this was an author/library format, try searching with the full name
     if [ "$s_latest_version" = "n/a" ] && [[ "$s_unique_lib" == *"/"* ]]; then
       s_full_search_output="$(pio lib search "$s_unique_lib" --json-output 2>/dev/null || echo '{"items":[]}')"
@@ -158,16 +163,20 @@ awk -F'|' '{print $1}' "$s_tmp_libraries" | sort -u | while IFS= read -r s_uniqu
         end
       ' 2>/dev/null | head -n1 || echo "n/a")"
     fi
-    
+
     # Cache the result for future lookups
     printf "%s|%s\n" "$s_search_name" "$s_latest_version" >> "$s_tmp_version_cache"
     #printf "  Latest version result (cached): '%s'\n" "$s_latest_version" >&2
   fi
-  
+
+  # Trim whitespace
+  s_latest_version="$(printf '%s' "$s_latest_version" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  [ -z "$s_latest_version" ] && continue
+
   # Normalize current version for comparison (strip prefix characters like ^, ~, >=)
   s_current_normalized="$(printf '%s' "$s_current_spec" | sed 's/^[^0-9]*//; s/[^0-9.].*$//')"
   [ -z "$s_current_normalized" ] && s_current_normalized="unspecified"
-  
+
   # Determine status by comparing versions
   s_status="unknown"
   if [ "$s_current_normalized" = "unspecified" ]; then
@@ -185,9 +194,9 @@ awk -F'|' '{print $1}' "$s_tmp_libraries" | sort -u | while IFS= read -r s_uniqu
       s_status="newer"
     fi
   fi
-  
+
   # Output the formatted result row
-  printf "%-37s %-15s %-12s %-15s %s\n" "$s_unique_lib" "$s_current_spec" "$s_latest_version" "$s_status" "$s_projects"
+  printf "%-40s %-15s %-12s %-15s %s\n" "$s_unique_lib" "$s_current_spec" "$s_latest_version" "$s_status" "$s_projects"
 done
 
 printf "\nPhase 3 Complete: Library version check finished\n" >&2
