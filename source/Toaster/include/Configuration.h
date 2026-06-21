@@ -49,7 +49,7 @@
  * 0 = quietest
  * 100 = loudest
  */
-const uint8_t STARTUP_VOLUME = 50;
+const uint8_t STARTUP_VOLUME = 100;
 
 /*
  * You can set the default music volume for your pack here.

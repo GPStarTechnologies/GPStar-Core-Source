@@ -94,9 +94,8 @@ const uint16_t i_websocketCleanup = 5000;
 
 // Forward function declarations.
 void checkWebSocketClient();
-void ledsOff();
 void notifyWSClients();
-void sendDebug(const String& message);
+void sendDebug(const String& message); // From System.h
 void registerWebRoutes(); // From Webrouting.h
 bool triggerActuator(uint8_t actuatorID); // From System.h
 
@@ -744,6 +743,17 @@ void handleDeleteNetwork(AsyncWebServerRequest *request) {
   }
 }
 
+void handleRestart(AsyncWebServerRequest *request) {
+  // Performs a restart of the device.
+  request->send(HTTP_STATUS_204, MIME_JSON, returnJsonStatus());
+  delay(1000);
+  ESP.restart();
+}
+
+/**
+ * Action Handlers - Perform specific actions via web requests
+ */
+
 void handleActuator(AsyncWebServerRequest *request) {
   debugln(F("Web: Actuator Control"));
 
@@ -776,17 +786,6 @@ void handleActuator(AsyncWebServerRequest *request) {
   request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid Actuator (1-4)"));
 }
 
-void handleRestart(AsyncWebServerRequest *request) {
-  // Performs a restart of the device.
-  request->send(HTTP_STATUS_204, MIME_JSON, returnJsonStatus());
-  delay(1000);
-  ESP.restart();
-}
-
-/**
- * Action Handlers - Perform specific actions via web requests
- */
-
 void handleRestartWiFi(AsyncWebServerRequest *request) {
   // Performs a restart of the external WiFi.
 
@@ -803,6 +802,226 @@ void handleRestartWiFi(AsyncWebServerRequest *request) {
   }
   else {
       request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("WiFi connection was not successful."));
+  }
+}
+
+void handleToggleMute(AsyncWebServerRequest *request) {
+  debugln(F("Web: Toggle Mute"));
+
+  String s_path = request->url();
+  if(s_path.length() > 0) {
+    int lastSlash = s_path.lastIndexOf('/');
+    if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
+      String segment = s_path.substring(lastSlash + 1);
+      if(segment == "mute") {
+        toggleMute(true);
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+        return;
+      }
+      else if(segment == "unmute") {
+        toggleMute(false);
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+        return;
+      }
+    }
+  }
+
+  debugln(F("Invalid Action"));
+  request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid Action")); // 400 Bad Request
+}
+
+void handleMasterVolumeUp(AsyncWebServerRequest *request) {
+  debugln(F("Web: Master Volume Up"));
+  increaseVolume();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleMasterVolumeDown(AsyncWebServerRequest *request) {
+  debugln(F("Web: Master Volume Down"));
+  decreaseVolume();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleMasterVolumeSet(AsyncWebServerRequest *request) {
+  debugln(F("Web: Master Volume Set"));
+
+  String s_path = request->url();
+  if(s_path.length() > 0) {
+    int lastSlash = s_path.lastIndexOf('/');
+    if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
+      String segment = s_path.substring(lastSlash + 1);
+
+      // Check if segment is a valid number (0 is valid, or toInt() returns non-zero)
+      if(segment == "0" || segment.toInt() != 0) {
+        uint8_t volume = abs(segment.toInt());
+
+        // Validate and constrain to 0-100 range
+        if(volume <= 100) {
+          // Set volume directly to the specified level
+          if(setMasterVolumePercentage(volume)) {
+            request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+            notifyWSClients();
+            return;
+          }
+          else {
+            debugln(F("Failed to set volume"));
+            request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Failed to set volume"));
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  debugln(F("Invalid Volume Level"));
+  request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid Volume Level (0-100)"));
+}
+
+void handleEffectsVolumeUp(AsyncWebServerRequest *request) {
+  debugln(F("Web: Effects Volume Up"));
+  increaseVolumeEffects();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleEffectsVolumeDown(AsyncWebServerRequest *request) {
+  debugln(F("Web: Effects Volume Down"));
+  decreaseVolumeEffects();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleMusicVolumeUp(AsyncWebServerRequest *request) {
+  debugln(F("Web: Music Volume Up"));
+  increaseVolumeMusic();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleMusicVolumeDown(AsyncWebServerRequest *request) {
+  debugln(F("Web: Music Volume Down"));
+  decreaseVolumeMusic();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleMusicStartStop(AsyncWebServerRequest *request) {
+  debugln(F("Web: Music Start/Stop"));
+  if(b_playing_music) {
+    stopMusic();
+  }
+  else {
+    playMusic();
+  }
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleMusicPauseResume(AsyncWebServerRequest *request) {
+  debugln(F("Web: Music Pause/Resume"));
+  if(b_playing_music) {
+    // If last playing music, either pause or resume.
+    if(!b_music_paused) {
+      pauseMusic();
+    }
+    else {
+      resumeMusic();
+    }
+  }
+  else {
+    // if not playing music, start playing the current track.
+    playMusic();
+  }
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleNextMusicTrack(AsyncWebServerRequest *request) {
+  debugln(F("Web: Next Music Track"));
+  musicNextTrack();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handlePrevMusicTrack(AsyncWebServerRequest *request) {
+  debugln(F("Web: Prev Music Track"));
+  musicPrevTrack();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleLoopMusicTrack(AsyncWebServerRequest *request) {
+  debugln(F("Web: Toggle Music Track Loop"));
+
+  String s_path = request->url();
+  if(s_path.length() > 0) {
+    int lastSlash = s_path.lastIndexOf('/');
+    if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
+      String segment = s_path.substring(lastSlash + 1);
+      if(segment == "one") {
+        toggleMusicLoop(true);
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+        return;
+      }
+      else if(segment == "all") {
+        toggleMusicLoop(false);
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+        return;
+      }
+    }
+  }
+
+  debugln(F("Invalid Looping Option"));
+  request->send(HTTP_STATUS_400, MIME_JSON, "Invalid Looping Option"); // 400 Bad Request
+}
+
+void handleShuffleMusicTracks(AsyncWebServerRequest *request) {
+  debugln(F("Web: Toggle Music Track Shuffling"));
+
+  String s_path = request->url();
+  if(s_path.length() > 0) {
+    int lastSlash = s_path.lastIndexOf('/');
+    if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
+      String segment = s_path.substring(lastSlash + 1);
+      if(segment == "on") {
+        toggleMusicShuffle(true);
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+        return;
+      }
+      else if(segment == "off") {
+        toggleMusicShuffle(false);
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+        return;
+      }
+    }
+  }
+
+  debugln(F("Invalid Shuffle Option"));
+  request->send(HTTP_STATUS_400, MIME_JSON, "Invalid Shuffle Option"); // 400 Bad Request
+}
+
+void handleSelectMusicTrack(AsyncWebServerRequest *request) {
+  String c_music_track = "";
+
+  if(request->hasParam("track")) {
+    // Get the parameter "track" if it exists (will be a String).
+    c_music_track = request->getParam("track")->value();
+  }
+
+  if(c_music_track.toInt() != 0 && c_music_track.toInt() >= i_music_track_start) {
+    uint16_t i_music_track = c_music_track.toInt();
+    debugln(String(F("Web: Selected Music Track: ")) + String(i_music_track));
+    if(i_music_track_count > 0 && i_music_track >= i_music_track_start) {
+      if(b_playing_music) {
+        stopMusic(); // Stops current track before change.
+
+        // Only update after the music is stopped.
+        i_current_music_track = i_music_track;
+
+        // Play the appropriate track on pack and wand, and notify the Attenuator.
+        playMusic();
+      }
+      else {
+        i_current_music_track = i_music_track;
+      }
+    }
+    request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  }
+  else {
+    // Tell the user why the requested action failed.
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid track number requested")); // 400 Bad Request
   }
 }
 

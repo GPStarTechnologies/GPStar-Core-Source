@@ -81,6 +81,29 @@ void registerWebRoutes() {
   // Device Control
   addSimpleRoute("/device/actuator/*", HTTP_PUT, handleActuator, "Trigger actuator", "Trigger an actuator (1-4)", TAG_DEVICE_CONTROL);
 
+
+  // Volume Control
+  addSimpleRoute("/volume/mute", HTTP_PUT, handleToggleMute, "Mute audio", "Mutes all audio output", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/unmute", HTTP_PUT, handleToggleMute, "Unmute audio", "Unmutes all audio output", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/master/up", HTTP_PUT, handleMasterVolumeUp, "Master volume up", "Increases master volume level", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/master/down", HTTP_PUT, handleMasterVolumeDown, "Master volume down", "Decreases master volume level", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/master/set/*", HTTP_PUT, handleMasterVolumeSet, "Set master volume", "Sets master volume level to a specific value (0-100)", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/effects/up", HTTP_PUT, handleEffectsVolumeUp, "Effects volume up", "Increases sound effects volume", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/effects/down", HTTP_PUT, handleEffectsVolumeDown, "Effects volume down", "Decreases sound effects volume", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/music/up", HTTP_PUT, handleMusicVolumeUp, "Music volume up", "Increases music volume", TAG_VOLUME_CONTROL);
+  addSimpleRoute("/volume/music/down", HTTP_PUT, handleMusicVolumeDown, "Music volume down", "Decreases music volume", TAG_VOLUME_CONTROL);
+
+  // Music Control
+  addSimpleRoute("/music/startstop", HTTP_PUT, handleMusicStartStop, "Start/stop music", "Toggles music playback on/off", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/pauseresume", HTTP_PUT, handleMusicPauseResume, "Pause/resume music", "Toggles music pause state", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/next", HTTP_PUT, handleNextMusicTrack, "Next track", "Skips to next music track", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/select", HTTP_PUT, handleSelectMusicTrack, "Select track", "Selects specific music track by number (query param: track [int])", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/prev", HTTP_PUT, handlePrevMusicTrack, "Previous track", "Returns to previous music track", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/loop/all", HTTP_PUT, handleLoopMusicTrack, "Loop all tracks", "Sets music to loop all tracks", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/loop/one", HTTP_PUT, handleLoopMusicTrack, "Loop one track", "Sets music to loop current track", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/shuffle/on", HTTP_PUT, handleShuffleMusicTracks, "Shuffle on", "Enables track shuffle mode", TAG_MUSIC_CONTROL);
+  addSimpleRoute("/music/shuffle/off", HTTP_PUT, handleShuffleMusicTracks, "Shuffle off", "Disables track shuffle mode", TAG_MUSIC_CONTROL);
+
   // WiFi Management
   addSimpleRoute("/wifi/restart", HTTP_GET, handleRestartWiFi, "Restart WiFi", "Restart the WiFi networking", TAG_WIFI, RESP_WIFI_SETTINGS);
   addSimpleRoute("/wifi/settings", HTTP_GET, handleGetWifi, "Get WiFi settings", "Returns current WiFi configuration", TAG_WIFI, RESP_WIFI_SETTINGS);

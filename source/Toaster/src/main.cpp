@@ -357,6 +357,8 @@ void setup() {
 
   delay(200); // Delay before configuring and running tasks.
 
+  setMasterVolumePercentage(100); // Set master volume to 100%.
+
   /**
    * By default the WiFi will run on core0, while the standard loop() runs on core1.
    * We can make efficient use of the available cores by "pinning" a task to a core.

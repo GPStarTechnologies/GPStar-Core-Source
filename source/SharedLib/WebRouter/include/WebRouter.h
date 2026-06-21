@@ -497,6 +497,18 @@ String generateOpenAPISpec() {
       paramSchema["minimum"] = 0;
       paramSchema["maximum"] = 100;
     }
+    if(openApiPath.equals("/device/actuator/{id}")) {
+      JsonArray parameters = operation["parameters"].to<JsonArray>();
+      JsonObject idParam = parameters.add<JsonObject>();
+      idParam[JSON_PROPERTY_NAME] = F("id");
+      idParam["in"] = F("path");
+      idParam[JSON_PROPERTY_DESCRIPTION] = F("Actuator ID (1-4)");
+      idParam[JSON_PROPERTY_REQUIRED] = true;
+      JsonObject paramSchema = idParam[JSON_PROPERTY_SCHEMA].to<JsonObject>();
+      paramSchema[JSON_PROPERTY_TYPE] = F("integer");
+      paramSchema["minimum"] = 1;
+      paramSchema["maximum"] = 4;
+    }
 
     JsonObject responses = operation[JSON_PROPERTY_RESPONSES].to<JsonObject>();
     JsonObject response200 = responses["200"].to<JsonObject>();
