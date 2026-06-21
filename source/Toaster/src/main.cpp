@@ -22,7 +22,7 @@
 
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
-#define GPSTAR_DEBUG 0
+#define GPSTAR_DEBUG 1
 
 // Debug macros
 #if GPSTAR_DEBUG == 1
@@ -147,6 +147,9 @@ void AnimationTask(void *parameter) {
 
     // Use the built-in LED to indicate if any relays are active.
     digitalWrite(BUILT_IN_LED, b_relay_active ? HIGH : LOW);
+
+    updateAudio(); // Update the state of the available sound board.
+    checkMusic(); // Perform music control as necessary.
 
     vTaskDelay(8 / portTICK_PERIOD_MS); // 8ms delay
   }
@@ -309,7 +312,7 @@ void WiFiSetupTask(void *parameter) {
 void setup() {
   Serial.begin(115200); // Serial monitor via USB connection.
 
-  pinMode(2, OUTPUT); // On-board LED for testing.
+  pinMode(BUILT_IN_LED, OUTPUT); // On-board LED for testing.
 
   // Read states from the RF receiver module.
   pinMode(RF1_PIN, INPUT); // 34
@@ -348,6 +351,9 @@ void setup() {
   #endif
 
   btStop(); // Disable Bluetooth which is not needed for this hardware.
+
+  // Setup the audio device for this controller.
+  setupAudioDevice();
 
   // Create Preferences object to handle non-volatile storage (NVS).
   Preferences preferences;

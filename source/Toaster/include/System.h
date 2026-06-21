@@ -66,10 +66,33 @@ bool triggerActuator(uint8_t actuatorID) {
     }  
 
     // Obtain the correct index (0-3) and output a signal to the relay.
-    // The AnimationTask will handle turning the relay on or off.
     uint8_t index = actuatorID - 1; // Convert to 0-based index.
-    actuator[index].relayActive = true; // Mark for activation.
-    // If the actuator is already active, this extends the off time.
+
+    // Play a sound effect corresponding to the triggered actuator.
+    switch(index) {
+      case 0:
+        debugln(F("Triggering Actuator 1"));
+        playEffect(S_PING1);
+        break;
+      case 1:
+        debugln(F("Triggering Actuator 2"));
+        playEffect(S_PING2);
+        break;
+      case 2:
+        debugln(F("Triggering Actuator 3"));
+        playEffect(S_PING3);
+        break;
+      case 3:
+        debugln(F("Triggering Actuator 4"));
+        playEffect(S_PING4);
+        break;
+    }
+
+    // Mark for activation and the AnimationTask will handle turning the relay on or off.
+    actuator[index].relayActive = true;
+
+    // If the actuator is already active, this simply extends the time until powered off.
     actuator[index].relayOffTime = millis() + ACTUATOR_PULSE_MS;
+
     return true;
 }

@@ -131,8 +131,6 @@ void toggleMute(bool enable);
 void toggleAudioBoost(bool enable);
 void toggleMusicLoop(bool enable);
 void toggleMusicShuffle(bool enable);
-SYSTEM_THEMES getSystemYearMode();
-SYSTEM_THEMES getNeutronaWandYearMode();
 
 /*
  * Audio playback functions.
