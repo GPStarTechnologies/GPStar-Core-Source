@@ -4892,7 +4892,23 @@ void wandStoppedFiring(bool playSounds) {
   stopOverheatBeepWarnings();
 
   if(playSounds) {
-    restartFadeoutIdleSounds();
+    if(!b_fadeout_idle_sounds) {
+      // If fadeout is not enabled, restart the brass pack sounds.
+      if(isBrassPack()) {
+        if(b_brass_startup_loop) {
+          stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
+          playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true);
+        }
+        else {
+          stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
+          playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true);
+        }
+      }
+    }
+    else {
+      // If fadeout is enabled, handle normal fadeout SFX restart.
+      restartFadeoutIdleSounds();
+    }
   }
 }
 
