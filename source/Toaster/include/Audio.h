@@ -1141,6 +1141,10 @@ bool setupAudioDevice() {
     sendDebug(String(F("Using GPStar Audio Version: ")) + String(audio.getVersionNumber()));
 
     i_num_tracks = audio.getNumTracks();
+
+    sendDebug(String(F("Reported Track Count: ")) + i_num_tracks);
+    sendDebug(String(F("Last Effects Track: ")) + i_last_effects_track);
+
     buildMusicCount(i_num_tracks);
     setAudioLED(b_gpstar_audio_led_enabled);
 
@@ -1151,11 +1155,7 @@ bool setupAudioDevice() {
     audio.stopAllTracks();
 
     if(b_microsd_corrupt || b_microsd_outdated) {
-      // If we ran into an error, attempt to play an alarm sound and exit.
-      if(i_num_tracks >= S_PING4) {
-        playEffect(S_PING4, false, 0, false, 0, false);
-      }
-
+      // If we ran into an error simply exit.
       return false;
     }
 

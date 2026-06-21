@@ -355,15 +355,6 @@ void setup() {
   // Setup the audio device for this controller.
   setupAudioDevice();
 
-  // Create Preferences object to handle non-volatile storage (NVS).
-  Preferences preferences;
-
-  // Accesses namespace in read-only mode.
-  // bool b_namespace_opened = preferences.begin("device", true);
-  // if(b_namespace_opened) {
-  //   preferences.end();
-  // }
-
   delay(200); // Delay before configuring and running tasks.
 
   /**
