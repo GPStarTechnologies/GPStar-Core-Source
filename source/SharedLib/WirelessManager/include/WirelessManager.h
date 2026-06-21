@@ -80,7 +80,8 @@ enum WirelessDeviceType {
   GHOST_TRAP,
   BELT_GIZMO,
   STREAM_EFFECTS,
-  PSTT
+  PSTT,
+  TOASTER
 };
 
 /**
@@ -127,6 +128,7 @@ class WirelessManager {
         case WirelessDeviceType::BELT_GIZMO: return "BeltGizmo";
         case WirelessDeviceType::STREAM_EFFECTS: return "StreamEffects";
         case WirelessDeviceType::PSTT: return "PSTT";
+        case WirelessDeviceType::TOASTER: return "Toaster";
         default: return "";
       }
     }

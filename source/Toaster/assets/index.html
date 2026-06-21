@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-control" content="public" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Toaster" />
+    <title>Toaster</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="dark">
+    <div class="tabs dark">
+      <button class="tablinks" onclick="openTab(event, 'tab1')">&#9883;</button>
+      <button class="tablinks" onclick="openTab(event, 'tab2')">&#9211;</button>
+      <button class="tablinks" onclick="openTab(event, 'tab3')">&#9881;</button>
+    </div>
+
+    <div id="tab1" class="tab">
+      <div id="equipTXT" class="card">
+
+      </div>
+    </div>
+
+    <div id="tab2" class="tab">
+      <div class="card" style="text-align: center">
+        <br />
+        <h2>Actuator Controls</h2>
+        <br />
+        <br />
+        <button type="button" class="green" onclick="triggerAct1()" id="btnAct1">#1</button>
+        &nbsp;&nbsp;
+        <button type="button" class="green" onclick="triggerAct2()" id="btnAct2">#2</button>
+        <br />
+        <br />
+        <button type="button" class="green" onclick="triggerAct3()" id="btnAct3">#3</button>
+        &nbsp;&nbsp;
+        <button type="button" class="green" onclick="triggerAct4()" id="btnAct4">#4</button>
+        <br />
+        <br />
+        <br />
+      </div>
+    </div>
+
+    <div id="tab3" class="tab">
+      <div class="card" style="text-align: center">
+        <a href="/settings/device">Device Settings</a>
+        <br />
+        <br />
+        <hr />
+        <br />
+        <a href="/update">Update Toaster Firmware</a>
+        <br />
+        <br />
+        <a href="/password">Secure Device WiFi</a>
+        <br />
+        <br />
+        <a href="/network">Change WiFi Settings</a>
+        <br />
+        <br />
+        <a href="javascript:doRestart()">Restart/Resync</a>
+        <br />
+        <br />
+        <hr />
+        <br />
+        <a href="https://gpstartechnologies.github.io/GPStar-Core-Source/" target="_blank" onclick="alert('This external link requires an active internet connection, not just device WiFi.')">Official Documentation</a>
+        <br />
+        <br />
+        <a href="/swaggerui" target="_blank" onclick="alert('This page requires internet access to download required files from CDN.')">Web API Listing</a>
+      </div>
+
+      <div class="footer">
+        <span id="buildDate"></span>
+        <br />
+        <span id="audioInfo"></span>
+        <br />
+        <span id="wifiName"></span>
+        <br />
+        <span id="clientInfo"></span>
+        <br />
+        <span id="extWifi"></span>
+      </div>
+    </div>
+
+    <script type="application/javascript" src="/common.js"></script>
+    <script type="application/javascript" src="/index.js"></script>
+  </body>
+</html>

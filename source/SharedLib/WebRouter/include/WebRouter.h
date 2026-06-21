@@ -419,6 +419,9 @@ String generateOpenAPISpec() {
     if(openApiPath.equals("/volume/master/set/*")) {
       openApiPath = "/volume/master/set/{percentage}";
     }
+    if(openApiPath.equals("/device/actuator/*")) {
+      openApiPath = "/device/actuator/{id}";
+    }
 
     // Create path object
     JsonObject pathItem = paths[openApiPath].to<JsonObject>();

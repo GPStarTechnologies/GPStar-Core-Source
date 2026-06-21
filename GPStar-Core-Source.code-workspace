@@ -85,6 +85,10 @@
 			"path": "source/StreamEffects"
 		},
 		{
+			"name": "Toaster",
+			"path": "source/Toaster"
+		},
+		{
 			"name": "PSTT",
 			"path": "source/PSTT"
 		},
