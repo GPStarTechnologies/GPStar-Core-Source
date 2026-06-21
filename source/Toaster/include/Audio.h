@@ -1141,10 +1141,6 @@ bool setupAudioDevice() {
     sendDebug(String(F("Using GPStar Audio Version: ")) + String(audio.getVersionNumber()));
 
     i_num_tracks = audio.getNumTracks();
-
-    sendDebug(String(F("Reported Track Count: ")) + i_num_tracks);
-    sendDebug(String(F("Last Effects Track: ")) + i_last_effects_track);
-
     buildMusicCount(i_num_tracks);
     setAudioLED(b_gpstar_audio_led_enabled);
 

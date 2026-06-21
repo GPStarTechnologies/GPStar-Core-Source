@@ -111,6 +111,9 @@ String getDeviceConfig() {
 
   // Provide current values for the device.
   jsonBody["buildDate"] = build_date;
+  jsonBody["audioVersion"] = i_audio_version;
+  jsonBody["audioCorrupt"] = b_microsd_corrupt;
+  jsonBody["audioOutdated"] = b_microsd_outdated;
   jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
 
