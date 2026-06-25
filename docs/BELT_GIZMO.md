@@ -220,6 +220,8 @@ This applies to all updates you will perform AFTER the first-time upload of the 
 
 Look for a WiFi network of **"GPStar_BeltGizmo"** and connect using the password `555-2368`. Open a web browser to the same name as the network name, for instance [gpstar_beltgizmo.local](http://gpstar_beltgizmo.local). In older firmware releases, the WiFi network may appear as **"BeltGizmo_####"** where the #### portion is a unique 4-digit ID.
 
+**Note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
+
 **Security Notice**
 
 This device uses a default password of `555-2368` and should be changed immediately. You also have the option of changing the SSID broadcast if desired.

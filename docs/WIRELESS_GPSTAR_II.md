@@ -29,7 +29,9 @@ Once connected, your computer/phone/tablet should be assigned an IP address star
 
 A web-based user interface is available at [http://gpstar_pack2.local](http://gpstar_pack2.local) or [http://192.168.1.4](http://192.168.1.4) to view the state of your Proton Pack and Neutrona Wand and to manage specific actions. The available sections are described below.
 
-Note that if you have a Attenuator connected, the GPStar Proton Pack II will turn off its WiFi for power saving. You can manually turn on or turn off the WiFi for it from the [OPERATION_MENUS](OPERATION_MENUS.md)
+**Note:** If you have a Attenuator connected, the GPStar Proton Pack II will turn off its WiFi for power saving. You can manually turn on or turn off the WiFi for it from the [OPERATION_MENUS](OPERATION_MENUS.md)
+
+**Additional note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
 
 #### Tab 1: Equipment Status
 
@@ -197,6 +199,8 @@ To connect to the GPStar Neutrona Wand II over WiFi, a private WiFi network (acc
 Once connected, your computer/phone/tablet should be assigned an IP address starting from **"192.168.1.100"** with a subnet of **"255.255.255.0"**. Please remember that if you intend to have multiple devices connect via this private WiFi network you will be assigned a unique IP address for each client device (eg. phone, tablet, or computer).
 
 A web-based user interface is available at [http://gpstar_wand2.local](http://gpstar_wand2.local) or [http://192.168.1.6](http://192.168.1.6) to view the state of your Neutrona Wand, and to manage specific actions. The available sections are described below.
+
+**Note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
 
 #### Tab 1: Neutrona Wand Status
 

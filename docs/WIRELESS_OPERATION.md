@@ -46,6 +46,8 @@ A web-based user interface is available at [192.168.1.2](http://192.168.1.2) to 
 
 **Note:** As of the latest 5.3.x release a new mDNS feature allows the device to respond to a localized name regardless of the WiFi network. In your browser simply navigate to `http://<SSID>.local` where the "SSID" is the same name as the Attenuator/Wireless Adapter's WiFi network. The default web address is at [gpstar_attenuator.local](http://gpstar_attenuator.local). This SSID is also user-customizable using the "Attenuator Settings" page shown below.
 
+**Additional note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
+
 ### Tab 1: Equipment Status
 
 ![Menu-Display](images/WebUI-Main1.jpg)

@@ -154,6 +154,8 @@ Once connected, your computer/phone/tablet will be assigned an IP address starti
 
 A web based user interface is available at [gpstar_pstt.local](http://gpstar_pstt.local) or [192.168.2.2](http://192.168.2.2) to view the state of your Proton Stream Target Trainer, in which you will be able to manage specific actions.
 
+**Note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
+
 ### Status
 
 The equipment status will reflect the current
