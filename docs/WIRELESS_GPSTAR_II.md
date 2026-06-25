@@ -2,11 +2,12 @@
 
 All devices within the GPStar ecosystem capable of operation over WiFi utilize a built-in web server which offers an API-first design for communications. This guide will cover the web interface available that is built into the GPStar Proton Pack II and GPStar Neutrona Wand II. As of the v6.1 firmware release all devices are now unified in naming and consistent with their private networking settings.
 
-| Device Type   | Default SSID      | Default Password | IP Address                |
-|---------------|-------------------|------------------|---------------------------|
-| Attenuator    | GPStar_Attenuator | 555-2368 | [192.168.1.2](http://192.168.1.2) |
-| Proton Pack   | GPStar_Pack2      | 555-2368 | [192.168.1.4](http://192.168.1.4) |
-| Neutrona Wand | GPStar_Wand2      | 555-2368 | [192.168.1.6](http://192.168.1.6) |
+| Device Type   | Default SSID      | Default Password | Default Web Address | IP Address |
+|---------------|-------------------|------------------|---------------------|------------|
+| Attenuator    | GPStar_Attenuator | 555-2368         | [gpstar_attenuator.local](http://gpstar_attenuator.local) | [192.168.1.2](http://192.168.1.2) |
+| Proton Pack   | GPStar_Pack2      | 555-2368         | [gpstar_pack2.local](http://gpstar_pack2.local) | [192.168.1.4](http://192.168.1.4) |
+| Neutrona Wand | GPStar_Wand2      | 555-2368         | [gpstar_wand2.local](http://gpstar_wand2.local) | [192.168.1.6](http://192.168.1.6) |
+| Single-Shot Blaster | GPStar_Blaster      | 555-2368         | [gpstar_blaster.local](http://gpstar_blaster.local) | [192.168.1.8](http://192.168.1.8) |
 
 Automatic enabling or disabling of WiFi will take place in the following order:
 
@@ -22,13 +23,15 @@ Automatic enabling or disabling of WiFi will take place in the following order:
 
 ## Proton Pack
 
-If you have a Attenuator connected, the GPStar Proton Pack II will turn off its WiFi for power saving. You can manually turn on or turn off the WiFi for it from the [OPERATION_MENUS](OPERATION_MENUS.md)
-
 To connect to the GPStar Proton Pack II over WiFi, a private WiFi network (access point) which will appear as **"GPStar_Pack2"**, and this will be secured with a default password of **555-2368**.
 
 Once connected, your computer/phone/tablet should be assigned an IP address starting from **"192.168.1.100"** with a subnet of **"255.255.255.0"**. Please remember that if you intend to have multiple devices connect via this private WiFi network you will be assigned a unique IP address for each client device (eg. phone, tablet, or computer).
 
-A web-based user interface is available at [http://gpstar_pack2.local](http://gpstar_pack2.local) or [http://192.168.1.4](http://192.168.1.4) to view the state of your Proton Pack and Neutrona Wand, and to manage specific actions. The available sections are described below.
+A web-based user interface is available at [http://gpstar_pack2.local](http://gpstar_pack2.local) or [http://192.168.1.4](http://192.168.1.4) to view the state of your Proton Pack and Neutrona Wand and to manage specific actions. The available sections are described below.
+
+**Note:** If you have a Attenuator connected, the GPStar Proton Pack II will turn off its WiFi for power saving. You can manually turn on or turn off the WiFi for it from the [OPERATION_MENUS](OPERATION_MENUS.md)
+
+**Additional note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
 
 #### Tab 1: Equipment Status
 
@@ -47,10 +50,14 @@ When using the graphical display, most components of the Proton pack and Neutron
 - When the Neutrona Wand is powered on, the overlay above the Activate/Intensify portion of the gun box will indicate if the barrel is retracted (red) or extended (green).
 - The current power level for the Neutrona Wand will be indicated by the "L-#" beside the barrel.
 - The type of firing mode will be displayed below the Neutrona Wand and will be color coded via the barrel. Color intensity increases with the power level.
-    - Proton Stream: Red (includes Spectral modes)
-    - Plasm System: Green (incl. for 1989 theme)
+    - Proton Stream: Red
+    - Plasm System: Green (Pink in 1989)
     - Dark Matter Gen.: Blue
     - Particle System: Orange
+    - Spectral Stream: Rainbow
+    - Halloween Stream: Orange/Purple
+    - Christmas Stream: Red/Green
+    - Custom Stream: Red
     - Settings: Gray
 - When using the power-detection feature with a stock Haslab Neutrona Wand the default stream will be Proton with a power level of 5. Instead of the stream type being displayed, there will be a wattage value displayed as Gigawatts (GW).
 - If the Ribbon Cable is removed, a warning icon will appear over that component to indicate an alarm state.
@@ -192,6 +199,8 @@ To connect to the GPStar Neutrona Wand II over WiFi, a private WiFi network (acc
 Once connected, your computer/phone/tablet should be assigned an IP address starting from **"192.168.1.100"** with a subnet of **"255.255.255.0"**. Please remember that if you intend to have multiple devices connect via this private WiFi network you will be assigned a unique IP address for each client device (eg. phone, tablet, or computer).
 
 A web-based user interface is available at [http://gpstar_wand2.local](http://gpstar_wand2.local) or [http://192.168.1.6](http://192.168.1.6) to view the state of your Neutrona Wand, and to manage specific actions. The available sections are described below.
+
+**Note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
 
 #### Tab 1: Neutrona Wand Status
 

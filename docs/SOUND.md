@@ -17,7 +17,7 @@ The compatibility matrix below notes whether a device is compatible with major v
 | Audio Device | v1.x | v2.x | v3.x | v4.x | v5.0.x | v5.1.x | v5.4.x | v6.0.x | v6.1.x | v6.2.x |
 |--------------|------|------|------|------|--------|--------|--------|--------|--------|--------|
 | Robertsonics WAV Trigger | v134 | v134 | v140 | v140 | v140 | v140 | v140 | v140 | v140 | v140 |
-| <span class="logo-icon-tiny"></span> GPStar Audio | &mdash; | &mdash; | &mdash; | &mdash; | v100<sup>1</sup> | v102<sup>2</sup> | v103<sup>3</sup> | v104<sup>4</sup> | v106<sup>5</sup> | v109<sup>6</sup> |
+| <span class="logo-icon-tiny"></span> GPStar Audio | &mdash; | &mdash; | &mdash; | &mdash; | v100<sup>1</sup> | v102<sup>2</sup> | v103<sup>3</sup> | v104<sup>4</sup> | v106<sup>5</sup> | v111<sup>6</sup> |
 
 <sup>1</sup> All initial orders for GPStar Audio controllers shipped with v100 firmware which delivers all of the basic functionality needed for Pack & Wand operation.
 
@@ -29,7 +29,7 @@ The compatibility matrix below notes whether a device is compatible with major v
 
 <sup>5</sup> The GPStar Audio v106 firmware is a bugfix release which resolves issues related to Pause/Resume functionality. This update was released as part of the v6.1.1 beta program.
 
-<sup>6</sup> The GPStar Audio v109 firmware resolves issues relating to channel allocation during heavy utilization, and adds new rapid-fire sound effect functionality. This update was released as part of the 6.2.0 firmware.
+<sup>6</sup> The GPStar Audio v111 firmware resolves issues relating to channel allocation during heavy utilization, and adds new rapid-fire sound effect functionality. This update was released as part of the 6.2.0 firmware.
 
 > As of version 6.1.0 of the software all devices with a web UI will accurately report the firmware version of the GPStar Audio device it controls. For the Attenuator and Proton Pack both will reflect the Proton Pack's audio device. Compare the reported version number to the latest firmware version to know if an update is necessary.
 

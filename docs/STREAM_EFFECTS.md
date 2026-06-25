@@ -143,12 +143,12 @@ You will need to utilize a command-line tool to upload the firmware to your devi
 This applies to all updates you will perform AFTER the first-time upload of the firmware for the device, when the private WiFi network for the Proton Pack is available via the custom firmware.
 
 1. Power up your Proton Pack and ESP32 device (whether standalone or as part of the Stream Effects hardware).
-1. Open the WiFi preferences on your computer/device and look for the SSID which matches **"GPStar_StreamEffects"** or begins **"ProtonPack_"**.
+1. Open the WiFi preferences on your computer/device and look for the SSID which matches **"GPStar_StreamEffects"**.
     * If this is your first connection to this access point, use the default password **"555-2368"**.
-1. Navigate directly to the URL: [http://192.168.1.2/update](http://192.168.1.2/update)
+1. Navigate directly to the URL: [gpstar_streameffects.local/update](http://gpstar_streameffects.local/update) or [192.168.2.2/update](http://192.168.2.2/update)
 1. Use the "Select File" button and select the [StreamEffects.bin](/binaries/stream/StreamEffects.bin?raw=true) file from the `/binaries/stream` directory.
 1. The upload will begin immediately. Once at 100% the device will reboot.
-1. Navigate to [http://192.168.1.2](http://192.168.1.2) or `http://StreamEffects_####.local` to confirm that the device is able to communicate with the Proton Pack PCB.
+1. Navigate to [gpstar_streameffects.local](http://gpstar_streameffects.local) or [http://192.168.2.2](http://192.168.2.2) to confirm that the device is able to communicate with the Proton Pack PCB.
 
 ![](images/WebUI-Update1.jpg)
 
@@ -160,7 +160,9 @@ This applies to all updates you will perform AFTER the first-time upload of the 
 
 ## Operation
 
-Look for a WiFi network of "StreamEffects_0000" or similar and connect using the password `555-2368`. Open a web browser to the same name as the network name, for instance `http://StreamEffects_0000.local`.
+Look for a WiFi network of **"GPStar_StreamEffects"** and connect using the password `555-2368`. Open a web browser to the same name as the network name, for instance [gpstar_streameffects.local](http://gpstar_streameffects.local). In older firmware releases, the WiFi network may appear as **"StreamEffects_####"** where the #### portion is a unique 4-digit ID.
+
+**Note:** All GPStar URLs begin with **"http"**, not **"https"**. If your web browser uses `https` automatically, please manually change it to `http` in order for the URL to work.
 
 **Security Notice**
 
