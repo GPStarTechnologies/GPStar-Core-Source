@@ -278,7 +278,7 @@ String getWandConfig() {
     jsonBody["wandConnected"] = b_wand_connected;
 
     // Neutrona Wand LED Options
-    jsonBody["ledWandCount"] = wandConfig.ledWandCount; // [0=5 (Stock), 1=48 (Frutto), 2=50 (GPStar), 3=2 (Tip)]
+    jsonBody["ledWandCount"] = wandConfig.ledWandCount; // [1=Hasbro,2=Frutto,3=GPStar Barrel,4=GPStar Barrel II,5=GPStar Barrel Mini]
     jsonBody["ledWandHue"] = wandConfig.ledWandHue; // Spectral custom colour/hue 2-254
     jsonBody["ledWandSat"] = wandConfig.ledWandSat; // Spectral custom saturation 2-254
 

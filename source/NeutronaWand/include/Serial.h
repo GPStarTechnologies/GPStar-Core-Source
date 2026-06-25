@@ -73,25 +73,7 @@ void getWandPrefsObject() {
 #endif
 
   // Boolean types will simply translate as 1/0, ENUMs should be converted.
-  switch(WAND_BARREL_LED_COUNT) {
-    case LEDS_5:
-    default:
-      wandConfig.ledWandCount = 0;
-    break;
-
-    case LEDS_48:
-      wandConfig.ledWandCount = 1;
-    break;
-
-    case LEDS_50:
-      wandConfig.ledWandCount = 2;
-    break;
-
-    case LEDS_2:
-      wandConfig.ledWandCount = 3;
-    break;
-  }
-
+  wandConfig.ledWandCount = (uint8_t)WAND_BARREL_LED;
   wandConfig.ledWandHue = i_spectral_wand_custom_colour;
   wandConfig.ledWandSat = i_spectral_wand_custom_saturation;
   wandConfig.defaultWandVolume = i_eeprom_volume_master_percentage;
@@ -320,27 +302,19 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value);
 void handleWandPrefsUpdate() {
   sendDebug(F("Saving Wand Preferences"));
 
-  switch(wandConfig.ledWandCount) {
-    case 0:
-      WAND_BARREL_LED_COUNT = LEDS_5;
-      i_num_barrel_leds = 5; // Stock count for Haslab equipment.
-    break;
+  WAND_BARREL_LED = (WAND_BARREL_LEDS)wandConfig.ledWandCount;
 
-    case 1:
-      WAND_BARREL_LED_COUNT = LEDS_48;
-      i_num_barrel_leds = 48; // Total count is 49, with 1 for the tip.
-    break;
-
-    case 2:
-    default:
-      WAND_BARREL_LED_COUNT = LEDS_50;
-      i_num_barrel_leds = 48; // Total count is 50, with 2 for the tip.
-    break;
-
-    case 3:
-      WAND_BARREL_LED_COUNT = LEDS_2;
-      i_num_barrel_leds = 2; // Device is tip-only.
-    break;
+  if(WAND_BARREL_LED == HASBRO_BARREL) {
+    // Hasbro barrel has 5 LEDs.
+    i_num_barrel_leds = 5;
+  }
+  else if(WAND_BARREL_LED == GPSTAR_BARREL_MINI) {
+    // GPStar Barrel LED Mini has only 2 LEDs.
+    i_num_barrel_leds = 2;
+  }
+  else {
+    // Frutto/GPStar have 48 main body LEDs.
+    i_num_barrel_leds = 48;
   }
 
   b_overheat_enabled = wandConfig.overheatEnabled;

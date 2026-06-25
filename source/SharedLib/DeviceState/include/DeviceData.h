@@ -78,7 +78,7 @@ static_assert(sizeof(PackPrefs) < 85, "WARNING: PackPrefs has grown too large (>
 // Preferences for the Neutrona Wand device.
 struct __attribute__((packed)) WandPrefs {
   bool isESP32 = false;
-  uint8_t ledWandCount = 0; // [0=5 (Stock), 1=48 (Frutto), 2=50 (GPStar), 3=2 (Tip)]
+  uint8_t ledWandCount = 3; // [1=Hasbro,2=Frutto,3=GPStar Barrel,4=GPStar Barrel II,5=GPStar Barrel Mini]
   uint8_t ledWandHue = 2; // Spectral custom colour/hue 2-254
   uint8_t ledWandSat = 2; // Spectral custom saturation 2-254
   bool rgbVentEnabled = false;

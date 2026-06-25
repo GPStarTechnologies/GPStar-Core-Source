@@ -45,8 +45,8 @@ void checkWandAction() {
               playEffect(S_MESON_FIRE_PULSE, false, i_volume_effects, false, 0, false);
             }
 
-            if(WAND_BARREL_LED_COUNT == LEDS_48 || WAND_BARREL_LED_COUNT == LEDS_50) {
-              // Reset the barrel before starting a new pulse.
+            if(i_num_barrel_leds == 48) {
+              // Reset the barrel before starting a new pulse on the high-density barrels.
               barrelLightsOff();
             }
 
@@ -273,61 +273,81 @@ void checkWandAction() {
                 wandBarrelLightsOff();
                 wandTipOff();
 
-                switch(WAND_BARREL_LED_COUNT) {
-                  case LEDS_5:
-                    WAND_BARREL_LED_COUNT = LEDS_48;
+                switch(WAND_BARREL_LED) {
+                  case HASBRO_BARREL:
+                    WAND_BARREL_LED = FRUTTO_BARREL;
                     i_num_barrel_leds = 48;
 
-                    stopEffect(S_VOICE_BARREL_LED_48);
-                    stopEffect(S_VOICE_BARREL_LED_5);
-                    stopEffect(S_VOICE_BARREL_LED_2);
-                    stopEffect(S_VOICE_BARREL_LED_50);
+                    stopEffect(S_VOICE_HASBRO_BARREL);
+                    //stopEffect(S_VOICE_FRUTTO_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+                    //stopEffect(S_VOICE_BARREL_LED_MINI);
 
-                    playEffect(S_VOICE_BARREL_LED_48);
+                    playEffect(S_VOICE_FRUTTO_BARREL);
 
-                    wandSerialSend(W_BARREL_LEDS_48);
+                    wandSerialSend(W_FRUTTO_BARREL);
                   break;
 
-                  case LEDS_48:
-                    WAND_BARREL_LED_COUNT = LEDS_50;
-                    i_num_barrel_leds = 48; // Needs to be 48, as 2 are for the tip.
+                  case FRUTTO_BARREL:
+                    WAND_BARREL_LED = GPSTAR_BARREL;
+                    i_num_barrel_leds = 48;
 
-                    stopEffect(S_VOICE_BARREL_LED_2);
-                    stopEffect(S_VOICE_BARREL_LED_5);
-                    stopEffect(S_VOICE_BARREL_LED_48);
-                    stopEffect(S_VOICE_BARREL_LED_50);
+                    //stopEffect(S_VOICE_HASBRO_BARREL);
+                    stopEffect(S_VOICE_FRUTTO_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+                    //stopEffect(S_VOICE_BARREL_LED_MINI);
 
-                    playEffect(S_VOICE_BARREL_LED_50);
+                    playEffect(S_VOICE_GPSTAR_BARREL);
 
-                    wandSerialSend(W_BARREL_LEDS_50);
+                    wandSerialSend(W_GPSTAR_BARREL);
                   break;
 
-                  case LEDS_50:
+                  case GPSTAR_BARREL:
                   default:
-                    WAND_BARREL_LED_COUNT = LEDS_2;
+                    WAND_BARREL_LED = GPSTAR_BARREL_II;
+                    i_num_barrel_leds = 48;
+
+                    //stopEffect(S_VOICE_HASBRO_BARREL);
+                    //stopEffect(S_VOICE_FRUTTO_BARREL);
+                    stopEffect(S_VOICE_GPSTAR_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+                    //stopEffect(S_VOICE_BARREL_LED_MINI);
+
+                    playEffect(S_VOICE_GPSTAR_BARREL_II);
+
+                    wandSerialSend(W_GPSTAR_BARREL_II);
+                  break;
+
+                  case GPSTAR_BARREL_II:
+                    WAND_BARREL_LED = GPSTAR_BARREL_MINI;
                     i_num_barrel_leds = 2;
 
-                    stopEffect(S_VOICE_BARREL_LED_2);
-                    stopEffect(S_VOICE_BARREL_LED_48);
-                    stopEffect(S_VOICE_BARREL_LED_50);
+                    //stopEffect(S_VOICE_HASBRO_BARREL);
+                    //stopEffect(S_VOICE_FRUTTO_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL);
+                    stopEffect(S_VOICE_GPSTAR_BARREL_II);
+                    //stopEffect(S_VOICE_BARREL_LED_MINI);
 
-                    playEffect(S_VOICE_BARREL_LED_2);
+                    playEffect(S_VOICE_BARREL_LED_MINI);
 
-                    wandSerialSend(W_BARREL_LEDS_2);
+                    wandSerialSend(W_GPSTAR_BARREL_MINI);
                   break;
 
-                  case LEDS_2:
-                    WAND_BARREL_LED_COUNT = LEDS_5;
+                  case GPSTAR_BARREL_MINI:
+                    WAND_BARREL_LED = HASBRO_BARREL;
                     i_num_barrel_leds = 5;
 
-                    stopEffect(S_VOICE_BARREL_LED_2);
-                    stopEffect(S_VOICE_BARREL_LED_5);
-                    stopEffect(S_VOICE_BARREL_LED_48);
-                    stopEffect(S_VOICE_BARREL_LED_50);
+                    //stopEffect(S_VOICE_HASBRO_BARREL);
+                    //stopEffect(S_VOICE_FRUTTO_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL);
+                    //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+                    stopEffect(S_VOICE_BARREL_LED_MINI);
 
-                    playEffect(S_VOICE_BARREL_LED_5);
+                    playEffect(S_VOICE_HASBRO_BARREL);
 
-                    wandSerialSend(W_BARREL_LEDS_5);
+                    wandSerialSend(W_HASBRO_BARREL);
                   break;
                 }
 
