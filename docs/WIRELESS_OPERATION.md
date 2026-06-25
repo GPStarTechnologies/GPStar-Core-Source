@@ -38,13 +38,13 @@ Additionally, when using the device as an Attenuator, the top most LED on that d
 
 ## Web Interface
 
-The Attenuator or Wireless Adapter will offer a default, private WiFi network (access point) which begins with the pattern **"ProtonPack_####"** where the #### is unique to each devices's WiFi network interface, and this will be secured with a default password of **"555-2368"**. Alternatively, the device may simply appear as **"GPStar_Attenuator"** in later firmware releases.
+The Attenuator or Wireless Adapter will offer a default, private WiFi network (access point) called **"GPStar_Attenuator"**, secured with a default password of `555-2368`. In older firmware releases, the WiFi network may appear as **"ProtonPack_####"** where the #### portion is a unique 4-digit ID.
 
 Once connected, your computer/phone/table should be assigned an IP address starting from **"192.168.1.100"** with a subnet of **"255.255.255.0"**. Please remember that if you intend to have multiple Attenuator/Wireless devices connect via this private WiFi network you will be assigned a unique IP address for each client device (eg. phone, tablet, or computer).
 
-A web-based user interface is available at [http://192.168.1.2](http://192.168.1.2) to view the state of your Proton Pack and Neutrona Wand, and to manage specific actions. The available sections are described below.
+A web-based user interface is available at [192.168.1.2](http://192.168.1.2) to view the state of your Proton Pack and Neutrona Wand, and to manage specific actions. The available sections are described below.
 
-**Note:** As of the latest 5.3.x release a new mDNS feature allows the device to respond to a localized name regardless of the WiFi network. In your browser simply navigate to `http://<SSID>.local` where the "SSID" is the same name as the private access point. This SSID is now user-customizable using the "Attenuator Settings" page shown below.
+**Note:** As of the latest 5.3.x release a new mDNS feature allows the device to respond to a localized name regardless of the WiFi network. In your browser simply navigate to `http://<SSID>.local` where the "SSID" is the same name as the Attenuator/Wireless Adapter's WiFi network. The default web address is at [gpstar_attenuator.local](http://gpstar_attenuator.local). This SSID is also user-customizable using the "Attenuator Settings" page shown below.
 
 ### Tab 1: Equipment Status
 
@@ -63,10 +63,14 @@ When using the graphical display, most components of the Proton pack and Neutron
 - When the Neutrona Wand is powered on, the overlay above the Activate/Intensify portion of the gun box will indicate if the barrel is retracted (red) or extended (green).
 - The current power level for the Neutrona Wand will be indicated by the "L-#" beside the barrel.
 - The type of firing mode will be displayed below the Neutrona Wand and will be color coded via the barrel. Color intensity increases with the power level.
-    - Proton Stream: Red (includes Spectral modes)
-    - Plasm System: Green (incl. for 1989 theme)
+    - Proton Stream: Red
+    - Plasm System: Green (Pink in 1989)
     - Dark Matter Gen.: Blue
     - Particle System: Orange
+    - Spectral Stream: Rainbow
+    - Halloween Stream: Orange/Purple
+    - Christmas Stream: Red/Green
+    - Custom Stream: Red
     - Settings: Gray
 - When using the power-detection feature with a stock Haslab Neutrona Wand the default stream will be Proton with a power level of 5. Instead of the stream type being displayed, there will be a wattage value displayed as Gigawatts (GW).
 - If the Ribbon Cable is removed, a warning icon will appear over that component to indicate an alarm state.

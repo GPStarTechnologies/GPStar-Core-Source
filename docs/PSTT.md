@@ -26,7 +26,7 @@ Assembly instructions for the Proton Stream Target Trainer can be found in PDF f
 1. Power on the PSTT.
 1. Open the WiFi preferences on your computer/device and look for the SSID which matches **"GPStar_PSTT"**.
     * If this is your first connection to this access point, use the default password **555-2368**.
-1. Navigate directly to the URL: [http://gpstar_pstt.local/update](http://gpstar_pstt.local/update) or [http://192.168.2.2/update](http://192.168.2.2/update).
+1. Navigate directly to the URL: [http://gpstar_pstt.local/update](http://gpstar_pstt.local/update) or [http://192.168.2.2/update](http://192.168.2.2/update)
 1. Use the "Select File" button and select the [PSTT.bin](/binaries/pstt/PSTT.bin?raw=true) file from the `/binaries/pstt` directory.
 1. The upload will begin immediately. Once at 100% the device will reboot automatically.
 
@@ -152,7 +152,7 @@ To connect to the GPStar Proton Stream Target Trainer over WiFi, a private WiFi 
 
 Once connected, your computer/phone/tablet will be assigned an IP address starting from 192.168.2.100 with a subnet of 255.255.255.0. Please remember that if you intended to have multiple devices connect via this private WiFi network, you will be assigned a unique IP address for each client device (ex: phone, tablet or computer).
 
-A web based user interface is available at http://gpstar_pstt.local or http://192.168.2.2 to view the state of your Proton Stream Target Trainer, in which you will be able to manage specific actions.
+A web based user interface is available at [gpstar_pstt.local](http://gpstar_pstt.local) or [192.168.2.2](http://192.168.2.2) to view the state of your Proton Stream Target Trainer, in which you will be able to manage specific actions.
 
 ### Status
 
