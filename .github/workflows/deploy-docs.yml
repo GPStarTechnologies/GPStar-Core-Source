@@ -1,10 +1,10 @@
 name: Deploy MkDocs Documentation
 
-# Trigger this workflow only when building the main branch
+# Trigger this workflow only when a new release tag is created
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '*'
 
 # Needed to push to gh-pages
 permissions:
@@ -13,6 +13,7 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
