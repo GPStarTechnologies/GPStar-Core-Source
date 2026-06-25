@@ -95,7 +95,7 @@ void saveLEDEEPROM() {
   gObjLEDEEPROM.barrelSpectralSaturationCustom = i_spectral_wand_custom_saturation;
   gObjLEDEEPROM.ventLightAutoIntensity = b_vent_light_control ? 2 : 1;
   gObjLEDEEPROM.ventLightStreamColours = b_vent_light_stream_colours ? 2 : 1;
-  gObjLEDEEPROM.numBarrelLeds = WAND_BARREL_LED_COUNT;
+  gObjLEDEEPROM.numBarrelLeds = WAND_BARREL_LED;
   gObjLEDEEPROM.numBargraphLeds = BARGRAPH_TYPE_EEPROM;
   gObjLEDEEPROM.gpstarAudioLed = b_gpstar_audio_led_enabled ? 2 : 1;
 
@@ -640,28 +640,20 @@ void readEEPROM() {
       b_vent_light_stream_colours = (gObjLEDEEPROM.ventLightStreamColours > 1);
     }
 
-    if(gObjLEDEEPROM.numBarrelLeds == LEDS_2 || gObjLEDEEPROM.numBarrelLeds == LEDS_5 ||
-      gObjLEDEEPROM.numBarrelLeds == LEDS_48 || gObjLEDEEPROM.numBarrelLeds == LEDS_50) {
-      i_num_barrel_leds = gObjLEDEEPROM.numBarrelLeds;
+    if(gObjLEDEEPROM.numBarrelLeds > 0 && gObjLEDEEPROM.numBarrelLeds < 6) {
+      WAND_BARREL_LED = (WAND_BARREL_LEDS)gObjLEDEEPROM.numBarrelLeds;
 
-      switch(i_num_barrel_leds) {
-        case 2:
-          WAND_BARREL_LED_COUNT = LEDS_2;
-        break;
-
-        case 5:
-          WAND_BARREL_LED_COUNT = LEDS_5;
-        break;
-
-        case 48:
-          WAND_BARREL_LED_COUNT = LEDS_48;
-        break;
-
-        case 50:
-        default:
-          WAND_BARREL_LED_COUNT = LEDS_50;
-          i_num_barrel_leds = 48; // Need to reset it to 48. 2 are for the tip.
-        break;
+      if(WAND_BARREL_LED == HASBRO_BARREL) {
+        // Hasbro barrel has 5 LEDs.
+        i_num_barrel_leds = 5;
+      }
+      else if(WAND_BARREL_LED == GPSTAR_BARREL_MINI) {
+        // GPStar Barrel LED Mini has only 2 LEDs.
+        i_num_barrel_leds = 2;
+      }
+      else {
+        // Frutto/GPStar have 48 main body LEDs.
+        i_num_barrel_leds = 48;
       }
     }
 

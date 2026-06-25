@@ -77,8 +77,8 @@ CHSV getHue(uint8_t i_colour, uint8_t i_brightness = 255, uint8_t i_saturation =
   // For colour cycles, this indicates how often to change colour.
   uint8_t i_cycle = 2;
 
-  // For the GPStar and Frutto barrel we need to reduce the cycle count so the colours are more perceptible.
-  if(WAND_BARREL_LED_COUNT == LEDS_48 || WAND_BARREL_LED_COUNT == LEDS_50) {
+  // For the GPStar and Frutto barrels we need to reduce the cycle count so the colours are more perceptible.
+  if(i_num_barrel_leds == 48) {
     i_cycle = 255;
   }
 
@@ -193,7 +193,7 @@ CHSV getHue(uint8_t i_colour, uint8_t i_brightness = 255, uint8_t i_saturation =
 
       if(WAND_ACTION_STATUS == ACTION_IDLE) {
         // Used to slow down colour transitions during the barrel fade effect.
-        if(WAND_BARREL_LED_COUNT == LEDS_5) {
+        if(i_num_barrel_leds < 48) {
           i_cycle = 50;
         }
       }
@@ -222,7 +222,7 @@ CHSV getHue(uint8_t i_colour, uint8_t i_brightness = 255, uint8_t i_saturation =
 
       if(WAND_ACTION_STATUS == ACTION_IDLE) {
         // Used to slow down colour transitions during the barrel fade effect.
-        if(WAND_BARREL_LED_COUNT == LEDS_5) {
+        if(i_num_barrel_leds < 48) {
           i_cycle = 50;
         }
       }
@@ -257,7 +257,7 @@ CHSV getHue(uint8_t i_colour, uint8_t i_brightness = 255, uint8_t i_saturation =
     case C_RAINBOW:
       if(WAND_ACTION_STATUS == ACTION_IDLE) {
         // Used to slow down colour transitions during the barrel fade effect.
-        if(WAND_BARREL_LED_COUNT == LEDS_48 || WAND_BARREL_LED_COUNT == LEDS_50) {
+        if(i_num_barrel_leds == 48) {
           i_cycle = 20;
         }
       }
@@ -299,19 +299,16 @@ CRGB getHueAsGRB(uint8_t i_colour, uint8_t i_brightness = 255) {
   return getHueAsRGB(i_colour, i_brightness, true);
 }
 
-CRGB getHueColour(uint8_t i_colour, WAND_BARREL_LED_COUNTS NUM_LEDS_ENUM, uint8_t i_brightness = 255) {
-  switch(NUM_LEDS_ENUM) {
-    case LEDS_48:
-    case LEDS_50:
-    case LEDS_2:
-      // All other LEDs are considered RGB
-      return getHueAsRGB(i_colour, i_brightness);
-    break;
-
-    case LEDS_5:
-    default:
+CRGB getHueColour(uint8_t i_colour, WAND_BARREL_LEDS BARREL_LEDS_ENUM, uint8_t i_brightness = 255) {
+  switch(BARREL_LEDS_ENUM) {
+    case HASBRO_BARREL:
       // Stock LEDs are GRB
       return getHueAsGRB(i_colour, i_brightness);
+    break;
+
+    default:
+      // All other LEDs are RGB
+      return getHueAsRGB(i_colour, i_brightness);
     break;
   }
 }

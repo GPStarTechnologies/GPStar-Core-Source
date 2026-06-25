@@ -328,10 +328,11 @@
       <div class="setting">
         <b>LED Count:</b>
         <select id="ledWandCount" name="ledWandCount">
-          <option value="0">5 - Stock</option>
-          <option value="1">48 - Frutto</option>
-          <option selected value="2">50 - GPStar</option>
-          <option value="3">2 - Tip</option>
+          <option value="1">Hasbro Barrel (5)</option>
+          <option value="2">Frutto Barrel (49)</option>
+          <option selected value="3">GPStar Barrel (50)</option>
+          <option value="4">GPStar Barrel II (49 + IR)</option>
+          <option value="5">GPStar Barrel Mini (2)</option>
         </select>
       </div>
       <div class="setting">
@@ -436,7 +437,7 @@
 
       function populateFormFields(settings) {
         // Populates all form fields from settings object (used by both server load and import)
-        setValue("ledWandCount", settings.ledWandCount ?? 2);
+        setValue("ledWandCount", settings.ledWandCount ?? 3);
         setValue("ledWandHue", convertRange(settings.ledWandHue || 254, [1, 254], [0, 360]));
         setValue("ledWandSat", convertRange(settings.ledWandSat || 254, [1, 254], [0, 100]));
         setToggle("rgbVentEnabled", settings.rgbVentEnabled);
@@ -604,7 +605,7 @@
         // Saves current settings to wand, updating runtime variables and making changes immediately effective.
         // This does NOT save to the EEPROM automatically as the user is encouraged to test prior to that action.
         var settings = {
-          ledWandCount: getInt("ledWandCount") ?? 2,
+          ledWandCount: getInt("ledWandCount") ?? 3,
           ledWandHue: convertRange(getInt("ledWandHue"), [0, 360], [1, 254]) || 254,
           ledWandSat: convertRange(getInt("ledWandSat"), [0, 100], [1, 254]) || 254,
           rgbVentEnabled: getToggle("rgbVentEnabled"),

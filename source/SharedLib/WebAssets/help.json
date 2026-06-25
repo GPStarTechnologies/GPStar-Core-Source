@@ -142,7 +142,7 @@
     "bargraphFireAnimation": "Sets which animation style the bargraph uses when firing: Default (theme-appropriate), Super Hero, or Mode Original.",
     "bargraphOverheatBlink": "When enabled, error/overheating states will cause the bargraph to blink and alert sounds to play.",
     "invertWandBargraph": "When enabled, reverses the direction of bargraph animations (useful if the bargraph was installed upside-down).",
-    "ledWandCount": "Specifies the barrel LED configuration: 5 (Hasbro barrel LEDs), 48 (Frutto tube), 50 (GPStar tube), or 2 (GPStar empty barrel tube).",
+    "ledWandCount": "Specifies the barrel LED configuration: Hasbro (5 LEDs), Frutto (49 LEDs), GPStar Neutrona Barrel (50 LEDs), GPStar Neutrona Barrel II (49 LEDs + IR), or GPStar Neutrona Barrel Mini (2 LEDs).",
     "ledWandHue": "Sets the custom colour hue (2-360 degrees) for the barrel LEDs in Spectral Custom stream mode.",
     "ledWandSat": "Sets the colour saturation percentage (2-100%) for the barrel LEDs in Spectral Custom stream mode.",
     "isWiFiEnabled": "Enables or disables the WiFi radio on GPStar II Neutrona Wand. Recommended to keep disabled to conserve battery unless performing updates or sensor calibration.",

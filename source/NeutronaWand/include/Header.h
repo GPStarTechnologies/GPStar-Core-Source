@@ -157,31 +157,37 @@ const uint16_t i_meson_blast_delay_level_1 = 275;
 
 /*
  * Barrel LEDs
- * The Hasbro Neutrona Wand has 5 LEDs. 0 = Base, 4 = tip. These are addressable with a single pin and are RGB.
- * Support for up to 50 LEDs from the GPStar Neutrona Barrel. (body of 48 + 2 strobe tips which are also RGB).
+ * The Hasbro Neutrona Wand has 5 LEDs. 0 = Base, 4 = tip. These are addressable with a single pin and are GRB colour order.
+ * Support for up to 50 LEDs from the GPStar Neutrona Barrel (body of 48 + 2 strobe tips which are RGB colour order).
  */
-#define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar = 48 + 2 Strobe Tips. Frutto = 48 + Strobe Tip).
+#define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar Neutrona Barrel is 48 + 2 Strobe Tips).
 CRGB barrel_leds[BARREL_LEDS_MAX];
 // Array of LEDs on the GPStar Neutrona Barrel. LEDs 36 and 37 are the very tips and will not be in this array.
-const uint8_t gpstar_neutrona_barrel[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38};
+const uint8_t gpstar_barrel[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38};
+
+// Array of LEDs on the GPStar Neutrona Barrel II. LED 36 is the very tip which will not be in this array. There is also one less tip LED due to the inclusion of an IR LED.
+const uint8_t gpstar_barrel_ii[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37};
+
 // This is the GPStar Barrel LED min. It has only 2 LEDs.
 //const uint8_t gpstar_barrel_led_mini[2] PROGMEM = {0, 1};
-// This is the array of LEDs in the order by which they should be illuminated for effects. LED number 12 is the very tip which will be white (by default).
+
+// Array of LEDs on the Frutto Technology Neutrona Barrel. LED 12 is the very tip which will not be in this array.
 const uint8_t frutto_barrel[48] PROGMEM = {0, 25, 24, 48, 1, 26, 23, 47, 2, 27, 22, 46, 3, 28, 21, 45, 4, 29, 20, 44, 5, 30, 19, 43, 6, 31, 18, 42, 7, 32, 17, 41, 8, 33, 16, 40, 9, 34, 15, 39, 10, 35, 14, 38, 11, 36, 13, 37};
 
 /*
  * How many LEDs are in your Neutrona Wand Barrel.
- * Default setting is 50 (GPStar Neutrona Barrel).
- * Supported options: Stock (5), GPStar Neturona Barrel (48 + 2 Strobe Tips), GPStar Barrel LED Mini (2) and Frutto Technology (48 + Strobe Tip)
+ * Default setting is 48 (Frutto/GPStar Neutrona Barrels).
+ * Supported options: Hasbro (5), Frutto Technology (48 + Strobe Tip), GPStar Neturona Barrel (48 + 2 Strobe Tips), GPStar Neutrona Barrel II (48 + Strobe Tip + IR), and GPStar Barrel LED Mini (2)
  */
-uint8_t i_num_barrel_leds = 50;
-enum WAND_BARREL_LED_COUNTS : uint8_t {
-  LEDS_UNKNOWN = 0,
-  LEDS_2 = 2,
-  LEDS_5 = 5,
-  LEDS_48 = 48,
-  LEDS_50 = 50
-} WAND_BARREL_LED_COUNT = LEDS_50;
+uint8_t i_num_barrel_leds = 48;
+enum WAND_BARREL_LEDS : uint8_t {
+  UNKNOWN_BARREL, // Need this since EEPROM cannot read 0 values
+  HASBRO_BARREL,
+  FRUTTO_BARREL,
+  GPSTAR_BARREL,
+  GPSTAR_BARREL_II,
+  GPSTAR_BARREL_MINI
+} WAND_BARREL_LED = GPSTAR_BARREL;
 
 /*
  * Delay for fastled to update the addressable LEDs.
