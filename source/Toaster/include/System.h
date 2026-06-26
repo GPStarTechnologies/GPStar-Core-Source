@@ -63,7 +63,7 @@ void printPartitions() {
 bool triggerActuator(uint8_t actuatorID) {
     if ((actuatorID < 1) || (actuatorID > 4)) {
       return false;
-    }  
+    }
 
     // Obtain the correct index (0-3) and output a signal to the relay.
     uint8_t index = actuatorID - 1; // Convert to 0-based index.

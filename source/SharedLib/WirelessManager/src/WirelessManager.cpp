@@ -199,12 +199,12 @@ uint16_t WirelessManager::getDeviceID() {
   // Use ESP32 chip eFuse MAC address (hardware-burned, always available)
   // This is the same MAC that WiFi uses but doesn't require WiFi initialization
   uint64_t efuseMac = ESP.getEfuseMac();
-  
+
   // Extract bytes 4 and 5 from eFuse MAC (same as original WiFi MAC extraction)
   // eFuse MAC is stored as: [byte0][byte1][byte2][byte3][byte4][byte5]
   uint8_t mac4 = (efuseMac >> 32) & 0xFF;
   uint8_t mac5 = (efuseMac >> 40) & 0xFF;
-  
+
   // Extract 12-bit ID: lower 4 bits of byte 4 + all 8 bits of byte 5
   uint16_t deviceId = ((mac4 & 0x0F) << 8) | mac5;
 
@@ -212,7 +212,7 @@ uint16_t WirelessManager::getDeviceID() {
   if(deviceId == 0x000 || deviceId == 0xFFF) {
     // Use alternate bits from eFuse MAC if lower 12 bits are reserved values
     deviceId = ((efuseMac >> 12) & 0x0FFF);
-    
+
     // Last resort: ensure we have a valid ID
     if(deviceId == 0x000 || deviceId == 0xFFF) {
       deviceId = 0x001; // Default to 1 if all else fails

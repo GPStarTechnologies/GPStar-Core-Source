@@ -8,7 +8,7 @@ BINDIR="../binaries"
 SRCDIR="../source"
 PROJECT_DIR="$SRCDIR/Toaster"
 
-mkdir -p ${BINDIR}/stream/extras
+mkdir -p ${BINDIR}/toaster/extras
 
 # Current build timestamp and major version to be reflected in the build for ESP32.
 MJVER="${MJVER:="V6"}"
@@ -44,15 +44,15 @@ fi
 
 # Copy the new firmware to the expected binaries directory
 if [ -f ${PROJECT_DIR}/.pio/build/esp32dev/firmware.bin ]; then
-  mv ${PROJECT_DIR}/.pio/build/esp32dev/firmware.bin ${BINDIR}/stream/Toaster.bin
+  mv ${PROJECT_DIR}/.pio/build/esp32dev/firmware.bin ${BINDIR}/toaster/Toaster.bin
   echo "Firmware copy completed."
 fi
 if [ -f ${PROJECT_DIR}/.pio/build/esp32dev/bootloader.bin ]; then
-  mv ${PROJECT_DIR}/.pio/build/esp32dev/bootloader.bin ${BINDIR}/stream/extras/Toaster-Bootloader.bin
+  mv ${PROJECT_DIR}/.pio/build/esp32dev/bootloader.bin ${BINDIR}/toaster/extras/Toaster-Bootloader.bin
   echo "Bootloader copy completed."
 fi
 if [ -f ${PROJECT_DIR}/.pio/build/esp32dev/partitions.bin ]; then
-  mv ${PROJECT_DIR}/.pio/build/esp32dev/partitions.bin ${BINDIR}/stream/extras/Toaster-Partitions.bin
+  mv ${PROJECT_DIR}/.pio/build/esp32dev/partitions.bin ${BINDIR}/toaster/extras/Toaster-Partitions.bin
   echo "Partitions copy completed."
 fi
 echo ""

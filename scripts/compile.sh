@@ -37,7 +37,7 @@ SHOW_USAGE_BEFORE_ENV=0
 
 usage() {
   cat <<EOF
-Usage: ./compile.sh [all|help|env|pack|wand|att|attenuator|blast|blaster|gizmo|stream|pstt|trap] [NAME=VALUE ...]
+Usage: ./compile.sh [all|help|env|pack|wand|att|attenuator|blast|blaster|gizmo|stream|pstt|trap|toast|toaster] [NAME=VALUE ...]
 
 Compile Targets:
   all          Run tests and compile every device (default)
@@ -51,6 +51,7 @@ Compile Targets:
   stream       Compile Stream Effects
   pstt         Compile PSTT
   trap         Compile Ghost Trap Base and Cartridge
+  toast[er]    Compile Dancing Toaster
 
 Environment Overrides:
   NAME=VALUE pairs are exported for this invocation and inherited by all sourced compile scripts.
@@ -94,6 +95,9 @@ resolve_target() {
       ;;
     blast|blaster)
       TARGET="blaster"
+      ;;
+    toast|toaster)
+      TARGET="toaster"
       ;;
     -h|--help|help)
       usage
@@ -252,6 +256,7 @@ compile_all() {
   run_script "compile_pstt.sh"
   run_script "compile_trap_base.sh"
   run_script "compile_trap_cartridge.sh"
+  run_script "compile_toaster.sh"
 }
 
 compile_target() {
@@ -294,6 +299,10 @@ compile_target() {
       run_script "run_tests.sh"
       run_script "compile_trap_base.sh"
       run_script "compile_trap_cartridge.sh"
+      ;;
+    toaster)
+      run_script "run_tests.sh"
+      run_script "compile_toaster.sh"
       ;;
   esac
 }
