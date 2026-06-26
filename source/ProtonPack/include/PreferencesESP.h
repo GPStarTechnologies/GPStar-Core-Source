@@ -547,7 +547,7 @@ void readEEPROM() {
       b_fadeout_idle_sounds = (gObjConfigEEPROM.fadeout_idle_sounds > 1);
     }
 
-    if(gObjConfigEEPROM.fadeout_idle_delay > 14 && gObjConfigEEPROM.fadeout_idle_delay < 61) {
+    if(gObjConfigEEPROM.fadeout_idle_delay > 19 && gObjConfigEEPROM.fadeout_idle_delay < 61) {
       i_idle_fadeout_delay = gObjConfigEEPROM.fadeout_idle_delay * 1000;
     }
 

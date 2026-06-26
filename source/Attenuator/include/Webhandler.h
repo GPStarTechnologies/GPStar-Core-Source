@@ -209,7 +209,7 @@ String getPackConfig() {
     jsonBody["currentYearThemePack"] = packConfig.currentYearThemePack; // [2=1984,3=1989,4=2021,5=2024]
     jsonBody["defaultPackVolume"] = packConfig.defaultPackVolume; // 5-100
     jsonBody["fadeoutIdleSounds"] = packConfig.fadeoutIdleSounds; // true|false
-    jsonBody["fadeoutIdleDelay"] = packConfig.fadeoutIdleDelay; // 10-60
+    jsonBody["fadeoutIdleDelay"] = packConfig.fadeoutIdleDelay; // 20-60
     jsonBody["packVibration"] = packConfig.packVibration; // [1=ALWAYS,2=FIRING,3=NEVER,4=TOGGLE,5=MOTORIZED_CYCLOTRON]
     jsonBody["brassStartupLoop"] = packConfig.brassStartupLoop; // true|false
     jsonBody["ribbonCableAlarm"] = packConfig.ribbonCableAlarm; // true|false
