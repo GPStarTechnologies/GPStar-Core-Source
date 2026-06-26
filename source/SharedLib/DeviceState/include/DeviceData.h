@@ -33,7 +33,7 @@ struct __attribute__((packed)) PackPrefs {
   VIBRATION_MODES packVibration = VIBRATION_DEFAULT; // [1=ALWAYS,2=FIRING_ONLY,3=NEVER,4=DEFAULT,5=CYCLOTRON_MOTOR]
   uint8_t defaultPackVolume = 50; // 5-100
   bool fadeoutIdleSounds = false;
-  uint8_t fadeoutIdleDelay = 30; // 10-60
+  uint8_t fadeoutIdleDelay = 30; // 20-60
   bool ribbonCableAlarm = false; // Ignore ribbon cable switch state
   bool wandQuickBootup = false;
   bool cyclotronDirection = false;
