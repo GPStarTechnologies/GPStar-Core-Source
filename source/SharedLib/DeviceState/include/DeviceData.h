@@ -33,7 +33,7 @@ struct __attribute__((packed)) PackPrefs {
   VIBRATION_MODES packVibration = VIBRATION_DEFAULT; // [1=ALWAYS,2=FIRING_ONLY,3=NEVER,4=DEFAULT,5=CYCLOTRON_MOTOR]
   uint8_t defaultPackVolume = 50; // 5-100
   bool fadeoutIdleSounds = false;
-  uint8_t fadeoutIdleDelay = 30; // 10-60
+  uint8_t fadeoutIdleDelay = 30; // 20-60
   bool ribbonCableAlarm = false; // Ignore ribbon cable switch state
   bool wandQuickBootup = false;
   bool cyclotronDirection = false;
@@ -79,7 +79,7 @@ static_assert(sizeof(PackPrefs) < 85, "WARNING: PackPrefs has grown too large (>
 // Preferences for the Neutrona Wand device.
 struct __attribute__((packed)) WandPrefs {
   bool isESP32 = false;
-  uint8_t ledWandCount = 0; // [0=5 (Stock), 1=48 (Frutto), 2=50 (GPStar), 3=2 (Tip)]
+  uint8_t ledWandCount = 3; // [1=Hasbro,2=Frutto,3=GPStar Barrel,4=GPStar Barrel II,5=GPStar Barrel Mini]
   uint8_t ledWandHue = 2; // Spectral custom colour/hue 2-254
   uint8_t ledWandSat = 2; // Spectral custom saturation 2-254
   bool rgbVentEnabled = false;

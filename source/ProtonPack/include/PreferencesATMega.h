@@ -111,7 +111,7 @@ struct objConfigEEPROM {
   uint8_t use_ribbon_cable; // Enable/disable the ribbon cable alarm (useful for DIY packs).
   uint8_t disable_lid_detection; // Enable/disable cyclotron lid detection (useful for DIY packs).
   uint8_t fadeout_idle_sounds; // Enable/disable fading out of idle SFX after booting.
-  uint8_t fadeout_idle_delay; // How long before the idle fadeout takes place (10-60 seconds).
+  uint8_t fadeout_idle_delay; // How long before the idle fadeout takes place (20-60 seconds).
 };
 
 /*
@@ -415,7 +415,7 @@ void readEEPROM() {
       b_fadeout_idle_sounds = (obj_config_eeprom.fadeout_idle_sounds > 1);
     }
 
-    if(obj_config_eeprom.fadeout_idle_delay > 14 && obj_config_eeprom.fadeout_idle_delay < 61) {
+    if(obj_config_eeprom.fadeout_idle_delay > 19 && obj_config_eeprom.fadeout_idle_delay < 61) {
       i_idle_fadeout_delay = obj_config_eeprom.fadeout_idle_delay * 1000;
     }
 

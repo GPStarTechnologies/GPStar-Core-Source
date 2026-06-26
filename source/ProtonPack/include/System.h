@@ -1036,14 +1036,14 @@ void packStartup(bool fullStartup) {
       if(fullStartup) {
         if(gpstarPack.inStreamMode(SLIME)) {
           playEffect(S_AFTERLIFE_PACK_STARTUP, false, i_volume_effects - i_slime_bootup_level);
-          playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level, true, 18000);
+          playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level, true, 15000);
         }
         else {
           playEffect(S_AFTERLIFE_PACK_STARTUP);
-          playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects, true, 18000);
+          playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects, true, 15000);
         }
 
-        ms_idle_fire_fade.start(18000);
+        ms_idle_fire_fade.start(15000);
       }
       else {
         if(gpstarPack.inStreamMode(SLIME)) {

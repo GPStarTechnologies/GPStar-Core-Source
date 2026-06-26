@@ -4032,40 +4032,54 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
       updateContinuousSmoke();
     break;
 
-    case W_BARREL_LEDS_2:
-      stopEffect(S_VOICE_BARREL_LED_2);
-      stopEffect(S_VOICE_BARREL_LED_5);
-      stopEffect(S_VOICE_BARREL_LED_48);
-      stopEffect(S_VOICE_BARREL_LED_50);
+    case W_GPSTAR_BARREL_MINI:
+      //stopEffect(S_VOICE_HASBRO_BARREL);
+      //stopEffect(S_VOICE_FRUTTO_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL);
+      stopEffect(S_VOICE_GPSTAR_BARREL_II);
+      //stopEffect(S_VOICE_BARREL_LED_MINI);
 
-      playEffect(S_VOICE_BARREL_LED_2);
+      playEffect(S_VOICE_BARREL_LED_MINI);
     break;
 
-    case W_BARREL_LEDS_5:
-      stopEffect(S_VOICE_BARREL_LED_2);
-      stopEffect(S_VOICE_BARREL_LED_5);
-      stopEffect(S_VOICE_BARREL_LED_48);
-      stopEffect(S_VOICE_BARREL_LED_50);
+    case W_HASBRO_BARREL:
+      //stopEffect(S_VOICE_HASBRO_BARREL);
+      //stopEffect(S_VOICE_FRUTTO_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+      stopEffect(S_VOICE_BARREL_LED_MINI);
 
-      playEffect(S_VOICE_BARREL_LED_5);
+      playEffect(S_VOICE_HASBRO_BARREL);
     break;
 
-    case W_BARREL_LEDS_48:
-      stopEffect(S_VOICE_BARREL_LED_2);
-      stopEffect(S_VOICE_BARREL_LED_5);
-      stopEffect(S_VOICE_BARREL_LED_48);
-      stopEffect(S_VOICE_BARREL_LED_50);
+    case W_FRUTTO_BARREL:
+      stopEffect(S_VOICE_HASBRO_BARREL);
+      //stopEffect(S_VOICE_FRUTTO_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+      //stopEffect(S_VOICE_BARREL_LED_MINI);
 
-      playEffect(S_VOICE_BARREL_LED_48);
+      playEffect(S_VOICE_FRUTTO_BARREL);
     break;
 
-    case W_BARREL_LEDS_50:
-      stopEffect(S_VOICE_BARREL_LED_2);
-      stopEffect(S_VOICE_BARREL_LED_5);
-      stopEffect(S_VOICE_BARREL_LED_48);
-      stopEffect(S_VOICE_BARREL_LED_50);
+    case W_GPSTAR_BARREL:
+      //stopEffect(S_VOICE_HASBRO_BARREL);
+      stopEffect(S_VOICE_FRUTTO_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+      //stopEffect(S_VOICE_BARREL_LED_MINI);
 
-      playEffect(S_VOICE_BARREL_LED_50);
+      playEffect(S_VOICE_GPSTAR_BARREL);
+    break;
+
+    case W_GPSTAR_BARREL_II:
+      //stopEffect(S_VOICE_HASBRO_BARREL);
+      //stopEffect(S_VOICE_FRUTTO_BARREL);
+      stopEffect(S_VOICE_GPSTAR_BARREL);
+      //stopEffect(S_VOICE_GPSTAR_BARREL_II);
+      //stopEffect(S_VOICE_BARREL_LED_MINI);
+
+      playEffect(S_VOICE_GPSTAR_BARREL_II);
     break;
 
     case W_TOGGLE_POWERCELL_DIRECTION:

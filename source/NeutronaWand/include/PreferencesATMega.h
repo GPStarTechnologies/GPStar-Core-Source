@@ -389,28 +389,20 @@ void readEEPROM() {
       b_vent_light_control = (obj_led_eeprom.vent_light_auto_intensity > 1);
     }
 
-    if(obj_led_eeprom.num_barrel_leds == LEDS_2 || obj_led_eeprom.num_barrel_leds == LEDS_5 ||
-      obj_led_eeprom.num_barrel_leds == LEDS_48 || obj_led_eeprom.num_barrel_leds == LEDS_50) {
-      i_num_barrel_leds = obj_led_eeprom.num_barrel_leds;
+    if(obj_led_eeprom.num_barrel_leds > 0 && obj_led_eeprom.num_barrel_leds < 6) {
+      WAND_BARREL_LED = (WAND_BARREL_LEDS)obj_led_eeprom.num_barrel_leds;
 
-      switch(i_num_barrel_leds) {
-        case 5:
-          WAND_BARREL_LED_COUNT = LEDS_5;
-        break;
-
-        case 2:
-          WAND_BARREL_LED_COUNT = LEDS_2;
-        break;
-
-        case 48:
-          WAND_BARREL_LED_COUNT = LEDS_48;
-        break;
-
-        case 50:
-        default:
-          WAND_BARREL_LED_COUNT = LEDS_50;
-          i_num_barrel_leds = 48; // Need to reset it to 48. 2 are for the tip.
-        break;
+      if(WAND_BARREL_LED == HASBRO_BARREL) {
+        // Hasbro barrel has 5 LEDs.
+        i_num_barrel_leds = 5;
+      }
+      else if(WAND_BARREL_LED == GPSTAR_BARREL_MINI) {
+        // GPStar Barrel LED Mini has only 2 LEDs.
+        i_num_barrel_leds = 2;
+      }
+      else {
+        // Frutto/GPStar have 48 main body LEDs.
+        i_num_barrel_leds = 48;
       }
     }
 
@@ -460,7 +452,7 @@ void clearLEDEEPROM() {
 void saveLEDEEPROM() {
   uint16_t i_eepromLEDAddress = i_eepromAddress + sizeof(objConfigEEPROM);
 
-  uint8_t i_barrel_led_count = WAND_BARREL_LED_COUNT; // 5 = Hasbro, 50 = GPStar Neutrona Barrel, 2 = GPStar Barrel LED Mini, 48 = Frutto.
+  uint8_t i_barrel_led_count = WAND_BARREL_LED; // 1 = Hasbro, 2 = Frutto, 3 = GPStar Barrel, 4 = GPStar Barrel II, 5 = GPStar Barrel Mini
   uint8_t i_bargraph_led_count = BARGRAPH_TYPE_EEPROM; // 28 segment, 30 segment.
   uint8_t i_vent_light_auto_intensity = b_vent_light_control ? 2 : 1; // 1 = Vent Light auto intensity disabled, 2 = Vent Light auto intensity enabled
   uint8_t i_vent_light_stream_colours = b_vent_light_stream_colours ? 2 : 1; // 1 = Vent Light stream colours disabled, 2 = Vent Light stream colours enabled

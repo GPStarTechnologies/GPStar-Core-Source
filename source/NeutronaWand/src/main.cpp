@@ -640,7 +640,7 @@ void mainLoop() {
 
   // Play the firing stream end animation.
   if(ms_firing_lights_end.justFinished()) {
-    fireStreamEnd(getHueColour(C_BLACK, WAND_BARREL_LED_COUNT));
+    fireStreamEnd(getHueColour(C_BLACK, WAND_BARREL_LED));
   }
 
   if(ms_semi_automatic_firing.justFinished()) {

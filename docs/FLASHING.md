@@ -95,6 +95,8 @@ Once the WiFi has been enabled for all devices you will connect individually to 
 
 - The upload will begin immediately. Once at 100% the device will reboot.
 
+**IMPORTANT:** If you had any browser tabs or pages open for your GPStar devices prior to the over-the-air update, make sure to refresh the pages after updating the firmware to get the latest version!
+
 ### Connecting to GPStar II Controllers via USB
 
 Under normal circumstances you should only ever have to update the GPStar II boards over-the-air via the web UI as above. As a backup, the GPStar II Proton Pack and Neutrona Wand have a built-in USB-C connector that can be used to connect a computer to the board for manually flashing firmware. Connect a USB-C cable to the device from your computer, then use the GPStar ESP32 Firmware Flasher to update the firmware. See [GPStar II & ESP32 USB Flashing](#gpstar-ii-usb-flashing) below.
