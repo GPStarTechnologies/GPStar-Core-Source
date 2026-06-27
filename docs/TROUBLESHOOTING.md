@@ -16,7 +16,7 @@ Before continuing, be certain whether the following items have been reviewed:
 - Verify the connections are intact and solid for GND, 5Vin, Rx, and Tx in all parts of the hose connectors.
 - Sound files should start with a file having a prefix of `001_` and increment by 1.
 - Music files should start with a file having a prefix of `500_` and increment by 1.
-- Switch to SanDisk brand media as these SD cards have proven reliable in every use case.
+- Switch to SanDisk brand media as these microSD cards have proven reliable in every use case.
 
 ## Troubleshooting: Proton Pack
 
@@ -70,12 +70,6 @@ When the wand is trying to establish communication to the GPStar Proton Pack con
 
 If there is still no sound from your Neutrona Wand, please refer to the Audio Troubleshooting section at the bottom of this page.
 
-### The music I added is not playing back
-
-* Make sure to following the naming conventions that are indicated in the [Loading The Audio Files](AUDIO_FILES.md) guide.
-* Remove any metadata that may be embedded in your wav files. This can cause problems with loading the music.
-* Music files need only be copied to the Proton Pack microSD card, but it is recommended to copy them to the Neutrona Wand as well for ease of use and the ability to swap cards if necessary. The Neutrona Wand will only play music through its speaker when running in Standalone mode.
-
 ### I'm firing but no overheating is happening!
 
 If your pack and wand are on default settings (you may test this by entering the EEPROM Configuration Menu then pressing Intensify to clear all settings, then turn off the Talentcell battery so the changes take effect), only Power Level 5 will overheat, and will do so after 30 seconds. If you have made changes to EEPROM settings, here are common reasons why overheating may not occur as expected.
@@ -102,6 +96,10 @@ Depending on which audio board or amplifier you are using in your system, follow
 
 ---
 
+### When I turn on the battery, I hear 8 warning beeps. What does this mean?
+
+If after turning on the main power source for your device you hear 8 warning beeps, this means that the contents of the microSD card do not match what the currently-loaded firmware expects. This usually happens when the firmware is updated but the microSD card is not. After updating the microSD card contents so that it matches the firmware version, this beep should go away.
+
 ### Music Playback Issues
 
 If you are unable to play music or tracks don't respond as expected, do the following:
@@ -113,6 +111,12 @@ If you are unable to play music or tracks don't respond as expected, do the foll
 * Make sure that you can play the default music track (#500).
 
 Only after confirming that the default, stock music file can be played should you attempt to load additional music files onto the microSD card.
+
+### The music I added is not playing back
+
+* Make sure to follow the naming conventions that are indicated in the [Loading The Audio Files](AUDIO_FILES.md) guide.
+* Remove any metadata that may be embedded in your wav files. This can cause problems with loading the music.
+* Music files need only be copied to the Proton Pack microSD card, but it is recommended to copy them to the Neutrona Wand as well for ease of use and the ability to swap cards if necessary. The Neutrona Wand will only play music through its speaker when running in Standalone mode.
 
 ---
 
@@ -140,7 +144,7 @@ Remember that a ground loop isolator is not required for this device as this is 
 
 3. Once you see the green status LED blinking slowly, pressing the on-board "Test" button will play the lowest numbered track on the microSD card. Confirm this by observing the green status LED turning blinking very rapidly to indicate a track is playing. You should hear the track through the stereo jack or any speaker connected to the board. **NOTE:** As of firmware 5.4.4, this LED will not blink if the GPStar Audio has successfully connected to GPStar equipment. The GPStar Audio can be tested outside of equipment by plugging your GPStar Programming Cable into the white device connector and connecting the USB cable to your computer.
 
-4. Low quality SD Cards sometimes provide issues such as sounds not playing. Please consider using high quality SD Cards. We recommend the Sandisk Extreme A1/A2 U3 V30 32GB Micro SD Cards.
+4. Low quality microSD cards sometimes provide issues such as sounds not playing. Please consider using high quality microSD cards. We recommend the Sandisk Extreme A1/A2 U3 V30 32GB microSD cards.
 
 5. If you’ve gotten this far and tracks won’t play, then it’s most likely that your WAV files are not the correct format. GPStar Audio will only play uncompressed WAV files formatted as 16-bit, stereo, 44.1kHz, and there can be no meta-data (non-audio data) in the file before the audio data. It seems that many Mac audio applications insert a meta-data chunk prior to the audio, and this will prevent the track from playing. In such cases, simply importing the file and re-exporting with Audacity will likely fix the problem.
 
@@ -154,7 +158,7 @@ Remember that a ground loop isolator is not required for this device as this is 
 
 **Startup Blinking Patterns:**
 
-- 1x (long) - 1 long blink upon startup indicates that the SD card is no good or the formatting was bad. Re-format fully using your OS or the provided [guiformat.exe](https://cdn.shopify.com/s/files/1/0772/0517/6651/files/guiformat.exe?v=1776715172) utility (for Windows only). Name brand microSD cards are highly recommended, with SanDisk having been proven the most reliable so far.
+- 1x (long) - 1 long blink upon startup indicates that the microSD card is no good or the formatting was bad. Re-format fully using your OS or the provided [guiformat.exe](https://cdn.shopify.com/s/files/1/0772/0517/6651/files/guiformat.exe?v=1776715172) utility (for Windows only). Name brand microSD cards are highly recommended, with SanDisk having been proven the most reliable so far.
 - 3x (quick) - 3 quick blinks in succession is the normal pattern at initial power-up to indicate the device has initialized without issues.
 
 **Post Startup Blinking Patterns**
@@ -169,7 +173,7 @@ Remember that a ground loop isolator is not required for this device as this is 
 
 1. Once you get the 3 blinks, pressing the on-board button will play the lowest numbered track on the microSD card. Confirm this by observing the status LED turning on to indicate a track is playing. You should hear the track through the stereo jack. If the audio is not working, try plugging in a set of headphones into the 3.5mm audio port and test again. If you’re using the on-board audio amp and speaker connection, you won’t hear anything unless the onboard amp is enabled using the init file or via software.
 
-1. Low quality SD Cards sometimes provide issues such as sounds not playing. Please consider using high quality SD Cards. We recommend the Sandisk Extreme A1/A2 U3 V30 32GB Micro SD Cards.
+1. Low quality microSD cards sometimes provide issues such as sounds not playing. Please consider using high quality microSD cards. We recommend the Sandisk Extreme A1/A2 U3 V30 32GB microSD cards.
 
 1. If you’ve gotten this far and tracks won’t play, then it’s most likely that your WAV files are not the correct format. The WAV Trigger will only play WAV files formatted as 16-bit, stereo, 44.1kHz, and there can be no meta-data (non-audio data) in the file before the audio data. It seems that many Mac audio applications insert a meta-data chunk prior to the audio, and this will prevent the track from playing. In such cases, simply importing the file and re-exporting with Audacity will likely fix the problem.
 

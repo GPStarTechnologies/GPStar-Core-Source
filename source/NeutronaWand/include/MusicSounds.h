@@ -471,10 +471,11 @@ enum sound_fx {
   S_VOICE_VENT_LIGHT_COLOURS_ENABLED,
   S_VOICE_VENT_LIGHT_COLOURS_DISABLED,
   S_FROZEN_EMPIRE_BRASS_FIRE_TAIL,
-  S_VOICE_GPSTAR_BARREL_II
+  S_VOICE_GPSTAR_BARREL_II,
+  S_AFTERLIFE_FIRE_END_LONG_ALT
 };
 
 /*
  * Need to keep track which is the last sound effect, so we can iterate over the effects to adjust the volume gain on them.
  */
-const uint16_t i_last_effects_track = S_VOICE_GPSTAR_BARREL_II;
+const uint16_t i_last_effects_track = S_AFTERLIFE_FIRE_END_LONG_ALT;

@@ -43,7 +43,7 @@ The following libraries are required to be installed. All can be found within th
 
 ## +++ IMPORTANT WHEN FLASHING UPDATES +++
 
-If you are flashing updates to your existing setup, make sure that both your Proton Pack and Neutrona Wand Micro SD Cards have all the latest sound effects from this repository.
+If you are flashing updates to your existing setup, make sure that both your Proton Pack and Neutrona Wand microSD cards have all the latest sound effects from this repository.
 
 ### Important information for older DIY GPStar Proton Pack builds
 
