@@ -70,6 +70,7 @@ struct objLEDEEPROM {
   uint8_t inner_panel_brightness;
   uint8_t cyclotron_cavity_count;
   uint8_t cyclotron_cavity_type;
+  uint8_t cyclotron_cavity_inverted;
   uint8_t inner_cyclotron_led_panel;
   uint8_t powercell_inverted;
   uint8_t cyclotron_single_center_led;
@@ -221,6 +222,10 @@ void readEEPROM() {
           break;
         }
       }
+    }
+
+    if(obj_led_eeprom.cyclotron_cavity_inverted > 0 && obj_led_eeprom.cyclotron_cavity_inverted < 3) {
+      b_inner_cavity_inverted = (obj_led_eeprom.cyclotron_cavity_inverted > 1);
     }
 
     if(obj_led_eeprom.powercell_inverted > 0 && obj_led_eeprom.powercell_inverted < 3) {
@@ -561,6 +566,9 @@ void saveLEDEEPROM() {
   // Power Cell inverted toggle flag.
   uint8_t i_powercell_inverted = b_powercell_invert ? 2 : 1;
 
+  // Cyclotron Cavity inverted toggle flag.
+  uint8_t i_inner_cyclotron_cavity_inverted = b_inner_cavity_inverted ? 2 : 1;
+
   // Cyclotron 1/3-LED setting for 84/89 modes.
   uint8_t i_cyclotron_single_center_led = b_cyclotron_single_led ? 2 : 1;
 
@@ -589,6 +597,7 @@ void saveLEDEEPROM() {
     i_cyclotron_panel_brightness,
     i_inner_cyclotron_cavity_num_leds,
     i_inner_cyclotron_cavity_led_type,
+    i_inner_cyclotron_cavity_inverted,
     i_inner_cyclotron_led_panel,
     i_powercell_inverted,
     i_cyclotron_single_center_led,

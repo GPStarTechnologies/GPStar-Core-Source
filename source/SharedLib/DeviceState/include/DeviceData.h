@@ -59,6 +59,7 @@ struct __attribute__((packed)) PackPrefs {
   bool ledCycCakeGRB = false;
   uint8_t ledCycCavCount = 0; // Cyclotron cavity LEDs (0-20)
   uint8_t ledCycCavType = 0; // Cyclotron cavity LED Type
+  bool ledCycCavInvert = false; // Cyclotron cavity animation inverted
   bool ledVGCyclotron = false;
   uint8_t ledPowercellCount = 13; //[13,15]
   bool ledInvertPowercell = false;

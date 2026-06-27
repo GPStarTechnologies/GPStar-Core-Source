@@ -610,7 +610,7 @@ void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
     }
   }
 
-  if(b_clockwise) {
+  if((b_clockwise && !b_inner_cavity_inverted) || (!b_clockwise && b_inner_cavity_inverted)) {
     if(iRampDelay < 40 && !b_cyclotron_lid_on) {
       switch(CAVITY_LED_TYPE) {
         case RGB_LED:
