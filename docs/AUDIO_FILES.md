@@ -1,17 +1,17 @@
 # Loading Audio Files (Effects + Music)
 
-This repository (for somewhat obvious reasons) does not provide music tracks for your project other than a single track which was graciously approved by the independent artist for inclusion. You will need to prepare any music tracks for use by exporting MP3 or AAC audio files as uncompressed stereo 44.1kHz 16-bit WAV files. This can be done easily using a program such as [Audacity](https://www.audacityteam.org/) to open the music file and export to WAV format. See the instructions below for how to name your files for loading onto the SD cards.
+This repository (for somewhat obvious reasons) does not provide music tracks for your project other than a single track which was graciously approved by the independent artist for inclusion. You will need to prepare any music tracks for use by exporting MP3 or AAC audio files as uncompressed stereo 44.1kHz 16-bit WAV files. This can be done easily using a program such as [Audacity](https://www.audacityteam.org/) to open the music file and export to WAV format. See the instructions below for how to name your files for loading onto the microSD cards.
 
-## Format your SD Card to FAT32
-`Please consider high-quality, name-brand SD Cards. We recommend Sandisk Extreme A1/A2 U3 V30 32GB Micro SD Cards.`
+## Format your microSD Card to FAT32
+`Please consider high-quality, name-brand microSD cards. We recommend Sandisk Extreme A1/A2 U3 V30 32GB microSD cards.`
 
-Your SD cards **MUST** be formatted as FAT32 using 32KB block size. Use a full formatting option for the SD cards not a quick formatting for best results.
+Your microSD cards **MUST** be formatted as FAT32 using 32KB block size. Use a full formatting option for the microSD cards not a quick formatting for best results.
 
-## SD Cards with capacities 32GB or less in FAT32.
+## microSD cards with capacities 32GB or less
 
 ### MAC and Linux
 
-Mac and Linux users can format SD Cards with capacities of **32GB OR LESS** as FAT32 normally with their standard disk utility software.
+Mac and Linux users can format microSD cards with capacities of **32GB OR LESS** as FAT32 normally with their standard disk utility software.
 ![Mac and Linux Formatting](images/macfat32.jpg)
 
 ### WINDOWS
@@ -19,7 +19,7 @@ Mac and Linux users can format SD Cards with capacities of **32GB OR LESS** as F
 SD Cards with capacities of **32GB OR LESS** can be formatted normally in the Windows Explorer.
 ![Mac and Linux Formatting](images/fat32windows.jpg)
 
-## SD Cards with capacities larger than 32GB
+## microSD cards with capacities larger than 32GB
 
 For Windows users these will need to be formatted a different way. We recommend the free tool Fat32Format by Tom Thornhill. It can be found at the direct download links below:
 
@@ -35,11 +35,11 @@ For Windows users these will need to be formatted a different way. We recommend 
 
 [![Tom Thornhill donate](images/donate.gif)](https://www.paypal.com/webapps/shoppingcart?flowlogging_id=f8611276523bf&mfid=1690302003463_f8611276523bf#/checkout/openButton)
 
-## Loading Files to the SD Cards
+## Loading Files to the microSD Cards
 
 ### Sound Effects
 
-Load [all sound files from the "Proton Pack & Neutrona Wand Sound Effects" archive on our Support & Downloads Page](https://gpstartechnologies.com/pages/support-downloads) onto both SD cards. The file names must be identical and match between the SD cards so that all effects are synchronized and played by both Proton Pack and Neutrona Wand at the same time. Most effects are played on both the pack and wand while firing, with some minor adjustments to volume or fading to provide the most effective impact.
+Load [all sound files from the "Proton Pack & Neutrona Wand Sound Effects" archive on our Support & Downloads Page](https://gpstartechnologies.com/pages/support-downloads) onto both microSD cards. The file names must be identical and match between the microSD cards so that all effects are synchronized and played by both Proton Pack and Neutrona Wand at the same time. Most effects are played on both the pack and wand while firing, with some minor adjustments to volume or fading to provide the most effective impact.
 
 Sound effects are prefixed with numbers 001-499 while music files will be prefixed as 500 and above. `DO NOT LEAVE GAPS IN PREFIXES WHEN NUMBERING FILES!` The only exception is between the last sound effect and first music track.
 
@@ -47,11 +47,11 @@ Sound effects are prefixed with numbers 001-499 while music files will be prefix
 
 **As of release v5.3 and later it is normal to NOT hear music playback from the Neutrona Wand when connected to a Proton Pack.**
 
-This change forces music to only be played back through the Proton Pack, meaning it is only necessary to load music onto the SD card for the pack. It is only when using the Neutrona Wand in standalone mode that music files are expected to be loaded onto the SD card for the wand.
+This change forces music to only be played back through the Proton Pack, meaning it is only necessary to load music onto the microSD card for the pack. It is only when using the Neutrona Wand in standalone mode that music files are expected to be loaded onto the microSD card for the wand.
 
-To add more music, copy stereo WAV tracks (uncompressed 16-bit 44.1kHz stereo WAV files) onto an SD card. File naming of the music tracks start at 500. So for example, `500_somesong.wav`, `501_somesong.wav`, `502_somesong.wav`, etc. **Do not leave any gaps in the number sequencing!** (For example of what NOT to do, `500_somesong.wav` followed by `502_somesong.wav` leaving off `501_somesong.wav` on the SD card.) The most and only important part in the naming is the XXX_ prefix for all tracks.
+To add more music, copy stereo WAV tracks (uncompressed 16-bit 44.1kHz stereo WAV files) onto your microSD card. File naming of the music tracks start at 500. So for example, `500_somesong.wav`, `501_somesong.wav`, `502_somesong.wav`, etc. **Do not leave any gaps in the number sequencing!** (For example of what NOT to do, `500_somesong.wav` followed by `502_somesong.wav` leaving off `501_somesong.wav` on the microSD card.) The most and only important part in the naming is the XXX_ prefix for all tracks.
 
-📝 You **MUST** remove any metadata that may be present in the music WAV files that you add. This can cause problems with loading and playing back your music tracks
+📝 You **MUST** remove any metadata that may be present in the music WAV files that you add. Embedded metadata can cause problems with loading and playing back your music tracks.
 
 `The below photo is an (outdated) example of the prefixing and music sequencing`
 

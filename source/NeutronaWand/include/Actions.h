@@ -752,6 +752,8 @@ void checkWandAction() {
                     stopEffect(S_VOICE_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
                     stopEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
                     playEffect(S_VOICE_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
+
+                    wandSerialSend(W_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
                   }
                   else {
                     VOLUME_ADJUST_DEVICE = VOLUME_PROTON_PACK;
@@ -759,6 +761,8 @@ void checkWandAction() {
                     stopEffect(S_VOICE_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
                     stopEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
                     playEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
+
+                    wandSerialSend(W_PROTON_PACK_VOLUME_ADJUSTMENT);
                   }
                 }
               break;

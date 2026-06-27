@@ -1489,8 +1489,6 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         else {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_1, S_AFTERLIFE_WAND_IDLE_1, true, 5, i_volume_effects - i_wand_idle_level);
         }
-
-        restartFadeoutIdleSounds();
       }
       else {
         if(gpstarPack.inStreamMode(SLIME)) {
@@ -1503,6 +1501,8 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playEffect(S_AFTERLIFE_WAND_RAMP_1, false, i_volume_effects - i_wand_idle_level);
         }
       }
+
+      restartFadeoutIdleSounds();
     break;
 
     case W_AFTERLIFE_GUN_RAMP_2:
@@ -1516,8 +1516,6 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         else {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2, S_AFTERLIFE_WAND_IDLE_2, true, 5, i_volume_effects - i_wand_idle_level);
         }
-
-        restartFadeoutIdleSounds();
       }
       else {
         stopEffect(S_AFTERLIFE_WAND_RAMP_2);
@@ -1538,6 +1536,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
       stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_1);
       stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2);
       stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2_FADE_OUT);
+      restartFadeoutIdleSounds();
     break;
 
     case W_AFTERLIFE_GUN_RAMP_2_FADE_IN:
@@ -1551,8 +1550,6 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         else {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2_FADE_IN, S_AFTERLIFE_WAND_IDLE_2, true, 5, i_volume_effects - i_wand_idle_level);
         }
-
-        restartFadeoutIdleSounds();
       }
       else {
         stopEffect(S_AFTERLIFE_WAND_RAMP_2_FADE_IN);
@@ -1572,6 +1569,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
       stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_1);
       stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2);
       stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2_FADE_OUT);
+      restartFadeoutIdleSounds();
     break;
 
     case W_AFTERLIFE_GUN_LOOP_1:
@@ -1587,8 +1585,6 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         else {
           playEffect(S_AFTERLIFE_WAND_IDLE_1, true, i_volume_effects - i_wand_idle_level);
         }
-
-        restartFadeoutIdleSounds();
       }
     break;
 
@@ -1604,8 +1600,6 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         else {
           playEffect(S_AFTERLIFE_WAND_IDLE_2, true, i_volume_effects - i_wand_idle_level);
         }
-
-        restartFadeoutIdleSounds();
       }
     break;
 
@@ -1620,8 +1614,6 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         else {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2, S_AFTERLIFE_WAND_IDLE_1, true, 5, i_volume_effects - i_wand_idle_level);
         }
-
-        restartFadeoutIdleSounds();
       }
       else {
         stopEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2);
@@ -1636,6 +1628,8 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
           playEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2, false, i_volume_effects - i_wand_idle_level);
         }
       }
+
+      restartFadeoutIdleSounds();
     break;
 
     case W_AFTERLIFE_GUN_RAMP_DOWN_2_FADE_OUT:
@@ -2966,6 +2960,18 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
       // Notify serial devices of our mute status.
       attenuatorSerialSend(A_TOGGLE_MUTE, i_volume_master == i_volume_abs_min ? 2 : 1);
       packSerialSend(P_MASTER_AUDIO_STATUS, i_volume_master == i_volume_abs_min ? 2 : 1);
+    break;
+
+    case W_NEUTRONA_WAND_VOLUME_ADJUSTMENT:
+      stopEffect(S_VOICE_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
+      stopEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
+      playEffect(S_VOICE_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
+    break;
+
+    case W_PROTON_PACK_VOLUME_ADJUSTMENT:
+      stopEffect(S_VOICE_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
+      stopEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
+      playEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
     break;
 
     case W_VOLUME_DECREASE:

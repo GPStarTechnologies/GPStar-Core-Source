@@ -27,7 +27,7 @@ Please see our guide on installing VSCode with PlatformIO. This will be used to 
 
 ## +++ IMPORTANT WHEN FLASHING UPDATES +++
 
-If you are flashing updates to your existing setup, make sure that both your Proton Pack and Neutrona Wand Micro SD Cards have all the latest sound effects from this repository.
+If you are flashing updates to your existing setup, make sure that both your Proton Pack and Neutrona Wand microSD cards have all the latest sound effects from this repository.
 
 ## Connection to your GPStar Proton Pack and Neutrona Wand PCB
 

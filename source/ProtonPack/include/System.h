@@ -426,6 +426,7 @@ void fadeoutIdleSounds(bool fadeFast = false) {
       fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 100 : 5000);
       fadeoutEffect(S_POWERCELL, fadeFast ? 100 : 5000);
       wandExtraSoundsBeepLoopStop(true);
+      b_powercell_sound_loop = false;
     break;
     case SYSTEM_FROZEN_EMPIRE:
       if(isBrassPack()) {
@@ -442,6 +443,7 @@ void fadeoutIdleSounds(bool fadeFast = false) {
       fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 100 : 5000);
       fadeoutEffect(S_POWERCELL, fadeFast ? 100 : 5000);
       wandExtraSoundsBeepLoopStop(true);
+      b_powercell_sound_loop = false;
     break;
   }
 
@@ -2498,7 +2500,7 @@ void powercellLoop() {
     }
     else {
       if(((gpstarPack.getSystemTheme() == SYSTEM_FROZEN_EMPIRE && !isBrassPack() && !b_wand_mash_lockout) || gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) && !b_ramp_up && !b_ramp_down && !b_wand_firing && !b_pack_alarm && !b_overheating) {
-        if(!b_powercell_sound_loop && i_powercell_led == 0) {
+        if(!b_powercell_sound_loop && i_powercell_led == 0 && (!b_fadeout_idle_sounds || ms_delay_post.isRunning())) {
           playEffect(S_POWERCELL, true, i_volume_effects - i_wand_idle_level, true, 1400);
           b_powercell_sound_loop = true;
         }
@@ -4814,7 +4816,14 @@ void modeFireStopSounds(bool tailSounds = true) {
               // Play different firing end stream sound depending on how long we have been firing for.
               if(ms_firing_length_timer.remaining() < 5000) {
                 // Long firing tail end.
-                playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
+                if(b_fadeout_idle_sounds) {
+                  // Plays the alternate firing tail with the rampdown sound.
+                  playEffect(S_AFTERLIFE_FIRE_END_LONG_ALT, false, i_volume_effects, false, 0, false);
+                }
+                else {
+                  // Plays the standard firing tail.
+                  playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
+                }
               }
               else if(ms_firing_length_timer.remaining() < 10000) {
                 // Mid firing tail end.
@@ -4906,8 +4915,8 @@ void wandStoppedFiring(bool playSounds) {
       }
     }
     else {
-      // If fadeout is enabled, handle normal fadeout SFX restart.
-      restartFadeoutIdleSounds();
+      // If fadeout is enabled, do nothing here.
+      //restartFadeoutIdleSounds();
     }
   }
 }
@@ -5086,7 +5095,7 @@ void restartFromWandMash() {
 }
 
 void wandExtraSoundsBeepLoop() {
-  if(!b_overheating) {
+  if(!b_overheating && (!b_fadeout_idle_sounds || ms_delay_post.isRunning())) {
     // Explicitly stop beeps first just in case it tries to double up.
     wandExtraSoundsBeepLoopStop(false);
 
