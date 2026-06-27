@@ -8,8 +8,8 @@
 **Q:** Should I upgrade to the GPStar Amplifier II?
 **A:** The main benefit is simplified wiring: built-in 5V regulator (3A), ground loop isolator, and cleaner install. Not required, but recommended if you want easier setup.
 
-**Q:** How are sound effects updated — OTA or SD card?
-**A:** Audio updates still require removing the SD card. OTA updates only apply to firmware. Fortunately, audio updates are infrequent.
+**Q:** How are sound effects updated — OTA or microSD card?
+**A:** Audio updates still require removing the microSD card. OTA updates only apply to firmware. Fortunately, audio updates are infrequent.
 
 ---
 

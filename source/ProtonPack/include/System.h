@@ -4814,7 +4814,14 @@ void modeFireStopSounds(bool tailSounds = true) {
               // Play different firing end stream sound depending on how long we have been firing for.
               if(ms_firing_length_timer.remaining() < 5000) {
                 // Long firing tail end.
-                playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
+                if(b_fadeout_idle_sounds) {
+                  // Plays the alternate firing tail with the rampdown sound.
+                  playEffect(S_AFTERLIFE_FIRE_END_LONG_ALT, false, i_volume_effects, false, 0, false);
+                }
+                else {
+                  // Plays the standard firing tail.
+                  playEffect(S_AFTERLIFE_FIRE_END_LONG, false, i_volume_effects, false, 0, false);
+                }
               }
               else if(ms_firing_length_timer.remaining() < 10000) {
                 // Mid firing tail end.
@@ -4906,8 +4913,8 @@ void wandStoppedFiring(bool playSounds) {
       }
     }
     else {
-      // If fadeout is enabled, handle normal fadeout SFX restart.
-      restartFadeoutIdleSounds();
+      // If fadeout is enabled, do nothing here.
+      //restartFadeoutIdleSounds();
     }
   }
 }
