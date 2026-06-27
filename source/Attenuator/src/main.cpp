@@ -160,13 +160,14 @@ void AnimationTask(void *parameter) {
     }
 
     // Update LEDs using appropriate colour scheme and environment vars.
-    if(b_enable_device_leds) {
-      // When device LEDs are enabled, update them as necessary.
-      updateLEDs();
+    if(b_enable_device_leds && b_pack_on) {
+      // When device LEDs are enabled and pack is on, update them as necessary.
+      updateBodyLEDs();
     } else {
-      // When device LEDs are disabled, keep them turned off.
-      deviceLightsOff();
+      // When device LEDs are disabled or pack is off, keep them turned off.
+      deviceBodyLightsOff();
     }
+    updateTopStatusLED(); // Always update the top LED for device status.
 
     // Update bargraph elements, leveraging cyclotron speed modifier.
     // In reality this multiplier is a divisor to the standard delay.
