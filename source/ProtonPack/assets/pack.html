@@ -356,6 +356,15 @@
           <option selected value="3">GBR</option>
         </select>
       </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-text="yesno" data-label="left">
+          <input id="ledCycCavInvert" name="ledCycCavInvert" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">Invert Cavity Animation:</span>
+        </label>
+      </div>
     </div>
 
     <h1>Power Cell</h1>
@@ -538,6 +547,7 @@
         setValue("ledCycCavCount", settings.ledCycCavCount ?? 0);
         setHtml("ledCycCavCountOut", getValue("ledCycCavCount"));
         setValue("ledCycCavType", settings.ledCycCavType ?? 3);
+        setToggle("ledCycCavInvert", settings.ledCycCavInvert);
 
         setValue("ledPowercellCount", settings.ledPowercellCount || 15);
         setToggle("ledInvertPowercell", settings.ledInvertPowercell);
@@ -662,6 +672,7 @@
           ledCycCakeGRB: getToggle("ledCycCakeGRB"),
           ledCycCavCount: getInt("ledCycCavCount") ?? 0,
           ledCycCavType: getInt("ledCycCavType") ?? 3,
+          ledCycCavInvert: getToggle("ledCycCavInvert"),
 
           ledPowercellCount: getInt("ledPowercellCount") || 13,
           ledInvertPowercell: getToggle("ledInvertPowercell"),

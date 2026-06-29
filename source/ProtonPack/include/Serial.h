@@ -252,6 +252,7 @@ void getPackPrefsObject() {
       packConfig.ledCycCavType = 3;
     break;
   }
+  packConfig.ledCycCavInvert = b_inner_cavity_inverted;
 
   // Power Cell
   packConfig.ledPowercellCount = i_powercell_num_leds;
@@ -747,6 +748,7 @@ void handlePackPrefsUpdate() {
   i_spectral_cyclotron_inner_custom_saturation = packConfig.ledCycCakeSat;
   i_cyclotron_inner_brightness = packConfig.ledCycCakeLum;
   i_inner_cyclotron_cavity_num_leds = packConfig.ledCycCavCount;
+  b_inner_cavity_inverted = packConfig.ledCycCavInvert;
 
   if(packConfig.ledCycCakeGRB == 1) {
     CAKE_LED_TYPE = GRB_LED;

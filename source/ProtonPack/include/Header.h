@@ -312,6 +312,7 @@ int8_t i_led_cyclotron_cavity = 0; // Current LED for the cyclotron cavity.
 bool b_inner_ramp_up = true; // Gotta start up before you can wind down.
 bool b_inner_ramp_down = false; // Opposite of the ramp_up value, naturally.
 bool b_fading_out_frozen = false; // Used in Frozen Empire to flag that we should be fading out.
+bool b_inner_cavity_inverted = false; // Used in case the user installed their inner cavity LEDs in reverse.
 uint16_t i_inner_current_ramp_speed = i_inner_ramp_delay; // Begin by defaulting to the inner ramp delay (this will be adjusted by the cyclotron multiplier at runtime).
 uint8_t i_inner_cyclotron_panel_num_leds = INNER_CYCLOTRON_LED_PANEL_MAX; // Addressable RGB LEDs on the optional inner cyclotron LED switch plate panel PCB, not the individual LEDs.
 const uint8_t i_ic_panel_start = 0; // Will always be 0 no matter what configuration is in use.
