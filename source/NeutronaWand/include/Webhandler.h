@@ -1404,12 +1404,23 @@ void handlePowerLevelSet(AsyncWebServerRequest *request) {
 
         // Validate and constrain to 1-5 range
         if(pLevel >= MIN_POWER_LEVEL && pLevel <= MAX_POWER_LEVEL) {
+          // Check to prevent switching power level in Mode Original when wand is off.
+          if(gpstarWand.getSystemMode() == MODE_ORIGINAL && WAND_STATUS != MODE_ON) {
+            // Tell the user why the requested action failed.
+            request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Unable to alter power level in Mode Original while not activated")); // 400 Bad Request
+            return;
+          }
+
           // Set power level to the one specified.
           switch(pLevel) {
             case LEVEL_1:
               if(gpstarWand.getPowerLevel() == LEVEL_1) {
                 // Tell the user why the requested action failed.
                 request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Already in PL1")); // 400 Bad Request
+              }
+              else if(gpstarWand.getSystemMode() == MODE_ORIGINAL) {
+                // Tell the user why the requested action failed.
+                request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("PL1 is reserved in Mode Original")); // 400 Bad Request
               }
               else if(WAND_ACTION_STATUS != ACTION_FIRING || (WAND_ACTION_STATUS == ACTION_FIRING && gpstarWand.getPowerLevel() != LEVEL_5)) {
                 debugln(F("Web: Power Level 1"));
