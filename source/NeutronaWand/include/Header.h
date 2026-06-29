@@ -213,11 +213,11 @@ bool b_vent_lights_changed = false; // Check for whether there was actually a ch
  * On first system start a random value will be selected for GB1/GB2 mode.
  * Common values are as follows:
  * GB1 Spengler, GB1 Venkman (Sedgewick): 666
- * GB2 Spengler: 500
- * GB1/GB2 Stantz, GB2 Venkman (Courtroom): 333
+ * GB2 Spengler Semi-Hero: 500
+ * GB1/GB2 Stantz Hero: 333
  * GB1 Venkman (Rooftop): 417
  * GB2 Venkman (Vigo), GB2 Zeddemore: 375
- * Afterlife (all props): 146
+ * Afterlife/Frozen Empire (all props): 146
  */
 millisDelay ms_white_light;
 const uint16_t i_afterlife_blink_interval = 146;

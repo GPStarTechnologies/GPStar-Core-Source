@@ -1501,7 +1501,7 @@ void postActivation(bool shortBoot = false) {
           if(b_pack_on) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
-            if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
               wandSerialSend(W_WAND_BOOTUP_SHORT_SOUND);
             }
           }
@@ -1517,14 +1517,14 @@ void postActivation(bool shortBoot = false) {
           if(b_pack_on && !switch_vent.on()) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
-            if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
               wandSerialSend(W_WAND_BOOTUP_SHORT_SOUND);
             }
           }
           else {
             playEffect(S_GB2_WAND_START);
 
-            if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
               wandSerialSend(W_WAND_BOOTUP_1989);
             }
           }
@@ -1540,7 +1540,10 @@ void postActivation(bool shortBoot = false) {
           else if(switch_vent.on() && shortBoot) {
             stopEffect(S_WAND_BOOTUP);
             playEffect(S_WAND_BOOTUP);
-            wandSerialSend(W_WAND_BOOTUP_SOUND);
+
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+              wandSerialSend(W_WAND_BOOTUP_SOUND);
+            }
           }
 
           soundIdleLoop(true);
@@ -1570,14 +1573,14 @@ void soundIdleStart() {
             stopEffect(S_GB2_WAND_START);
             playEffect(S_GB2_WAND_START);
 
-            if(b_extra_pack_sounds && !b_overheat_recovery) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && !b_overheat_recovery) {
               wandSerialSend(W_WAND_BOOTUP_1989);
             }
           }
           else {
             playEffect(S_WAND_BOOTUP);
 
-            if(b_extra_pack_sounds && !b_overheat_recovery) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && !b_overheat_recovery) {
               wandSerialSend(W_WAND_BOOTUP_SOUND);
             }
           }
@@ -10383,7 +10386,7 @@ void checkRotaryEncoder() {
 
 // Function to control all actions relating to the pack's ion arm switch.
 void changeIonArmSwitchState(bool state) {
-  if(state &&gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) {
+  if(state && gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) {
     gpstarWand.setIonArmSwitch(RED_SWITCH_ON);
 
     // Disable the power on reminder.
