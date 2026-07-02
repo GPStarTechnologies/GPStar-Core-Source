@@ -3112,7 +3112,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
       playEffect(S_VOICE_DEFAULT_SYSTEM_VOLUME_ADJUSTMENT);
     break;
 
-    case W_PROTON_STREAM_IMPACT_TOGGLE:
+    case W_SET_PROTON_STREAM_IMPACT:
       // Enable flag if i_value is even; otherwise disable.
       b_stream_effects = (i_value % 2 == 0);
 

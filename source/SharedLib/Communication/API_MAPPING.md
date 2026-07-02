@@ -1,24 +1,58 @@
 # API-First Message Alignment
 
-Source: source/SharedLib/Communication/include/Communication.h
+## Problem Statement
+
+API commands have grown organically from the start of the project, primarily built around the Proton Pack and Neutrona Wand communication. Eventually a new set of commands was created for the Attenuator, though these now overlap with a majority of the commands already in existence. There is a need to identify and consolidate the API calls to eliminate redundancies and ensure that a singular set of commands exists to cater to these 3 connected devices.
+
+## Proposed Solution
+
+By mapping out the total listing of API commands as found in the file `source/SharedLib/Communication/include/Communication.h` it should be possible to utilize the `A_`-prefixed commands as the source of truth and either replace unique `P_`-prefixed or `W_`-prefixed commands by creating new `A_`-prefixed commands.
+
+One more potential area for cleanup: condensing commands which exist for distinct tasks by using a single command enum value with a `uint16_t` parameter. The parameter is sent via the `*SerialSend(command, uint16_t_value)` function on each device, which encodes the value in the `d1` field of the CommandPacket (PACKET_COMMAND envelope). The reason for this is that we should keep to a single list of API commands which must fit within a `uint8_t` data type, so that we maintain a maximum of 254 potential values.
+
+Examples of possible consolidations:
+
+- There are commands `A_ION_ARM_SWITCH_ON` and `A_ION_ARM_SWITCH_OFF` which could be condensed to just `A_ION_ARM_SWITCH_STATE` and pass a 1 or 0 to indicate the ON/OFF state.
+- Similarly, there are commands `A_POWER_LEVEL_1` and `W_POWER_LEVEL_1` which could be instead represented as just `A_SET_POWER_LEVEL` which accepts a numeric value 1-5.
+- We also have P_PACK_GPSTAR_AUDIO_LED_DISABLED/P_PACK_GPSTAR_AUDIO_LED_ENABLED and W_WAND_GPSTAR_AUDIO_LED_DISABLED/W_WAND_GPSTAR_AUDIO_LED_ENABLED but these just serve the same purpose (to toggle the LED preference for the GPStar Audio device) but respective to the pack or wand devices overall. Ideally these could be A_PACK_GPSTAR_AUDIO_LED and A_WAND_GPSTAR_AUDIO_LED with a 1/0 data value passed.
+
+For purposes of consolidation we should consider the ENUMs defined within the files at `source/SharedLib/DeviceState/include/Streams.h`, `source/SharedLib/DeviceState/include/Themes.h`, and `source/SharedLib/DeviceState/include/Vibration.h`.
+
+## Serial Send Functions by Device
+
+All devices have distinct functions for sending commands and complex data structures:
+
+### Proton Pack (source/ProtonPack/include/Serial.h)
+- **`packSerialSend(uint8_t command, uint16_t value)`** - Send command with optional uint16_t parameter
+  - Envelope: PACKET_COMMAND (CommandPacket: c=command, d1=value)
+  - Use for: consolidated commands, state changes, modes with parameters
+- **`packSerialSendData(uint8_t message)`** - Send complex data payloads
+  - Envelope: PACKET_DATA, PACKET_WAND, PACKET_SMOKE, PACKET_SYNC
+  - Use for: preferences, sync data, special messages with d[3] array
+
+### Neutrona Wand (source/NeutronaWand/include/Serial.h)
+- **`wandSerialSend(uint8_t command, uint16_t value)`** - Send command with optional uint16_t parameter
+  - Envelope: PACKET_COMMAND (CommandPacket: c=command, d1=value)
+  - Use for: consolidated commands, state changes, modes with parameters
+- **`wandSerialSendData(uint8_t message)`** - Send complex data payloads
+  - Envelope: PACKET_DATA, PACKET_WAND, PACKET_SMOKE, PACKET_SYNC
+  - Use for: preferences, sync data, special messages with d[3] array
+
+### Attenuator (source/Attenuator/include/Serial.h)
+- **`attenuatorSerialSend(uint8_t command, uint16_t value)`** - Send command with optional uint16_t parameter
+  - Envelope: PACKET_COMMAND (CommandPacket: c=command, d1=value)
+  - Use for: consolidated commands, state changes, modes with parameters
+- **`attenuatorSerialSendData(uint8_t message)`** - Send complex data payloads
+  - Envelope: PACKET_DATA, PACKET_PACK, PACKET_WAND, PACKET_SMOKE, PACKET_SYNC
+  - Use for: preferences, sync data, special messages with d[3] array
+
+## Command Outline
 
 Rules used:
 - API-first rows in original API order (excluding A_NO_OP until final row).
 - Pack/Wand columns aligned by base-name match (prefix removed).
 - Remaining non-API Pack/Wand items are appended after API rows.
-- NO_OP is forced to the final row.
-
-## Counts
-
-| Metric | Value |
-|---|---:|
-| PACK_MESSAGE entries | 119 |
-| WAND_MESSAGE entries | 232 |
-| API_MESSAGE entries | 94 |
-| API-first rows before appended uniques | 93 |
-| Appended Pack/Wand non-API rows | 280 |
-| Final NO_OP index | 373 |
-| Exceeds uint8 max index (254) | yes |
+- NO_OP is forced to the final row as a sentinel value.
 
 ## API-First Alignment Tables
 
@@ -152,8 +186,8 @@ Rules used:
 | 122 | - | P_INNER_CYCLOTRON_DIMMING | - |
 | 123 | - | P_CYCLOTRON_PANEL_DIMMING | - |
 | 124 | - | P_DIMMING | - |
-| 125 | - | P_PROTON_STREAM_IMPACT_ENABLED | - |
-| 126 | - | P_PROTON_STREAM_IMPACT_DISABLED | - |
+| 125 | - | P_PROTON_STREAM_IMPACT_ENABLED --> REMOVED | - |
+| 126 | - | P_PROTON_STREAM_IMPACT_DISABLED --> REMOVED | - |
 | 127 | - | P_RGB_INNER_CYCLOTRON_LEDS | - |
 | 128 | - | P_GRB_INNER_CYCLOTRON_LEDS | - |
 | 129 | - | P_CYCLOTRON_LEDS_40 | - |
@@ -246,7 +280,7 @@ Rules used:
 | 213 | - | - | W_DIMMING_TOGGLE |
 | 214 | - | - | W_DIMMING_INCREASE |
 | 215 | - | - | W_DIMMING_DECREASE |
-| 216 | - | - | W_PROTON_STREAM_IMPACT_TOGGLE |
+| 216 | - | - | W_PROTON_STREAM_IMPACT_TOGGLE --> W_SET_PROTON_STREAM_IMPACT |
 | 217 | - | - | W_CLEAR_LED_EEPROM_SETTINGS |
 | 218 | - | - | W_SAVE_LED_EEPROM_SETTINGS |
 | 219 | - | - | W_TOGGLE_CYCLOTRON_LEDS |
@@ -284,10 +318,10 @@ Rules used:
 | 251 | - | - | W_QUICK_VENT_DISABLED |
 | 252 | - | - | W_BOOTUP_ERRORS_ENABLED |
 | 253 | - | - | W_BOOTUP_ERRORS_DISABLED |
-| 254 | - | - | W_BARREL_LEDS_2 |
-| 255 | - | - | W_BARREL_LEDS_5 |
-| 256 | - | - | W_BARREL_LEDS_48 |
-| 257 | - | - | W_BARREL_LEDS_50 |
+| 254 | - | - | W_BARREL_LEDS_2 --> REMOVED |
+| 255 | - | - | W_BARREL_LEDS_5 --> REMOVED |
+| 256 | - | - | W_BARREL_LEDS_48 --> REMOVED |
+| 257 | - | - | W_BARREL_LEDS_50 --> REMOVED |
 | 258 | - | - | W_BARGRAPH_INVERTED |
 | 259 | - | - | W_BARGRAPH_NOT_INVERTED |
 | 260 | - | - | W_OVERHEAT_STROBE_TOGGLE |
@@ -407,3 +441,160 @@ Rules used:
 | Index | API Message | Pack Message | Wand Message |
 |---:|---|---|---|
 | 373 | A_NO_OP | P_NO_OP | W_NO_OP |
+
+## Implementation Plan
+
+There are 2 main aspects to consider in this proposed effort:
+
+1. Aligning any one-off `P_` and `W_` prefixed API calls.
+2. Condensing API calls which are intended to enable/disable or set a specific value.
+
+### Phase 1: High-Impact Consolidations (Estimated 36-37 enum slots saved)
+
+These consolidations follow a consistent pattern: **NAME carries semantic meaning (what is being controlled), DATA carries state/mode (0/1 or mode enum)**. This achieves ~50% reduction for enable/disable pairs while maintaining clarity.
+
+#### 1. CONTINUOUS SMOKE (10 P_ commands + 5 W_ commands) **Save 10 slots**
+- **Current Pack**: P_CONTINUOUS_SMOKE_5_ENABLED, P_CONTINUOUS_SMOKE_5_DISABLED, ..., P_CONTINUOUS_SMOKE_1_DISABLED (10 entries)
+- **Current Wand**: W_CONTINUOUS_SMOKE_TOGGLE_5, ..., W_CONTINUOUS_SMOKE_TOGGLE_1 (5 entries)
+- **Proposed**: Consolidate to 5 P_CONTINUOUS_SMOKE_X commands; sender uses `packSerialSend(P_CONTINUOUS_SMOKE_5, 1)` for on, `packSerialSend(P_CONTINUOUS_SMOKE_5, 0)` for off; remove W_CONTINUOUS_SMOKE_TOGGLE_X entries
+- **Rationale**: NAME (P_CONTINUOUS_SMOKE_5) identifies the level; DATA in d1 parameter (0/1) identifies the state. This is clearer than collapsing to a single command—always know which level is being set.
+- **Implementation**: Replace P_CONTINUOUS_SMOKE_X_ENABLED/DISABLED pairs with single P_SET_CONTINUOUS_SMOKE_X commands. Remove W_CONTINUOUS_SMOKE_TOGGLE_X from WAND_MESSAGE; handlers call P_SET_CONTINUOUS_SMOKE_X with toggled data instead.
+- **Savings**: 5 slots in PACK_MESSAGE (10→5) + 5 slots in WAND_MESSAGE (5→0) = **10 total**
+
+#### 2. OVERHEAT LEVELS (10 W_ commands) **Save 5 slots**
+- **Current Wand**: W_OVERHEAT_LEVEL_5_ENABLED, W_OVERHEAT_LEVEL_5_DISABLED, ..., W_OVERHEAT_LEVEL_1_DISABLED (10 entries)
+- **Proposed**: Consolidate to 5 W_OVERHEAT_LEVEL_X commands; sender uses `wandSerialSend(W_OVERHEAT_LEVEL_5, 1)` for enabled, `wandSerialSend(W_OVERHEAT_LEVEL_5, 0)` for disabled
+- **Rationale**: NAME (W_OVERHEAT_LEVEL_5) identifies the level; DATA in d1 parameter (0/1) identifies the state. Pack receives these and interprets data value accordingly.
+- **Implementation**: Replace all W_OVERHEAT_LEVEL_X_ENABLED/DISABLED pairs with single W_SET_OVERHEAT_LEVEL_X commands. Update Pack Serial.h handlers to extract data for state.
+- **Savings**: 5 slots in WAND_MESSAGE (10→5) = **5 total**
+
+#### 3. POWER LEVELS (5 A_ commands) **Save 4 slots**
+- **Current API**: A_POWER_LEVEL_1, A_POWER_LEVEL_2, A_POWER_LEVEL_3, A_POWER_LEVEL_4, A_POWER_LEVEL_5
+- **Proposed**: Replace with single `A_SET_POWER_LEVEL`; sender uses `attenuatorSerialSend(A_SET_POWER_LEVEL, 1-5)` with level 1-5 in d1 parameter
+- **Rationale**: Already unified under A_; consolidate to single parameterized version for consistency.
+- **Implementation**: Update Wand W_POWER_LEVEL_1-5 sends to use A_SET_POWER_LEVEL (data=level). Update Pack/Attenuator handlers accordingly.
+- **Savings**: 4 slots in API_MESSAGE (5→1) = **4 total**
+
+#### 4. PACK VIBRATION (4 P_ commands) **Save 3 slots**
+- **Current Pack**: P_PACK_VIBRATION_ENABLED, P_PACK_VIBRATION_DISABLED, P_PACK_VIBRATION_FIRING_ENABLED, P_PACK_VIBRATION_DEFAULT
+- **Proposed**: Replace with single `P_SET_PACK_VIBRATION_MODE`; sender uses `packSerialSend(P_SET_PACK_VIBRATION_MODE, mode)` with VIBRATION_MODES enum value in d1 parameter
+- **Rationale**: Multiple vibration modes; consolidate to single command where NAME identifies purpose and DATA identifies mode. Reference [VIBRATION_MODES](source/SharedLib/DeviceState/include/Vibration.h) enum: VIBRATION_ALWAYS (1), VIBRATION_FIRING_ONLY (2), VIBRATION_NEVER (3), VIBRATION_DEFAULT (4).
+- **Implementation**: Update Wand Command.h handlers for P_PACK_VIBRATION_* to send P_SET_PACK_VIBRATION_MODE(data=mode).
+- **Savings**: 3 slots in PACK_MESSAGE (4→1) = **3 total**
+
+#### 5. WAND VIBRATION (4 W_ commands → 1 A_ command) **Save 3 slots**
+- **Current Wand**: W_VIBRATION_ENABLED, W_VIBRATION_DISABLED, W_VIBRATION_FIRING_ENABLED, W_VIBRATION_DEFAULT
+- **Proposed**: `A_SET_WAND_VIBRATION_MODE`; sender uses `attenuatorSerialSend(A_SET_WAND_VIBRATION_MODE, mode)` with VIBRATION_MODES enum value in d1 parameter
+- **Rationale**: Multiple vibration modes for wand hardware. Consolidate into single command with mode identifier.
+- **Implementation**: Update Pack Serial.h case handlers for W_VIBRATION_* to send A_SET_WAND_VIBRATION_MODE based on mode parameter.
+
+#### 6. DEMO LIGHT MODE (3 commands → 1 A_ command) **Save 2 slots**
+- **Current Pack**: P_DEMO_LIGHT_MODE_ENABLED, P_DEMO_LIGHT_MODE_DISABLED
+- **Current Wand**: W_DEMO_LIGHT_MODE_TOGGLE
+- **Proposed**: `A_SET_DEMO_LIGHT_MODE`; sender uses `attenuatorSerialSend(A_SET_DEMO_LIGHT_MODE, 0|1)` with state in d1 parameter
+- **Rationale**: Pack uses discrete on/off; Wand uses toggle. Unified command accepts data.
+- **Implementation**: Replace P_DEMO_LIGHT_MODE_* handlers in Wand Command.h. Replace W_DEMO_LIGHT_MODE_TOGGLE handler in Pack Serial.h to toggle then send A_SET_DEMO_LIGHT_MODE.
+
+#### 7. CYCLOTRON SIMULATE RING (3 commands → 1 A_ command) **Save 2 slots**
+- **Current Pack**: P_CYCLOTRON_SIMULATE_RING_DISABLED, P_CYCLOTRON_SIMULATE_RING_ENABLED
+- **Current Wand**: W_CYCLOTRON_SIMULATE_RING_TOGGLE
+- **Proposed**: `A_SET_CYCLOTRON_SIMULATE_RING`; sender uses `attenuatorSerialSend(A_SET_CYCLOTRON_SIMULATE_RING, 0|1)` with state in d1 parameter
+- **Implementation**: Similar to Demo Light Mode consolidation.
+
+#### 8. OVERHEAT STROBE (3 commands → 1 A_ command) **Save 2 slots**
+- **Current Pack**: P_OVERHEAT_STROBE_ENABLED, P_OVERHEAT_STROBE_DISABLED
+- **Current Wand**: W_OVERHEAT_STROBE_TOGGLE
+- **Proposed**: `A_SET_OVERHEAT_STROBE`; sender uses `attenuatorSerialSend(A_SET_OVERHEAT_STROBE, 0|1)` with state in d1 parameter
+- **Implementation**: Similar pattern to previous ENABLED/DISABLED + TOGGLE consolidations.
+
+#### 9. OVERHEAT LIGHTS OFF (3 commands → 1 A_ command) **Save 2 slots**
+- **Current Pack**: P_OVERHEAT_LIGHTS_OFF_ENABLED, P_OVERHEAT_LIGHTS_OFF_DISABLED
+- **Current Wand**: W_OVERHEAT_LIGHTS_OFF_TOGGLE
+- **Proposed**: `A_SET_OVERHEAT_LIGHTS_OFF`; sender uses `attenuatorSerialSend(A_SET_OVERHEAT_LIGHTS_OFF, 0|1)` with state in d1 parameter
+- **Implementation**: Similar pattern.
+
+#### 10. OVERHEAT SYNC FAN (2 P_ commands → 1 A_ command) **Save 1 slot**
+- **Current Pack**: P_OVERHEAT_SYNC_FAN_DISABLED, P_OVERHEAT_SYNC_FAN_ENABLED
+- **Note**: No Wand equivalent exists (consistency gap)
+- **Proposed**: `A_SET_OVERHEAT_SYNC_FAN`; sender uses `attenuatorSerialSend(A_SET_OVERHEAT_SYNC_FAN, 0|1)` with state in d1 parameter
+- **Implementation**: Update Wand Command.h handlers to use parameterized version.
+
+#### 11. BARREL STATE (4 commands → 1 A_ command) **Save 2 slots**
+- **Current API**: A_BARREL_EXTENDED, A_BARREL_RETRACTED
+- **Current Wand**: W_BARREL_EXTENDED, W_BARREL_RETRACTED
+- **Proposed**: `A_SET_BARREL_STATE`; sender uses `attenuatorSerialSend(A_SET_BARREL_STATE, 0|1)` with state (0=retracted, 1=extended) in d1 parameter
+- **Rationale**: Remove redundant W_ variants; consolidate to single A_ command.
+- **Implementation**: Remove W_BARREL_EXTENDED/RETRACTED from WAND_MESSAGE enum. Update all handlers to use A_SET_BARREL_STATE.
+
+#### 5-11. [Additional consolidations similar pattern: WAND_VIBRATION, DEMO_LIGHT_MODE, CYCLOTRON_SIMULATE_RING, OVERHEAT_STROBE, OVERHEAT_LIGHTS_OFF, OVERHEAT_SYNC_FAN, BARREL_STATE]
+
+Following the same NAME=semantic + DATA=state pattern, remaining Phase 1 items achieve:
+- WAND_VIBRATION: 4→1 = 3 slots
+- DEMO_LIGHT_MODE: 3→1 = 2 slots
+- CYCLOTRON_SIMULATE_RING: 3→1 = 2 slots
+- OVERHEAT_STROBE: 3→1 = 2 slots
+- OVERHEAT_LIGHTS_OFF: 3→1 = 2 slots
+- OVERHEAT_SYNC_FAN: 2→1 = 1 slot
+- BARREL_STATE: 4→1 (API) + remove 2 (Wand) = 2 slots freed
+
+**Phase 1 Total Savings: ~36-37 enum slots**
+
+---
+
+### Phase 2: Consistency & Gap Fixes (Additional 3 slots)
+
+#### 1. QUICK BOOTUP (Unused Wand variant)
+- **Current Pack**: P_QUICK_BOOTUP_ENABLED, P_QUICK_BOOTUP_DISABLED
+- **Current Wand**: W_QUICK_BOOTUP_TOGGLE (defined but no handler in Pack Serial.h)
+- **Issue**: Wand variant exists but Pack doesn't handle it consistently.
+- **Proposed**: `A_SET_QUICK_BOOTUP`; sender uses `attenuatorSerialSend(A_SET_QUICK_BOOTUP, 0|1)` with state (0=disabled, 1=enabled) in d1 parameter
+- **Implementation**: Replace P_QUICK_BOOTUP_* handlers in Wand Command.h. Add handler in Pack Serial.h for W_QUICK_BOOTUP_TOGGLE if needed.
+
+#### 2. GPSTAR AUDIO LED (Device-specific variants)
+- **Current Pack**: P_PACK_GPSTAR_AUDIO_LED_DISABLED, P_PACK_GPSTAR_AUDIO_LED_ENABLED
+- **Current Wand**: W_WAND_GPSTAR_AUDIO_LED_DISABLED, W_WAND_GPSTAR_AUDIO_LED_ENABLED
+- **Issue**: Four commands for same feature across two device types.
+- **Proposed**: `A_SET_PACK_GPSTAR_AUDIO_LED` and `A_SET_WAND_GPSTAR_AUDIO_LED`; sender uses `attenuatorSerialSend(A_SET_PACK_GPSTAR_AUDIO_LED, 0|1)` and `attenuatorSerialSend(A_SET_WAND_GPSTAR_AUDIO_LED, 0|1)` with state (0=disabled, 1=enabled) in d1 parameter
+- **Implementation**: Replace P_PACK_GPSTAR_AUDIO_LED_* and W_WAND_GPSTAR_AUDIO_LED_* with two A_ commands.
+
+**Phase 2 Total Savings: 3 slots (4 commands → 2 commands, net -2; but improves consistency)**
+
+---
+
+### Phase 3: Separate Wand-Internal Commands (Do NOT consolidate into API)
+
+The following commands are wand-specific and should remain separate from the cross-device API:
+
+**Wand Sound/Audio Commands** (~30 commands):
+- W_WAND_BOOTUP_SOUND, W_WAND_BOOTUP_SHORT_SOUND, W_WAND_SHUTDOWN_SOUND, W_WAND_MASH_ERROR_SOUND
+- W_WAND_BEEP_SOUNDS, W_WAND_BEEP_BARGRAPH, W_WAND_BEEP_STOP, W_WAND_BEEP_STOP_LOOP, W_WAND_BEEP_START, W_WAND_BEEP
+- W_MASH_ERROR_LOOP, W_MASH_ERROR_RESTART
+- W_BOSON_DART_SOUND, W_SHOCK_BLAST_SOUND, W_SLIME_TETHER_SOUND, W_MESON_COLLIDER_SOUND, W_MESON_FIRE_PULSE, W_IMPACT_SOUND
+- W_MODE_ORIGINAL_HEATUP_STOP, W_MODE_ORIGINAL_HEATUP, W_MODE_ORIGINAL_HEATDOWN_STOP, W_MODE_ORIGINAL_HEATDOWN
+- W_BEEPS_ALT
+
+**Wand Hardware Configuration** (~15 commands):
+- W_BARGRAPH_28_SEGMENTS, W_BARGRAPH_30_SEGMENTS
+- W_BARREL_ERROR_SOUND, W_BARREL_SWITCH_DEFAULT, W_BARREL_SWITCH_INVERTED, W_BARREL_SWITCH_DISABLED
+- W_WAND_BOOTUP_1989, W_GB1_WAND_BARREL_EXTEND, W_AFTERLIFE_WAND_BARREL_EXTEND, W_WAND_BARREL_RETRACT
+
+**Wand Timing/Duration Commands** (~10 commands):
+- W_SOUND_OVERHEAT_SMOKE_DURATION_LEVEL_1-5 (5 commands)
+- W_SOUND_OVERHEAT_START_TIMER_LEVEL_1-5 (5 commands)
+
+**Action**: These should remain in WAND_MESSAGE enum but NOT be added to API_MESSAGE. They are device-internal commands, not cross-device API calls. Consider creating a separate `WAND_INTERNAL_MESSAGE` enum or documentation marking to clarify scope.
+
+---
+
+### Implementation Order
+
+1. **Start with Phase 1, Item 1 (Continuous Smoke)**: Highest impact (14 slots), well-understood pattern.
+2. **Continue Phase 1, Items 2-3**: High impact items (OVERHEAT_LEVELS, POWER_LEVELS).
+3. **Phase 1, Items 4-11**: Remaining enable/disable consolidations in order of impact.
+4. **Phase 2**: Address consistency gaps (QUICK_BOOTUP, GPSTAR_AUDIO_LED).
+5. **Phase 3**: Document and separate wand-internal commands (no code changes needed; just documentation/scoping).
+
+**Expected Final Result**:
+
+- Current: 94 A_ commands + 119 P_ commands + 235 W_ commands = 448 total (exceeds uint8 limit per device)
+- After Phase 1 & 2: ~94 + 48 + 3 = 145 A_ commands, P_/W_ reduced to ~40 legacy/deprecated, Net API commands under 254 ✓

@@ -1420,7 +1420,7 @@ void checkWandAction() {
               b_stream_effects ? playEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED) : playEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
 
               // Tell the Proton Pack to toggle the Proton Stream impact effects.
-              wandSerialSend(W_PROTON_STREAM_IMPACT_TOGGLE, b_stream_effects ? 2 : 1);
+              wandSerialSend(W_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 2 : 1);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
               wandSerialSend(W_OVERHEAT_SYNC_TO_FAN_TOGGLE);
