@@ -10574,7 +10574,7 @@ void toggleStandaloneMode(bool on) {
 void checkPowerOnReminder() {
   if(WAND_ACTION_STATUS == ACTION_IDLE && (!b_pack_on || b_wand_standalone)) {
     if(ms_power_indicator.justFinished()) {
-      if((gpstarWand.getSystemMode() == MODE_ORIGINAL && gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) || gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
+      if(gpstarWand.isPackInactiveModeOriginal() || gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
         // Blink the Clippard LED to indicate to the user that the system battery is still powered on.
         digitalWriteFast(CLIPPARD_LED_PIN, (digitalReadFast(CLIPPARD_LED_PIN) == LOW) ? HIGH : LOW);
       }

@@ -285,7 +285,7 @@ String getWandConfig() {
     jsonBody["gpstarAudio"] = (i_audio_version > 1);
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || (gpstarWand.getSystemMode() == MODE_ORIGINAL && gpstarWand.getIonArmSwitch() == RED_SWITCH_ON));
+    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || gpstarWand.isPackActiveModeOriginal());
     jsonBody["wandPowered"] = (WAND_STATUS == MODE_ON);
     jsonBody["wandConnected"] = (WAND_CONN_STATE == PACK_CONNECTED);
 
