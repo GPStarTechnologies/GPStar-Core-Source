@@ -509,6 +509,7 @@ bool b_switch_mode_override = false; // Year mode override flag controlled by th
 bool b_pack_shutting_down = false;
 bool b_spectral_lights_on = false;
 bool b_first_boot = true;
+bool b_wand_setup_finished = false;
 uint16_t i_wand_audio_version = 0;
 const uint16_t i_gbfe_brass_shutdown_delay = 8796;
 uint16_t i_idle_fadeout_delay = 30000;

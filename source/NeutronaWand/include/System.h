@@ -1501,7 +1501,7 @@ void postActivation(bool shortBoot = false) {
           if(b_pack_on) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
-            if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
               wandSerialSend(W_WAND_BOOTUP_SHORT_SOUND);
             }
           }
@@ -1517,14 +1517,14 @@ void postActivation(bool shortBoot = false) {
           if(b_pack_on && !switch_vent.on()) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
-            if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
               wandSerialSend(W_WAND_BOOTUP_SHORT_SOUND);
             }
           }
           else {
             playEffect(S_GB2_WAND_START);
 
-            if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
               wandSerialSend(W_WAND_BOOTUP_1989);
             }
           }
@@ -1540,7 +1540,10 @@ void postActivation(bool shortBoot = false) {
           else if(switch_vent.on() && shortBoot) {
             stopEffect(S_WAND_BOOTUP);
             playEffect(S_WAND_BOOTUP);
-            wandSerialSend(W_WAND_BOOTUP_SOUND);
+
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
+              wandSerialSend(W_WAND_BOOTUP_SOUND);
+            }
           }
 
           soundIdleLoop(true);
@@ -1570,14 +1573,14 @@ void soundIdleStart() {
             stopEffect(S_GB2_WAND_START);
             playEffect(S_GB2_WAND_START);
 
-            if(b_extra_pack_sounds && !b_overheat_recovery) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && !b_overheat_recovery) {
               wandSerialSend(W_WAND_BOOTUP_1989);
             }
           }
           else {
             playEffect(S_WAND_BOOTUP);
 
-            if(b_extra_pack_sounds && !b_overheat_recovery) {
+            if(gpstarWand.getSystemMode() != MODE_ORIGINAL && b_extra_pack_sounds && !b_overheat_recovery) {
               wandSerialSend(W_WAND_BOOTUP_SOUND);
             }
           }
@@ -2195,9 +2198,40 @@ void prepBargraphRampUp() {
       bargraphPowerCheck2021Alt(false);
     }
 
-    updatePackPowerLevel();
     bargraphRamp();
   }
+}
+
+void updatePowerLevel() {
+  if(BARGRAPH_MODE == BARGRAPH_ORIGINAL && (BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30)) {
+    bargraphPowerCheck2021Alt(false);
+  }
+
+  // Forces a redraw of the bargraph if firing while changing the power level if using BARGRAPH_ANIMATION_ORIGINAL.
+  if(b_firing && (BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30) && BARGRAPH_FIRING_ANIMATION == BARGRAPH_ANIMATION_ORIGINAL) {
+    bargraphRedraw();
+  }
+
+  soundBeepLoopStop();
+
+  switch(getNeutronaWandYearMode()) {
+    case SYSTEM_1984:
+    case SYSTEM_1989:
+      if(switch_vent.on()) {
+        soundIdleLoopStop(false);
+        soundIdleLoop(false);
+      }
+    break;
+
+    case SYSTEM_AFTERLIFE:
+    case SYSTEM_FROZEN_EMPIRE:
+    default:
+      soundIdleLoopStop(false);
+      soundIdleLoop(false);
+    break;
+  }
+
+  updatePackPowerLevel();
 }
 
 void stopOverheatBeepWarnings() {
@@ -3348,6 +3382,17 @@ void wandOff() {
         case MODE_ORIGINAL:
           // Reset the bargraph speeds.
           resetBargraphSpeed();
+
+          // Make sure we set the current PL to idle.
+          if(gpstarWand.getPowerLevel() != MIN_POWER_LEVEL) {
+            gpstarWand.setPowerLevel(LEVEL_1);
+
+            if(BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30) {
+              bargraphPowerCheck2021Alt(false);
+            }
+
+            updatePackPowerLevel();
+          }
         break;
 
         case MODE_SUPER_HERO:
@@ -4028,6 +4073,13 @@ void checkSwitches() {
               }
             }
           }
+          else {
+            // Set the power level to 1 (0 circle). Record the power level so we can restore it when we power everything back up.
+            if(gpstarWand.getPowerLevel() != MIN_POWER_LEVEL) {
+              gpstarWand.setPowerLevel(LEVEL_1);
+              updatePackPowerLevel();
+            }
+          }
         break;
 
         case MODE_SUPER_HERO:
@@ -4100,7 +4152,7 @@ void checkSwitches() {
           // We shut the pack and wand down if any of the right toggle switches are turned off. Activate switch control is handled in fireControlCheck();
           if(!switch_vent.on() || !switch_wand.on()) {
             resetBargraphSpeed();
-            // If any of the right toggle switches are turned off, we must turn the cyclotron off and shut the Neutrona Wand down to a off idle status.
+            // If any of the right toggle switches are turned off, we must turn the cyclotron off and shut the Neutrona Wand down to an off idle status.
             WAND_ACTION_STATUS = ACTION_OFF;
             return;
           }
@@ -10249,36 +10301,7 @@ void checkRotaryEncoder() {
             if(switch_wand.on() && switch_vent.on() && switch_activate.on() && WAND_STATUS == MODE_ON) {
               if(gpstarWand.getPowerLevel() - 1 >= (gpstarWand.getSystemMode() == MODE_ORIGINAL ? (MIN_POWER_LEVEL + 1) : MIN_POWER_LEVEL)) {
                 gpstarWand.decreasePowerLevel();
-
-                if(BARGRAPH_MODE == BARGRAPH_ORIGINAL && (BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30)) {
-                  bargraphPowerCheck2021Alt(false);
-                }
-
-                // Forces a redraw of the bargraph if firing while changing the power level in the BARGRAPH_ANIMATION_ORIGINAL.
-                if(b_firing && (BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30) && BARGRAPH_FIRING_ANIMATION == BARGRAPH_ANIMATION_ORIGINAL) {
-                  bargraphRedraw();
-                }
-
-                soundBeepLoopStop();
-
-                switch(getNeutronaWandYearMode()) {
-                  case SYSTEM_1984:
-                  case SYSTEM_1989:
-                    if(switch_vent.on()) {
-                      soundIdleLoopStop(false);
-                      soundIdleLoop(false);
-                    }
-                  break;
-
-                  case SYSTEM_AFTERLIFE:
-                  case SYSTEM_FROZEN_EMPIRE:
-                  default:
-                    soundIdleLoopStop(false);
-                    soundIdleLoop(false);
-                  break;
-                }
-
-                updatePackPowerLevel();
+                updatePowerLevel();
               }
             }
             else if(vgModeCheck() && !switch_wand.on() && switch_vent.on() && WAND_STATUS == MODE_ON) {
@@ -10318,36 +10341,7 @@ void checkRotaryEncoder() {
                 }
                 else {
                   gpstarWand.increasePowerLevel();
-
-                  if(BARGRAPH_MODE == BARGRAPH_ORIGINAL && (BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30)) {
-                    bargraphPowerCheck2021Alt(false);
-                  }
-
-                  // Forces a redraw of the bargraph if firing while changing the power level if using BARGRAPH_ANIMATION_ORIGINAL.
-                  if(b_firing && (BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30) && BARGRAPH_FIRING_ANIMATION == BARGRAPH_ANIMATION_ORIGINAL) {
-                    bargraphRedraw();
-                  }
-
-                  soundBeepLoopStop();
-
-                  switch(getNeutronaWandYearMode()) {
-                    case SYSTEM_1984:
-                    case SYSTEM_1989:
-                      if(switch_vent.on()) {
-                        soundIdleLoopStop(false);
-                        soundIdleLoop(false);
-                      }
-                    break;
-
-                    case SYSTEM_AFTERLIFE:
-                    case SYSTEM_FROZEN_EMPIRE:
-                    default:
-                      soundIdleLoopStop(false);
-                      soundIdleLoop(false);
-                    break;
-                  }
-
-                  updatePackPowerLevel();
+                  updatePowerLevel();
                 }
               }
             }
@@ -10383,7 +10377,7 @@ void checkRotaryEncoder() {
 
 // Function to control all actions relating to the pack's ion arm switch.
 void changeIonArmSwitchState(bool state) {
-  if(state &&gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) {
+  if(state && gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) {
     gpstarWand.setIonArmSwitch(RED_SWITCH_ON);
 
     // Disable the power on reminder.
@@ -10441,8 +10435,8 @@ void changeIonArmSwitchState(bool state) {
           playEffect(S_WAND_HEATDOWN);
         }
 
-        // Turn off any vibration and all lights.
-        vibrationOff();
+        // Turn off wand completely.
+        wandOff();
         wandLightsOff();
       break;
 
@@ -10515,7 +10509,6 @@ void wandExitEEPROMMenu() {
 
   wandLightsOff();
   wandBarrelLightsOff();
-  wandTipOff();
 
   // Reset the bargraph in case it was changed.
   bargraphYearModeUpdate();

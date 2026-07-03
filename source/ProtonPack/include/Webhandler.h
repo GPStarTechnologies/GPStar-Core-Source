@@ -198,7 +198,7 @@ String getPackConfig() {
     jsonBody["gpstarAudio"] = (i_audio_version > 1);
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down);
+    jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down || (gpstarPack.getSystemMode() == MODE_ORIGINAL && gpstarPack.getIonArmSwitch() == RED_SWITCH_ON));
     jsonBody["wandPowered"] = b_wand_on;
 
     // Proton Pack Runtime Options
@@ -271,7 +271,7 @@ String getWandConfig() {
     jsonBody["gpstarAudio"] = (i_wand_audio_version > 1);
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down);
+    jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down || (gpstarPack.getSystemMode() == MODE_ORIGINAL && gpstarPack.getIonArmSwitch() == RED_SWITCH_ON));
     jsonBody["wandPowered"] = b_wand_on;
     jsonBody["wandConnected"] = b_wand_connected;
 
@@ -335,7 +335,7 @@ String getSmokeConfig() {
     jsonBody["prefsAvailable"] = true; // Always true for the immediate device.
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down);
+    jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down || (gpstarPack.getSystemMode() == MODE_ORIGINAL && gpstarPack.getIonArmSwitch() == RED_SWITCH_ON));
     jsonBody["wandPowered"] = b_wand_on;
     jsonBody["wandConnected"] = b_wand_connected;
 

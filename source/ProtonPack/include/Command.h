@@ -70,9 +70,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is on.
-      if(b_wand_connected) {
-        packSerialSend(P_ION_ARM_SWITCH_ON);
-      }
+      packSerialSend(P_ION_ARM_SWITCH_ON);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is on.
       attenuatorSerialSend(A_ION_ARM_SWITCH_ON);
@@ -84,15 +82,10 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
       if(PACK_STATE == MODE_ON) {
         PACK_ACTION_STATE = ACTION_OFF;
-
-        //Make sure to tell the wireless that we are not overheating.
-        attenuatorSerialSend(A_OVERHEATING_FINISHED);
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is off.
-      if(b_wand_connected) {
-        packSerialSend(P_ION_ARM_SWITCH_OFF);
-      }
+      packSerialSend(P_ION_ARM_SWITCH_OFF);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is off.
       attenuatorSerialSend(A_ION_ARM_SWITCH_OFF);
