@@ -63,6 +63,9 @@ void clearConfigEEPROM() {
     preferences.clear();
     preferences.end();
   }
+
+  blasterConfig = {};
+  saveConfigEEPROM();
 }
 
 // Read configuration preferences from NVS (ESP32)

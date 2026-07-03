@@ -113,20 +113,20 @@ void switchLoops() {
 void soundIdleLoop(bool fadeIn) {
   switch(gpstarBlaster.getPowerLevel()) {
     case LEVEL_1:
-      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 5000);
+      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 3500);
     break;
     case LEVEL_2:
-      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 5000);
+      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 3500);
     break;
     case LEVEL_3:
-      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 5000);
+      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 3500);
     break;
     case LEVEL_4:
-      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 5000);
+      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 3500);
     break;
     case LEVEL_5:
     default:
-      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 5000);
+      playEffect(S_IDLE_LOOP, true, i_volume_effects, fadeIn, 3500);
     break;
   }
 }
