@@ -26,7 +26,7 @@
 
 // Forward function declarations.
 void updateLEDs();
-void executeCommand(uint8_t i_command, uint16_t i_value); // From Command.h
+void executeCommand(uint16_t i_command, uint16_t i_value); // From Command.h
 
 void sanitizeCyclotronMultipliers() {
   // Cyclotron multiplier: must be between 1 and 4
@@ -1003,7 +1003,7 @@ void packStartup(bool fullStartup) {
 
   if(!fullStartup) {
     // Tell the wand the pack alarm is off.
-    packSerialSend(P_ALARM_OFF, ribbonCableAttached() ? 1 : 0);
+    packSerialSend(A_ALARM_OFF, ribbonCableAttached() ? 1 : 0);
 
     // Tell any add-on devices that the alarm is off.
     attenuatorSerialSend(A_ALARM_OFF, ribbonCableAttached() ? 1 : 0);
@@ -1127,7 +1127,7 @@ void packStartup(bool fullStartup) {
   b_fade_out = false;
 
   // Tell the wand the pack is on.
-  packSerialSend(P_ON);
+  packSerialSend(A_PACK_ON);
   attenuatorSerialSend(A_PACK_ON);
 }
 
@@ -1413,7 +1413,7 @@ void packShutdown() {
   ms_fadeout.start(0);
 
   // Tell the wand the pack is off, so shut down the wand if it happens to still be on.
-  packSerialSend(P_OFF, b_pack_shutting_down ? 1 : 0);
+  packSerialSend(A_PACK_OFF, b_pack_shutting_down ? 1 : 0);
   attenuatorSerialSend(A_PACK_OFF, b_pack_shutting_down ? 1 : 0);
 }
 
@@ -1518,7 +1518,7 @@ void packOffReset() {
 
   if(b_pack_shutting_down) {
     b_pack_shutting_down = false;
-    packSerialSend(P_OFF, b_pack_shutting_down ? 1 : 0);
+    packSerialSend(A_PACK_OFF, b_pack_shutting_down ? 1 : 0);
     attenuatorSerialSend(A_PACK_OFF, b_pack_shutting_down ? 1 : 0);
     clearCyclotronFades();
   }
@@ -1527,7 +1527,7 @@ void packOffReset() {
   if(b_pack_alarm) {
     b_pack_alarm = false;
     // Tell the wand that the alarm is off.
-    packSerialSend(P_ALARM_OFF, ribbonCableAttached() ? 1 : 0);
+    packSerialSend(A_ALARM_OFF, ribbonCableAttached() ? 1 : 0);
 
     // Tell any add-on devices that the alarm is off.
     attenuatorSerialSend(A_ALARM_OFF, ribbonCableAttached() ? 1 : 0);
@@ -1545,7 +1545,7 @@ void setYearModeByToggle() {
         SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
 
         // Tell the wand/attenuator to switch to 1989 mode.
-        packSerialSend(P_YEAR_1989);
+        packSerialSend(A_YEAR_1989);
         attenuatorSerialSend(A_YEAR_1989);
 
         // Play audio cue confirming the change. Only play the audio queue when the user physically flicks the switch.
@@ -1558,7 +1558,7 @@ void setYearModeByToggle() {
         SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
 
         // Tell the wand/attenuator to switch to 1984 mode.
-        packSerialSend(P_YEAR_1984);
+        packSerialSend(A_YEAR_1984);
         attenuatorSerialSend(A_YEAR_1984);
 
         // Play audio cue confirming the change. Only play the audio queue when the user physically flicks the switch.
@@ -1576,7 +1576,7 @@ void setYearModeByToggle() {
         SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
 
         // Tell the wand/attenuator to switch to Afterlife mode.
-        packSerialSend(P_YEAR_AFTERLIFE);
+        packSerialSend(A_YEAR_AFTERLIFE);
         attenuatorSerialSend(A_YEAR_AFTERLIFE);
 
         // Play audio cue confirming the change. Only play the audio queue when the user physically flicks the switch.
@@ -1589,7 +1589,7 @@ void setYearModeByToggle() {
         SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
 
         // Tell the wand/attenuator to switch to Afterlife mode.
-        packSerialSend(P_YEAR_FROZEN_EMPIRE);
+        packSerialSend(A_YEAR_FROZEN_EMPIRE);
         attenuatorSerialSend(A_YEAR_FROZEN_EMPIRE);
 
         // Play audio cue confirming the change. Only play the audio queue when the user physically flicks the switch.
@@ -1764,7 +1764,7 @@ void checkSwitches() {
       b_cyclotron_lid_on = true;
 
       // Tell the connected devices.
-      packSerialSend(P_CYCLOTRON_LID_ON);
+      packSerialSend(A_CYCLOTRON_LID_ON);
       attenuatorSerialSend(A_CYCLOTRON_LID_ON);
 
       // Turn off Inner Cyclotron LEDs.
@@ -1829,7 +1829,7 @@ void checkSwitches() {
         b_cyclotron_lid_on = true;
 
         // Tell the connected devices.
-        packSerialSend(P_CYCLOTRON_LID_ON);
+        packSerialSend(A_CYCLOTRON_LID_ON);
         attenuatorSerialSend(A_CYCLOTRON_LID_ON);
 
         // Turn off Inner Cyclotron LEDs.
@@ -1846,7 +1846,7 @@ void checkSwitches() {
         cyclotronLidLedsOff();
 
         // Tell the connected devices.
-        packSerialSend(P_CYCLOTRON_LID_OFF);
+        packSerialSend(A_CYCLOTRON_LID_OFF);
         attenuatorSerialSend(A_CYCLOTRON_LID_OFF);
 
         // Make sure the Inner Cyclotron turns on if we are in the EEPROM LED menu.
@@ -1873,7 +1873,7 @@ void checkSwitches() {
         playEffect(S_VOICE_CYCLOTRON_COUNTER_CLOCKWISE);
 
         // Tell wand to play Cyclotron counter clockwise voice.
-        packSerialSend(P_CYCLOTRON_COUNTER_CLOCKWISE);
+        packSerialSend(A_CYCLOTRON_COUNTER_CLOCKWISE);
       }
     }
     else {
@@ -1884,7 +1884,7 @@ void checkSwitches() {
         playEffect(S_VOICE_CYCLOTRON_CLOCKWISE);
 
         // Tell wand to play Cyclotron clockwise voice.
-        packSerialSend(P_CYCLOTRON_CLOCKWISE);
+        packSerialSend(A_CYCLOTRON_CLOCKWISE);
       }
     }
   }
@@ -1905,7 +1905,7 @@ void checkSwitches() {
         playEffect(S_VOICE_SMOKE_DISABLED);
 
         // Tell wand to play smoke disabled voice.
-        packSerialSend(P_SMOKE_DISABLED);
+        packSerialSend(A_SET_SMOKE, 0);
       }
     }
     else {
@@ -1918,7 +1918,7 @@ void checkSwitches() {
         playEffect(S_VOICE_SMOKE_ENABLED);
 
         // Tell wand to play smoke enabled voice.
-        packSerialSend(P_SMOKE_ENABLED);
+        packSerialSend(A_SET_SMOKE, 1);
       }
     }
   }
@@ -1936,7 +1936,7 @@ void checkSwitches() {
 
       if(!b_vibration_switch_on) {
         // Tell the wand to enable vibration.
-        packSerialSend(P_VIBRATION_ENABLED);
+        packSerialSend(A_SET_WAND_VIBRATION_MODE, 1); // 1 = ALWAYS
 
         b_vibration_switch_on = true;
 
@@ -1946,7 +1946,7 @@ void checkSwitches() {
     else {
       if(b_vibration_switch_on) {
         // Tell the wand to disable vibration.
-        packSerialSend(P_VIBRATION_DISABLED);
+        packSerialSend(A_SET_WAND_VIBRATION_MODE, 3); // 3 = NEVER
 
         b_vibration_switch_on = false;
 
@@ -2015,7 +2015,7 @@ void checkSwitches() {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is on.
-      packSerialSend(P_ION_ARM_SWITCH_ON);
+      packSerialSend(A_ION_ARM_SWITCH_ON);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is on.
       attenuatorSerialSend(A_ION_ARM_SWITCH_ON);
@@ -2028,7 +2028,7 @@ void checkSwitches() {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is off.
-      packSerialSend(P_ION_ARM_SWITCH_OFF);
+      packSerialSend(A_ION_ARM_SWITCH_OFF);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is off.
       attenuatorSerialSend(A_ION_ARM_SWITCH_OFF);
@@ -2050,7 +2050,7 @@ void checkSwitches() {
               // Tell the wand to switch to 1984 mode.
               gpstarPack.setSystemTheme(SYSTEM_1984);
 
-              packSerialSend(P_YEAR_1984);
+              packSerialSend(A_YEAR_1984);
 
               attenuatorSerialSend(A_YEAR_1984);
             break;
@@ -2059,7 +2059,7 @@ void checkSwitches() {
               // Tell the wand to switch to 1989 mode.
               gpstarPack.setSystemTheme(SYSTEM_1989);
 
-              packSerialSend(P_YEAR_1989);
+              packSerialSend(A_YEAR_1989);
 
               attenuatorSerialSend(A_YEAR_1989);
             break;
@@ -2068,7 +2068,7 @@ void checkSwitches() {
               // Tell the wand to switch to Frozen Empire mode.
               gpstarPack.setSystemTheme(SYSTEM_FROZEN_EMPIRE);
 
-              packSerialSend(P_YEAR_FROZEN_EMPIRE);
+              packSerialSend(A_YEAR_FROZEN_EMPIRE);
 
               attenuatorSerialSend(A_YEAR_FROZEN_EMPIRE);
             break;
@@ -2079,7 +2079,7 @@ void checkSwitches() {
               gpstarPack.setSystemTheme(SYSTEM_AFTERLIFE);
               SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
 
-              packSerialSend(P_YEAR_AFTERLIFE);
+              packSerialSend(A_YEAR_AFTERLIFE);
 
               attenuatorSerialSend(A_YEAR_AFTERLIFE);
             break;
@@ -2398,7 +2398,7 @@ void cyclotronSwitchLEDLoop() {
         stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
         b_brass_pack_sound_loop = false;
         updateEffectsVolume();
-        packSerialSend(P_REQUEST_BEEP_SYNC);
+        packSerialSend(A_REQUEST_BEEP_SYNC);
       }
     }
 
@@ -3780,7 +3780,7 @@ void cyclotron1984Alarm() {
 
 void packOverheatingFinished() {
   if(WAND_CONN_STATE != WAND_SYNCING) {
-    packSerialSend(P_OVERHEATING_FINISHED);
+    packSerialSend(A_OVERHEATING_FINISHED);
   }
 
   ms_overheating_length.stop();
@@ -4090,7 +4090,7 @@ void cyclotronControl() {
       packAlarm();
 
       // Tell the wand the pack alarm is on.
-      packSerialSend(P_ALARM_ON, ribbonCableAttached() ? 1 : 0);
+      packSerialSend(A_ALARM_ON, ribbonCableAttached() ? 1 : 0);
 
       // Tell any add-on devices that the alarm is on.
       attenuatorSerialSend(A_ALARM_ON, ribbonCableAttached() ? 1 : 0);
@@ -4304,7 +4304,7 @@ void stopOverheatBeepWarnings() {
 }
 
 void packVentingFinished() {
-  packSerialSend(P_VENTING_FINISHED);
+  packSerialSend(A_VENTING_FINISHED);
 
   ms_overheating_length.stop();
   ms_smoke_on.stop();
@@ -5721,7 +5721,7 @@ void systemPOST() {
       cyclotronSwitchLEDOff();
       innerCyclotronCakeOff();
 
-      packSerialSend(P_POST_FINISH);
+      packSerialSend(A_POST_FINISH);
 
       b_pack_post_finish = true;
       updateLEDs();

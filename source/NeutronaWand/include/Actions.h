@@ -37,7 +37,7 @@ void checkWandAction() {
           if(ms_meson_blast.justFinished()) {
             if(i_pack_audio_version < 109) {
               // Only retransmit if the pack is on an older audio board.
-              wandSerialSend(W_MESON_FIRE_PULSE);
+              wandSerialSend(A_MESON_FIRE_PULSE);
             }
 
             if(i_audio_version < 109) {
@@ -94,7 +94,7 @@ void checkWandAction() {
 
         if(ms_blink_sound_timer_1.justFinished()) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(W_WAND_BEEP_SOUNDS);
+            wandSerialSend(A_WAND_BEEP_SOUNDS);
           }
 
           playEffect(S_BEEPS_LOW, false, i_volume_effects, false, 0, false);
@@ -105,7 +105,7 @@ void checkWandAction() {
 
         if(ms_blink_sound_timer_2.justFinished()) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(W_WAND_BEEP_BARGRAPH);
+            wandSerialSend(A_WAND_BEEP_BARGRAPH);
           }
 
           playEffect(S_BEEPS_BARGRAPH, false, i_volume_effects, false, 0, false);
@@ -150,19 +150,19 @@ void checkWandAction() {
             switch(WAND_MENU_LEVEL) {
               case MENU_LEVEL_3:
                 // Toggle Proton Pack GPStar Audio LED status.
-                wandSerialSend(W_GPSTAR_AUDIO_LED_TOGGLE);
+                wandSerialSend(A_SET_PACK_GPSTAR_AUDIO_LED, 2);
               break;
 
               case MENU_LEVEL_2:
                 // Toggle 84/89 outer cyclotron fade effect.
-                wandSerialSend(W_TOGGLE_CYCLOTRON_FADING);
+                wandSerialSend(A_SET_CYCLOTRON_FADING, 2);
               break;
 
               case MENU_LEVEL_1:
               default:
                 // Tell pack to clear the EEPROM and exit.
-                wandSerialSend(W_CLEAR_LED_EEPROM_SETTINGS);
-                wandSerialSend(W_SPECTRAL_LIGHTS_OFF);
+                wandSerialSend(A_CLEAR_LED_EEPROM_SETTINGS);
+                wandSerialSend(A_SET_SPECTRAL_LIGHTS, 0);
 
                 stopEffect(S_VOICE_EEPROM_ERASE);
                 playEffect(S_VOICE_EEPROM_ERASE);
@@ -185,13 +185,13 @@ void checkWandAction() {
                     // Turn off GPStar Audio LED.
                     b_gpstar_audio_led_enabled = false;
                     playEffect(S_VOICE_NEUTRONA_WAND_GPSTAR_AUDIO_LED_DISABLED);
-                    wandSerialSend(W_WAND_GPSTAR_AUDIO_LED_DISABLED);
+                    wandSerialSend(A_SET_WAND_GPSTAR_AUDIO_LED, 0);
                   }
                   else {
                     // Turn on GPStar Audio LED.
                     b_gpstar_audio_led_enabled = true;
                     playEffect(S_VOICE_NEUTRONA_WAND_GPSTAR_AUDIO_LED_ENABLED);
-                    wandSerialSend(W_WAND_GPSTAR_AUDIO_LED_ENABLED);
+                    wandSerialSend(A_SET_WAND_GPSTAR_AUDIO_LED, 1);
                   }
 
                   setAudioLED(b_gpstar_audio_led_enabled);
@@ -202,7 +202,7 @@ void checkWandAction() {
                 if(switch_mode.singleClick()) {
                   // Change which device we are currently dimming.
                   // Note that the actual dimming is handled by checkRotaryEncoder().
-                  wandSerialSend(W_DIMMING_TOGGLE);
+                  wandSerialSend(A_DIMMING_TOGGLE);
                 }
               break;
 
@@ -210,8 +210,8 @@ void checkWandAction() {
               default:
                 if(switch_mode.pushed()) {
                   // Tell the Proton Pack to save the current settings to the EEPROM and exit.
-                  wandSerialSend(W_SAVE_LED_EEPROM_SETTINGS);
-                  wandSerialSend(W_SPECTRAL_LIGHTS_OFF);
+                  wandSerialSend(A_SAVE_LED_EEPROM_SETTINGS);
+                  wandSerialSend(A_SET_SPECTRAL_LIGHTS, 0);
 
                   stopEffect(S_VOICE_EEPROM_SAVE);
                   playEffect(S_VOICE_EEPROM_SAVE);
@@ -235,7 +235,7 @@ void checkWandAction() {
             switch(WAND_MENU_LEVEL) {
               case MENU_LEVEL_3:
                 // Tell the Proton Pack to toggle the Single LED or 3 LEDs for 1984/1989 modes.
-                wandSerialSend(W_CYCLOTRON_LED_TOGGLE);
+                wandSerialSend(A_CYCLOTRON_LED_TOGGLE);
               break;
 
               case MENU_LEVEL_2:
@@ -248,7 +248,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_BARGRAPH_30_SEGMENTS);
 
-                  wandSerialSend(W_BARGRAPH_30_SEGMENTS);
+                  wandSerialSend(A_BARGRAPH_30_SEGMENTS);
                 }
                 else {
                   // Switch to 28-segment bargraph.
@@ -259,7 +259,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_BARGRAPH_28_SEGMENTS);
 
-                  wandSerialSend(W_BARGRAPH_28_SEGMENTS);
+                  wandSerialSend(A_BARGRAPH_28_SEGMENTS);
                 }
 
                 if(BARGRAPH_TYPE == SEGMENTS_28 || BARGRAPH_TYPE == SEGMENTS_30) {
@@ -286,7 +286,7 @@ void checkWandAction() {
 
                     playEffect(S_VOICE_FRUTTO_BARREL);
 
-                    wandSerialSend(W_FRUTTO_BARREL);
+                    wandSerialSend(A_SET_BARREL_TYPE, 2);
                   break;
 
                   case FRUTTO_BARREL:
@@ -301,7 +301,7 @@ void checkWandAction() {
 
                     playEffect(S_VOICE_GPSTAR_BARREL);
 
-                    wandSerialSend(W_GPSTAR_BARREL);
+                    wandSerialSend(A_SET_BARREL_TYPE, 3);
                   break;
 
                   case GPSTAR_BARREL:
@@ -317,7 +317,7 @@ void checkWandAction() {
 
                     playEffect(S_VOICE_GPSTAR_BARREL_II);
 
-                    wandSerialSend(W_GPSTAR_BARREL_II);
+                    wandSerialSend(A_SET_BARREL_TYPE, 4);
                   break;
 
                   case GPSTAR_BARREL_II:
@@ -332,7 +332,7 @@ void checkWandAction() {
 
                     playEffect(S_VOICE_BARREL_LED_MINI);
 
-                    wandSerialSend(W_GPSTAR_BARREL_MINI);
+                    wandSerialSend(A_SET_BARREL_TYPE, 5);
                   break;
 
                   case GPSTAR_BARREL_MINI:
@@ -347,7 +347,7 @@ void checkWandAction() {
 
                     playEffect(S_VOICE_HASBRO_BARREL);
 
-                    wandSerialSend(W_HASBRO_BARREL);
+                    wandSerialSend(A_SET_BARREL_TYPE, 1);
                   break;
                 }
 
@@ -372,7 +372,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_RGB_VENT_LIGHTS_DISABLED);
 
-                  wandSerialSend(W_RGB_VENT_DISABLED);
+                  wandSerialSend(A_SET_RGB_VENT, 0);
                 }
                 else {
                   // Enable the RGB vent light functionality.
@@ -383,7 +383,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_RGB_VENT_LIGHTS_ENABLED);
 
-                  wandSerialSend(W_RGB_VENT_ENABLED);
+                  wandSerialSend(A_SET_RGB_VENT, 1);
                 }
               #endif
               break;
@@ -408,12 +408,12 @@ void checkWandAction() {
               break;
 
               case MENU_LEVEL_2:
-                wandSerialSend(W_TOGGLE_POWERCELL_DIRECTION);
+                wandSerialSend(A_TOGGLE_POWERCELL_DIRECTION);
               break;
 
               case MENU_LEVEL_1:
               default:
-                wandSerialSend(W_TOGGLE_POWERCELL_LEDS);
+                wandSerialSend(A_SET_POWERCELL_LED_COUNT, 2); // d1: 2 = toggle to next
               break;
             }
           }
@@ -433,7 +433,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_VENT_LIGHT_INTENSITY_DISABLED);
 
-                  wandSerialSend(W_AUTO_VENT_INTENSITY_DISABLED);
+                  wandSerialSend(A_SET_AUTO_VENT_INTENSITY, 0);
                 }
                 else {
                   // Enable the auto vent light intensity functionality.
@@ -444,7 +444,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_VENT_LIGHT_INTENSITY_ENABLED);
 
-                  wandSerialSend(W_AUTO_VENT_INTENSITY_ENABLED);
+                  wandSerialSend(A_SET_AUTO_VENT_INTENSITY, 1);
                 }
               break;
 
@@ -468,12 +468,12 @@ void checkWandAction() {
               break;
 
               case MENU_LEVEL_2:
-                wandSerialSend(W_TOGGLE_INNER_CYCLOTRON_PANEL);
+                wandSerialSend(A_TOGGLE_INNER_CYCLOTRON_PANEL);
               break;
 
               case MENU_LEVEL_1:
               default:
-                wandSerialSend(W_TOGGLE_CYCLOTRON_LEDS);
+                wandSerialSend(A_SET_CYCLOTRON_LED_COUNT, 2); // d1: 2 = toggle to next
               break;
             }
           }
@@ -485,7 +485,7 @@ void checkWandAction() {
 
               case MENU_LEVEL_2:
                 // Enable or disable video game colours for the Power Cell, Cyclotron, etc.
-                wandSerialSend(W_VIDEO_GAME_MODE_COLOUR_TOGGLE);
+                wandSerialSend(A_VIDEO_GAME_MODE_COLOUR_TOGGLE);
               break;
 
               case MENU_LEVEL_1:
@@ -509,12 +509,12 @@ void checkWandAction() {
               break;
 
               case MENU_LEVEL_2:
-                wandSerialSend(W_TOGGLE_RGB_INNER_CYCLOTRON_LEDS);
+                wandSerialSend(A_TOGGLE_RGB_INNER_CYCLOTRON_LEDS);
               break;
 
               case MENU_LEVEL_1:
               default:
-                wandSerialSend(W_TOGGLE_INNER_CYCLOTRON_LEDS);
+                wandSerialSend(A_SET_INNER_CYCLOTRON_LED_COUNT, 2); // d1: 2 = toggle to next
               break;
             }
           }
@@ -533,7 +533,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_VENT_LIGHT_COLOURS_DISABLED);
 
-                  wandSerialSend(W_VENT_LIGHT_COLOURS_DISABLED);
+                  wandSerialSend(A_SET_VENT_LIGHT_COLOURS, 0);
                 }
                 else {
                   b_vent_light_stream_colours = true;
@@ -543,7 +543,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_VENT_LIGHT_COLOURS_ENABLED);
 
-                  wandSerialSend(W_VENT_LIGHT_COLOURS_ENABLED);
+                  wandSerialSend(A_SET_VENT_LIGHT_COLOURS, 1);
                 }
               break;
 
@@ -575,7 +575,7 @@ void checkWandAction() {
           if(switch_mode.pushed()) {
             if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
               // Tell the Proton Pack to save its current configuration to the EEPROM.
-              wandSerialSend(W_SAVE_CONFIG_EEPROM_SETTINGS);
+              wandSerialSend(A_SAVE_CONFIG_EEPROM_SETTINGS);
 
               stopEffect(S_VOICE_EEPROM_SAVE);
               playEffect(S_VOICE_EEPROM_SAVE);
@@ -593,7 +593,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_BOOTUP_ERRORS_ENABLED);
                 playEffect(S_VOICE_BOOTUP_ERRORS_DISABLED);
 
-                wandSerialSend(W_BOOTUP_ERRORS_DISABLED);
+                wandSerialSend(A_SET_BOOTUP_ERRORS, 0);
               }
               else {
                 b_wand_boot_errors = true;
@@ -602,7 +602,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_BOOTUP_ERRORS_DISABLED);
                 playEffect(S_VOICE_BOOTUP_ERRORS_ENABLED);
 
-                wandSerialSend(W_BOOTUP_ERRORS_ENABLED);
+                wandSerialSend(A_SET_BOOTUP_ERRORS, 1);
               }
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
@@ -619,7 +619,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_1989);
 
-                  wandSerialSend(W_NEUTRONA_WAND_1989_MODE);
+                  wandSerialSend(A_NEUTRONA_WAND_1989_MODE);
                 break;
 
                 case YEAR_1989:
@@ -634,7 +634,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_AFTERLIFE);
 
-                  wandSerialSend(W_NEUTRONA_WAND_AFTERLIFE_MODE);
+                  wandSerialSend(A_NEUTRONA_WAND_AFTERLIFE_MODE);
                 break;
 
                 case YEAR_AFTERLIFE:
@@ -649,7 +649,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_FROZEN_EMPIRE);
 
-                  wandSerialSend(W_NEUTRONA_WAND_FROZEN_EMPIRE_MODE);
+                  wandSerialSend(A_NEUTRONA_WAND_FROZEN_EMPIRE_MODE);
                 break;
 
                 case YEAR_FROZEN_EMPIRE:
@@ -664,7 +664,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_DEFAULT_MODE);
 
-                  wandSerialSend(W_NEUTRONA_WAND_DEFAULT_MODE);
+                  wandSerialSend(A_NEUTRONA_WAND_DEFAULT_MODE);
                 break;
 
                 case YEAR_DEFAULT:
@@ -680,7 +680,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_1984);
 
-                  wandSerialSend(W_NEUTRONA_WAND_1984_MODE);
+                  wandSerialSend(A_NEUTRONA_WAND_1984_MODE);
                 break;
               }
             }
@@ -695,10 +695,11 @@ void checkWandAction() {
 
               playEffect(S_VOICE_OVERHEAT_START_TIMER_LEVEL_5);
 
-              wandSerialSend(W_SOUND_OVERHEAT_START_TIMER_LEVEL_5);
+              wandSerialSend(A_SOUND_OVERHEAT_START_TIMER, 5);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
-              wandSerialSend(W_CONTINUOUS_SMOKE_TOGGLE_5);
+              smokeConfig.overheatContinuous5 = !smokeConfig.overheatContinuous5;
+              wandSerialSend(A_SET_CONTINUOUS_SMOKE_5, smokeConfig.overheatContinuous5 ? 1 : 0);
             }
           }
           else {
@@ -708,20 +709,24 @@ void checkWandAction() {
                   if(b_overheat_level_5) {
                     b_overheat_level_5 = false;
 
+                    smokeConfig.overheatContinuous5 = false;
+
                     stopEffect(S_VOICE_OVERHEAT_LEVEL_5_DISABLED);
                     stopEffect(S_VOICE_OVERHEAT_LEVEL_5_ENABLED);
                     playEffect(S_VOICE_OVERHEAT_LEVEL_5_DISABLED);
 
-                    wandSerialSend(W_OVERHEAT_LEVEL_5_DISABLED);
+                    wandSerialSend(A_SET_OVERHEAT_LEVEL_5, 0);
                   }
                   else {
                     b_overheat_level_5 = true;
+
+                    smokeConfig.overheatContinuous5 = true;
 
                     stopEffect(S_VOICE_OVERHEAT_LEVEL_5_ENABLED);
                     stopEffect(S_VOICE_OVERHEAT_LEVEL_5_DISABLED);
                     playEffect(S_VOICE_OVERHEAT_LEVEL_5_ENABLED);
 
-                    wandSerialSend(W_OVERHEAT_LEVEL_5_ENABLED);
+                    wandSerialSend(A_SET_OVERHEAT_LEVEL_5, 1);
                   }
 
                   updateOverheatLevels();
@@ -739,7 +744,7 @@ void checkWandAction() {
                   stopEffect(S_VOICE_OVERHEAT_SMOKE_DURATION_LEVEL_1);
                   playEffect(S_VOICE_OVERHEAT_SMOKE_DURATION_LEVEL_5);
 
-                  wandSerialSend(W_SOUND_OVERHEAT_SMOKE_DURATION_LEVEL_5);
+                  wandSerialSend(A_SOUND_OVERHEAT_SMOKE_DURATION, 5);
                 }
               break;
 
@@ -753,7 +758,7 @@ void checkWandAction() {
                     stopEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
                     playEffect(S_VOICE_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
 
-                    wandSerialSend(W_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
+                    wandSerialSend(A_NEUTRONA_WAND_VOLUME_ADJUSTMENT);
                   }
                   else {
                     VOLUME_ADJUST_DEVICE = VOLUME_PROTON_PACK;
@@ -762,7 +767,7 @@ void checkWandAction() {
                     stopEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
                     playEffect(S_VOICE_PROTON_PACK_VOLUME_ADJUSTMENT);
 
-                    wandSerialSend(W_PROTON_PACK_VOLUME_ADJUSTMENT);
+                    wandSerialSend(A_PROTON_PACK_VOLUME_ADJUSTMENT);
                   }
                 }
               break;
@@ -776,7 +781,7 @@ void checkWandAction() {
                     stopEffect(S_VOICE_QUICK_VENT_ENABLED);
                     playEffect(S_VOICE_QUICK_VENT_DISABLED);
 
-                    wandSerialSend(W_QUICK_VENT_DISABLED);
+                    wandSerialSend(A_SET_QUICK_VENT, 0);
                   }
                   else {
                     b_quick_vent = true;
@@ -785,7 +790,7 @@ void checkWandAction() {
                     stopEffect(S_VOICE_QUICK_VENT_ENABLED);
                     playEffect(S_VOICE_QUICK_VENT_ENABLED);
 
-                    wandSerialSend(W_QUICK_VENT_ENABLED);
+                    wandSerialSend(A_SET_QUICK_VENT, 1);
                   }
                 }
               break;
@@ -794,7 +799,7 @@ void checkWandAction() {
               default:
                 if(switch_intensify.pushed()) {
                   // Tell the Proton Pack to clear its current configuration from the EEPROM.
-                  wandSerialSend(W_CLEAR_CONFIG_EEPROM_SETTINGS);
+                  wandSerialSend(A_CLEAR_CONFIG_EEPROM_SETTINGS);
 
                   stopEffect(S_VOICE_EEPROM_ERASE);
                   playEffect(S_VOICE_EEPROM_ERASE);
@@ -825,7 +830,7 @@ void checkWandAction() {
               toggleWandModes();
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
-              wandSerialSend(W_VIBRATION_CYCLE_TOGGLE_EEPROM);
+              wandSerialSend(A_SET_VIBRATION_MODE, 6); // 6 = CYCLE_TOGGLE_EEPROM
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
               if(b_bargraph_invert) {
@@ -835,7 +840,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_BARGRAPH_NOT_INVERTED);
                 playEffect(S_VOICE_BARGRAPH_NOT_INVERTED);
 
-                wandSerialSend(W_BARGRAPH_NOT_INVERTED);
+                wandSerialSend(A_SET_BARGRAPH_INVERT, 0);
               }
               else {
                 b_bargraph_invert = true;
@@ -844,7 +849,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_BARGRAPH_NOT_INVERTED);
                 playEffect(S_VOICE_BARGRAPH_INVERTED);
 
-                wandSerialSend(W_BARGRAPH_INVERTED);
+                wandSerialSend(A_SET_BARGRAPH_INVERT, 1);
               }
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_4) {
@@ -857,26 +862,30 @@ void checkWandAction() {
               playEffect(S_VOICE_OVERHEAT_SMOKE_DURATION_LEVEL_4);
 
               // Handled in checkRotaryEncoder()
-              wandSerialSend(W_SOUND_OVERHEAT_SMOKE_DURATION_LEVEL_4);
+              wandSerialSend(A_SOUND_OVERHEAT_SMOKE_DURATION, 4);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
               if(b_overheat_level_4) {
                 b_overheat_level_4 = false;
 
+                smokeConfig.overheatContinuous4 = false;
+
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_4_DISABLED);
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_4_ENABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_4_DISABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_4_DISABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_4, 0);
               }
               else {
                 b_overheat_level_4 = true;
+
+                smokeConfig.overheatContinuous4 = true;
 
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_4_ENABLED);
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_4_DISABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_4_ENABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_4_ENABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_4, 1);
               }
 
               updateOverheatLevels();
@@ -894,7 +903,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_SPECTRAL_MODES_ENABLED);
                 playEffect(S_VOICE_SPECTRAL_MODES_DISABLED);
 
-                wandSerialSend(W_SPECTRAL_MODES_DISABLED);
+                wandSerialSend(A_SET_SPECTRAL_MODES, 0);
               }
               else {
                 // Enable all spectral/holiday stream modes if NONE are enabled.
@@ -904,7 +913,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_SPECTRAL_MODES_ENABLED);
                 playEffect(S_VOICE_SPECTRAL_MODES_ENABLED);
 
-                wandSerialSend(W_SPECTRAL_MODES_ENABLED);
+                wandSerialSend(A_SET_SPECTRAL_MODES, 1);
               }
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
@@ -926,7 +935,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_VIBRATION_ENABLED);
 
-                  wandSerialSend(W_VIBRATION_ENABLED);
+                  wandSerialSend(A_SET_VIBRATION_MODE, 1); // 1 = ALWAYS
 
                   ms_menu_vibration.start(250); // Confirmation buzz for 250ms.
                 break;
@@ -942,7 +951,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_VIBRATION_FIRING_ENABLED);
 
-                  wandSerialSend(W_VIBRATION_FIRING_ENABLED);
+                  wandSerialSend(A_SET_VIBRATION_MODE, 2); // 2 = FIRING_ONLY
 
                   ms_menu_vibration.start(250); // Confirmation buzz for 250ms.
                 break;
@@ -957,7 +966,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_VIBRATION_DISABLED);
 
-                  wandSerialSend(W_VIBRATION_DISABLED);
+                  wandSerialSend(A_SET_VIBRATION_MODE, 3); // 3 = NEVER
                 break;
                 case VIBRATION_NEVER:
                   VIBRATION_MODE_EEPROM = VIBRATION_DEFAULT;
@@ -970,7 +979,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_VIBRATION_DEFAULT);
 
-                  wandSerialSend(W_VIBRATION_DEFAULT);
+                  wandSerialSend(A_SET_VIBRATION_MODE, 4); // 4 = DEFAULT
 
                   ms_menu_vibration.start(250); // Confirmation buzz for 250ms.
                 break;
@@ -985,7 +994,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_BARGRAPH_OVERHEAT_BLINK_ENABLED);
                 playEffect(S_VOICE_BARGRAPH_OVERHEAT_BLINK_DISABLED);
 
-                wandSerialSend(W_BARGRAPH_OVERHEAT_BLINK_DISABLED);
+                wandSerialSend(A_SET_BARGRAPH_OVERHEAT_BLINK, 0);
               }
               else {
                 b_overheat_bargraph_blink = true;
@@ -994,7 +1003,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_BARGRAPH_OVERHEAT_BLINK_ENABLED);
                 playEffect(S_VOICE_BARGRAPH_OVERHEAT_BLINK_ENABLED);
 
-                wandSerialSend(W_BARGRAPH_OVERHEAT_BLINK_ENABLED);
+                wandSerialSend(A_SET_BARGRAPH_OVERHEAT_BLINK, 1);
               }
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_4) {
@@ -1008,10 +1017,11 @@ void checkWandAction() {
 
               playEffect(S_VOICE_OVERHEAT_START_TIMER_LEVEL_4);
 
-              wandSerialSend(W_SOUND_OVERHEAT_START_TIMER_LEVEL_4);
+              wandSerialSend(A_SOUND_OVERHEAT_START_TIMER, 4);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
-              wandSerialSend(W_CONTINUOUS_SMOKE_TOGGLE_4);
+              smokeConfig.overheatContinuous4 = !smokeConfig.overheatContinuous4;
+              wandSerialSend(A_SET_CONTINUOUS_SMOKE_4, smokeConfig.overheatContinuous4 ? 1 : 0);
             }
           }
         break;
@@ -1039,7 +1049,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_NEUTRONA_WAND_BEEPING_ENABLED);
                 playEffect(S_VOICE_NEUTRONA_WAND_BEEPING_DISABLED);
 
-                wandSerialSend(W_MODE_BEEP_LOOP_DISABLED);
+                wandSerialSend(A_SET_MODE_BEEP_LOOP, 0);
               }
               else {
                 b_beep_loop = true;
@@ -1048,7 +1058,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_NEUTRONA_WAND_BEEPING_ENABLED);
                 playEffect(S_VOICE_NEUTRONA_WAND_BEEPING_ENABLED);
 
-                wandSerialSend(W_MODE_BEEP_LOOP_ENABLED);
+                wandSerialSend(A_SET_MODE_BEEP_LOOP, 1);
               }
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
@@ -1061,7 +1071,7 @@ void checkWandAction() {
                   stopEffect(S_VOICE_MODE_ORIGINAL_BARGRAPH);
                   playEffect(S_VOICE_SUPER_HERO_BARGRAPH);
 
-                  wandSerialSend(W_SUPER_HERO_BARGRAPH);
+                  wandSerialSend(A_SUPER_HERO_BARGRAPH);
                 break;
 
                 case BARGRAPH_EEPROM_SUPER_HERO:
@@ -1072,7 +1082,7 @@ void checkWandAction() {
                   stopEffect(S_VOICE_SUPER_HERO_BARGRAPH);
                   playEffect(S_VOICE_DEFAULT_BARGRAPH);
 
-                  wandSerialSend(W_DEFAULT_BARGRAPH);
+                  wandSerialSend(A_DEFAULT_BARGRAPH);
                 break;
 
                 case BARGRAPH_EEPROM_DEFAULT:
@@ -1084,7 +1094,7 @@ void checkWandAction() {
                   stopEffect(S_VOICE_SUPER_HERO_BARGRAPH);
                   playEffect(S_VOICE_MODE_ORIGINAL_BARGRAPH);
 
-                  wandSerialSend(W_MODE_ORIGINAL_BARGRAPH);
+                  wandSerialSend(A_MODE_ORIGINAL_BARGRAPH);
                 break;
               }
             }
@@ -1098,7 +1108,7 @@ void checkWandAction() {
               playEffect(S_VOICE_OVERHEAT_SMOKE_DURATION_LEVEL_3);
 
               // Handled in checkRotaryEncoder()
-              wandSerialSend(W_SOUND_OVERHEAT_SMOKE_DURATION_LEVEL_3);
+              wandSerialSend(A_SOUND_OVERHEAT_SMOKE_DURATION, 3);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
               if(b_overheat_level_3) {
@@ -1108,7 +1118,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_3_ENABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_3_DISABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_3_DISABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_3, 0);
               }
               else {
                 b_overheat_level_3 = true;
@@ -1117,16 +1127,12 @@ void checkWandAction() {
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_3_DISABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_3_ENABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_3_ENABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_3, 1);
               }
-
-              updateOverheatLevels();
             }
-          }
-          else if(switch_mode.pushed()) {
             if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
               // Enable or disable smoke.
-              wandSerialSend(W_SMOKE_TOGGLE);
+              wandSerialSend(A_SMOKE_TOGGLE);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
               if(BARREL_SWITCH_POLARITY == SWITCH_DEFAULT) {
@@ -1142,7 +1148,7 @@ void checkWandAction() {
 
                 playEffect(S_VOICE_BARREL_SWITCH_INVERTED);
 
-                wandSerialSend(W_BARREL_SWITCH_INVERTED);
+                wandSerialSend(A_SET_BARREL_SWITCH, 2);
               }
               else if(BARREL_SWITCH_POLARITY == SWITCH_INVERTED) {
                 // Change barrel safety switch polarity to disabled.
@@ -1157,7 +1163,7 @@ void checkWandAction() {
 
                 playEffect(S_VOICE_BARREL_SWITCH_DISABLED);
 
-                wandSerialSend(W_BARREL_SWITCH_DISABLED);
+                wandSerialSend(A_SET_BARREL_SWITCH, 3);
               }
               else {
                 // Change barrel safety switch polarity to default.
@@ -1172,7 +1178,7 @@ void checkWandAction() {
 
                 playEffect(S_VOICE_BARREL_SWITCH_DEFAULT);
 
-                wandSerialSend(W_BARREL_SWITCH_DEFAULT);
+                wandSerialSend(A_SET_BARREL_SWITCH, 1);
               }
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
@@ -1185,7 +1191,7 @@ void checkWandAction() {
                   stopEffect(S_VOICE_MODE_ORIGINAL_FIRING_ANIMATIONS_BARGRAPH);
                   playEffect(S_VOICE_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH);
 
-                  wandSerialSend(W_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH);
+                  wandSerialSend(A_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH);
                 break;
 
                 case BARGRAPH_EEPROM_SUPER_HERO:
@@ -1196,7 +1202,7 @@ void checkWandAction() {
                   stopEffect(S_VOICE_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH);
                   playEffect(S_VOICE_DEFAULT_FIRING_ANIMATIONS_BARGRAPH);
 
-                  wandSerialSend(W_DEFAULT_FIRING_ANIMATIONS_BARGRAPH);
+                  wandSerialSend(A_DEFAULT_FIRING_ANIMATIONS_BARGRAPH);
                 break;
 
                 case BARGRAPH_EEPROM_DEFAULT:
@@ -1208,7 +1214,7 @@ void checkWandAction() {
                   stopEffect(S_VOICE_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH);
                   playEffect(S_VOICE_MODE_ORIGINAL_FIRING_ANIMATIONS_BARGRAPH);
 
-                  wandSerialSend(W_MODE_ORIGINAL_FIRING_ANIMATIONS_BARGRAPH);
+                  wandSerialSend(A_MODE_ORIGINAL_FIRING_ANIMATIONS_BARGRAPH);
                 break;
               }
             }
@@ -1223,10 +1229,11 @@ void checkWandAction() {
 
               playEffect(S_VOICE_OVERHEAT_START_TIMER_LEVEL_3);
 
-              wandSerialSend(W_SOUND_OVERHEAT_START_TIMER_LEVEL_3);
+              wandSerialSend(A_SOUND_OVERHEAT_START_TIMER, 3);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
-              wandSerialSend(W_CONTINUOUS_SMOKE_TOGGLE_3);
+              smokeConfig.overheatContinuous3 = !smokeConfig.overheatContinuous3;
+              wandSerialSend(A_SET_CONTINUOUS_SMOKE_3, smokeConfig.overheatContinuous3 ? 1 : 0);
             }
           }
         break;
@@ -1245,14 +1252,14 @@ void checkWandAction() {
           if(switch_intensify.pushed()) {
             if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
               // Tell the Proton Pack to change the Cyclotron rotation direction.
-              wandSerialSend(W_CYCLOTRON_DIRECTION_TOGGLE);
+              wandSerialSend(A_CYCLOTRON_DIRECTION_TOGGLE);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
               // Sub menu.
-              wandSerialSend(W_OVERHEAT_STROBE_TOGGLE);
+              wandSerialSend(A_SET_OVERHEAT_STROBE, 2); // 2 = toggle command
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
-              wandSerialSend(W_DEMO_LIGHT_MODE_TOGGLE);
+              wandSerialSend(A_SET_DEMO_LIGHT_MODE, 2); // 2 = toggle command
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_4) {
               // Overheat smoke duration level 2.
@@ -1264,7 +1271,7 @@ void checkWandAction() {
               playEffect(S_VOICE_OVERHEAT_SMOKE_DURATION_LEVEL_2);
 
               // Handled in checkRotaryEncoder()
-              wandSerialSend(W_SOUND_OVERHEAT_SMOKE_DURATION_LEVEL_2);
+              wandSerialSend(A_SOUND_OVERHEAT_SMOKE_DURATION, 2);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
               if(b_overheat_level_2) {
@@ -1274,7 +1281,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_2_ENABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_2_DISABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_2_DISABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_2, 0);
               }
               else {
                 b_overheat_level_2 = true;
@@ -1283,23 +1290,19 @@ void checkWandAction() {
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_2_DISABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_2_ENABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_2_ENABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_2, 1);
               }
-
-              updateOverheatLevels();
             }
-          }
-          else if(switch_mode.pushed()) {
             if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
-              wandSerialSend(W_CYCLOTRON_SIMULATE_RING_TOGGLE);
+              wandSerialSend(A_SET_CYCLOTRON_SIMULATE_RING, 2); // 2 = toggle command
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
               // Sub menu.
-              wandSerialSend(W_OVERHEAT_LIGHTS_OFF_TOGGLE);
+              wandSerialSend(A_SET_OVERHEAT_LIGHTS_OFF, 2); // 2 = toggle command
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
               // Toggle whether the wand bootup does the full pack startup or not in AL/FE.
-              wandSerialSend(W_QUICK_BOOTUP_TOGGLE);
+              wandSerialSend(A_SET_QUICK_BOOTUP, 2); // 2 = toggle command
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_4) {
               // Handled in checkRotaryEncoder()
@@ -1312,10 +1315,11 @@ void checkWandAction() {
 
               playEffect(S_VOICE_OVERHEAT_START_TIMER_LEVEL_2);
 
-              wandSerialSend(W_SOUND_OVERHEAT_START_TIMER_LEVEL_2);
+              wandSerialSend(A_SOUND_OVERHEAT_START_TIMER, 2);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
-              wandSerialSend(W_CONTINUOUS_SMOKE_TOGGLE_2);
+              smokeConfig.overheatContinuous2 = !smokeConfig.overheatContinuous2;
+              wandSerialSend(A_SET_CONTINUOUS_SMOKE_2, smokeConfig.overheatContinuous2 ? 1 : 0);
             }
           }
         break;
@@ -1338,23 +1342,23 @@ void checkWandAction() {
 
                 playEffect(S_VOICE_NEUTRONA_WAND_SOUNDS_DISABLED);
 
-                wandSerialSend(W_VOICE_NEUTRONA_WAND_SOUNDS_DISABLED);
+                wandSerialSend(A_SET_VOICE_NEUTRONA_WAND_SOUNDS, 0);
               }
               else {
                 b_extra_pack_sounds = true;
 
                 playEffect(S_VOICE_NEUTRONA_WAND_SOUNDS_ENABLED);
 
-                wandSerialSend(W_VOICE_NEUTRONA_WAND_SOUNDS_ENABLED);
+                wandSerialSend(A_SET_VOICE_NEUTRONA_WAND_SOUNDS, 1);
               }
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
               // Sub menu.
-              wandSerialSend(W_YEAR_MODES_CYCLE_EEPROM);
+              wandSerialSend(A_YEAR_MODES_CYCLE_EEPROM);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
               // Toggle between Super Hero and Mode Original.
-              wandSerialSend(W_MODE_TOGGLE);
+              wandSerialSend(A_MODE_TOGGLE);
 
               // If there is no Pack, we need to cycle modes manually.
               if(b_wand_standalone) {
@@ -1386,7 +1390,7 @@ void checkWandAction() {
               playEffect(S_VOICE_OVERHEAT_SMOKE_DURATION_LEVEL_1);
 
               // Handled in checkRotaryEncoder()
-              wandSerialSend(W_SOUND_OVERHEAT_SMOKE_DURATION_LEVEL_1);
+              wandSerialSend(A_SOUND_OVERHEAT_SMOKE_DURATION, 1);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
               if(b_overheat_level_1) {
@@ -1396,7 +1400,7 @@ void checkWandAction() {
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_1_ENABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_1_DISABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_1_DISABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_1, 0);
               }
               else {
                 b_overheat_level_1 = true;
@@ -1405,13 +1409,9 @@ void checkWandAction() {
                 stopEffect(S_VOICE_OVERHEAT_LEVEL_1_DISABLED);
                 playEffect(S_VOICE_OVERHEAT_LEVEL_1_ENABLED);
 
-                wandSerialSend(W_OVERHEAT_LEVEL_1_ENABLED);
+                wandSerialSend(A_SET_OVERHEAT_LEVEL_1, 1);
               }
-
-              updateOverheatLevels();
             }
-          }
-          else if(switch_mode.pushed()) {
             if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
               b_stream_effects = !b_stream_effects;
 
@@ -1420,10 +1420,10 @@ void checkWandAction() {
               b_stream_effects ? playEffect(S_VOICE_PROTON_MIX_EFFECTS_ENABLED) : playEffect(S_VOICE_PROTON_MIX_EFFECTS_DISABLED);
 
               // Tell the Proton Pack to toggle the Proton Stream impact effects.
-              wandSerialSend(W_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 2 : 1);
+              wandSerialSend(A_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 2 : 1);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
-              wandSerialSend(W_OVERHEAT_SYNC_TO_FAN_TOGGLE);
+              wandSerialSend(A_SET_OVERHEAT_SYNC_FAN, 2); // 2 = toggle command
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_3) {
               switch(WAND_YEAR_CTS) {
@@ -1436,7 +1436,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_CTS_AFTERLIFE);
 
-                  wandSerialSend(W_CTS_AFTERLIFE);
+                  wandSerialSend(A_CTS_AFTERLIFE);
                 break;
 
                 case CTS_AFTERLIFE:
@@ -1448,7 +1448,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_CTS_DEFAULT);
 
-                  wandSerialSend(W_CTS_DEFAULT);
+                  wandSerialSend(A_CTS_DEFAULT);
                 break;
 
                 case CTS_DEFAULT:
@@ -1461,7 +1461,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_CTS_1984);
 
-                  wandSerialSend(W_CTS_1984);
+                  wandSerialSend(A_CTS_1984);
                 break;
               }
             }
@@ -1476,10 +1476,11 @@ void checkWandAction() {
 
               playEffect(S_VOICE_OVERHEAT_START_TIMER_LEVEL_1);
 
-              wandSerialSend(W_SOUND_OVERHEAT_START_TIMER_LEVEL_1);
+              wandSerialSend(A_SOUND_OVERHEAT_START_TIMER, 1);
             }
             else if(WAND_MENU_LEVEL == MENU_LEVEL_5) {
-              wandSerialSend(W_CONTINUOUS_SMOKE_TOGGLE_1);
+              smokeConfig.overheatContinuous1 = !smokeConfig.overheatContinuous1;
+              wandSerialSend(A_SET_CONTINUOUS_SMOKE_1, smokeConfig.overheatContinuous1 ? 1 : 0);
             }
           }
         break;
@@ -1501,7 +1502,7 @@ void checkWandAction() {
           if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
             if(switch_intensify.pushed()) {
               // Tell pack to loop the music track.
-              wandSerialSend(W_MUSIC_TRACK_LOOP_TOGGLE);
+              wandSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE);
 
               // Standalone Neutrona Wand has to change this setting on its own.
               if(b_wand_standalone) {
@@ -1516,7 +1517,7 @@ void checkWandAction() {
             else if(switch_mode.pushed()) {
               if(gpstarWand.isFiringModeVG()) {
                 // Tell the Proton Pack to cycle through the Video Game Colour toggles.
-                wandSerialSend(W_VIDEO_GAME_MODE_COLOUR_TOGGLE);
+                wandSerialSend(A_VIDEO_GAME_MODE_COLOUR_TOGGLE);
               }
             }
           }
@@ -1529,19 +1530,19 @@ void checkWandAction() {
                 stopEffect(S_VOICE_WAND_WIFI_DISABLED);
                 stopEffect(S_VOICE_WAND_WIFI_ENABLED);
                 playEffect(S_VOICE_WAND_WIFI_DISABLED);
-                wandSerialSend(W_WAND_WIFI_DISABLED);
+                wandSerialSend(A_SET_WAND_WIFI, 0);
               }
               else {
                 WIFI_USER_MODE = WIFI_ENABLED;
                 stopEffect(S_VOICE_WAND_WIFI_DISABLED);
                 stopEffect(S_VOICE_WAND_WIFI_ENABLED);
                 playEffect(S_VOICE_WAND_WIFI_ENABLED);
-                wandSerialSend(W_WAND_WIFI_ENABLED);
+                wandSerialSend(A_SET_WAND_WIFI, 1);
               }
             }
             else if(switch_mode.pushed()) {
               // Toggle the Proton Pack WiFi (just send the command, let the pack sort it out).
-              wandSerialSend(W_TOGGLE_PACK_WIFI);
+              wandSerialSend(A_TOGGLE_PACK_WIFI);
             }
           }
           #endif
@@ -1559,7 +1560,7 @@ void checkWandAction() {
             // Cycle through the dimming modes in the Proton Pack. (Power Cell, Cyclotron and Inner Cyclotron). Actual control of the dimming is handled in checkRotaryEncoder().
             if(switch_mode.pushed()) {
               // Tell the Proton Pack to change to the next dimming mode.
-              wandSerialSend(W_DIMMING_TOGGLE);
+              wandSerialSend(A_DIMMING_TOGGLE);
             }
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
@@ -1569,7 +1570,7 @@ void checkWandAction() {
             }
             else if(switch_mode.pushed()) {
               // Tell the Proton Pack to toggle the smoke on or off.
-              wandSerialSend(W_SMOKE_TOGGLE);
+              wandSerialSend(A_SMOKE_TOGGLE);
             }
           }
         break;
@@ -1586,11 +1587,11 @@ void checkWandAction() {
           if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
             if(switch_intensify.pushed()) {
               // Tell the Proton Pack to change the Cyclotron rotation direction.
-              wandSerialSend(W_CYCLOTRON_DIRECTION_TOGGLE);
+              wandSerialSend(A_CYCLOTRON_DIRECTION_TOGGLE);
             }
             else if(switch_mode.pushed()) {
               // Tell the Proton Pack to toggle the Single LED or 3 LEDs for 1984/1989 modes.
-              wandSerialSend(W_CYCLOTRON_LED_TOGGLE);
+              wandSerialSend(A_CYCLOTRON_LED_TOGGLE);
             }
           }
         break;
@@ -1610,7 +1611,7 @@ void checkWandAction() {
               }
               else {
                 // Tell the pack to play the next track.
-                wandSerialSend(W_MUSIC_NEXT_TRACK);
+                wandSerialSend(A_MUSIC_NEXT_TRACK);
               }
             }
             else if(switch_mode.pushed()) {
@@ -1619,14 +1620,14 @@ void checkWandAction() {
               }
               else {
                 // Tell the pack to play the previous track.
-                wandSerialSend(W_MUSIC_PREV_TRACK);
+                wandSerialSend(A_MUSIC_PREV_TRACK);
               }
             }
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_2) {
             if(switch_intensify.pushed()) {
               // Enable or disable vibration for the pack or during firing only.
-              wandSerialSend(W_VIBRATION_CYCLE_TOGGLE);
+              wandSerialSend(A_SET_VIBRATION_MODE, 5); // 5 = CYCLE_TOGGLE
             }
             else if(switch_mode.pushed()) {
               // Enable or disable vibration or firing vibration only for the wand.
@@ -1644,7 +1645,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_VIBRATION_FIRING_ENABLED);
 
-                  wandSerialSend(W_VIBRATION_FIRING_ENABLED);
+                  wandSerialSend(A_SET_VIBRATION_MODE, 2); // 2 = FIRING_ONLY
 
                   ms_menu_vibration.start(250); // Confirmation buzz for 250ms.
                 break;
@@ -1658,7 +1659,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_VIBRATION_DISABLED);
 
-                  wandSerialSend(W_VIBRATION_DISABLED);
+                  wandSerialSend(A_SET_VIBRATION_MODE, 3); // 3 = NEVER
                 break;
                 case VIBRATION_NEVER:
                   gpstarWand.setVibrationMode(VIBRATION_ALWAYS);
@@ -1670,7 +1671,7 @@ void checkWandAction() {
 
                   playEffect(S_VOICE_NEUTRONA_WAND_VIBRATION_ENABLED);
 
-                  wandSerialSend(W_VIBRATION_ENABLED);
+                  wandSerialSend(A_SET_VIBRATION_MODE, 1); // 1 = ALWAYS
 
                   ms_menu_vibration.start(250); // Confirmation buzz for 250ms.
                 break;
@@ -1689,7 +1690,7 @@ void checkWandAction() {
           if(WAND_MENU_LEVEL == MENU_LEVEL_1) {
             if(switch_intensify.pushed()) {
               // Tell the pack to start or stop its music.
-              wandSerialSend(W_MUSIC_TOGGLE);
+              wandSerialSend(A_MUSIC_TOGGLE);
 
               // Handle standalone wand music playback.
               if(b_wand_standalone) {
@@ -1703,7 +1704,7 @@ void checkWandAction() {
             }
             else if(switch_mode.pushed()) {
               // Silence the Proton Pack and Neutrona Wand or revert back to previously-selected volume.
-              wandSerialSend(W_TOGGLE_MUTE);
+              wandSerialSend(A_TOGGLE_MUTE);
 
               if(b_wand_standalone) {
                 if(i_volume_master == i_volume_abs_min) {
@@ -1724,7 +1725,7 @@ void checkWandAction() {
             // Switch between 1984/1989/Afterlife/Frozen Empire mode.
             if(switch_intensify.pushed()) {
               // Tell the Proton Pack to cycle through year modes.
-              wandSerialSend(W_YEAR_MODES_CYCLE);
+              wandSerialSend(A_YEAR_MODES_CYCLE);
 
               // There is no pack connected; let's change the years.
               if(b_wand_standalone) {
@@ -1785,7 +1786,7 @@ void checkWandAction() {
             }
             else if(switch_mode.pushed()) {
               // Tell pack to shuffle the music tracks.
-              wandSerialSend(W_MUSIC_TRACK_SHUFFLE_TOGGLE);
+              wandSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE);
 
               // Standalone Neutrona Wand has to change this setting on its own.
               if(b_wand_standalone) {
@@ -1803,14 +1804,14 @@ void checkWandAction() {
               WIFI_USER_MODE = WIFI_DISABLED;
 
               // Give some audio feedback as to what just happened.
-              wandSerialSend(W_WAND_WIFI_RESET);
+              wandSerialSend(A_WAND_WIFI_RESET);
               stopEffect(S_VOICE_PACK_WIFI_RESET);
               stopEffect(S_VOICE_WAND_WIFI_RESET);
               playEffect(S_VOICE_WAND_WIFI_RESET);
             }
             else if(switch_mode.longPress()) {
               // Tell the Proton Pack to reset its WiFi password.
-              wandSerialSend(W_RESET_WIFI_PASSWORD);
+              wandSerialSend(A_RESET_WIFI_PASSWORD);
             }
           }
           #endif

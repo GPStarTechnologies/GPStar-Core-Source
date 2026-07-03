@@ -416,7 +416,7 @@ void mainLoop() {
 
         stopMashErrorSounds();
 
-        wandSerialSend(W_MASH_ERROR_RESTART);
+        wandSerialSend(A_MASH_ERROR_RESTART);
 
         bargraphClearAlt();
       }
@@ -448,7 +448,7 @@ void mainLoop() {
             wandLightsOffMenuSystem();
 
             // Tell the pack we are in settings mode.
-            wandSerialSend(W_SET_STREAM_MODE, (uint8_t)SETTINGS);
+            wandSerialSend(A_SET_STREAM_MODE, (uint8_t)SETTINGS);
           }
           else {
             // Only exit the settings menu when on menu #5 in the top menu or the pack ribbon cable alarm is active.
@@ -490,8 +490,8 @@ void mainLoop() {
         stopEffect(S_EEPROM_LED_MENU);
         playEffect(S_EEPROM_LED_MENU);
 
-        wandSerialSend(W_EEPROM_LED_MENU);
-        wandSerialSend(W_SPECTRAL_LIGHTS_ON);
+        wandSerialSend(A_EEPROM_LED_MENU);
+        wandSerialSend(A_SET_SPECTRAL_LIGHTS, 1);
 
         i_wand_menu = 5;
 
@@ -519,7 +519,7 @@ void mainLoop() {
         stopEffect(S_EEPROM_CONFIG_MENU);
         playEffect(S_EEPROM_CONFIG_MENU);
 
-        wandSerialSend(W_EEPROM_CONFIG_MENU);
+        wandSerialSend(A_EEPROM_CONFIG_MENU);
 
         i_wand_menu = 5;
 
@@ -547,7 +547,7 @@ void mainLoop() {
 
         if(!b_wand_mash_lockout) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(W_WAND_BEEP_SOUNDS);
+            wandSerialSend(A_WAND_BEEP_SOUNDS);
           }
 
           playEffect(S_BEEPS_LOW, false, i_volume_effects, false, 0, false);
@@ -559,7 +559,7 @@ void mainLoop() {
         if(!b_wand_mash_lockout) {
 
           if(b_extra_pack_sounds) {
-            wandSerialSend(W_WAND_BEEP_BARGRAPH);
+            wandSerialSend(A_WAND_BEEP_BARGRAPH);
           }
 
           playEffect(S_BEEPS_BARGRAPH, false, i_volume_effects, false, 0, false);
@@ -591,7 +591,7 @@ void mainLoop() {
         if(getNeutronaWandYearMode() == SYSTEM_AFTERLIFE || getNeutronaWandYearMode() == SYSTEM_FROZEN_EMPIRE) {
           if(ms_gun_ramp_1.justFinished() && !switch_vent.on()) {
             if(b_extra_pack_sounds) {
-              wandSerialSend(W_AFTERLIFE_GUN_LOOP_1);
+              wandSerialSend(A_AFTERLIFE_GUN_LOOP_1);
             }
 
             if(AUDIO_DEVICE != A_GPSTAR_AUDIO_ADV) {
@@ -656,7 +656,7 @@ void loop() {
       // While waiting for a compatible proton pack, issue a request for synchronization.
       if(ms_packsync.justFinished()) {
         // If not already doing so, explicitly tell the pack a wand is here to sync.
-        wandSerialSend(W_SYNC_NOW, PROTOCOL_SIGNATURE); // Perform an initial synchronization.
+        wandSerialSend(A_SYNC_NOW, PROTOCOL_SIGNATURE); // Perform an initial synchronization.
         ms_packsync.start(i_sync_initial_delay); // Prepare for the next sync attempt.
         vent_leds[1] ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
         digitalWriteFast(WAND_STATUS_LED_PIN, (digitalReadFast(WAND_STATUS_LED_PIN) == LOW) ? HIGH : LOW); // Blink the onboard LED on the Neutrona Wand board.
@@ -673,7 +673,7 @@ void loop() {
     case PACK_CONNECTED:
       // When connected to a pack, prepare to send a regular handshake to indicate presence.
       if(ms_handshake.justFinished()) {
-        wandSerialSend(W_HANDSHAKE, PROTOCOL_SIGNATURE); // Remind the pack that a wand is still present.
+        wandSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE); // Remind the pack that a wand is still present.
         ms_handshake.restart(); // Restart the handshake timer.
       }
 

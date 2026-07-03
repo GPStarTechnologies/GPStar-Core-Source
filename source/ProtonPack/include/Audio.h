@@ -365,7 +365,7 @@ void playMusic() {
     ms_music_status_check.start(i_music_check_delay * 5);
 
     // Tell connected wand that music playback has started.
-    packSerialSend(P_MUSIC_STATUS, b_playing_music ? 2 : 1);
+    packSerialSend(A_MUSIC_STATUS, b_playing_music ? 2 : 1);
 
     // Tell connected serial device music playback has started.
     attenuatorSerialSend(A_MUSIC_IS_PLAYING, i_current_music_track);
@@ -394,7 +394,7 @@ void stopMusic() {
   b_playing_music = false;
 
   // Tell connected wand that music playback has started.
-  packSerialSend(P_MUSIC_STATUS, b_playing_music ? 2 : 1);
+  packSerialSend(A_MUSIC_STATUS, b_playing_music ? 2 : 1);
 
   // Tell connected serial device music playback has stopped.
   attenuatorSerialSend(A_MUSIC_IS_NOT_PLAYING, i_current_music_track);
@@ -441,7 +441,7 @@ void pauseMusic() {
     b_music_paused = true;
 
     // Tell connected wand that music playback is paused.
-    packSerialSend(P_MUSIC_STATUS, b_music_paused ? 4 : 3);
+    packSerialSend(A_MUSIC_STATUS, b_music_paused ? 4 : 3);
 
     // Tell connected devices music playback is paused.
     attenuatorSerialSend(A_MUSIC_IS_PAUSED);
@@ -472,7 +472,7 @@ void resumeMusic() {
     b_music_paused = false;
 
     // Tell connected wand that music playback is paused.
-    packSerialSend(P_MUSIC_STATUS, b_music_paused ? 4 : 3);
+    packSerialSend(A_MUSIC_STATUS, b_music_paused ? 4 : 3);
 
     // Tell connected devices music playback has resumed.
     attenuatorSerialSend(A_MUSIC_IS_NOT_PAUSED);

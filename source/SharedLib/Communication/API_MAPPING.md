@@ -348,6 +348,67 @@ Rules used:
 | 281 | - | - | W_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH |
 | 282 | - | - | W_MODE_ORIGINAL_FIRING_ANIMATIONS_BARGRAPH |
 | 283 | - | - | W_DEFAULT_FIRING_ANIMATIONS_BARGRAPH |
+
+## Phase 3: LED Count Consolidation
+
+The following enums represent distinct LED count selections and should be consolidated using `A_SET_*` commands with `d1` parameter values instead of individual enums.
+
+### Item 1: Cyclotron LED Count (4 enums → 1 consolidated)
+
+**Current State (Enums 129-132):**
+- P_CYCLOTRON_LEDS_40 (enum 129)
+- P_CYCLOTRON_LEDS_36 (enum 130)
+- P_CYCLOTRON_LEDS_20 (enum 131)
+- P_CYCLOTRON_LEDS_12 (enum 132)
+
+**Proposed Consolidation:**
+- Replace with: `A_SET_CYCLOTRON_LED_COUNT` (d1: 12, 20, 36, 40)
+- **Enum Slots Saved: 3**
+
+**Implementation Details:**
+- ProtonPack/Serial.h: Replace cyclotron LED toggle cases with single A_SET_CYCLOTRON_LED_COUNT case, passing LED count as d1
+- NeutronaWand/Command.h: Replace 4 LED count cases with single A_SET_CYCLOTRON_LED_COUNT case, voice effect based on d1 value
+
+### Item 2: Powercell LED Count (2 enums → 1 consolidated)
+
+**Current State (Enums 133-134):**
+- P_POWERCELL_LEDS_15 (enum 133)
+- P_POWERCELL_LEDS_13 (enum 134)
+
+**Proposed Consolidation:**
+- Replace with: `A_SET_POWERCELL_LED_COUNT` (d1: 13, 15)
+- **Enum Slots Saved: 1**
+
+**Implementation Details:**
+- ProtonPack/Serial.h: Replace powercell LED toggle cases with single A_SET_POWERCELL_LED_COUNT case, passing LED count as d1
+- NeutronaWand/Command.h: Replace 2 LED count cases with single A_SET_POWERCELL_LED_COUNT case, voice effect based on d1 value
+
+### Item 3: Inner Cyclotron LED Count (6 enums → 1 consolidated)
+
+**Current State (Enums 135-140):**
+- P_INNER_CYCLOTRON_LEDS_23 (enum 135)
+- P_INNER_CYCLOTRON_LEDS_24 (enum 136)
+- P_INNER_CYCLOTRON_LEDS_26 (enum 137)
+- P_INNER_CYCLOTRON_LEDS_35 (enum 138)
+- P_INNER_CYCLOTRON_LEDS_36 (enum 139)
+- P_INNER_CYCLOTRON_LEDS_12 (enum 140)
+
+**Proposed Consolidation:**
+- Replace with: `A_SET_INNER_CYCLOTRON_LED_COUNT` (d1: 12, 23, 24, 26, 35, 36)
+- **Enum Slots Saved: 5**
+
+**Implementation Details:**
+- ProtonPack/Serial.h: Replace inner cyclotron LED toggle cases with single A_SET_INNER_CYCLOTRON_LED_COUNT case, passing LED count as d1
+- NeutronaWand/Command.h: Replace 6 LED count cases with single A_SET_INNER_CYCLOTRON_LED_COUNT case, voice effect based on d1 value
+
+### Phase 3 Summary
+
+- **Total Enums Being Consolidated: 12**
+- **New Consolidated A_SET_* Enums: 3**
+- **Total Enum Slots Saved: 9**
+- **Communication Pattern:** LED count commands use the A_SET_* enum with d1 parameter carrying the actual LED count value
+- **Voice Feedback:** Receivers play appropriate voice effect based on d1 LED count value
+- **No Functional Change:** User experience and functionality remain identical; only serial communication becomes more efficient
 | 284 | - | - | W_NEUTRONA_WAND_1984_MODE |
 | 285 | - | - | W_NEUTRONA_WAND_1989_MODE |
 | 286 | - | - | W_NEUTRONA_WAND_AFTERLIFE_MODE |
@@ -448,6 +509,7 @@ There are 2 main aspects to consider in this proposed effort:
 
 1. Aligning any one-off `P_` and `W_` prefixed API calls.
 2. Condensing API calls which are intended to enable/disable or set a specific value.
+3. Ignore any ancillary cleanup until after all consolidations and renames have taken place.
 
 ### Phase 1: High-Impact Consolidations (Estimated 36-37 enum slots saved)
 
@@ -526,18 +588,7 @@ These consolidations follow a consistent pattern: **NAME carries semantic meanin
 - **Rationale**: Remove redundant W_ variants; consolidate to single A_ command.
 - **Implementation**: Remove W_BARREL_EXTENDED/RETRACTED from WAND_MESSAGE enum. Update all handlers to use A_SET_BARREL_STATE.
 
-#### 5-11. [Additional consolidations similar pattern: WAND_VIBRATION, DEMO_LIGHT_MODE, CYCLOTRON_SIMULATE_RING, OVERHEAT_STROBE, OVERHEAT_LIGHTS_OFF, OVERHEAT_SYNC_FAN, BARREL_STATE]
-
-Following the same NAME=semantic + DATA=state pattern, remaining Phase 1 items achieve:
-- WAND_VIBRATION: 4→1 = 3 slots
-- DEMO_LIGHT_MODE: 3→1 = 2 slots
-- CYCLOTRON_SIMULATE_RING: 3→1 = 2 slots
-- OVERHEAT_STROBE: 3→1 = 2 slots
-- OVERHEAT_LIGHTS_OFF: 3→1 = 2 slots
-- OVERHEAT_SYNC_FAN: 2→1 = 1 slot
-- BARREL_STATE: 4→1 (API) + remove 2 (Wand) = 2 slots freed
-
-**Phase 1 Total Savings: ~36-37 enum slots**
+**Phase 1 Total Savings: ~45 enum slots**
 
 ---
 
@@ -598,3 +649,55 @@ The following commands are wand-specific and should remain separate from the cro
 
 - Current: 94 A_ commands + 119 P_ commands + 235 W_ commands = 448 total (exceeds uint8 limit per device)
 - After Phase 1 & 2: ~94 + 48 + 3 = 145 A_ commands, P_/W_ reduced to ~40 legacy/deprecated, Net API commands under 254 ✓
+
+---
+
+## Phase 4: ENABLED/DISABLED Pair Consolidation (Proposed)
+
+### Overview
+The API_COMMAND enum still contains **16 ENABLED/DISABLED binary pairs** that consume **32 enum slots**. These can be consolidated into 16 A_SET_* enums with d1 parameters (0=DISABLED, 1=ENABLED).
+
+**Target Impact**: ~16 slots freed in API_COMMAND (bringing it from ~288 to ~272)
+**Result**: All configuration toggles use consistent A_SET_* pattern with d1 values
+
+### Consolidation Candidates
+
+#### Category 1: ENABLED/DISABLED Configuration Pairs (12 consolidations)
+These are feature toggles with clear binary states:
+
+| Current Pair | Proposed A_SET_* | d1 Values | Slots Saved |
+|---|---|---|---|
+| A_QUICK_VENT_ENABLED / A_QUICK_VENT_DISABLED | A_SET_QUICK_VENT | 0=DISABLED, 1=ENABLED | 1 |
+| A_BOOTUP_ERRORS_ENABLED / A_BOOTUP_ERRORS_DISABLED | A_SET_BOOTUP_ERRORS | 0=DISABLED, 1=ENABLED | 1 |
+| A_SMOKE_DISABLED / A_SMOKE_ENABLED | A_SET_SMOKE | 0=DISABLED, 1=ENABLED | 1 |
+| A_BARGRAPH_OVERHEAT_BLINK_ENABLED / A_BARGRAPH_OVERHEAT_BLINK_DISABLED | A_SET_BARGRAPH_OVERHEAT_BLINK | 0=DISABLED, 1=ENABLED | 1 |
+| A_MODE_BEEP_LOOP_ENABLED / A_MODE_BEEP_LOOP_DISABLED | A_SET_MODE_BEEP_LOOP | 0=DISABLED, 1=ENABLED | 1 |
+| A_RGB_VENT_DISABLED / A_RGB_VENT_ENABLED | A_SET_RGB_VENT | 0=DISABLED, 1=ENABLED | 1 |
+| A_AUTO_VENT_INTENSITY_DISABLED / A_AUTO_VENT_INTENSITY_ENABLED | A_SET_AUTO_VENT_INTENSITY | 0=DISABLED, 1=ENABLED | 1 |
+| A_VENT_LIGHT_COLOURS_DISABLED / A_VENT_LIGHT_COLOURS_ENABLED | A_SET_VENT_LIGHT_COLOURS | 0=DISABLED, 1=ENABLED | 1 |
+| A_WAND_WIFI_DISABLED / A_WAND_WIFI_ENABLED | A_SET_WAND_WIFI | 0=DISABLED, 1=ENABLED | 1 |
+| A_VIDEO_GAME_MODE_COLOURS_ENABLED / A_VIDEO_GAME_MODE_COLOURS_DISABLED | A_SET_VIDEO_GAME_MODE_COLOURS | 0=DISABLED, 1=ENABLED | 1 |
+| A_SPECTRAL_MODES_ENABLED / A_SPECTRAL_MODES_DISABLED | A_SET_SPECTRAL_MODES | 0=DISABLED, 1=ENABLED | 1 |
+| A_VOICE_NEUTRONA_WAND_SOUNDS_ENABLED / A_VOICE_NEUTRONA_WAND_SOUNDS_DISABLED | A_SET_VOICE_NEUTRONA_WAND_SOUNDS | 0=DISABLED, 1=ENABLED | 1 |
+
+#### Category 2: ON/OFF and INVERTED Pairs (4 consolidations)
+These follow similar binary logic:
+
+| Current Pair | Proposed A_SET_* | d1 Values | Slots Saved |
+|---|---|---|---|
+| A_SPECTRAL_LIGHTS_OFF / A_SPECTRAL_LIGHTS_ON | A_SET_SPECTRAL_LIGHTS | 0=OFF, 1=ON | 1 |
+| A_OVERHEATING_DISABLED / A_OVERHEATING_ENABLED | A_SET_OVERHEATING | 0=DISABLED, 1=ENABLED | 1 |
+| A_BARGRAPH_NOT_INVERTED / A_BARGRAPH_INVERTED | A_SET_BARGRAPH_INVERT | 0=NOT_INVERTED, 1=INVERTED | 1 |
+| A_POWERCELL_NOT_INVERTED / A_POWERCELL_INVERTED | A_SET_POWERCELL_INVERT | 0=NOT_INVERTED, 1=INVERTED | 1 |
+
+**Subtotal: 16 slots saved**
+
+### Status Messages (Recommended to KEEP as pairs)
+These appear to be device state reporting rather than configuration commands. Recommend keeping as discrete enums:
+
+- A_PACK_ON / A_PACK_OFF (device power state)
+- A_WAND_ON / A_WAND_OFF (device power state)
+- A_CYCLOTRON_LID_ON / A_CYCLOTRON_LID_OFF (sensor position)
+- A_ALARM_ON / A_ALARM_OFF (alert state)
+- A_ION_ARM_SWITCH_ON / A_ION_ARM_SWITCH_OFF (switch position)
+- A_TURN_PACK_ON / A_TURN_PACK_OFF (power transition)

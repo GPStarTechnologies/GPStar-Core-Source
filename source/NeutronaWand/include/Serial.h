@@ -61,9 +61,8 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(SmokePrefs),            // smoke_prefs_size
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
-  P_NO_OP,                       // pack_msg_max
-  W_NO_OP,                       // wand_msg_max
-  A_NO_OP                        // api_msg_max
+  A_CMD_NO_OP,                   // api_cmd_max
+  A_DATA_NO_OP                   // api_data_max
 );
 
 /*
@@ -203,20 +202,20 @@ void getWandPrefsObject() {
  */
 
  // Helper function to check if a command is excluded from WebSocket notifications.
-bool isExcludedCommand(uint8_t i_command) {
-  return i_command == W_HANDSHAKE ||
-         i_command == W_SYNC_NOW ||
-         i_command == W_SYNCHRONIZED ||
-         i_command == W_SAVE_CONFIG_EEPROM_SETTINGS ||
-         i_command == W_CLEAR_CONFIG_EEPROM_SETTINGS ||
-         i_command == W_SAVE_LED_EEPROM_SETTINGS ||
-         i_command == W_CLEAR_LED_EEPROM_SETTINGS ||
-         i_command == W_SEND_PREFERENCES_WAND ||
-         i_command == W_SEND_PREFERENCES_SMOKE;
+bool isExcludedCommand(uint16_t i_command) {
+  return i_command == A_HANDSHAKE ||
+         i_command == A_SYNC_NOW ||
+         i_command == A_SYNCHRONIZED ||
+         i_command == A_SAVE_CONFIG_EEPROM_SETTINGS ||
+         i_command == A_CLEAR_CONFIG_EEPROM_SETTINGS ||
+         i_command == A_SAVE_LED_EEPROM_SETTINGS ||
+         i_command == A_CLEAR_LED_EEPROM_SETTINGS ||
+         i_command == A_SEND_PREFERENCES_WAND ||
+         i_command == A_SEND_PREFERENCES_SMOKE;
 }
 
 // Outgoing commands to the pack.
-void wandSerialSend(uint8_t i_command, uint16_t i_value) {
+void wandSerialSend(uint16_t i_command, uint16_t i_value) {
   uint16_t i_send_size = 0;
 
 #ifdef ESP32
@@ -234,10 +233,10 @@ void wandSerialSend(uint8_t i_command, uint16_t i_value) {
 
   // sendDebug(String(F("Command to Pack: ")) + String(i_command));
 
-  sendCmd.s = W_COM_START;
+  sendCmd.s = A_COM_START;
   sendCmd.c = i_command;
   sendCmd.d1 = i_value;
-  sendCmd.e = W_COM_END;
+  sendCmd.e = A_COM_END;
 
   if(WAND_CONN_STATE == PACK_CONNECTED) {
     // Once connected, each send of data should restart the timer.
@@ -248,7 +247,7 @@ void wandSerialSend(uint8_t i_command, uint16_t i_value) {
   packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
 }
 // Override function to handle calls with a single parameter.
-void wandSerialSend(uint8_t i_command) {
+void wandSerialSend(uint16_t i_command) {
   wandSerialSend(i_command, 0);
 }
 
@@ -271,21 +270,21 @@ void wandSerialSendData(uint8_t i_message) {
 
   sendDebug(String(F("Data to Pack: ")) + String(i_message));
 
-  sendData.s = W_COM_START;
+  sendData.s = A_COM_START;
   sendData.m = i_message;
-  sendData.e = W_COM_END;
+  sendData.e = A_COM_END;
 
   // Set all elements of the data array to 0
   memset(sendData.d, 0, sizeof(sendData.d));
 
   switch(i_message) {
-    case W_SEND_PREFERENCES_WAND:
+    case A_SEND_PREFERENCES_WAND:
       getWandPrefsObject(); // Call common function (also used by local web UI)
       i_send_size = packComs.txObj(wandConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
     break;
 
-    case W_SEND_PREFERENCES_SMOKE:
+    case A_SEND_PREFERENCES_SMOKE:
       // Determines whether overheating is enabled for a power level.
       smokeConfig.overheatLevel5 = b_overheat_level_5;
       smokeConfig.overheatLevel4 = b_overheat_level_4;
@@ -311,7 +310,7 @@ void wandSerialSendData(uint8_t i_message) {
 }
 
 // Forward function declarations.
-bool handlePackCommand(uint8_t i_command, uint16_t i_value);
+bool handlePackCommand(uint16_t i_command, uint16_t i_value);
 
 // Perform update of the wand preferences based on the current configuration object.
 void handleWandPrefsUpdate() {
@@ -405,13 +404,13 @@ void handleWandPrefsUpdate() {
     default:
       // First set into VG mode with default stream flags.
       gpstarWand.setFiringModeVG();
-      wandSerialSend(W_SET_FIRING_MODE, FLAG_VG_MODE); // Tell the pack about the change.
+      wandSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE); // Tell the pack about the change.
     break;
 
     case 1:
       // Cross the Streams (CTS)
       gpstarWand.setFiringModeCTS();
-      wandSerialSend(W_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
+      wandSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
 
       if(gpstarWand.setStreamMode(PROTON)) {
         streamModeCheck();
@@ -421,7 +420,7 @@ void handleWandPrefsUpdate() {
     case 3:
       // CTS Mix
       gpstarWand.setFiringModeCTSMix();
-      wandSerialSend(W_SET_FIRING_MODE, FLAG_CTS_MIX_MODE); // Tell the pack about the change.
+      wandSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MIX_MODE); // Tell the pack about the change.
 
       if(gpstarWand.setStreamMode(PROTON)) {
         streamModeCheck();
@@ -580,7 +579,7 @@ void handleWandPrefsUpdate() {
   playEffect(S_BEEPS);
 
   // Inform the pack of our current stream flags.
-  wandSerialSend(W_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
+  wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
 
 #ifdef ESP32
   if(wandConfig.resetWifiPassword) {
@@ -628,7 +627,7 @@ void checkPack() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           packComs.rxObj(recvCmd);
-          if(recvCmd.c > 0 && recvCmd.s == P_COM_START && recvCmd.e == P_COM_END) {
+          if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
             sendDebug(String(F("Recv. Command: ")) + String(recvCmd.c));
             if(handlePackCommand(recvCmd.c, recvCmd.d1)) {
               // Begin timer for future keepalive handshakes from the wand.
@@ -652,7 +651,7 @@ void checkPack() {
               #endif
             }
           }
-          else if(recvCmd.s == W_COM_START && recvCmd.c == W_SYNC_NOW && recvCmd.d1 == 0 && recvCmd.e == W_COM_END) {
+          else if(recvCmd.s == A_COM_START && recvCmd.c == A_SYNC_NOW && recvCmd.d1 == 0 && recvCmd.e == A_COM_END) {
             // We just received our own heartbeat echoed back, so switch to standalone mode.
             toggleStandaloneMode(true);
 
@@ -663,7 +662,7 @@ void checkPack() {
 
         case PACKET_DATA:
           packComs.rxObj(recvData);
-          if(recvData.m > 0 && recvData.s == P_COM_START && recvData.e == P_COM_END) {
+          if(recvData.m > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
             sendDebug(String(F("Recv. Message: ")) + String(recvData.m));
 
             switch(recvData.m) {
@@ -807,12 +806,12 @@ void checkPack() {
   }
 }
 
-bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
+bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
   // This function returns true only when the synchronization process is completed.
   (void)(i_value); // Suppress unused variable warning.
 
   switch(i_command) {
-    case P_HANDSHAKE:
+    case A_HANDSHAKE:
       // Check protocol signature to ensure firmware compatibility.
       if(i_value != PROTOCOL_SIGNATURE) {
         sendDebug(F("Pack protocol mismatch!"));
@@ -823,15 +822,15 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
       // The pack is asking us if we are still here so respond accordingly.
       if(WAND_CONN_STATE != PACK_CONNECTED) {
         // If still waiting for the pack, trigger an immediate synchronization.
-        wandSerialSend(W_SYNC_NOW, PROTOCOL_SIGNATURE);
+        wandSerialSend(A_SYNC_NOW, PROTOCOL_SIGNATURE);
       }
       else {
         // The wand had already synchronized with the pack, so respond with handshake.
-        wandSerialSend(W_HANDSHAKE, PROTOCOL_SIGNATURE);
+        wandSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
       }
     break;
 
-    case P_SYNC_START:
+    case A_SYNC_START:
       sendDebug(F("Pack Sync Start"));
 
       if(i_value == 1) {
@@ -843,17 +842,17 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
       ms_packsync.stop();
     break;
 
-    case P_SYNC_END:
+    case A_SYNC_END:
       sendDebug(F("Pack Sync End"));
 
       // Acknowledgement that the wand is now synchronized.
-      wandSerialSend(W_SYNCHRONIZED);
+      wandSerialSend(A_SYNCHRONIZED);
 
       // Inform the pack of our audio configuration.
-      wandSerialSend(W_WAND_AUDIO_VERSION, i_audio_version);
+      wandSerialSend(A_WAND_AUDIO_VERSION, i_audio_version);
 
       // Inform the pack of our current stream flags.
-      wandSerialSend(W_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
+      wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
 
       // If pack is off, switch to our default stream mode before proceeding.
       if(!b_pack_on) {
@@ -868,24 +867,24 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
       else {
         if(gpstarWand.isFiringModeCTS()) {
           // If we are in CTS or CTS Mix, make sure the pack knows.
-          wandSerialSend(W_SET_FIRING_MODE, gpstarWand.isFiringModeCTSMix() ? FLAG_CTS_MIX_MODE : FLAG_CTS_MODE); // Tell the pack about the change.
+          wandSerialSend(A_SET_FIRING_MODE, gpstarWand.isFiringModeCTSMix() ? FLAG_CTS_MIX_MODE : FLAG_CTS_MODE); // Tell the pack about the change.
         }
         else {
           // Make sure the pack knows we are in VG mode.
-          wandSerialSend(W_SET_FIRING_MODE, FLAG_VG_MODE);
+          wandSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE);
         }
       }
 
       // Tell the pack the status of the proton stream effects flag.
-      wandSerialSend(W_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 4 : 3);
+      wandSerialSend(A_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 4 : 3);
 
       // Tell the pack the status of the Neutrona Wand barrel.
       if(gpstarWand.getBarrelState() != BARREL_UNKNOWN) {
         if(switchBarrel()) {
-          wandSerialSend(W_BARREL_EXTENDED);
+          wandSerialSend(A_BARREL_EXTENDED);
         }
         else {
-          wandSerialSend(W_BARREL_RETRACTED);
+          wandSerialSend(A_BARREL_RETRACTED);
         }
       }
       else {
@@ -896,7 +895,7 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
       return true;
     break;
 
-    case P_SYSTEM_LOCKOUT:
+    case A_SYSTEM_LOCKOUT:
       // Pack just said we need to start lockout if applicable.
       if(!b_wand_mash_lockout) {
         // Setting i_bmash_count to the max value will trigger the lockout.
@@ -904,7 +903,7 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
       }
     break;
 
-    case P_CANCEL_LOCKOUT:
+    case A_CANCEL_LOCKOUT:
       // Pack just said we need to cancel the lockout if applicable.
       if(b_wand_mash_lockout) {
         // Stopping the timer will trigger the restart sequence.
@@ -912,25 +911,25 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
       }
     break;
 
-    case P_POST_FINISH:
+    case A_POST_FINISH:
       // Pack has completed the Power On Self Test sequence.
       b_pack_post_finish = true;
     break;
 
-    case P_REQUEST_BEEP_SYNC:
+    case A_REQUEST_BEEP_SYNC:
       // Pack is requesting we re-sync our beep loop, if applicable.
       b_beeping = false;
       ms_reset_sound_beep.start(0);
     break;
 
-    case P_SEND_PREFERENCES_WAND:
+    case A_SEND_PREFERENCES_WAND:
       // The pack wants the latest wand preferences.
-      wandSerialSendData(W_SEND_PREFERENCES_WAND);
+      wandSerialSendData(A_SEND_PREFERENCES_WAND);
     break;
 
-    case P_SEND_PREFERENCES_SMOKE:
+    case A_SEND_PREFERENCES_SMOKE:
       // The pack wants the latest smoke preferences.
-      wandSerialSendData(W_SEND_PREFERENCES_SMOKE);
+      wandSerialSendData(A_SEND_PREFERENCES_SMOKE);
     break;
 
     default:

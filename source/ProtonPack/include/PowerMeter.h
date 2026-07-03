@@ -437,7 +437,7 @@ void updateWandPowerState() {
         b_wand_overheated = false;
 
         // Fake a full-power proton stream setting to the Attenuator
-        attenuatorSerialSend(A_POWER_LEVEL_5);
+        attenuatorSerialSend(A_SET_POWER_LEVEL, 5);
         attenuatorSerialSend(A_SET_STREAM_MODE, (uint8_t)PROTON);
 
         // Tell the Attenuator the pack is powered on
@@ -514,12 +514,12 @@ void updateWandPowerState() {
           if(gpstarPack.getSystemTheme() == SYSTEM_1989 && gpstarPack.getPowerLevel() != LEVEL_4) {
             // In GB2 mode, switch to PL4 for unique GB2 firing sound.
             gpstarPack.setPowerLevel(LEVEL_4);
-            attenuatorSerialSend(A_POWER_LEVEL_4);
+            attenuatorSerialSend(A_SET_POWER_LEVEL, 4);
           }
           else if(gpstarPack.getSystemTheme() != SYSTEM_1989 && gpstarPack.getPowerLevel() != MAX_POWER_LEVEL) {
             // Make sure we are back in PL5 otherwise.
             gpstarPack.setPowerLevel(LEVEL_5);
-            attenuatorSerialSend(A_POWER_LEVEL_5);
+            attenuatorSerialSend(A_SET_POWER_LEVEL, 5);
           }
           f_idle_value = f_sliding_window[0];
           b_firing_intensify = true;
@@ -607,7 +607,7 @@ void checkPowerMeter() {
         b_pack_started_by_meter = false;
         PACK_ACTION_STATE = ACTION_OFF;
         attenuatorSerialSend(A_WAND_OFF);
-        attenuatorSerialSend(A_POWER_LEVEL_5);
+        attenuatorSerialSend(A_SET_POWER_LEVEL, 5);
         attenuatorSerialSend(A_WAND_POWER_AMPS, 0);
       }
     }

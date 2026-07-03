@@ -1337,13 +1337,13 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
 
 void handleSaveWandEEPROM(AsyncWebServerRequest *request) {
   debugln(F("Web: Save Wand EEPROM"));
-  executeCommand(P_SAVE_EEPROM_WAND);
+  executeCommand(A_SAVE_EEPROM_WAND);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleResetWandEEPROM(AsyncWebServerRequest *request) {
   debugln(F("Web: Reset Wand EEPROM"));
-  executeCommand(P_RESET_EEPROM_WAND);
+  executeCommand(A_RESET_EEPROM_WAND);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 

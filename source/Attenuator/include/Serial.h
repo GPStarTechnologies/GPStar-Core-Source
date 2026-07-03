@@ -30,6 +30,8 @@ SerialTransfer packComs;
 
 // Forward declarations
 void sendDebug(const String& message); // from main.cpp
+bool handleCommand(uint16_t i_command, uint16_t i_value);
+bool handleData(uint8_t i_command, uint8_t i_value1, uint8_t i_value2, uint8_t i_value3);
 
 // Declare external reference to WirelessManager pointer (allocated in main.cpp after NVS init)
 extern WirelessManager* wirelessMgr;
@@ -50,9 +52,8 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(SmokePrefs),            // smoke_prefs_size
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
-  P_NO_OP,                       // pack_msg_max
-  W_NO_OP,                       // wand_msg_max
-  A_NO_OP                        // api_msg_max
+  A_CMD_NO_OP,                   // api_cmd_max
+  A_DATA_NO_OP                   // api_data_max
 );
 
 /*
@@ -60,7 +61,7 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
  */
 
 // Sends an API to the Proton Pack
-void attenuatorSerialSend(uint8_t i_command, uint16_t i_value = 0) {
+void attenuatorSerialSend(uint16_t i_command, uint16_t i_value = 0) {
   uint16_t i_send_size = 0;
 
   #if defined(DEBUG_SERIAL_COMMS)
@@ -74,7 +75,7 @@ void attenuatorSerialSend(uint8_t i_command, uint16_t i_value = 0) {
   sendCmd.e = A_COM_END;
 
   i_send_size = packComs.txObj(sendCmd);
-  packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
+  packComs.sendData(i_send_size, (uint16_t) PACKET_COMMAND);
 }
 
 // Sends an API to the Proton Pack
@@ -127,9 +128,6 @@ void attenuatorSerialSendData(uint8_t i_message) {
   }
 }
 
-// Forward function declaration.
-bool handleCommand(uint8_t i_command, uint16_t i_value);
-
 // Handles an API (and data) sent from the Proton Pack
 bool checkPack() {
   // Attenuator communication from the Proton Pack.
@@ -150,7 +148,7 @@ bool checkPack() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           packComs.rxObj(recvCmd);
-          if(recvCmd.c > 0 && recvCmd.s == P_COM_START && recvCmd.e == P_COM_END) {
+          if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
             #if defined(DEBUG_SERIAL_COMMS)
               sendDebug(String(F("Recv. Command: ")) + String(recvCmd.c));
             #endif
@@ -164,39 +162,19 @@ bool checkPack() {
         case PACKET_DATA:
           if(PACK_CONN_STATE != PACK_CONNECTED) {
             // Can't proceed if the Pack isn't connected; prevents phantom actions from occurring.
-			// Applies to either the disconnected, syncing, or protocol mismatch states.
+			      // Applies to either the disconnected, syncing, or protocol mismatch states.
             return false;
           }
 
           packComs.rxObj(recvData);
-          if(recvData.m > 0 && recvData.s == P_COM_START && recvData.e == P_COM_END) {
+          if(recvData.m > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
             #if defined(DEBUG_SERIAL_COMMS)
               sendDebug(String(F("Recv. Message: ")) + String(recvData.m));
             #endif
-
-            switch(recvData.m) {
-              case A_VOLUME_SYNC:
-                try {
-                  i_volume_master_percentage = recvData.d[0];
-                  i_volume_effects_percentage = recvData.d[1];
-                  i_volume_music_percentage = recvData.d[2];
-                }
-                catch (...) {
-                  sendDebug(F("Error during volume sync"));
-                }
-
-                return true; // Indicates a status change.
-              break;
-
-              case A_SPECTRAL_COLOUR_DATA:
-                if(recvData.d[0] > 0) {
-                  i_spectral_custom_colour = recvData.d[0];
-                }
-                if(recvData.d[1] > 0) {
-                  i_spectral_custom_saturation = recvData.d[1];
-                }
-              break;
-            }
+            return handleData(recvData.m, recvData.d[0], recvData.d[1], recvData.d[2]);
+          }
+          else {
+            return false;
           }
         break;
 
@@ -315,7 +293,7 @@ bool checkPack() {
   return false; // Returns false if still here.
 }
 
-bool handleCommand(uint8_t i_command, uint16_t i_value) {
+bool handleCommand(uint16_t i_command, uint16_t i_value) {
   bool b_state_changed = false; // Indicates when a crucial state change occurred.
 
   switch(i_command) {
@@ -627,29 +605,36 @@ bool handleCommand(uint8_t i_command, uint16_t i_value) {
       }
     break;
 
-    case A_POWER_LEVEL_1:
-      sendDebug(F("Power Level 1"));
-      b_state_changed = gpstarSystem.setPowerLevel(LEVEL_1);
-    break;
+    case A_SET_POWER_LEVEL:
+      // Generic indicator of a power level change requires checking the sent value.
+      if(i_value >= 1 && i_value <= 5) {
+        switch(i_value) {
+          case 1:
+            sendDebug(F("Power Level 1"));
+            b_state_changed = gpstarSystem.setPowerLevel(LEVEL_1);
+          break;
 
-    case A_POWER_LEVEL_2:
-      sendDebug(F("Power Level 2"));
-      b_state_changed = gpstarSystem.setPowerLevel(LEVEL_2);
-    break;
+          case 2:
+            sendDebug(F("Power Level 2"));
+            b_state_changed = gpstarSystem.setPowerLevel(LEVEL_2);
+          break;
 
-    case A_POWER_LEVEL_3:
-      sendDebug(F("Power Level 3"));
-      b_state_changed = gpstarSystem.setPowerLevel(LEVEL_3);
-    break;
+          case 3:
+            sendDebug(F("Power Level 3"));
+            b_state_changed = gpstarSystem.setPowerLevel(LEVEL_3);
+          break;
 
-    case A_POWER_LEVEL_4:
-      sendDebug(F("Power Level 4"));
-      b_state_changed = gpstarSystem.setPowerLevel(LEVEL_4);
-    break;
+          case 4:
+            sendDebug(F("Power Level 4"));
+            b_state_changed = gpstarSystem.setPowerLevel(LEVEL_4);
+          break;
 
-    case A_POWER_LEVEL_5:
-      sendDebug(F("Power Level 5"));
-      b_state_changed = gpstarSystem.setPowerLevel(LEVEL_5);
+          case 5:
+            sendDebug(F("Power Level 5"));
+            b_state_changed = gpstarSystem.setPowerLevel(LEVEL_5);
+          break;
+        }
+      }
     break;
 
     case A_ALARM_ON:
@@ -921,6 +906,37 @@ bool handleCommand(uint8_t i_command, uint16_t i_value) {
 
     default:
       // No-op for anything else.
+    break;
+  }
+
+  // Indicates a change which should trigger an update to the websocket.
+  return b_state_changed;
+}
+
+bool handleData(uint8_t i_command, uint8_t i_value1, uint8_t i_value2, uint8_t i_value3) {
+  bool b_state_changed = false; // Indicates when a crucial state change occurred.
+
+  switch(i_command) {
+    case A_VOLUME_SYNC:
+      try {
+        i_volume_master_percentage = i_value1;
+        i_volume_effects_percentage = i_value2;
+        i_volume_music_percentage = i_value3;
+      }
+      catch (...) {
+        sendDebug(F("Error during volume sync"));
+      }
+
+      return true; // Indicates a status change.
+    break;
+
+    case A_SPECTRAL_COLOUR_DATA:
+      if(i_value1 > 0) {
+        i_spectral_custom_colour = i_value1;
+      }
+      if(i_value2 > 0) {
+        i_spectral_custom_saturation = i_value2;
+      }
     break;
   }
 
