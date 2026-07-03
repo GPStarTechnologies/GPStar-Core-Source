@@ -101,9 +101,6 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
       if(PACK_STATE == MODE_ON) {
         PACK_ACTION_STATE = ACTION_OFF;
-
-        //Make sure to tell the wireless that we are not overheating.
-        attenuatorSerialSend(A_OVERHEATING_FINISHED);
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is off.

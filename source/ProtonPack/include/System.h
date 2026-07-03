@@ -5721,8 +5721,6 @@ void systemPOST() {
       cyclotronSwitchLEDOff();
       innerCyclotronCakeOff();
 
-      packSerialSend(A_POST_FINISH);
-
       b_pack_post_finish = true;
       updateLEDs();
       delay(FAST_LED_UPDATE_MS); // Delay to give the LEDs a chance to finish updating.

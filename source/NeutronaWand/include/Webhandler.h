@@ -305,7 +305,7 @@ String getWandConfig() {
     jsonBody["gpstarAudio"] = (i_audio_version > 1);
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down);
+    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || (gpstarWand.getSystemMode() == MODE_ORIGINAL && gpstarWand.getIonArmSwitch() == RED_SWITCH_ON));
     jsonBody["wandPowered"] = (WAND_STATUS == MODE_ON);
     jsonBody["wandConnected"] = (WAND_CONN_STATE == PACK_CONNECTED);
 
@@ -1443,6 +1443,13 @@ void handlePowerLevelSet(AsyncWebServerRequest *request) {
 
         // Validate and constrain to 1-5 range
         if(pLevel >= MIN_POWER_LEVEL && pLevel <= MAX_POWER_LEVEL) {
+          // Check to prevent switching power level in Mode Original when wand is off.
+          if(!switch_wand.on() || !switch_vent.on() || !switch_activate.on() || WAND_STATUS != MODE_ON) {
+            // Tell the user why the requested action failed.
+            request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Unable to alter power level while wand is not fully activated")); // 400 Bad Request
+            return;
+          }
+
           // Set power level to the one specified.
           switch(pLevel) {
             case LEVEL_1:
@@ -1450,10 +1457,14 @@ void handlePowerLevelSet(AsyncWebServerRequest *request) {
                 // Tell the user why the requested action failed.
                 request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Already in PL1")); // 400 Bad Request
               }
+              else if(gpstarWand.getSystemMode() == MODE_ORIGINAL) {
+                // Tell the user why the requested action failed.
+                request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("PL1 is reserved in Mode Original")); // 400 Bad Request
+              }
               else if(WAND_ACTION_STATUS != ACTION_FIRING || (WAND_ACTION_STATUS == ACTION_FIRING && gpstarWand.getPowerLevel() != LEVEL_5)) {
                 debugln(F("Web: Power Level 1"));
                 gpstarWand.setPowerLevel(LEVEL_1);
-                updatePackPowerLevel();
+                updatePowerLevel();
                 request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
                 notifyWSClients();
               }
@@ -1470,7 +1481,7 @@ void handlePowerLevelSet(AsyncWebServerRequest *request) {
               else if(WAND_ACTION_STATUS != ACTION_FIRING || (WAND_ACTION_STATUS == ACTION_FIRING && gpstarWand.getPowerLevel() != LEVEL_5)) {
                 debugln(F("Web: Power Level 2"));
                 gpstarWand.setPowerLevel(LEVEL_2);
-                updatePackPowerLevel();
+                updatePowerLevel();
                 request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
                 notifyWSClients();
               }
@@ -1487,7 +1498,7 @@ void handlePowerLevelSet(AsyncWebServerRequest *request) {
               else if(WAND_ACTION_STATUS != ACTION_FIRING || (WAND_ACTION_STATUS == ACTION_FIRING && gpstarWand.getPowerLevel() != LEVEL_5)) {
                 debugln(F("Web: Power Level 3"));
                 gpstarWand.setPowerLevel(LEVEL_3);
-                updatePackPowerLevel();
+                updatePowerLevel();
                 request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
                 notifyWSClients();
               }
@@ -1504,7 +1515,7 @@ void handlePowerLevelSet(AsyncWebServerRequest *request) {
               else if(WAND_ACTION_STATUS != ACTION_FIRING || (WAND_ACTION_STATUS == ACTION_FIRING && gpstarWand.getPowerLevel() != LEVEL_5)) {
                 debugln(F("Web: Power Level 4"));
                 gpstarWand.setPowerLevel(LEVEL_4);
-                updatePackPowerLevel();
+                updatePowerLevel();
                 request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
                 notifyWSClients();
               }
@@ -1521,7 +1532,7 @@ void handlePowerLevelSet(AsyncWebServerRequest *request) {
               else if(WAND_ACTION_STATUS != ACTION_FIRING) {
                 debugln(F("Web: Power Level 5"));
                 gpstarWand.setPowerLevel(LEVEL_5);
-                updatePackPowerLevel();
+                updatePowerLevel();
                 request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
                 notifyWSClients();
               }

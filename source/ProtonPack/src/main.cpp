@@ -376,6 +376,12 @@ void updateLEDs() {
 
 // Loop logic dedicated to this device which handles all of the standard operations.
 void mainLoop() {
+  // If we haven't told the wand we're done booting yet, do that now.
+  if(!b_wand_setup_finished) {
+    b_wand_setup_finished = true;
+    packSerialSend(P_POST_FINISH);
+  }
+
   checkMusic();
   checkSwitches();
   checkRotaryEncoder();

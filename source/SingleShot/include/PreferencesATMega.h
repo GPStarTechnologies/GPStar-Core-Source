@@ -81,9 +81,11 @@ void clearConfigEEPROM() {
     EEPROM.update(i, 0xFF); // Write 0xFF to each address
   }
 
-  // Write invalid size marker to indicate no valid data.
-  uint16_t i_invalid_size = 0;
-  EEPROM.put(i_eepromAddress, i_invalid_size);
+  // Create a new default blasterConfig struct.
+  blasterConfig = {};
+
+  // Write the default struct to the EEPROM.
+  saveConfigEEPROM();
 }
 
 void saveConfigEEPROM() {
