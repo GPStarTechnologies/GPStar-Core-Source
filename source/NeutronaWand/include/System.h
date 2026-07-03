@@ -4073,6 +4073,13 @@ void checkSwitches() {
               }
             }
           }
+          else {
+            // Set the power level to 1 (0 circle). Record the power level so we can restore it when we power everything back up.
+            if(gpstarWand.getPowerLevel() != MIN_POWER_LEVEL) {
+              gpstarWand.setPowerLevel(LEVEL_1);
+              updatePackPowerLevel();
+            }
+          }
         break;
 
         case MODE_SUPER_HERO:
