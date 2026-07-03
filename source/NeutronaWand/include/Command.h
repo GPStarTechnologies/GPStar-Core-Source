@@ -75,12 +75,19 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
 
     case P_MODE_SUPER_HERO:
       gpstarWand.setSystemMode(MODE_SUPER_HERO);
+      gpstarWand.setPowerLevel(LEVEL_5); // Restore PL5 as the default power level.
+      updatePackPowerLevel();
       vgModeCheck(); // Re-check VG/CTS mode.
       wandSerialSend(W_STREAM_FLAGS, gpstarWand.getStreamModeOpts()); // Send the latest flags upstream.
     break;
 
     case P_MODE_ORIGINAL:
       gpstarWand.setSystemMode(MODE_ORIGINAL);
+      if(gpstarWand.getPowerLevel() != MIN_POWER_LEVEL) {
+        // If not already in PL1, set to PL1 as this is idle in Mode Original.
+        gpstarWand.setPowerLevel(LEVEL_1);
+        updatePackPowerLevel();
+      }
       vgModeCheck(); // Assert CTS mode.
       wandSerialSend(W_STREAM_FLAGS, gpstarWand.getStreamModeOpts()); // Send the latest flags upstream.
     break;

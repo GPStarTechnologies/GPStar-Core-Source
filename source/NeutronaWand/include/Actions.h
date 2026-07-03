@@ -1361,12 +1361,18 @@ void checkWandAction() {
                 if(gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
                   gpstarWand.setSystemMode(MODE_ORIGINAL);
 
+                  if(gpstarWand.getPowerLevel() != MIN_POWER_LEVEL) {
+                    // If not already in PL1, set to PL1 as this is idle in Mode Original.
+                    gpstarWand.setPowerLevel(LEVEL_1);
+                  }
+
                   stopEffect(S_VOICE_MODE_ORIGINAL);
                   stopEffect(S_VOICE_MODE_SUPER_HERO);
                   playEffect(S_VOICE_MODE_ORIGINAL);
                 }
                 else {
                   gpstarWand.setSystemMode(MODE_SUPER_HERO);
+                  gpstarWand.setPowerLevel(LEVEL_5); // Restore PL5 as the default power level.
 
                   stopEffect(S_VOICE_MODE_SUPER_HERO);
                   stopEffect(S_VOICE_MODE_ORIGINAL);
