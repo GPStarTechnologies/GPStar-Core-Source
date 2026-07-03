@@ -1502,7 +1502,7 @@ void postActivation(bool shortBoot = false) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
             if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
-              wandSerialSend(W_WAND_BOOTUP_SHORT_SOUND);
+              wandSerialSend(A_WAND_BOOTUP_SHORT_SOUND);
             }
           }
           else {
@@ -1518,14 +1518,14 @@ void postActivation(bool shortBoot = false) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
             if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
-              wandSerialSend(W_WAND_BOOTUP_SHORT_SOUND);
+              wandSerialSend(A_WAND_BOOTUP_SHORT_SOUND);
             }
           }
           else {
             playEffect(S_GB2_WAND_START);
 
             if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
-              wandSerialSend(W_WAND_BOOTUP_1989);
+              wandSerialSend(A_WAND_BOOTUP_1989);
             }
           }
         break;
@@ -1540,7 +1540,7 @@ void postActivation(bool shortBoot = false) {
           else if(switch_vent.on() && shortBoot) {
             stopEffect(S_WAND_BOOTUP);
             playEffect(S_WAND_BOOTUP);
-            wandSerialSend(W_WAND_BOOTUP_SOUND);
+            wandSerialSend(A_WAND_BOOTUP_SOUND);
           }
 
           soundIdleLoop(true);
@@ -1571,14 +1571,14 @@ void soundIdleStart() {
             playEffect(S_GB2_WAND_START);
 
             if(b_extra_pack_sounds && !b_overheat_recovery) {
-              wandSerialSend(W_WAND_BOOTUP_1989);
+              wandSerialSend(A_WAND_BOOTUP_1989);
             }
           }
           else {
             playEffect(S_WAND_BOOTUP);
 
             if(b_extra_pack_sounds && !b_overheat_recovery) {
-              wandSerialSend(W_WAND_BOOTUP_SOUND);
+              wandSerialSend(A_WAND_BOOTUP_SOUND);
             }
           }
         }

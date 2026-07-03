@@ -221,12 +221,12 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
     break;
 
-    case A_MUSIC_LOOP_STATUS:
+    case A_MUSIC_TRACK_LOOP_STATUS:
       // The pack is telling us if the current music track is looped or not.
       toggleMusicLoop(i_value == 2);
     break;
 
-    case A_MUSIC_SHUFFLE_STATUS:
+    case A_MUSIC_TRACK_SHUFFLE_STATUS:
       // The pack is telling us if "shuffle all music tracks" is enabled or not.
       toggleMusicShuffle(i_value == 2);
     break;

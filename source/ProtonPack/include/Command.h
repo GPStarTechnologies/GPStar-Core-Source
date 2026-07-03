@@ -87,9 +87,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is on.
-      if(WAND_CONN_STATE == WAND_CONNECTED) {
-        packSerialSend(A_ION_ARM_SWITCH_ON);
-      }
+      packSerialSend(A_ION_ARM_SWITCH_ON);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is on.
       attenuatorSerialSend(A_ION_ARM_SWITCH_ON);
@@ -104,9 +102,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is off.
-      if(WAND_CONN_STATE == WAND_CONNECTED) {
-        packSerialSend(A_ION_ARM_SWITCH_OFF);
-      }
+      packSerialSend(A_ION_ARM_SWITCH_OFF);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is off.
       attenuatorSerialSend(A_ION_ARM_SWITCH_OFF);
@@ -360,13 +356,13 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
     case A_MUSIC_TRACK_LOOP_TOGGLE:
       toggleMusicLoop(i_value == 2);
       attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, b_repeat_track ? 2 : 1);
-      packSerialSend(A_MUSIC_LOOP_STATUS, b_repeat_track ? 2 : 1);
+      packSerialSend(A_MUSIC_TRACK_LOOP_STATUS, b_repeat_track ? 2 : 1);
     break;
 
     case A_MUSIC_TRACK_SHUFFLE_TOGGLE:
       toggleMusicShuffle(i_value == 2);
       attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, b_shuffle_tracks ? 2 : 1);
-      packSerialSend(A_MUSIC_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
+      packSerialSend(A_MUSIC_TRACK_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
     break;
 
     case A_YEAR_1984:

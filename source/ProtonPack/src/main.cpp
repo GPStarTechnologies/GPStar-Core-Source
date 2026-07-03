@@ -379,7 +379,7 @@ void mainLoop() {
   // If we haven't told the wand we're done booting yet, do that now.
   if(!b_wand_setup_finished) {
     b_wand_setup_finished = true;
-    packSerialSend(P_POST_FINISH);
+    packSerialSend(A_POST_FINISH);
   }
 
   checkMusic();

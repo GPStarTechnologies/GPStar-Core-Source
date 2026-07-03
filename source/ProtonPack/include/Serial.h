@@ -2754,14 +2754,14 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       // Inverting the logic acts as a push-button on/off toggle.
       toggleMusicLoop(!b_repeat_track);
       attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, b_repeat_track ? 2 : 1);
-      packSerialSend(A_MUSIC_LOOP_STATUS, b_repeat_track ? 2 : 1);
+      packSerialSend(A_MUSIC_TRACK_LOOP_STATUS, b_repeat_track ? 2 : 1);
     break;
 
     case A_MUSIC_TRACK_SHUFFLE_TOGGLE:
       // Inverting the logic acts as a push-button on/off toggle.
       toggleMusicShuffle(!b_shuffle_tracks);
       attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, b_shuffle_tracks ? 2 : 1);
-      packSerialSend(A_MUSIC_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
+      packSerialSend(A_MUSIC_TRACK_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
     break;
 
     case A_TOGGLE_MUTE:
