@@ -524,7 +524,7 @@ const uint16_t i_blink_sound_timer_2 = 1600;
  * A timer to turn on the Clippard LED when the system is shut down after some inactivity as a reminder you left your power on to the system.
  */
 millisDelay ms_power_indicator;
-const uint32_t i_ms_power_indicator = 60000; // 1 minute -> 60000 milliseconds
+const uint16_t i_ms_power_indicator = 60000; // 1 minute -> 60000 milliseconds
 const uint16_t i_ms_power_indicator_blink = 500;
 
 /**
