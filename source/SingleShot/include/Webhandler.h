@@ -1066,9 +1066,14 @@ void handleMusicStartStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Start/Stop"));
   if(!b_playing_music && !b_music_paused) {
     playMusic();
+    setPowerOnReminder(false);
   }
   else {
     stopMusic();
+
+    if(DEVICE_STATUS == MODE_OFF && DEVICE_ACTION_STATUS == ACTION_IDLE) {
+      setPowerOnReminder(true);
+    }
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   notifyWSClients();
@@ -1079,13 +1084,19 @@ void handleMusicPauseResume(AsyncWebServerRequest *request) {
   if(b_playing_music) {
     if(b_music_paused) {
       resumeMusic();
+      setPowerOnReminder(false);
     }
     else {
       pauseMusic();
+
+      if(DEVICE_STATUS == MODE_OFF && DEVICE_ACTION_STATUS == ACTION_IDLE) {
+        setPowerOnReminder(true);
+      }
     }
   }
   else {
     playMusic();
+    setPowerOnReminder(false);
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   notifyWSClients();
@@ -1168,9 +1179,20 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
   }
 
   if(c_music_track.toInt() != 0 && c_music_track.toInt() >= i_music_track_start) {
-    uint16_t i_music_track = c_music_track.toInt();
-    debugln(String(F("Web: Selected Music Track: ")) + String(i_music_track));
-    playMusic(); // Start playing music.
+    if(b_playing_music) {
+      stopMusic(); // Stops current track before change.
+
+      // Only update after the music is stopped.
+      i_current_music_track = c_music_track.toInt();
+
+      // Play the requested track.
+      playMusic();
+    }
+    else {
+      i_current_music_track = c_music_track.toInt();
+    }
+
+    debugln(F("Web: Selected Music Track: ") + String(i_current_music_track));
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }
   else {

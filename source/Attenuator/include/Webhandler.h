@@ -200,7 +200,7 @@ String getPackConfig() {
     jsonBody["gpstarAudio"] = (i_pack_audio_version > 1);
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || (gpstarSystem.getSystemMode() == MODE_ORIGINAL && gpstarSystem.getIonArmSwitch() == RED_SWITCH_ON));
+    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || gpstarSystem.isPackActiveModeOriginal());
     jsonBody["wandPowered"] = b_wand_on;
 
     // Proton Pack Runtime Options
@@ -274,7 +274,7 @@ String getWandConfig() {
     jsonBody["gpstarAudio"] = (i_wand_audio_version > 1);
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || (gpstarSystem.getSystemMode() == MODE_ORIGINAL && gpstarSystem.getIonArmSwitch() == RED_SWITCH_ON));
+    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || gpstarSystem.isPackActiveModeOriginal());
     jsonBody["wandPowered"] = b_wand_on;
     jsonBody["wandConnected"] = b_wand_connected;
 
@@ -339,7 +339,7 @@ String getSmokeConfig() {
     jsonBody["prefsAvailable"] = b_received_prefs_smoke;
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || (gpstarSystem.getSystemMode() == MODE_ORIGINAL && gpstarSystem.getIonArmSwitch() == RED_SWITCH_ON));
+    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || gpstarSystem.isPackActiveModeOriginal());
     jsonBody["wandPowered"] = b_wand_on;
     jsonBody["wandConnected"] = b_wand_connected;
 
@@ -964,7 +964,7 @@ void handleConnectivityCheck(AsyncWebServerRequest *request) {
  */
 
 void handlePackOn(AsyncWebServerRequest *request) {
-  if(((gpstarSystem.getSystemMode() == MODE_SUPER_HERO && b_pack_on) || (gpstarSystem.getSystemMode() == MODE_ORIGINAL && gpstarSystem.getIonArmSwitch() == RED_SWITCH_ON)) || b_pack_shutting_down) {
+  if((gpstarSystem.getSystemMode() == MODE_SUPER_HERO && b_pack_on) || gpstarSystem.isPackActiveModeOriginal() || b_pack_shutting_down) {
     request->send(HTTP_STATUS_409, MIME_JSON, returnJsonStatus("Pack is already powered on or is shutting down")); // 409 Conflict
     return;
   }
@@ -975,7 +975,7 @@ void handlePackOn(AsyncWebServerRequest *request) {
 }
 
 void handlePackOff(AsyncWebServerRequest *request) {
-  if(((gpstarSystem.getSystemMode() == MODE_SUPER_HERO && !b_pack_on) || (gpstarSystem.getSystemMode() == MODE_ORIGINAL && gpstarSystem.getIonArmSwitch() == RED_SWITCH_OFF)) || b_pack_shutting_down) {
+  if((gpstarSystem.getSystemMode() == MODE_SUPER_HERO && !b_pack_on) || gpstarSystem.isPackInactiveModeOriginal() || b_pack_shutting_down) {
     request->send(HTTP_STATUS_409, MIME_JSON, returnJsonStatus("Pack is already powered off or is shutting down")); // 409 Conflict
     return;
   }

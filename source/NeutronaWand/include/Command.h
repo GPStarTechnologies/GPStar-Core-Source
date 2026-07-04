@@ -216,7 +216,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
       if(b_playing_music && !b_music_paused) {
         setPowerOnReminder(false);
       }
-      else if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && !b_pack_on) {
+      else if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && ((!b_pack_on && gpstarWand.getSystemMode() == MODE_SUPER_HERO) || gpstarWand.isPackInactiveModeOriginal())) {
         setPowerOnReminder(true);
       }
     break;

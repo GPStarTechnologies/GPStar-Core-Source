@@ -434,13 +434,11 @@ void hatLightControl() {
 
     case MODE_ERROR:
       if(ms_error_blink.remaining() < i_error_blink_delay / 2) {
-        ventTopLightControl(false);
         digitalWriteFast(SLO_BLO_LED_PIN, LOW);
         digitalWriteFast(TOP_HAT_LED_PIN, LOW);
         digitalWriteFast(CLIPPARD_LED_PIN, LOW);
       }
       else {
-        ventTopLightControl(true);
         digitalWriteFast(SLO_BLO_LED_PIN, HIGH);
         digitalWriteFast(TOP_HAT_LED_PIN, HIGH);
         digitalWriteFast(CLIPPARD_LED_PIN, HIGH);
@@ -1485,8 +1483,27 @@ void postActivation(bool shortBoot = false) {
     digitalWriteFast(SLO_BLO_LED_PIN, HIGH);
 
     // Turn on top white light and its blink timer.
-    ms_white_light.start(i_white_light_interval);
-    ventTopLightControl(true);
+    switch(getNeutronaWandYearMode()) {
+      case SYSTEM_1984:
+      case SYSTEM_1989:
+        if(gpstarWand.getSystemMode() == MODE_ORIGINAL) {
+          // In Mode Original, top white light and blink timer are on immediately.
+          ms_white_light.start(i_white_light_interval);
+          ventTopLightControl(true);
+        }
+        else if(gpstarWand.getBarrelState() == BARREL_EXTENDED) {
+          // In 1984/1989, the blinking light is activated as a barrel safety indicator.
+          ms_white_light.start(i_white_light_interval);
+          ventTopLightControl(true);
+        }
+      break;
+
+      default:
+        // In all other cases, top white light and blink timer are on immediately.
+        ms_white_light.start(i_white_light_interval);
+        ventTopLightControl(true);
+      break;
+    }
 
     // Reset the hat light timers.
     ms_warning_blink.stop();
@@ -3102,6 +3119,22 @@ bool switchBarrel() {
         playEffect(S_WAND_BARREL_RETRACT);
       }
 
+      // If in 1984/1989 in Mode Super Hero, stop the top light blink timer.
+      switch(getNeutronaWandYearMode()) {
+        case SYSTEM_1984:
+        case SYSTEM_1989:
+          if(gpstarWand.getSystemMode() == MODE_SUPER_HERO)
+          {
+            ms_white_light.stop();
+            ventTopLightControl(false);
+          }
+        break;
+
+        default:
+          // Do nothing otherwise; handled in modeActivate().
+        break;
+      }
+
       wandSerialSend(W_BARREL_RETRACTED);
       gpstarWand.setBarrelState(BARREL_RETRACTED);
     }
@@ -3127,6 +3160,21 @@ bool switchBarrel() {
           // Plays the "thwoop" barrel extension sound in Afterlife mode.
           playEffect(S_GB1_1984_WAND_BARREL_EXTEND);
         }
+      }
+
+      // If in 1984/1989 in Mode Super Hero, start the top light blink timer.
+      switch(getNeutronaWandYearMode()) {
+        case SYSTEM_1984:
+        case SYSTEM_1989:
+          if(gpstarWand.getSystemMode() == MODE_SUPER_HERO)
+          {
+            ms_white_light.start(i_white_light_interval);
+          }
+        break;
+
+        default:
+          // Do nothing otherwise; handled in modeActivate().
+        break;
       }
 
       wandSerialSend(W_BARREL_EXTENDED);
@@ -4044,7 +4092,7 @@ void checkSwitches() {
                     ventLightControl(); // Turn on vent light at full brightness.
                   }
 
-                  ventTopLightControl(true);
+                  ventTopLightControl(true); // Turn on the top blinking light, but solid.
 
                   if(ms_bargraph.justFinished()) {
                     bargraphRamp();
@@ -10574,7 +10622,7 @@ void toggleStandaloneMode(bool on) {
 void checkPowerOnReminder() {
   if(WAND_ACTION_STATUS == ACTION_IDLE && (!b_pack_on || b_wand_standalone)) {
     if(ms_power_indicator.justFinished()) {
-      if((gpstarWand.getSystemMode() == MODE_ORIGINAL && gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) || gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
+      if(gpstarWand.isPackInactiveModeOriginal() || gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
         // Blink the Clippard LED to indicate to the user that the system battery is still powered on.
         digitalWriteFast(CLIPPARD_LED_PIN, (digitalReadFast(CLIPPARD_LED_PIN) == LOW) ? HIGH : LOW);
       }

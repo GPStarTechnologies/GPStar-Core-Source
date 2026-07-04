@@ -48,6 +48,8 @@ public:
   // Theme mode helpers
   bool isTheme80s() const;
   bool isThemeModern() const;
+  bool isPackActiveModeOriginal() const;
+  bool isPackInactiveModeOriginal() const;
 
   // Setters for private variables
   bool setSystemMode(SYSTEM_MODES mode);

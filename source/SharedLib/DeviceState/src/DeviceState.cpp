@@ -524,6 +524,16 @@ bool DeviceState::decreasePowerLevel() {
   return true;
 }
 
+// Return a boolean result if the Proton Pack is engaged in Mode Original (to prevent changing settings)
+bool DeviceState::isPackActiveModeOriginal() const {
+  return getSystemMode() == MODE_ORIGINAL && getIonArmSwitch() == RED_SWITCH_ON;
+}
+
+// Return a boolean result if the Proton Pack is disengaged in Mode Original (to allow changing settings)
+bool DeviceState::isPackInactiveModeOriginal() const {
+  return getSystemMode() == MODE_ORIGINAL && getIonArmSwitch() != RED_SWITCH_ON;
+}
+
 // Getter for barrelState (private variable)
 BARREL_STATES DeviceState::getBarrelState() const {
   return barrelState;
