@@ -433,7 +433,7 @@ enum API_COMMAND : uint16_t {
   A_SET_WAND_VIBRATION_MODE, // d1: VIBRATION_MODES (ENUM)
   A_SET_WAND_WIFI, // d1: 0=DISABLED, 1=ENABLED
   // List End
-  A_CMD_NO_OP // Sentinal value to represent the end of the list.
+  A_CMD_NO_OP // Sentinel value to represent the end of the list.
 };
 
 /**
