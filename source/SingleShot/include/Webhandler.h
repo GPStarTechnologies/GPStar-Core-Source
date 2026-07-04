@@ -1066,9 +1066,14 @@ void handleMusicStartStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Start/Stop"));
   if(!b_playing_music && !b_music_paused) {
     playMusic();
+    setPowerOnReminder(false);
   }
   else {
     stopMusic();
+
+    if(DEVICE_STATUS == MODE_OFF && DEVICE_ACTION_STATUS == ACTION_IDLE) {
+      setPowerOnReminder(true);
+    }
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   notifyWSClients();
@@ -1079,13 +1084,19 @@ void handleMusicPauseResume(AsyncWebServerRequest *request) {
   if(b_playing_music) {
     if(b_music_paused) {
       resumeMusic();
+      setPowerOnReminder(false);
     }
     else {
       pauseMusic();
+
+      if(DEVICE_STATUS == MODE_OFF && DEVICE_ACTION_STATUS == ACTION_IDLE) {
+        setPowerOnReminder(true);
+      }
     }
   }
   else {
     playMusic();
+    setPowerOnReminder(false);
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   notifyWSClients();
