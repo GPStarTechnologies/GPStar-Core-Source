@@ -878,18 +878,13 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
       // Tell the pack the status of the proton stream effects flag.
       wandSerialSend(A_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 4 : 3);
 
-      // Tell the pack the status of the Neutrona Wand barrel.
-      if(gpstarWand.getBarrelState() != BARREL_UNKNOWN) {
-        if(switchBarrel()) {
-          wandSerialSend(A_BARREL_EXTENDED);
-        }
-        else {
-          wandSerialSend(A_BARREL_RETRACTED);
-        }
-      }
-      else {
+      if(gpstarWand.getBarrelState() == BARREL_UNKNOWN) {
         // If the barrel state is unknown, this function will automatically report upstream.
         switchBarrel();
+      }
+      else {
+        // Tell the pack the status of the Neutrona Wand barrel.
+        wandSerialSend(gpstarWand.getBarrelState() == BARREL_EXTENDED ? A_BARREL_EXTENDED : A_BARREL_RETRACTED);
       }
 
       return true;

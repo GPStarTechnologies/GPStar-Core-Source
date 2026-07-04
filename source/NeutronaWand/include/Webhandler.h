@@ -305,7 +305,7 @@ String getWandConfig() {
     jsonBody["gpstarAudio"] = (i_audio_version > 1);
 
     // Return current powered state for pack and wand.
-    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || (gpstarWand.getSystemMode() == MODE_ORIGINAL && gpstarWand.getIonArmSwitch() == RED_SWITCH_ON));
+    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || gpstarWand.isPackActiveModeOriginal());
     jsonBody["wandPowered"] = (WAND_STATUS == MODE_ON);
     jsonBody["wandConnected"] = (WAND_CONN_STATE == PACK_CONNECTED);
 
@@ -1220,9 +1220,14 @@ void handleMusicStartStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Start/Stop"));
   if(!b_playing_music && !b_music_paused) {
     playMusic();
+    setPowerOnReminder(false);
   }
   else {
     stopMusic();
+
+    if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && ((!b_pack_on && gpstarWand.getSystemMode() == MODE_SUPER_HERO) || gpstarWand.isPackInactiveModeOriginal())) {
+      setPowerOnReminder(true);
+    }
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   notifyWSClients();
@@ -1233,13 +1238,19 @@ void handleMusicPauseResume(AsyncWebServerRequest *request) {
   if(b_playing_music) {
     if(b_music_paused) {
       resumeMusic();
+      setPowerOnReminder(false);
     }
     else {
       pauseMusic();
+
+      if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && ((!b_pack_on && gpstarWand.getSystemMode() == MODE_SUPER_HERO) || gpstarWand.isPackInactiveModeOriginal())) {
+        setPowerOnReminder(true);
+      }
     }
   }
   else {
     playMusic();
+    setPowerOnReminder(false);
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   notifyWSClients();
@@ -1322,9 +1333,20 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
   }
 
   if(c_music_track.toInt() != 0 && c_music_track.toInt() >= i_music_track_start) {
-    uint16_t i_music_track = c_music_track.toInt();
-    debugln("Web: Selected Music Track: " + String(i_music_track));
-    playMusic(); // Start playing music.
+    if(b_playing_music) {
+      stopMusic(); // Stops current track before change.
+
+      // Only update after the music is stopped.
+      i_current_music_track = c_music_track.toInt();
+
+      // Play the requested track.
+      playMusic();
+    }
+    else {
+      i_current_music_track = c_music_track.toInt();
+    }
+
+    debugln(F("Web: Selected Music Track: ") + String(i_current_music_track));
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }
   else {
