@@ -4,7 +4,7 @@ This document captures current, code-verified discoveries from serial handlers a
 
 ## Alphabetical API Listing with Directional Flow
 
-The following is an alphabetical listing of all `API_COMMAND` and `API_DATA` enums found in `Communication.h`, with observed direction(s) inferred from send wrappers in the codebase. Notably `attenuatorSerialSend()`, `attenuatorSerialSendData()`, `packSerialSend()`, `packSerialSendData()`, `wandSerialSend()`, `wandSerialSendData()`, and `executeCommand()`.
+The following is an alphabetical listing of all `API_COMMAND` enums found in `Communication.h`, with observed direction(s) inferred from send wrappers in the codebase.
 
 | API Name                                       | P --> A | A --> P | P --> W | W --> P |
 | ---------------------------------------------- | ------- | ------- | ------- | ------- |

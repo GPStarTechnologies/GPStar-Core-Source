@@ -66,14 +66,13 @@ struct DataPacket recvDataA;
 // Calculated from packet sizes and message type counts at compile time.
 constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(CommandPacket),         // cmd_packet_size
-  sizeof(DataPacket),         // msg_packet_size
+  sizeof(DataPacket),            // data_packet_size
   sizeof(PackPrefs),             // pack_prefs_size
   sizeof(WandPrefs),             // wand_prefs_size
   sizeof(SmokePrefs),            // smoke_prefs_size
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
-  A_CMD_NO_OP,                   // api_cmd_max
-  A_DATA_NO_OP                   // api_data_max
+  A_CMD_NO_OP                    // api_cmd_max
 );
 
 /*
@@ -402,62 +401,39 @@ void attenuatorSerialSend(uint16_t i_command, uint16_t i_value) {
 
   // sendDebug(String(F("Command to Attenuator: ")) + String(i_command));
 
-  sendCmdA.s = A_COM_START;
-  sendCmdA.c = i_command;
-  sendCmdA.d1 = i_value;
-  sendCmdA.e = A_COM_END;
-
-  i_send_size = attenuatorComs.txObj(sendCmdA);
-  attenuatorComs.sendData(i_send_size, (uint16_t) PACKET_COMMAND);
-
-#ifdef ESP32
-  // Send latest status to the WebSocket (ESP32 only), skipping this action on certain commands.
-  if(!isExcludedCommand(i_command)) {
-    notifyWSClients();
-  }
-#endif
-}
-// Override function to handle calls with a single parameter.
-void attenuatorSerialSend(uint16_t i_command) {
-  attenuatorSerialSend(i_command, 0);
-}
-
-// Outgoing payloads to the Attenuator
-void attenuatorSendData(uint8_t i_message) {
-  uint16_t i_send_size = 0;
-
-  // sendDebug(String(F("Data to Attenuator: ")) + String(i_message))
-
-  sendDataA.s = A_COM_START;
-  sendDataA.m = i_message;
-  sendDataA.e = A_COM_END;
-
-  // Set all elements of the data array to 0
-  memset(sendDataA.d, 0, sizeof(sendDataA.d));
-
-#ifdef ESP32
-  // Send latest status to the WebSocket (ESP32 only), skipping this action on certain commands.
-  if(!isExcludedCommand(i_message)) {
-    notifyWSClients();
-  }
-#endif
 
   // Provide additional data with certain messages.
-  switch(i_message) {
+  switch(i_command) {
+    case A_SYNC_DATA:
+      sendDataA.s = A_COM_START;
+      sendDataA.c = i_command;
+      sendDataA.e = A_COM_END;
+
+      // Set all elements of the data array to 0
+      memset(sendDataA.d, 0, sizeof(sendDataA.d));
+
+      i_send_size = attenuatorComs.txObj(attenuatorSyncData);
+      attenuatorComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
+    break;
+
     case A_SPECTRAL_COLOUR_DATA:
+      sendDataA.s = A_COM_START;
+      sendDataA.c = i_command;
+      sendDataA.e = A_COM_END;
+
       sendDataA.d[0] = i_spectral_cyclotron_custom_colour;
       sendDataA.d[1] = i_spectral_cyclotron_custom_saturation;
+      sendDataA.d[1] = 0;
 
       i_send_size = attenuatorComs.txObj(sendDataA);
       attenuatorComs.sendData(i_send_size, (uint8_t) PACKET_DATA);
     break;
 
-    case A_SYNC_DATA:
-      i_send_size = attenuatorComs.txObj(attenuatorSyncData);
-      attenuatorComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
-    break;
-
     case A_VOLUME_SYNC:
+      sendDataA.s = A_COM_START;
+      sendDataA.c = i_command;
+      sendDataA.e = A_COM_END;
+
       // Send the current volume levels.
       sendDataA.d[0] = i_volume_master_percentage;
       sendDataA.d[1] = i_volume_effects_percentage;
@@ -486,9 +462,26 @@ void attenuatorSendData(uint8_t i_message) {
     break;
 
     default:
-      // No-op for all other communications.
+      sendCmdA.s = A_COM_START;
+      sendCmdA.c = i_command;
+      sendCmdA.d1 = i_value;
+      sendCmdA.e = A_COM_END;
+
+      i_send_size = attenuatorComs.txObj(sendCmdA);
+      attenuatorComs.sendData(i_send_size, (uint16_t) PACKET_COMMAND);
     break;
   }
+
+#ifdef ESP32
+  // Send latest status to the WebSocket (ESP32 only), skipping this action on certain commands.
+  if(!isExcludedCommand(i_command)) {
+    notifyWSClients();
+  }
+#endif
+}
+// Override function to handle calls with a single parameter.
+void attenuatorSerialSend(uint16_t i_command) {
+  attenuatorSerialSend(i_command, 0);
 }
 
 // Outgoing commands to the wand
@@ -497,34 +490,20 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
 
   sendDebug(String(F("Command to Wand: ")) + String(i_command));
 
-  sendCmdW.s = A_COM_START;
-  sendCmdW.c = i_command;
-  sendCmdW.d1 = i_value;
-  sendCmdW.e = A_COM_END;
-
-  i_send_size = wandComs.txObj(sendCmdW);
-  wandComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
-}
-// Override function to handle calls with a single parameter.
-void wandSerialSend(uint16_t i_command) {
-  wandSerialSend(i_command, 0);
-}
-
-// Outgoing payloads to the wand
-void wandSerialSendData(uint8_t i_message) {
-  uint16_t i_send_size = 0;
-
-  // sendDebug(String(F("Data to Wand: ")) + String(i_message));
-
-  sendDataW.s = A_COM_START;
-  sendDataW.m = i_message;
-  sendDataW.e = A_COM_END;
-
-  // Set all elements of the data array to 0
-  memset(sendDataW.d, 0, sizeof(sendDataW.d));
-
   // Provide additional data with certain messages.
-  switch(i_message) {
+  switch(i_command) {
+    case A_SYNC_DATA:
+      sendDataW.s = A_COM_START;
+      sendDataW.c = i_command;
+      sendDataW.e = A_COM_END;
+
+      // Set all elements of the data array to 0
+      memset(sendDataW.d, 0, sizeof(sendDataW.d));
+
+      i_send_size = wandComs.txObj(wandSyncData);
+      wandComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
+    break;
+
     case A_SAVE_PREFERENCES_WAND:
       i_send_size = wandComs.txObj(wandConfig);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
@@ -535,15 +514,20 @@ void wandSerialSendData(uint8_t i_message) {
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
     break;
 
-    case A_SYNC_DATA:
-      i_send_size = wandComs.txObj(wandSyncData);
-      wandComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
-    break;
-
     default:
-      // No-op for all other communications.
+      sendCmdW.s = A_COM_START;
+      sendCmdW.c = i_command;
+      sendCmdW.d1 = i_value;
+      sendCmdW.e = A_COM_END;
+
+      i_send_size = wandComs.txObj(sendCmdW);
+      wandComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
     break;
   }
+}
+// Override function to handle calls with a single parameter.
+void wandSerialSend(uint16_t i_command) {
+  wandSerialSend(i_command, 0);
 }
 
 // Forward function declarations.
@@ -832,7 +816,7 @@ void handlePackPrefsUpdate() {
 void handleWandPrefsUpdate() {
   sendDebug(F("Saving Wand Preferences"));
 
-  wandSerialSendData(A_SAVE_PREFERENCES_WAND);
+  wandSerialSend(A_SAVE_PREFERENCES_WAND);
 
   // Offer some feedback to the user
   stopEffect(S_BEEP_VARIATION);
@@ -859,7 +843,7 @@ void handleSmokePrefsUpdate() {
   updateContinuousSmoke(); // Set other variables as necessary
 
   // This will pass values from the smokeConfig object
-  wandSerialSendData(A_SAVE_PREFERENCES_SMOKE);
+  wandSerialSend(A_SAVE_PREFERENCES_SMOKE);
 
   // Offer some feedback to the user
   stopEffect(S_VENT_SMOKE);
@@ -910,8 +894,8 @@ void checkAttenuator() {
           }
 
           attenuatorComs.rxObj(recvDataA);
-          if(recvDataA.m > 0 && recvDataA.s == A_COM_START && recvDataA.e == A_COM_END) {
-            sendDebug(String(F("Recv. Attenuator Message: ")) + String(recvDataA.m));
+          if(recvDataA.c > 0 && recvDataA.s == A_COM_START && recvDataA.e == A_COM_END) {
+            sendDebug(String(F("Recv. Attenuator Message: ")) + String(recvDataA.c));
             
             // No handlers at this time.
           }
@@ -1020,7 +1004,7 @@ void doAttenuatorSync() {
   attenuatorSyncData.effectsVolume = i_volume_effects_percentage;
   attenuatorSyncData.musicVolume = i_volume_music_percentage;
 
-  attenuatorSendData(A_SYNC_DATA);
+  attenuatorSerialSend(A_SYNC_DATA);
 
   // Send the ribbon cable alarm status if the ribbon cable is detached.
   if(b_pack_alarm && !ribbonCableAttached()) {
@@ -1060,8 +1044,8 @@ void checkWand() {
           }
 
           wandComs.rxObj(recvDataW);
-          if(recvDataW.m > 0 && recvDataW.s == A_COM_START && recvDataW.e == A_COM_END) {
-            sendDebug(String(F("Recv. Wand Data: ")) + String(recvDataW.m));
+          if(recvDataW.c > 0 && recvDataW.s == A_COM_START && recvDataW.e == A_COM_END) {
+            sendDebug(String(F("Recv. Wand Data: ")) + String(recvDataW.c));
             // No handlers at this time.
           }
         break;
@@ -1083,7 +1067,7 @@ void checkWand() {
           #endif
 
           // Send the EEPROM preferences just returned by the wand.
-          attenuatorSendData(A_SEND_PREFERENCES_WAND);
+          attenuatorSerialSend(A_SEND_PREFERENCES_WAND);
         break;
 
         case PACKET_SMOKE:
@@ -1097,7 +1081,7 @@ void checkWand() {
 
           // Send the EEPROM preferences just returned by the wand.
           // This data will combine with the pack's smoke settings.
-          attenuatorSendData(A_SEND_PREFERENCES_SMOKE);
+          attenuatorSerialSend(A_SEND_PREFERENCES_SMOKE);
         break;
       }
     }
@@ -1181,7 +1165,7 @@ void doWandSync() {
   wandSyncData.masterMuted = (i_volume_master == i_volume_abs_min);
 
   // Send the completed synchronization packet.
-  wandSerialSendData(A_SYNC_DATA);
+  wandSerialSend(A_SYNC_DATA);
 
   // Send the ribbon cable alarm status if the ribbon cable is detached.
   if(b_pack_alarm && !ribbonCableAttached()) {

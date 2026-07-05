@@ -55,14 +55,13 @@ struct DataPacket recvData;
 // Calculated from packet sizes and message type counts at compile time.
 constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(CommandPacket),         // cmd_packet_size
-  sizeof(DataPacket),         // msg_packet_size
+  sizeof(DataPacket),            // data_packet_size
   sizeof(PackPrefs),             // pack_prefs_size
   sizeof(WandPrefs),             // wand_prefs_size
   sizeof(SmokePrefs),            // smoke_prefs_size
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
-  A_CMD_NO_OP,                   // api_cmd_max
-  A_DATA_NO_OP                   // api_data_max
+  A_CMD_NO_OP                    // api_cmd_max
 );
 
 /*
@@ -233,51 +232,7 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
 
   // sendDebug(String(F("Command to Pack: ")) + String(i_command));
 
-  sendCmd.s = A_COM_START;
-  sendCmd.c = i_command;
-  sendCmd.d1 = i_value;
-  sendCmd.e = A_COM_END;
-
-  if(WAND_CONN_STATE == PACK_CONNECTED) {
-    // Once connected, each send of data should restart the timer.
-    ms_handshake.restart();
-  }
-
-  i_send_size = packComs.txObj(sendCmd);
-  packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
-}
-// Override function to handle calls with a single parameter.
-void packSerialSend(uint16_t i_command) {
-  packSerialSend(i_command, 0);
-}
-
-// Outgoing payloads to the pack.
-void packSerialSendData(uint8_t i_message) {
-  uint16_t i_send_size = 0;
-
-#ifdef ESP32
-  // Send latest status to the WebSocket (ESP32 only), skipping this action on certain commands.
-  // We make a special case for a disconnected pack, or one in standalone mode, so that the WebSocket gets updates.
-  if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == NC_BENCHTEST) && !isExcludedCommand(i_message)) {
-    notifyWSClients();
-  }
-#endif
-
-  // Leave when a pack is not intended to be connected.
-  if(b_wand_standalone) {
-    return;
-  }
-
-  sendDebug(String(F("Data to Pack: ")) + String(i_message));
-
-  sendData.s = A_COM_START;
-  sendData.m = i_message;
-  sendData.e = A_COM_END;
-
-  // Set all elements of the data array to 0
-  memset(sendData.d, 0, sizeof(sendData.d));
-
-  switch(i_message) {
+  switch(i_command) {
     case A_SEND_PREFERENCES_WAND:
       getWandPrefsObject(); // Call common function (also used by local web UI)
       i_send_size = packComs.txObj(wandConfig);
@@ -304,9 +259,24 @@ void packSerialSendData(uint8_t i_message) {
     break;
 
     default:
-      // No-op for all other actions.
+      sendCmd.s = A_COM_START;
+      sendCmd.c = i_command;
+      sendCmd.d1 = i_value;
+      sendCmd.e = A_COM_END;
+
+      if(WAND_CONN_STATE == PACK_CONNECTED) {
+        // Once connected, each send of data should restart the timer.
+        ms_handshake.restart();
+      }
+
+      i_send_size = packComs.txObj(sendCmd);
+      packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
     break;
   }
+}
+// Override function to handle calls with a single parameter.
+void packSerialSend(uint16_t i_command) {
+  packSerialSend(i_command, 0);
 }
 
 // Forward function declarations.
@@ -662,10 +632,10 @@ void checkPack() {
 
         case PACKET_DATA:
           packComs.rxObj(recvData);
-          if(recvData.m > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
-            sendDebug(String(F("Recv. Message: ")) + String(recvData.m));
+          if(recvData.c > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
+            sendDebug(String(F("Recv. Message: ")) + String(recvData.c));
 
-            switch(recvData.m) {
+            switch(recvData.c) {
               default:
                 // Nothing here yet.
               break;
@@ -919,12 +889,12 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
 
     case A_SEND_PREFERENCES_WAND:
       // The pack wants the latest wand preferences.
-      packSerialSendData(A_SEND_PREFERENCES_WAND);
+      packSerialSend(A_SEND_PREFERENCES_WAND);
     break;
 
     case A_SEND_PREFERENCES_SMOKE:
       // The pack wants the latest smoke preferences.
-      packSerialSendData(A_SEND_PREFERENCES_SMOKE);
+      packSerialSend(A_SEND_PREFERENCES_SMOKE);
     break;
 
     default:

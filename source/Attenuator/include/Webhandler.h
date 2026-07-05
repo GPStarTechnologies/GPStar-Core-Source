@@ -1796,7 +1796,7 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
-        packSerialSendData(A_SAVE_PREFERENCES_PACK); // Tell the pack to save the new settings.
+        packSerialSend(A_SAVE_PREFERENCES_PACK); // Tell the pack to save the new settings.
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
       }
     }
@@ -1880,7 +1880,7 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
-        packSerialSendData(A_SAVE_PREFERENCES_WAND); // Tell the wand (via pack) to save the new settings.
+        packSerialSend(A_SAVE_PREFERENCES_WAND); // Tell the wand (via pack) to save the new settings.
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
       }
     }
@@ -1941,7 +1941,7 @@ AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHan
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
-        packSerialSendData(A_SAVE_PREFERENCES_SMOKE); // Tell the pack and wand to save the new settings.
+        packSerialSend(A_SAVE_PREFERENCES_SMOKE); // Tell the pack and wand to save the new settings.
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
       }
     }

@@ -696,7 +696,7 @@ void updateMasterVolume(bool startup) {
       }
     }
 
-    attenuatorSendData(A_VOLUME_SYNC); // Tell the connected device about this change.
+    attenuatorSerialSend(A_VOLUME_SYNC); // Tell the connected device about this change.
   }
 }
 
@@ -1054,7 +1054,7 @@ void updateEffectsVolume() {
     break;
   }
 
-  attenuatorSendData(A_VOLUME_SYNC); // Tell the connected device about this change.
+  attenuatorSerialSend(A_VOLUME_SYNC); // Tell the connected device about this change.
 }
 
 void increaseVolumeEffects() {
@@ -1107,7 +1107,7 @@ void updateMusicVolume() {
     }
   }
 
-  attenuatorSendData(A_VOLUME_SYNC); // Tell the connected device about this change.
+  attenuatorSerialSend(A_VOLUME_SYNC); // Tell the connected device about this change.
 }
 
 void increaseVolumeMusic() {

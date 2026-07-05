@@ -29,7 +29,6 @@ extern const uint16_t PROTOCOL_SIGNATURE;
 /**
  * Centralized handler for commands, allowing the Pack and Attenuator to both perform the same action.
  * This approach is applying the Command Pattern to decouple the sender from the receiver.
- * In order for this to work, the command value must come from a unique source: API_MESSAGE
  *
  * Inputs:
  *   - i_command: Command identifier (API_COMMAND enum, uint16_t)
@@ -554,7 +553,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
     case A_REQUEST_PREFERENCES_PACK:
       // If requested by the Attenuator, send back all pack EEPROM preferences.
       // This will send a data payload directly from the pack as all data is local.
-      attenuatorSendData(A_SEND_PREFERENCES_PACK);
+      attenuatorSerialSend(A_SEND_PREFERENCES_PACK);
     break;
 
     case A_REQUEST_PREFERENCES_WAND:
@@ -575,7 +574,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
       else {
         // If a wand is not connected, simply return the smoke settings from the pack.
-        attenuatorSendData(A_SEND_PREFERENCES_SMOKE);
+        attenuatorSerialSend(A_SEND_PREFERENCES_SMOKE);
       }
     break;
 

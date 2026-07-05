@@ -548,7 +548,6 @@ const uint16_t i_ms_power_indicator_blink = 500;
  */
 void packSerialSend(uint16_t i_command, uint16_t i_value);
 void packSerialSend(uint16_t i_command);
-void packSerialSendData(uint8_t i_message);
 void checkPack();
 void checkWandAction();
 void ventSwitched(void* n = nullptr);

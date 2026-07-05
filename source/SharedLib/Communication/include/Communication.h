@@ -31,8 +31,8 @@
  *
  * Common packet data sizes for commands and messages:
  *   - CommandPacket = 6 packet bytes (s, c, d1, e)
- *   - DataPacket = 6 packet bytes (s, m, d[3], e)
- *   - Total bytes sent for these are 12 (packet bytes + 6 overhead).
+ *   - DataPacket = 7 packet bytes (s, c, d[3], e)
+ *   - Total bytes sent for these are 12 & 13 (packet bytes + 6 overhead).
  *
  * Special packet data sizes for preferences and synchronization:
  *   - PackPrefs = 46 packet bytes, 52 total bytes sent
@@ -58,7 +58,7 @@
  * Example device-to-device transmit times at 9600 baud:
  *   - Common command/message packets:
  *       CommandPacket: 12 total bytes, about 12.5 ms
- *       DataPacket: 12 total bytes, about 12.5 ms
+ *       DataPacket: 13 total bytes, about 13.5 ms
  *   - Special preferences/sync packets:
  *       PackPrefs: 52 total bytes, about 54.2 ms (Pack <-> Attenuator)
  *       WandPrefs: 36 total bytes, about 37.5 ms (Pack <-> Attenuator, Pack <-> Wand)
@@ -90,13 +90,13 @@
 
 // Types of packets to be sent via serial communication.
 enum PACKET_TYPE : uint8_t {
-  PACKET_UNKNOWN = 0,
-  PACKET_COMMAND = 1,
-  PACKET_DATA = 2,
-  PACKET_PACK = 3,
-  PACKET_WAND = 4,
-  PACKET_SMOKE = 5,
-  PACKET_SYNC = 6
+  PACKET_UNKNOWN = 0, // Unknown packet type (error)
+  PACKET_COMMAND = 1, // Command with optional data value
+  PACKET_DATA  = 2,   // Command with up to 3 data values
+  PACKET_PACK  = 3,   // Proton Pack preferences/settings
+  PACKET_WAND  = 4,   // Neutrona Wand preferences/settings
+  PACKET_SMOKE = 5,   // Smoke/Overheat preferences/settings
+  PACKET_SYNC  = 6    // Synchronization data
 };
 
 // For command signals (2 byte ID, 2 byte optional data).
@@ -110,7 +110,7 @@ struct __attribute__((packed)) CommandPacket {
 // For custom data communication (1 byte ID, 3 byte array).
 struct __attribute__((packed)) DataPacket {
   uint8_t s;
-  uint8_t m; // Data message enum (uint8_t supports up to 255 commands)
+  uint16_t c; // Command enum (uint16_t supports up to 65,535 commands)
   uint8_t d[3]; // Reserved for multiple, arbitrary byte values.
   uint8_t e;
 };
@@ -138,6 +138,9 @@ enum API_COMMAND : uint16_t {
   A_HANDSHAKE, // d1: PROTOCOL_SIGNATURE
   A_SYNC_NOW, // d1: PROTOCOL_SIGNATURE
   A_SYNC_START, // d1: PROTOCOL_SIGNATURE or post-finish state (1/2)
+  A_SYNC_DATA, // Special: sends PACKET_SYNC data struct
+  A_SPECTRAL_COLOUR_DATA, // Sends PACKET_DATA with d1: colour, d2: saturation
+  A_VOLUME_SYNC, // Sends PACKET_DATA with d1: master, d2: effects, d3: music
   A_SYNC_END,
   A_SYNCHRONIZED,
   A_POST_FINISH,
@@ -424,20 +427,7 @@ enum API_COMMAND : uint16_t {
   A_SET_WAND_VIBRATION_MODE, // d1: VIBRATION_MODES (ENUM)
   A_SET_WAND_WIFI, // d1: 0=DISABLED, 1=ENABLED
   // List End
-  A_CMD_NO_OP // Sentinel value to represent the end of the list.
-};
-
-/**
- * API_DATA: Data/parameter enums for PACKET_DATA type messages.
- * These enums use a 3-element array parameter to carry specific
- * values (each element value is uint8_t).
- */
-enum API_DATA : uint8_t {
-  A_DATA_NULL,
-  A_SYNC_DATA, // Special API, sends sync data struct
-  A_VOLUME_SYNC, // d1: master, d2: effects, d3: music
-  A_SPECTRAL_COLOUR_DATA, // d1: colour, d2: saturation
-  A_DATA_NO_OP
+  A_CMD_NO_OP // Sentinel value to represent the end of the list (max command value).
 };
 
 /**
@@ -457,24 +447,22 @@ enum API_DATA : uint8_t {
  */
 constexpr uint16_t calculateProtocolSignature(
   uint16_t cmd_packet_size,
-  uint16_t msg_packet_size,
+  uint16_t data_packet_size,
   uint16_t pack_prefs_size,
   uint16_t wand_prefs_size,
   uint16_t smoke_prefs_size,
   uint16_t wand_sync_size,
   uint16_t atten_sync_size,
-  uint16_t api_cmd_max,
-  uint8_t api_data_max)
+  uint16_t api_cmd_max)
 {
   return static_cast<uint16_t>(
     cmd_packet_size +
-    msg_packet_size +
+    data_packet_size +
     pack_prefs_size +
     wand_prefs_size +
     smoke_prefs_size +
     wand_sync_size +
     atten_sync_size +
-    api_cmd_max +
-    api_data_max
+    api_cmd_max
   );
 }

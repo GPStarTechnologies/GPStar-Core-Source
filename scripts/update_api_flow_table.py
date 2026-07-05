@@ -1,4 +1,46 @@
 #!/usr/bin/env python3
+"""
+API Flow Table Generator
+========================
+
+This script automatically updates the API_FLOW.md table with current API-to-direction
+mappings from the codebase. It extracts all API enums from Communication.h, searches the
+entire source tree for API calls via send wrappers, and regenerates the table with proper
+formatting and direction indicators.
+
+USAGE:
+------
+  python3 scripts/update_api_flow_table.py
+
+  Run from the repository root (GPStar-Core-Source/).
+
+WHAT IT DOES:
+-------------
+1. Extracts all A_* enums from Communication.h
+2. Scans the source tree for all send wrapper calls:
+   - packSerialSend()
+   - attenuatorSerialSend()
+   - wandSerialSend()
+3. Infers source device from file path (folder name matching: pack, attenuator, wand)
+4. Infers destination device from wrapper name
+5. Records valid direction pairs: P->A, A->P, P->W, W->P
+6. Regenerates API_FLOW.md table with:
+   - Alphabetical API listing
+   - Dynamically padded API name column
+   - X marks for observed direction pairs
+   - Unmatched APIs section (if any exist)
+
+OUTPUT:
+-------
+- Updates: source/SharedLib/Communication/API_FLOW.md
+- Lists: Any unmapped APIs (defined but never sent)
+
+NOTES:
+------
+- Table boundaries marked by header row "| API Name" and --- separator
+- executeCommand() calls are skipped (context-dependent, generic routing)
+- All output formatting is auto-generated; do not manually edit the table
+"""
 import re
 from pathlib import Path
 
@@ -37,11 +79,11 @@ def detect_device(folder_name):
     return None
 
 def find_api_calls(source_root):
-    """Find all *SerialSend(), *SendData(), and executeCommand() calls in the source tree."""
+    """Find all *SerialSend() and executeCommand() calls in the source tree."""
     map_dir = {}
     
-    # Pattern to match wrapper/command calls (includes *Send and *SendData variants)
-    pattern = re.compile(r'(packSerialSend|packSerialSendData|attenuatorSerialSend|attenuatorSendData|wandSerialSend|wandSerialSendData|executeCommand)\s*\(\s*(A_[A-Z0-9_]+)')
+    # Pattern to match wrapper/command calls
+    pattern = re.compile(r'(packSerialSend|attenuatorSerialSend|wandSerialSend|executeCommand)\s*\(\s*(A_[A-Z0-9_]+)')
     
     # Walk through all .h and .cpp files
     for file_path in source_root.rglob('*'):
@@ -71,11 +113,11 @@ def find_api_calls(source_root):
             wrapper, api = match.groups()
             
             # Determine destination from wrapper
-            if wrapper in ('packSerialSend', 'packSerialSendData'):
+            if wrapper == 'packSerialSend':
                 dst = 'P'
-            elif wrapper in ('attenuatorSerialSend', 'attenuatorSendData'):
+            elif wrapper == 'attenuatorSerialSend':
                 dst = 'A'
-            elif wrapper in ('wandSerialSend', 'wandSerialSendData'):
+            elif wrapper == 'wandSerialSend':
                 dst = 'W'
             elif wrapper == 'executeCommand':
                 # Skip executeCommand for now (generic, context-dependent)

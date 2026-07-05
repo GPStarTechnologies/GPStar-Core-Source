@@ -46,14 +46,13 @@ struct DataPacket recvData;
 // Calculated from packet sizes and message type counts at compile time.
 constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(CommandPacket),         // cmd_packet_size
-  sizeof(DataPacket),         // msg_packet_size
+  sizeof(DataPacket),            // data_packet_size
   sizeof(PackPrefs),             // pack_prefs_size
   sizeof(WandPrefs),             // wand_prefs_size
   sizeof(SmokePrefs),            // smoke_prefs_size
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
-  A_CMD_NO_OP,                   // api_cmd_max
-  A_DATA_NO_OP                   // api_data_max
+  A_CMD_NO_OP                    // api_cmd_max
 );
 
 /*
@@ -69,32 +68,7 @@ void packSerialSend(uint16_t i_command, uint16_t i_value = 0) {
     sendDebug(String(F("Send Command: ")) + String(i_command));
   #endif
 
-  sendCmd.s = A_COM_START;
-  sendCmd.c = i_command;
-  sendCmd.d1 = i_value;
-  sendCmd.e = A_COM_END;
-
-  i_send_size = packComs.txObj(sendCmd);
-  packComs.sendData(i_send_size, (uint16_t) PACKET_COMMAND);
-}
-
-// Sends an API to the Proton Pack
-void packSerialSendData(uint8_t i_message) {
-  uint16_t i_send_size = 0;
-
-  #if defined(DEBUG_SERIAL_COMMS)
-    // Can only debug communications when using the ESP32.
-    sendDebug(String(F("Send Data: ")) + String(i_message));
-  #endif
-
-  sendData.s = A_COM_START;
-  sendData.m = i_message;
-  sendData.e = A_COM_END;
-
-  // Set all elements of the data array to 0
-  memset(sendData.d, 0, sizeof(sendData.d));
-
-  switch(i_message) {
+  switch(i_command) {
     case A_SAVE_PREFERENCES_PACK:
       #if defined(DEBUG_SERIAL_COMMS)
         sendDebug(F("Saving Pack Preferences"));
@@ -123,7 +97,13 @@ void packSerialSendData(uint8_t i_message) {
     break;
 
     default:
-      // No-op for all other communications.
+      sendCmd.s = A_COM_START;
+      sendCmd.c = i_command;
+      sendCmd.d1 = i_value;
+      sendCmd.e = A_COM_END;
+
+      i_send_size = packComs.txObj(sendCmd);
+      packComs.sendData(i_send_size, (uint16_t) PACKET_COMMAND);
     break;
   }
 }
@@ -167,11 +147,11 @@ bool checkPack() {
           }
 
           packComs.rxObj(recvData);
-          if(recvData.m > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
+          if(recvData.c > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
             #if defined(DEBUG_SERIAL_COMMS)
-              sendDebug(String(F("Recv. Message: ")) + String(recvData.m));
+              sendDebug(String(F("Recv. Message: ")) + String(recvData.c));
             #endif
-            return handleData(recvData.m, recvData.d[0], recvData.d[1], recvData.d[2]);
+            return handleData(recvData.c, recvData.d[0], recvData.d[1], recvData.d[2]);
           }
           else {
             return false;

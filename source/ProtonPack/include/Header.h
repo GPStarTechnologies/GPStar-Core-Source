@@ -564,10 +564,8 @@ bool b_received_prefs_wand = false;
  */
 void wandSerialSend(uint16_t i_command, uint16_t i_value);
 void wandSerialSend(uint16_t i_command);
-void wandSerialSendData(uint8_t i_message);
 void attenuatorSerialSend(uint16_t i_command, uint16_t i_value);
 void attenuatorSerialSend(uint16_t i_command);
-void attenuatorSendData(uint8_t i_message);
 void checkAttenuator();
 void checkWand();
 void powercellDraw(uint8_t i_start = 0);
