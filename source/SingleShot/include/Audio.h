@@ -55,7 +55,7 @@ gpstarAudio audio;
 /*
  * Audio Devices
  */
-enum AUDIO_DEVICES { A_NONE, A_GPSTAR_AUDIO, A_GPSTAR_AUDIO_ADV, A_WAV_TRIGGER };
+enum AUDIO_DEVICES { AUDIO_NONE, AUDIO_GPSTAR, AUDIO_GPSTAR_ADV, AUDIO_WAV_TRIGGER };
 enum AUDIO_DEVICES AUDIO_DEVICE;
 
 /*
@@ -163,8 +163,8 @@ void playEffect(uint16_t i_track_id, bool b_track_loop, int8_t i_track_volume, b
   }
 
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
       if(b_fade_in) {
         audio.trackGain(i_track_id, i_volume_abs_min);
         audio.trackPlayPoly(i_track_id, b_lock);
@@ -183,7 +183,7 @@ void playEffect(uint16_t i_track_id, bool b_track_loop, int8_t i_track_volume, b
       }
     break;
 
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_GPSTAR_ADV:
       if(b_fade_in) {
         audio.trackGain(i_track_id, i_volume_abs_min);
         audio.trackPlayPoly(i_track_id, b_lock, b_preload_tracks ? 50 : 0);
@@ -202,7 +202,7 @@ void playEffect(uint16_t i_track_id, bool b_track_loop, int8_t i_track_volume, b
       }
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // No audio device connected.
     break;
@@ -211,13 +211,13 @@ void playEffect(uint16_t i_track_id, bool b_track_loop, int8_t i_track_volume, b
 
 void stopEffect(uint16_t i_track_id) {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       audio.trackStop(i_track_id);
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // No audio device connected.
     break;
@@ -227,13 +227,13 @@ void stopEffect(uint16_t i_track_id) {
 // Tell a looping track to stop looping and finish playing the current iteration.
 void stopEffectLoop(uint16_t i_track_id) {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       audio.trackLoop(i_track_id, false);
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // No audio device connected.
     break;
@@ -251,7 +251,7 @@ void playTransitionEffect(uint16_t i_track_id, uint16_t i_track_id2, bool b_trac
   }
 
   switch(AUDIO_DEVICE) {
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_GPSTAR_ADV:
       if(b_fade_in) {
         audio.trackGain(i_track_id, i_volume_abs_min);
         audio.trackGain(i_track_id2, i_track_volume);
@@ -282,7 +282,7 @@ void playRapidEffect(uint16_t i_track_id, uint16_t i_cycle_rate, int8_t i_track_
   }
 
   switch(AUDIO_DEVICE) {
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_GPSTAR_ADV:
       if(i_audio_version >= 109) {
         // This feature is only supported by GPStar Audio v1.09 or later.
         audio.trackGain(i_track_id, i_track_volume);
@@ -299,7 +299,7 @@ void playRapidEffect(uint16_t i_track_id, uint16_t i_cycle_rate, int8_t i_track_
 // Update the delay that the current rapid-fire track is using.
 void rapidEffectDelay(uint16_t i_track_id, uint16_t i_cycle_rate) {
   switch(AUDIO_DEVICE) {
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_GPSTAR_ADV:
       if(i_audio_version >= 109) {
         // This feature is only supported by GPStar Audio v1.09 or later.
         audio.trackRapidDelay(i_track_id, i_cycle_rate);
@@ -318,8 +318,8 @@ void playMusic() {
     b_playing_music = true;
 
     switch(AUDIO_DEVICE) {
-      case A_WAV_TRIGGER:
-      case A_GPSTAR_AUDIO:
+      case AUDIO_WAV_TRIGGER:
+      case AUDIO_GPSTAR:
         // Loop the music track.
         if(b_repeat_track) {
           audio.trackLoop(i_current_music_track, true);
@@ -335,7 +335,7 @@ void playMusic() {
         audio.resetTrackCounter();
       break;
 
-      case A_GPSTAR_AUDIO_ADV:
+      case AUDIO_GPSTAR_ADV:
         // Loop the music track.
         if(b_repeat_track) {
           audio.trackLoop(i_current_music_track, true);
@@ -351,7 +351,7 @@ void playMusic() {
         audio.resetTrackCounter();
       break;
 
-      case A_NONE:
+      case AUDIO_NONE:
       default:
         // Nothing.
       break;
@@ -364,9 +364,9 @@ void playMusic() {
 
 void stopMusic() {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       if(i_music_track_count > 0 && i_current_music_track >= i_music_track_start) {
         audio.trackStop(i_current_music_track);
       }
@@ -374,7 +374,7 @@ void stopMusic() {
       audio.update();
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // Nothing.
     break;
@@ -391,11 +391,11 @@ void pauseMusic() {
 
     // Pause music playback on the Single-Shot Blaster
     switch(AUDIO_DEVICE) {
-      case A_WAV_TRIGGER:
-      case A_GPSTAR_AUDIO:
-      case A_GPSTAR_AUDIO_ADV:
+      case AUDIO_WAV_TRIGGER:
+      case AUDIO_GPSTAR:
+      case AUDIO_GPSTAR_ADV:
       {
-        if(AUDIO_DEVICE != A_WAV_TRIGGER && i_audio_version < 106) {
+        if(AUDIO_DEVICE != AUDIO_WAV_TRIGGER && i_audio_version < 106) {
           // GPStar Audio firmwares before v1.06 have a pause bug workaround.
           if(i_volume_music_percentage < 100) {
             audio.trackGain(i_current_music_track, 0);
@@ -416,7 +416,7 @@ void pauseMusic() {
       }
       break;
 
-      case A_NONE:
+      case AUDIO_NONE:
       default:
         // Nothing.
       break;
@@ -433,15 +433,15 @@ void resumeMusic() {
 
     // Resume music playback on the Single-Shot Blaster
     switch(AUDIO_DEVICE) {
-      case A_WAV_TRIGGER:
-      case A_GPSTAR_AUDIO:
-      case A_GPSTAR_AUDIO_ADV:
+      case AUDIO_WAV_TRIGGER:
+      case AUDIO_GPSTAR:
+      case AUDIO_GPSTAR_ADV:
         audio.resetTrackCounter();
         audio.trackResume(i_current_music_track);
         audio.update();
       break;
 
-      case A_NONE:
+      case AUDIO_NONE:
       default:
         // Nothing.
       break;
@@ -572,9 +572,9 @@ void adjustGainEffect(uint16_t i_track_id, int8_t i_track_volume, bool b_fade, u
   }
 
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       if(b_fade) {
         audio.trackFade(i_track_id, i_track_volume, i_fade_time);
       }
@@ -583,7 +583,7 @@ void adjustGainEffect(uint16_t i_track_id, int8_t i_track_volume, bool b_fade, u
       }
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // No audio device connected.
     break;
@@ -593,13 +593,13 @@ void adjustGainEffect(uint16_t i_track_id, int8_t i_track_volume, bool b_fade, u
 // Fades out a single track.
 void fadeoutEffect(uint16_t i_track_id, uint16_t i_fade_time) {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       audio.trackFade(i_track_id, i_volume_abs_min, i_fade_time, true);
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // No audio device connected.
     break;
@@ -637,13 +637,13 @@ int8_t getGainValue(uint8_t percentage) {
 
 void updateMasterVolume(bool startup) {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       audio.masterGain(i_volume_master);
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // Nothing.
     break;
@@ -845,14 +845,14 @@ void toggleAudioBoost(bool enable) {
 
 void updateEffectsVolume() {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       // Since adjusting only happens while in the menu mode, only certain effects need to be adjusted on the fly.
       audio.trackGain(S_IDLE_LOOP, i_volume_effects);
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // No audio device connected.
     break;
@@ -896,13 +896,13 @@ void decreaseVolumeEffects() {
 void updateMusicVolume() {
   if(i_music_track_count > 0) {
     switch(AUDIO_DEVICE) {
-      case A_WAV_TRIGGER:
-      case A_GPSTAR_AUDIO:
-      case A_GPSTAR_AUDIO_ADV:
+      case AUDIO_WAV_TRIGGER:
+      case AUDIO_GPSTAR:
+      case AUDIO_GPSTAR_ADV:
         audio.trackGain(i_current_music_track, i_volume_music);
       break;
 
-      case A_NONE:
+      case AUDIO_NONE:
       default:
         // Nothing.
       break;
@@ -1000,13 +1000,13 @@ void buildMusicCount(uint16_t i_num_tracks) {
 
 bool musicIsTrackCounterReset() {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       return audio.isTrackCounterReset();
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       return false;
     break;
@@ -1015,13 +1015,13 @@ bool musicIsTrackCounterReset() {
 
 void musicTrackPlayingStatus() {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       audio.trackPlayingStatus(i_current_music_track);
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // Do nothing.
     break;
@@ -1030,13 +1030,13 @@ void musicTrackPlayingStatus() {
 
 bool musicTrackStatus() {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       return audio.currentTrackStatus(i_current_music_track);
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       return false;
     break;
@@ -1046,9 +1046,9 @@ bool musicTrackStatus() {
 void checkMusic() {
   if(ms_check_music.justFinished() && !ms_music_next_track.isRunning()) {
     switch(AUDIO_DEVICE) {
-      case A_WAV_TRIGGER:
-      case A_GPSTAR_AUDIO:
-      case A_GPSTAR_AUDIO_ADV:
+      case AUDIO_WAV_TRIGGER:
+      case AUDIO_GPSTAR:
+      case AUDIO_GPSTAR_ADV:
         ms_check_music.start(i_music_check_delay);
 
         musicTrackPlayingStatus();
@@ -1080,7 +1080,7 @@ void checkMusic() {
         }
       break;
 
-      case A_NONE:
+      case AUDIO_NONE:
       default:
         // None
       break;
@@ -1112,8 +1112,8 @@ void toggleMusicShuffle(bool enable) {
 
 void setAudioLED(bool on) {
   switch(AUDIO_DEVICE) {
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       // Set GPStar Audio LED state immediately.
       audio.gpstarLEDStatus(on);
     break;
@@ -1131,8 +1131,8 @@ void setAudioLED(bool on) {
  */
 void useShortTrackOverload(bool enabled) {
   switch(AUDIO_DEVICE) {
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       // Enable or disable short track overload.
       audio.gpstarShortTrackOverload(enabled);
     break;
@@ -1175,7 +1175,7 @@ bool setupAudioDevice() {
     i_audio_version = audio.getVersionNumber();
 
     if(i_audio_version != 0) {
-      AUDIO_DEVICE = A_GPSTAR_AUDIO_ADV;
+      AUDIO_DEVICE = AUDIO_GPSTAR_ADV;
 
       if(i_audio_version >= 109) {
         // Version 1.09 does not require short track overload.
@@ -1183,7 +1183,7 @@ bool setupAudioDevice() {
       }
     }
     else {
-      AUDIO_DEVICE = A_GPSTAR_AUDIO;
+      AUDIO_DEVICE = AUDIO_GPSTAR;
       i_audio_version = 100; // Set to 100 to indicate old version.
     }
 
@@ -1245,7 +1245,7 @@ bool setupAudioDevice() {
     // Enable track reporting. Only for the WAV Trigger.
     audio.setReporting(true);
 
-    AUDIO_DEVICE = A_WAV_TRIGGER;
+    AUDIO_DEVICE = AUDIO_WAV_TRIGGER;
     i_audio_version = 1; // Set to 1 to indicate WAV Trigger.
 
     sendDebug(F("Using WAV Trigger"));
@@ -1263,7 +1263,7 @@ bool setupAudioDevice() {
   }
   else {
     // No audio devices connected.
-    AUDIO_DEVICE = A_NONE;
+    AUDIO_DEVICE = AUDIO_NONE;
     AudioSerial.end();
 
     sendDebug(F("No Audio Device"));
@@ -1274,13 +1274,13 @@ bool setupAudioDevice() {
 
 void updateAudio() {
   switch(AUDIO_DEVICE) {
-    case A_WAV_TRIGGER:
-    case A_GPSTAR_AUDIO:
-    case A_GPSTAR_AUDIO_ADV:
+    case AUDIO_WAV_TRIGGER:
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
       audio.update();
     break;
 
-    case A_NONE:
+    case AUDIO_NONE:
     default:
       // Nothing.
     break;

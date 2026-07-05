@@ -1445,7 +1445,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     case A_AFTERLIFE_GUN_RAMP_1:
       wandExtraSoundsStop();
 
-      if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+      if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
         if(gpstarPack.inStreamMode(SLIME)) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_1, S_AFTERLIFE_WAND_IDLE_1, true, 5, i_volume_effects - i_slime_idle_level);
         }
@@ -1472,7 +1472,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_AFTERLIFE_GUN_RAMP_2:
-      if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+      if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
         if(gpstarPack.inStreamMode(SLIME)) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2, S_AFTERLIFE_WAND_IDLE_2, true, 5, i_volume_effects - i_slime_idle_level);
         }
@@ -1506,7 +1506,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_AFTERLIFE_GUN_RAMP_2_FADE_IN:
-      if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+      if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
         if(gpstarPack.inStreamMode(SLIME)) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2_FADE_IN, S_AFTERLIFE_WAND_IDLE_2, true, 5, i_volume_effects - i_slime_idle_level);
         }
@@ -1539,7 +1539,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_AFTERLIFE_GUN_LOOP_1:
-      if(AUDIO_DEVICE != A_GPSTAR_AUDIO_ADV) {
+      if(AUDIO_DEVICE != AUDIO_GPSTAR_ADV) {
         stopEffect(S_AFTERLIFE_WAND_IDLE_1);
 
         if(gpstarPack.inStreamMode(SLIME)) {
@@ -1555,7 +1555,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_AFTERLIFE_GUN_LOOP_2:
-      if(AUDIO_DEVICE != A_GPSTAR_AUDIO_ADV) {
+      if(AUDIO_DEVICE != AUDIO_GPSTAR_ADV) {
         stopEffect(S_AFTERLIFE_WAND_IDLE_2);
         if(gpstarPack.inStreamMode(SLIME)) {
           playEffect(S_AFTERLIFE_WAND_IDLE_2, true, i_volume_effects - i_slime_idle_level);
@@ -1570,7 +1570,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_AFTERLIFE_GUN_RAMP_DOWN_2:
-      if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+      if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
         if(gpstarPack.inStreamMode(SLIME)) {
           playTransitionEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2, S_AFTERLIFE_WAND_IDLE_1, true, 5, i_volume_effects - i_slime_idle_level);
         }
@@ -2229,7 +2229,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       // Stop the impact sound timer.
       ms_firing_sound_mix.stop();
 
-      if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+      if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
         stopEffect(S_CROSS_STREAMS_START);
       }
       playEffect(S_CROSS_STREAMS_START, false, i_volume_effects, false, 0, false);
@@ -2256,7 +2256,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       // Stop the impact sound timer.
       ms_firing_sound_mix.stop();
 
-      if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+      if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
         stopEffect(S_CROSS_STREAMS_END);
         stopEffect(S_CROSS_STREAMS_START);
       }
@@ -2288,7 +2288,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         ms_firing_sound_mix.start(random(7,15) * 1000);
       }
 
-      if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+      if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
         stopEffect(S_CROSS_STREAMS_START);
         stopEffect(S_CROSS_STREAMS_END);
       }

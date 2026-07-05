@@ -7,9 +7,6 @@
 # *nix batch scripts must use LF
 *.sh text eol=lf
 
-# Intel HEX should always be treated as CRLF
-*.hex text eol=crlf
-
 # Source files are always declared as text
 *.c text
 *.cpp text
@@ -27,14 +24,15 @@
 *.mp4 binary
 *.webm binary
 
-# Use the following command to create a merge driver:
+# One-time setup per developer to create/validate a merge driver:
 # git config --global merge.keepcurrent.driver true
+# git config --global --get-regexp '^merge\.'
 
 # Generated Build Artifacts
-# Always keep the current branch copy during merges.
+# Merge driver always keeps the current branch copy.
 *.bin binary merge=keepcurrent
 *.hex binary merge=keepcurrent
 
 # Generated Build Metadata
-# Regenerated on every build so ignore during merges.
-**/BuildInfo.h  merge=keepcurrent
+# Merge driver always keeps the current branch copy.
+**/BuildInfo.h merge=keepcurrent

@@ -279,7 +279,7 @@ void wandStopFiringSounds() {
     case CTS_FIRING_1984:
       STATUS_CTS = CTS_NOT_FIRING;
 
-      if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+      if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
         stopEffect(S_CROSS_STREAMS_START);
         stopEffect(S_CROSS_STREAMS_END);
       }
@@ -1353,7 +1353,7 @@ void packShutdown() {
 
       case SYSTEM_FROZEN_EMPIRE:
         if(isBrassPack()) {
-          if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+          if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
             playTransitionEffect(S_FROZEN_EMPIRE_BRASS_SHUTDOWN, PROGMEM_READU16(sfx_smoke[random(5)]));
           }
           else {

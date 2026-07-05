@@ -182,7 +182,7 @@ void streamModeCheck() {
     wandHeatUp();
   }
 
-  if(AUDIO_DEVICE == A_GPSTAR_AUDIO || AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+  if(AUDIO_DEVICE == AUDIO_GPSTAR || AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
     if(gpstarWand.inStreamMode(MESON)) {
       // Tell GPStar Audio we need short audio mode.
       audio.gpstarShortTrackOverload(false);
@@ -1438,7 +1438,7 @@ void afterlifeRampSound1() {
   r_vibration_ramp.go(i_vibration_level_min);
   r_vibration_ramp.go(i_vibration_idle_afterlife_1, i_gun_ramp_1_length, LINEAR);
 
-  if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+  if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
     playTransitionEffect(S_AFTERLIFE_WAND_RAMP_1, S_AFTERLIFE_WAND_IDLE_1, true, 5);
   }
   else {
@@ -1627,7 +1627,7 @@ void soundIdleStart() {
         r_vibration_ramp.go(i_vibration_idle_afterlife_2, i_gun_ramp_2_length, LINEAR);
 
         if(b_sound_afterlife_idle_2_fade) {
-          if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+          if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
             playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2_FADE_IN, S_AFTERLIFE_WAND_IDLE_2, true, 5);
           }
           else {
@@ -1637,7 +1637,7 @@ void soundIdleStart() {
           b_sound_afterlife_idle_2_fade = false;
         }
         else {
-          if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+          if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
             playTransitionEffect(S_AFTERLIFE_WAND_RAMP_2, S_AFTERLIFE_WAND_IDLE_2, true, 5);
           }
           else {
@@ -1662,7 +1662,7 @@ void soundIdleStart() {
         wandSerialSend(A_AFTERLIFE_GUN_LOOP_2);
       }
 
-      if(AUDIO_DEVICE != A_GPSTAR_AUDIO_ADV) {
+      if(AUDIO_DEVICE != AUDIO_GPSTAR_ADV) {
         playEffect(S_AFTERLIFE_WAND_IDLE_2, true);
       }
     }
@@ -1714,7 +1714,7 @@ void soundIdleStop() {
           r_vibration_ramp.go(i_vibration_idle_afterlife_2);
           r_vibration_ramp.go(i_vibration_idle_afterlife_1, i_gun_ramp_2_length, LINEAR);
 
-          if(AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+          if(AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
             playTransitionEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2, S_AFTERLIFE_WAND_IDLE_1, true, 5);
           }
           else {
@@ -7681,7 +7681,7 @@ void modeFiring() {
       break;
 
       case CTS_1984:
-        if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+        if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
           stopEffect(S_CROSS_STREAMS_START);
           stopEffect(S_CROSS_STREAMS_END);
         }
@@ -7721,7 +7721,7 @@ void modeFiring() {
 
           case SYSTEM_1984:
           case SYSTEM_1989:
-            if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+            if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
               stopEffect(S_CROSS_STREAMS_START);
               stopEffect(S_CROSS_STREAMS_END);
             }
@@ -7758,7 +7758,7 @@ void modeFiring() {
       break;
 
       case CTS_1984:
-        if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+        if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
           stopEffect(S_CROSS_STREAMS_START);
           stopEffect(S_CROSS_STREAMS_END);
         }
@@ -7784,7 +7784,7 @@ void modeFiring() {
 
           case SYSTEM_1984:
           case SYSTEM_1989:
-            if(AUDIO_DEVICE == A_WAV_TRIGGER) {
+            if(AUDIO_DEVICE == AUDIO_WAV_TRIGGER) {
               stopEffect(S_CROSS_STREAMS_START);
               stopEffect(S_CROSS_STREAMS_END);
             }

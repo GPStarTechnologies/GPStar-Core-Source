@@ -400,7 +400,7 @@ void readEEPROM() {
       gpstarWand.setStreamMode(DEFAULT_STREAM_MODE);
 
       if(gpstarWand.inStreamMode(MESON)) {
-        if(AUDIO_DEVICE == A_GPSTAR_AUDIO || AUDIO_DEVICE == A_GPSTAR_AUDIO_ADV) {
+        if(AUDIO_DEVICE == AUDIO_GPSTAR || AUDIO_DEVICE == AUDIO_GPSTAR_ADV) {
           // Tell GPStar Audio we need short audio mode.
           audio.gpstarShortTrackOverload(false);
         }
