@@ -2,16 +2,306 @@
 
 This document captures current, code-verified discoveries from serial handlers and send wrappers.
 
-Scope of devices and directionally-specific APIs currently documented:
+## Alphabetical API Listing with Directional Flow
 
-- `Pack -> Attenuator`
-- `Attenuator -> Pack`
-- `Pack -> Wand`
-- `Wand -> Pack`
+The following is an alphabetical listing of all `API_COMMAND` and `API_DATA` enums found in `Communication.h`, with observed direction(s) inferred from send wrappers and case handlers in the codebase.
+
+| API Name                                       | P->A | A->P | P->W | W->P |
+| ---------------------------------------------- | ---- | ---- | ---- | ---- |
+| A_HANDSHAKE                                    |      |      |      |      |
+| A_SYNC_NOW                                     |      |      |      |      |
+| A_SYNC_START                                   |      |      |      |      |
+| A_SYNC_END                                     |      |      |      |      |
+| A_SYNCHRONIZED                                 |      |      |      |      |
+| A_POST_FINISH                                  |      |      |      |      |
+| A_PACK_ON                                      |      |      |      |      |
+| A_PACK_OFF                                     |      |      |      |      |
+| A_TURN_PACK_ON                                 |      |      |      |      |
+| A_TURN_PACK_OFF                                |      |      |      |      |
+| A_TURN_WAND_ON                                 |      |      |      |      |
+| A_WAND_CONNECTED                               |      |      |      |      |
+| A_WAND_DISCONNECTED                            |      |      |      |      |
+| A_WAND_ON                                      |      |      |      |      |
+| A_WAND_OFF                                     |      |      |      |      |
+| A_STREAM_FLAGS                                 |      |      |      |      |
+| A_FIRING                                       |      |      |      |      |
+| A_FIRING_STOPPED                               |      |      |      |      |
+| A_FIRING_CTS                                   |      |      |      |      |
+| A_FIRING_CTS_STOPPED                           |      |      |      |      |
+| A_CYCLOTRON_NORMAL_SPEED                       |      |      |      |      |
+| A_CYCLOTRON_INCREASE_SPEED                     |      |      |      |      |
+| A_OVERHEATING                                  |      |      |      |      |
+| A_OVERHEATING_FINISHED                         |      |      |      |      |
+| A_VENTING                                      |      |      |      |      |
+| A_VENTING_FINISHED                             |      |      |      |      |
+| A_WARNING_CANCELLED                            |      |      |      |      |
+| A_MANUAL_OVERHEAT                              |      |      |      |      |
+| A_MANUAL_QUICK_VENT                            |      |      |      |      |
+| A_BUTTON_MASHING                               |      |      |      |      |
+| A_MASH_ERROR_LOOP                              |      |      |      |      |
+| A_MASH_ERROR_RESTART                           |      |      |      |      |
+| A_SYSTEM_LOCKOUT                               |      |      |      |      |
+| A_CANCEL_LOCKOUT                               |      |      |      |      |
+| A_CYCLOTRON_LID_ON                             |      |      |      |      |
+| A_CYCLOTRON_LID_OFF                            |      |      |      |      |
+| A_ALARM_ON                                     |      |      |      |      |
+| A_ALARM_OFF                                    |      |      |      |      |
+| A_MUSIC_TRACK_COUNT_SYNC                       |      |      |      |      |
+| A_MUSIC_START_STOP                             |      |      |      |      |
+| A_MUSIC_PAUSE_RESUME                           |      |      |      |      |
+| A_MUSIC_NEXT_TRACK                             |      |      |      |      |
+| A_MUSIC_PREV_TRACK                             |      |      |      |      |
+| A_MUSIC_TOGGLE                                 |      |      |      |      |
+| A_MUSIC_PLAY_TRACK                             |      |      |      |      |
+| A_MUSIC_TRACK_LOOP_STATUS                      |      |      |      |      |
+| A_MUSIC_TRACK_LOOP_TOGGLE                      |      |      |      |      |
+| A_MUSIC_TRACK_SHUFFLE_STATUS                   |      |      |      |      |
+| A_MUSIC_TRACK_SHUFFLE_TOGGLE                   |      |      |      |      |
+| A_MUSIC_IS_PLAYING                             |      |      |      |      |
+| A_MUSIC_IS_NOT_PLAYING                         |      |      |      |      |
+| A_MUSIC_IS_PAUSED                              |      |      |      |      |
+| A_MUSIC_IS_NOT_PAUSED                          |      |      |      |      |
+| A_MUSIC_STATUS                                 |      |      |      |      |
+| A_TOGGLE_MUTE                                  |      |      |      |      |
+| A_VOLUME_SET                                   |      |      |      |      |
+| A_VOLUME_INCREASE                              |      |      |      |      |
+| A_VOLUME_DECREASE                              |      |      |      |      |
+| A_VOLUME_MUSIC_INCREASE                        |      |      |      |      |
+| A_VOLUME_MUSIC_DECREASE                        |      |      |      |      |
+| A_VOLUME_SOUND_EFFECTS_INCREASE                |      |      |      |      |
+| A_VOLUME_SOUND_EFFECTS_DECREASE                |      |      |      |      |
+| A_PROTON_PACK_VOLUME_ADJUSTMENT                |      |      |      |      |
+| A_NEUTRONA_WAND_VOLUME_ADJUSTMENT              |      |      |      |      |
+| A_WAND_AUDIO_VERSION                           |      |      |      |      |
+| A_SAVE_EEPROM_SETTINGS_PACK                    |      |      |      |      |
+| A_SAVE_EEPROM_SETTINGS_WAND                    |      |      |      |      |
+| A_RESET_EEPROM_SETTINGS_PACK                   |      |      |      |      |
+| A_RESET_EEPROM_SETTINGS_WAND                   |      |      |      |      |
+| A_CLEAR_LED_EEPROM_SETTINGS                    |      |      |      |      |
+| A_SAVE_LED_EEPROM_SETTINGS                     |      |      |      |      |
+| A_VOLUME_INCREASE_EEPROM                       |      |      |      |      |
+| A_VOLUME_DECREASE_EEPROM                       |      |      |      |      |
+| A_CLEAR_CONFIG_EEPROM_SETTINGS                 |      |      |      |      |
+| A_EEPROM_CONFIG_MENU                           |      |      |      |      |
+| A_EEPROM_LED_MENU                              |      |      |      |      |
+| A_RESET_EEPROM_WAND                            |      |      |      |      |
+| A_SAVE_CONFIG_EEPROM_SETTINGS                  |      |      |      |      |
+| A_SAVE_EEPROM_WAND                             |      |      |      |      |
+| A_MODE_1984                                    |      |      |      |      |
+| A_MODE_1989                                    |      |      |      |      |
+| A_MODE_AFTERLIFE                               |      |      |      |      |
+| A_MODE_FROZEN_EMPIRE                           |      |      |      |      |
+| A_YEAR_1984                                    |      |      |      |      |
+| A_YEAR_1989                                    |      |      |      |      |
+| A_YEAR_AFTERLIFE                               |      |      |      |      |
+| A_YEAR_FROZEN_EMPIRE                           |      |      |      |      |
+| A_YEAR_MODES_CYCLE                             |      |      |      |      |
+| A_YEAR_MODES_CYCLE_EEPROM                      |      |      |      |      |
+| A_BARGRAPH_28_SEGMENTS                         |      |      |      |      |
+| A_BARGRAPH_30_SEGMENTS                         |      |      |      |      |
+| A_BARREL_EXTENDED                              |      |      |      |      |
+| A_BARREL_RETRACTED                             |      |      |      |      |
+| A_BATTERY_VOLTAGE_PACK                         |      |      |      |      |
+| A_CROSS_THE_STREAMS                            |      |      |      |      |
+| A_CROSS_THE_STREAMS_MIX                        |      |      |      |      |
+| A_CTS_1984                                     |      |      |      |      |
+| A_CTS_AFTERLIFE                                |      |      |      |      |
+| A_CTS_DEFAULT                                  |      |      |      |      |
+| A_CYCLOTRON_CLOCKWISE                          |      |      |      |      |
+| A_CYCLOTRON_COUNTER_CLOCKWISE                  |      |      |      |      |
+| A_CYCLOTRON_DIMMING                            |      |      |      |      |
+| A_CYCLOTRON_DIRECTION_TOGGLE                   |      |      |      |      |
+| A_CYCLOTRON_LED_TOGGLE                         |      |      |      |      |
+| A_CYCLOTRON_PANEL_DIMMING                      |      |      |      |      |
+| A_CYCLOTRON_SIMULATE_RING_TOGGLE               |      |      |      |      |
+| A_CYCLOTRON_SINGLE_LED                         |      |      |      |      |
+| A_CYCLOTRON_THREE_LED                          |      |      |      |      |
+| A_DEFAULT_BARGRAPH                             |      |      |      |      |
+| A_DEFAULT_FIRING_ANIMATIONS_BARGRAPH           |      |      |      |      |
+| A_DIMMING                                      |      |      |      |      |
+| A_DIMMING_DECREASE                             |      |      |      |      |
+| A_DIMMING_INCREASE                             |      |      |      |      |
+| A_DIMMING_TOGGLE                               |      |      |      |      |
+| A_FIRING_ALT_MIX                               |      |      |      |      |
+| A_FIRING_ALT_STOPPED_MIX                       |      |      |      |      |
+| A_FIRING_CROSSING_THE_STREAMS_1984             |      |      |      |      |
+| A_FIRING_CROSSING_THE_STREAMS_2021             |      |      |      |      |
+| A_FIRING_CROSSING_THE_STREAMS_MIX_1984         |      |      |      |      |
+| A_FIRING_CROSSING_THE_STREAMS_MIX_2021         |      |      |      |      |
+| A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_1984 |      |      |      |      |
+| A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_2021 |      |      |      |      |
+| A_FIRING_INTENSIFY_MIX                         |      |      |      |      |
+| A_FIRING_INTENSIFY_STOPPED_MIX                 |      |      |      |      |
+| A_GB1_WAND_BARREL_EXTEND                       |      |      |      |      |
+| A_GRB_INNER_CYCLOTRON_LEDS                     |      |      |      |      |
+| A_INNER_CYCLOTRON_DIMMING                      |      |      |      |      |
+| A_INNER_CYCLOTRON_PANEL_DISABLED               |      |      |      |      |
+| A_INNER_CYCLOTRON_PANEL_DYNAMIC                |      |      |      |      |
+| A_INNER_CYCLOTRON_PANEL_STATIC                 |      |      |      |      |
+| A_ION_ARM_SWITCH_ON                            |      |      |      |      |
+| A_ION_ARM_SWITCH_OFF                           |      |      |      |      |
+| A_MASTER_AUDIO_STATUS                          |      |      |      |      |
+| A_MESON_FIRE_PULSE                             |      |      |      |      |
+| A_MODE_ORIGINAL                                |      |      |      |      |
+| A_MODE_ORIGINAL_BARGRAPH                       |      |      |      |      |
+| A_MODE_ORIGINAL_FIRING_ANIMATIONS_BARGRAPH     |      |      |      |      |
+| A_MODE_ORIGINAL_HEATDOWN                       |      |      |      |      |
+| A_MODE_ORIGINAL_HEATDOWN_STOP                  |      |      |      |      |
+| A_MODE_ORIGINAL_HEATUP                         |      |      |      |      |
+| A_MODE_ORIGINAL_HEATUP_STOP                    |      |      |      |      |
+| A_MODE_SUPER_HERO                              |      |      |      |      |
+| A_MODE_SUPER_HERO_BARGRAPH                     |      |      |      |      |
+| A_MODE_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH   |      |      |      |      |
+| A_MODE_TOGGLE                                  |      |      |      |      |
+| A_NEUTRONA_WAND_1984_MODE                      |      |      |      |      |
+| A_NEUTRONA_WAND_1989_MODE                      |      |      |      |      |
+| A_NEUTRONA_WAND_AFTERLIFE_MODE                 |      |      |      |      |
+| A_NEUTRONA_WAND_DEFAULT_MODE                   |      |      |      |      |
+| A_NEUTRONA_WAND_FROZEN_EMPIRE_MODE             |      |      |      |      |
+| A_OVERHEAT_DECREASE_LEVEL_1                    |      |      |      |      |
+| A_OVERHEAT_DECREASE_LEVEL_2                    |      |      |      |      |
+| A_OVERHEAT_DECREASE_LEVEL_3                    |      |      |      |      |
+| A_OVERHEAT_DECREASE_LEVEL_4                    |      |      |      |      |
+| A_OVERHEAT_DECREASE_LEVEL_5                    |      |      |      |      |
+| A_OVERHEAT_INCREASE_LEVEL_1                    |      |      |      |      |
+| A_OVERHEAT_INCREASE_LEVEL_2                    |      |      |      |      |
+| A_OVERHEAT_INCREASE_LEVEL_3                    |      |      |      |      |
+| A_OVERHEAT_INCREASE_LEVEL_4                    |      |      |      |      |
+| A_OVERHEAT_INCREASE_LEVEL_5                    |      |      |      |      |
+| A_PACK_MOTORIZED_CYCLOTRON_ENABLED             |      |      |      |      |
+| A_POWERCELL_DIMMING                            |      |      |      |      |
+| A_RGB_INNER_CYCLOTRON_LEDS                     |      |      |      |      |
+| A_SMOKE_TOGGLE                                 |      |      |      |      |
+| A_SPECTRAL_CYCLOTRON_CUSTOM_DECREASE           |      |      |      |      |
+| A_SPECTRAL_CYCLOTRON_CUSTOM_INCREASE           |      |      |      |      |
+| A_SPECTRAL_INNER_CYCLOTRON_CUSTOM_DECREASE     |      |      |      |      |
+| A_SPECTRAL_INNER_CYCLOTRON_CUSTOM_INCREASE     |      |      |      |      |
+| A_SPECTRAL_POWERCELL_CUSTOM_DECREASE           |      |      |      |      |
+| A_SPECTRAL_POWERCELL_CUSTOM_INCREASE           |      |      |      |      |
+| A_SUPER_HERO_BARGRAPH                          |      |      |      |      |
+| A_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH        |      |      |      |      |
+| A_TEMPERATURE_PACK                             |      |      |      |      |
+| A_TOGGLE_CYCLOTRON_LEDS                        |      |      |      |      |
+| A_TOGGLE_INNER_CYCLOTRON_LEDS                  |      |      |      |      |
+| A_TOGGLE_INNER_CYCLOTRON_PANEL                 |      |      |      |      |
+| A_TOGGLE_POWERCELL_DIRECTION                   |      |      |      |      |
+| A_TOGGLE_POWERCELL_LEDS                        |      |      |      |      |
+| A_TOGGLE_RGB_INNER_CYCLOTRON_LEDS              |      |      |      |      |
+| A_TOGGLE_SMOKE                                 |      |      |      |      |
+| A_TOGGLE_VIBRATION                             |      |      |      |      |
+| A_VIDEO_GAME_MODE                              |      |      |      |      |
+| A_VIDEO_GAME_MODE_COLOUR_TOGGLE                |      |      |      |      |
+| A_VIDEO_GAME_MODE_CYCLOTRON_ENABLED            |      |      |      |      |
+| A_VIDEO_GAME_MODE_POWER_CELL_ENABLED           |      |      |      |      |
+| A_WAND_BARREL_RETRACT                          |      |      |      |      |
+| A_WAND_BEEP_BARGRAPH                           |      |      |      |      |
+| A_WAND_BOOTUP_1989                             |      |      |      |      |
+| A_WAND_POWER_AMPS                              |      |      |      |      |
+| A_YEAR_MODE_DEFAULT                            |      |      |      |      |
+| A_RESET_WIFI_PASSWORD                          |      |      |      |      |
+| A_TOGGLE_PACK_WIFI                             |      |      |      |      |
+| A_WAND_WIFI_RESET                              |      |      |      |      |
+| A_REQUEST_PREFERENCES_PACK                     |      |      |      |      |
+| A_REQUEST_PREFERENCES_WAND                     |      |      |      |      |
+| A_REQUEST_PREFERENCES_SMOKE                    |      |      |      |      |
+| A_SEND_PREFERENCES_PACK                        |      |      |      |      |
+| A_SEND_PREFERENCES_WAND                        |      |      |      |      |
+| A_SEND_PREFERENCES_SMOKE                       |      |      |      |      |
+| A_SAVE_PREFERENCES_PACK                        |      |      |      |      |
+| A_SAVE_PREFERENCES_WAND                        |      |      |      |      |
+| A_SAVE_PREFERENCES_SMOKE                       |      |      |      |      |
+| A_BEEPS_ALT                                    |      |      |      |      |
+| A_BEEP_START                                   |      |      |      |      |
+| A_BOSON_DART_SOUND                             |      |      |      |      |
+| A_MESON_COLLIDER_SOUND                         |      |      |      |      |
+| A_SHOCK_BLAST_SOUND                            |      |      |      |      |
+| A_SLIME_TETHER_SOUND                           |      |      |      |      |
+| A_WAND_BOOTUP_SHORT_SOUND                      |      |      |      |      |
+| A_WAND_BOOTUP_SOUND                            |      |      |      |      |
+| A_WAND_MASH_ERROR_SOUND                        |      |      |      |      |
+| A_WAND_SHUTDOWN_SOUND                          |      |      |      |      |
+| A_AFTERLIFE_GUN_LOOP_1                         |      |      |      |      |
+| A_AFTERLIFE_GUN_LOOP_2                         |      |      |      |      |
+| A_AFTERLIFE_GUN_RAMP_1                         |      |      |      |      |
+| A_AFTERLIFE_GUN_RAMP_2                         |      |      |      |      |
+| A_AFTERLIFE_GUN_RAMP_2_FADE_IN                 |      |      |      |      |
+| A_AFTERLIFE_GUN_RAMP_DOWN_1                    |      |      |      |      |
+| A_AFTERLIFE_GUN_RAMP_DOWN_2                    |      |      |      |      |
+| A_AFTERLIFE_GUN_RAMP_DOWN_2_FADE_OUT           |      |      |      |      |
+| A_AFTERLIFE_RAMP_LOOP_2_STOP                   |      |      |      |      |
+| A_AFTERLIFE_WAND_BARREL_EXTEND                 |      |      |      |      |
+| A_BARREL_ERROR_SOUND                           |      |      |      |      |
+| A_EXTRA_WAND_SOUNDS_STOP                       |      |      |      |      |
+| A_IMPACT_SOUND                                 |      |      |      |      |
+| A_COM_SOUND_NUMBER                             |      |      |      |      |
+| A_REQUEST_BEEP_SYNC                            |      |      |      |      |
+| A_SOUND_DEFAULT_SYSTEM_VOLUME_ADJUSTMENT       |      |      |      |      |
+| A_SOUND_SUPER_HERO                             |      |      |      |      |
+| A_SOUND_MODE_ORIGINAL                          |      |      |      |      |
+| A_SOUND_OVERHEAT_SMOKE_DURATION                |      |      |      |      |
+| A_SOUND_OVERHEAT_START_TIMER                   |      |      |      |      |
+| A_WAND_BEEP                                    |      |      |      |      |
+| A_WAND_BEEP_START                              |      |      |      |      |
+| A_WAND_BEEP_STOP                               |      |      |      |      |
+| A_WAND_BEEP_STOP_LOOP                          |      |      |      |      |
+| A_WAND_BEEP_SOUNDS                             |      |      |      |      |
+| A_SAY_MENU_LEVEL                               |      |      |      |      |
+| A_SET_AUTO_VENT_INTENSITY                      |      |      |      |      |
+| A_SET_BARGRAPH_INVERT                          |      |      |      |      |
+| A_SET_BARGRAPH_OVERHEAT_BLINK                  |      |      |      |      |
+| A_SET_BARREL_SWITCH                            |      |      |      |      |
+| A_SET_BARREL_TYPE                              |      |      |      |      |
+| A_SET_BOOTUP_ERRORS                            |      |      |      |      |
+| A_SET_CONTINUOUS_SMOKE_1                       |      |      |      |      |
+| A_SET_CONTINUOUS_SMOKE_2                       |      |      |      |      |
+| A_SET_CONTINUOUS_SMOKE_3                       |      |      |      |      |
+| A_SET_CONTINUOUS_SMOKE_4                       |      |      |      |      |
+| A_SET_CONTINUOUS_SMOKE_5                       |      |      |      |      |
+| A_SET_CYCLOTRON_FADING                         |      |      |      |      |
+| A_SET_CYCLOTRON_LED_COUNT                      |      |      |      |      |
+| A_SET_CYCLOTRON_SIMULATE_RING                  |      |      |      |      |
+| A_SET_DEMO_LIGHT_MODE                          |      |      |      |      |
+| A_SET_FIRING_MODE                              |      |      |      |      |
+| A_SET_INNER_CYCLOTRON_LED_COUNT                |      |      |      |      |
+| A_SET_MODE_BEEP_LOOP                           |      |      |      |      |
+| A_SET_OVERHEAT_LEVEL_1                         |      |      |      |      |
+| A_SET_OVERHEAT_LEVEL_2                         |      |      |      |      |
+| A_SET_OVERHEAT_LEVEL_3                         |      |      |      |      |
+| A_SET_OVERHEAT_LEVEL_4                         |      |      |      |      |
+| A_SET_OVERHEAT_LEVEL_5                         |      |      |      |      |
+| A_SET_OVERHEAT_LIGHTS_OFF                      |      |      |      |      |
+| A_SET_OVERHEAT_STROBE                          |      |      |      |      |
+| A_SET_OVERHEAT_SYNC_FAN                        |      |      |      |      |
+| A_SET_OVERHEATING                              |      |      |      |      |
+| A_SET_PACK_GPSTAR_AUDIO_LED                    |      |      |      |      |
+| A_SET_PACK_VIBRATION_MODE                      |      |      |      |      |
+| A_SET_POWER_LEVEL                              |      |      |      |      |
+| A_SET_POWERCELL_INVERT                         |      |      |      |      |
+| A_SET_POWERCELL_LED_COUNT                      |      |      |      |      |
+| A_SET_PROTON_STREAM_IMPACT                     |      |      |      |      |
+| A_SET_QUICK_BOOTUP                             |      |      |      |      |
+| A_SET_QUICK_VENT                               |      |      |      |      |
+| A_SET_RGB_VENT                                 |      |      |      |      |
+| A_SET_SMOKE                                    |      |      |      |      |
+| A_SET_SPECTRAL_LIGHTS                          |      |      |      |      |
+| A_SET_SPECTRAL_MODES                           |      |      |      |      |
+| A_SET_STREAM_MODE                              |      |      |      |      |
+| A_SET_VENT_LIGHT_COLOURS                       |      |      |      |      |
+| A_SET_VIDEO_GAME_MODE_COLOURS                  |      |      |      |      |
+| A_SET_VIBRATION_MODE                           |      |      |      |      |
+| A_SET_VOICE_NEUTRONA_WAND_SOUNDS               |      |      |      |      |
+| A_SET_WAND_GPSTAR_AUDIO_LED                    |      |      |      |      |
+| A_SET_WAND_VIBRATION_MODE                      |      |      |      |      |
+| A_SET_WAND_WIFI                                |      |      |      |      |
+| A_SYNC_DATA                                    |      |      |      |      |
+| A_VOLUME_SYNC                                  |      |      |      |      |
+| A_SPECTRAL_COLOUR_DATA                         |      |      |      |      |
 
 ---
 
-## 1) Handshake + Sync: Pack <-> Attenuator
+## Special Chained Sequences
+
+### 1) Handshake + Sync: Pack <-> Attenuator
 
 ```mermaid
 sequenceDiagram
@@ -21,35 +311,13 @@ sequenceDiagram
 		A->>P: A_HANDSHAKE
 		P->>A: A_SYNC_START (d1 = PROTOCOL_SIGNATURE)
 		P->>A: A_SYNC_DATA (PACKET_PACK, AttenuatorSyncData)
-		opt alarm latched while syncing
-				P->>A: A_ALARM_ON (d1 = 0/1)
-		end
 		P->>A: A_SYNC_END
 		A->>P: A_SYNCHRONIZED
 ```
 
-### APIs observed in this sequence
-
-- `A_HANDSHAKE` (command)
-  - Direction: `Attenuator -> Pack`
-- `A_SYNC_START` (command)
-  - Direction: `Pack -> Attenuator`
-  - d1: protocol signature selector/hash value
-- `A_SYNC_DATA` (data packet)
-  - Direction: `Pack -> Attenuator`
-  - packetType: `PACKET_PACK`
-  - payload: `AttenuatorSyncData`
-- `A_ALARM_ON` (command, optional during sync)
-  - Direction: `Pack -> Attenuator`
-  - d1: ribbon state (`0`/`1`)
-- `A_SYNC_END` (command)
-  - Direction: `Pack -> Attenuator`
-- `A_SYNCHRONIZED` (command)
-  - Direction: `Attenuator -> Pack`
-
 ---
 
-## 2) Handshake + Sync: Pack <-> Wand
+### 2) Handshake + Sync: Pack <-> Wand
 
 ```mermaid
 sequenceDiagram
@@ -59,35 +327,13 @@ sequenceDiagram
 		W->>P: A_HANDSHAKE
 		P->>W: A_SYNC_START (d1 = PROTOCOL_SIGNATURE)
 		P->>W: A_SYNC_DATA (PACKET_WAND, WandSyncData)
-		opt alarm latched while syncing
-				P->>W: A_ALARM_ON (d1 = 0/1)
-		end
 		P->>W: A_SYNC_END
 		W->>P: A_SYNCHRONIZED
 ```
 
-### APIs observed in this sequence
-
-- `A_HANDSHAKE` (command)
-  - Direction: `Wand -> Pack`
-- `A_SYNC_START` (command)
-  - Direction: `Pack -> Wand`
-  - d1: protocol signature selector/hash value
-- `A_SYNC_DATA` (data packet)
-  - Direction: `Pack -> Wand`
-  - packetType: `PACKET_WAND`
-  - payload: `WandSyncData`
-- `A_ALARM_ON` (command, optional during sync)
-  - Direction: `Pack -> Wand`
-  - d1: ribbon state (`0`/`1`)
-- `A_SYNC_END` (command)
-  - Direction: `Pack -> Wand`
-- `A_SYNCHRONIZED` (command)
-  - Direction: `Wand -> Pack`
-
 ---
 
-## 3) Preferences Exchange: Pack <-> Attenuator
+### 3) Preferences Exchange: Pack <-> Attenuator
 
 ```mermaid
 sequenceDiagram
@@ -96,35 +342,15 @@ sequenceDiagram
 
 		A->>P: A_REQUEST_PREFERENCES_PACK
 		P->>A: A_SEND_PREFERENCES_PACK (PACKET_PACK, PackPrefs)
-
 		A->>P: A_SAVE_PREFERENCES_ATTENUATOR
 		A->>P: A_SEND_PREFERENCES_WAND (PACKET_WAND, WandPrefs)
 		A->>P: A_SEND_PREFERENCES_SMOKE (PACKET_SMOKE, SmokePrefs)
 		P->>P: Persist imported data
 ```
 
-### APIs observed in this sequence
-
-- `A_REQUEST_PREFERENCES_PACK` (command)
-  - Direction: `Attenuator -> Pack`
-- `A_SEND_PREFERENCES_PACK` (data packet)
-  - Direction: `Pack -> Attenuator`
-  - packetType: `PACKET_PACK`
-  - payload: `PackPrefs`
-- `A_SAVE_PREFERENCES_ATTENUATOR` (command)
-  - Direction: `Attenuator -> Pack`
-- `A_SEND_PREFERENCES_WAND` (data packet)
-  - Direction: `Attenuator -> Pack`
-  - packetType: `PACKET_WAND`
-  - payload: `WandPrefs`
-- `A_SEND_PREFERENCES_SMOKE` (data packet)
-  - Direction: `Attenuator -> Pack`
-  - packetType: `PACKET_SMOKE`
-  - payload: `SmokePrefs`
-
 ---
 
-## 4) Preferences Exchange: Pack <-> Wand
+### 4) Preferences Exchange: Pack <-> Wand
 
 ```mermaid
 sequenceDiagram
@@ -141,30 +367,9 @@ sequenceDiagram
 		P->>W: A_SEND_PREFERENCES_SMOKE (PACKET_SMOKE, SmokePrefs)
 ```
 
-### APIs observed in this sequence
-
-- `A_REQUEST_PREFERENCES_PACK` (command)
-  - Direction: `Wand -> Pack`
-- `A_SEND_PREFERENCES_PACK` (data packet)
-  - Direction: `Pack -> Wand`
-  - packetType: `PACKET_PACK`
-  - payload: `PackPrefs`
-- `A_REQUEST_PREFERENCES_WAND` (command)
-  - Direction: `Wand -> Pack`
-- `A_SEND_PREFERENCES_WAND` (data packet)
-  - Direction: `Pack -> Wand`
-  - packetType: `PACKET_WAND`
-  - payload: `WandPrefs`
-- `A_REQUEST_PREFERENCES_SMOKE` (command)
-  - Direction: `Wand -> Pack`
-- `A_SEND_PREFERENCES_SMOKE` (data packet)
-  - Direction: `Pack -> Wand`
-  - packetType: `PACKET_SMOKE`
-  - payload: `SmokePrefs`
-
 ---
 
-## 5) Stream Mode + Power Propagation
+### 5) Stream Mode + Power Propagation
 
 ```mermaid
 sequenceDiagram
@@ -184,21 +389,9 @@ sequenceDiagram
 		P->>A: A_STREAM_FLAGS (d1 = bitfield)
 ```
 
-### APIs observed in this sequence
-
-- `A_SET_STREAM_MODE` (command)
-  - Direction: `Wand -> Pack`, then `Pack -> Attenuator`
-  - d1: `STREAM_MODES` enum value
-- `A_SET_POWER_LEVEL` (command)
-  - Direction: `Wand -> Pack`, then `Pack -> Attenuator`
-  - d1: power level (`1..5`)
-- `A_STREAM_FLAGS` (command)
-  - Direction: `Pack -> Wand` and `Pack -> Attenuator`
-  - d1: stream state bitfield flags
-
 ---
 
-## 6) Music Control + Playback Status Propagation
+### 6) Music Control + Playback Status Propagation
 
 ```mermaid
 sequenceDiagram
@@ -218,24 +411,9 @@ sequenceDiagram
 		P->>W: A_MUSIC_STATUS (d1 = 1 stopped)
 ```
 
-### APIs observed in this sequence
-
-- `A_MUSIC_PLAY_TRACK` (command)
-  - Direction: `Attenuator -> Pack`
-  - d1: track number to play
-- `A_MUSIC_IS_PLAYING` (command)
-  - Direction: `Pack -> Attenuator`
-  - d1: current track number
-- `A_MUSIC_IS_NOT_PLAYING` (command)
-  - Direction: `Pack -> Attenuator`
-  - d1: current track number
-- `A_MUSIC_STATUS` (command)
-  - Direction: `Pack -> Wand`
-  - d1: playback state (`1` stopped, `2` playing, `3` resumed, `4` paused)
-
 ---
 
-## 7) Loop/Shuffle/Mute + Volume Control Propagation
+### 7) Loop/Shuffle/Mute + Volume Control Propagation
 
 ```mermaid
 sequenceDiagram
@@ -256,33 +434,9 @@ sequenceDiagram
 		P->>P: Apply master volume
 ```
 
-### APIs observed in this sequence
-
-- `A_MUSIC_TRACK_LOOP_TOGGLE` (command)
-  - Direction: `Attenuator -> Pack`
-  - d1: toggle request (`1` OFF, `2` ON)
-- `A_MUSIC_TRACK_LOOP_STATUS` (command)
-  - Direction: `Pack -> Wand`
-  - d1: loop status (`1` OFF, `2` ON)
-- `A_MUSIC_TRACK_SHUFFLE_TOGGLE` (command)
-  - Direction: `Attenuator -> Pack`
-  - d1: toggle request (`1` OFF, `2` ON)
-- `A_MUSIC_TRACK_SHUFFLE_STATUS` (command)
-  - Direction: `Pack -> Wand`
-  - d1: shuffle status (`1` OFF, `2` ON)
-- `A_TOGGLE_MUTE` (command)
-  - Direction: `Attenuator -> Pack`
-  - d1: mute toggle request (`1` OFF, `2` ON)
-- `A_MASTER_AUDIO_STATUS` (command)
-  - Direction: `Pack -> Wand`
-  - d1: master audio mute status (`1` OFF, `2` ON)
-- `A_VOLUME_SET` (command)
-  - Direction: `Attenuator -> Pack`
-  - d1: volume value (`0..255`)
-
 ---
 
-## 8) Alarm + Lockout + Telemetry Status Flows
+### 8) Alarm + Lockout + Telemetry Status Flows
 
 ```mermaid
 sequenceDiagram
@@ -304,182 +458,3 @@ sequenceDiagram
         P->>A: A_TEMPERATURE_PACK (d1 = celsius x100)
     end
 ```
-
-### APIs observed in this sequence
-
-- `A_BUTTON_MASHING` (command)
-  - Direction: `Wand -> Pack`
-  - d1: timeout value
-- `A_SYSTEM_LOCKOUT` (command)
-  - Direction: `Pack -> Attenuator`
-  - d1: timeout value
-- `A_ALARM_ON` / `A_ALARM_OFF` (command)
-  - Direction: `Pack -> Wand` and `Pack -> Attenuator`
-  - d1: ribbon cable state (`0`/`1`)
-- `A_WAND_POWER_AMPS` (command)
-  - Direction: `Pack -> Attenuator`
-  - d1: current wand amps value
-- `A_BATTERY_VOLTAGE_PACK` (command)
-  - Direction: `Pack -> Attenuator`
-  - d1: battery voltage scaled (`x100` on ESP32)
-- `A_TEMPERATURE_PACK` (command)
-  - Direction: `Pack -> Attenuator`
-  - d1: temperature celsius scaled (`x100`)
-
----
-
-## 9) Duplicate / Overlap Matrix (no refactor)
-
-Observed overlaps to keep in mind for later consolidation pass:
-
-- Preference request/send patterns are mirrored between Wand and Attenuator paths.
-- Sync command names are shared across both links with role-specific payloads.
-- Some commands are transport-equivalent but semantically target-specific (`PACKET_PACK` vs `PACKET_WAND` sync/preference payloads).
-
-### Semantic overlap groups
-
-- Sync + compatibility
-  - `A_HANDSHAKE`, `A_SYNC_NOW`, `A_SYNC_START`, `A_SYNC_END`, `A_SYNCHRONIZED`, `A_SYNC_DATA`
-- Preferences transfer
-  - `A_REQUEST_PREFERENCES_*`, `A_SEND_PREFERENCES_*`, `A_SAVE_PREFERENCES_*`
-- Music control vs status
-  - Control: `A_MUSIC_PLAY_TRACK`, `A_MUSIC_TRACK_LOOP_TOGGLE`, `A_MUSIC_TRACK_SHUFFLE_TOGGLE`, `A_TOGGLE_MUTE`, `A_VOLUME_SET`
-  - Status: `A_MUSIC_IS_PLAYING`, `A_MUSIC_IS_NOT_PLAYING`, `A_MUSIC_STATUS`, `A_MUSIC_TRACK_LOOP_STATUS`, `A_MUSIC_TRACK_SHUFFLE_STATUS`, `A_MASTER_AUDIO_STATUS`
-- Alarm + lockout
-  - `A_BUTTON_MASHING`, `A_SYSTEM_LOCKOUT`, `A_ALARM_ON`, `A_ALARM_OFF`
-- Runtime telemetry
-  - `A_WAND_POWER_AMPS`, `A_BATTERY_VOLTAGE_PACK`, `A_TEMPERATURE_PACK`
-
-No refactor is performed in this phase by design.
-
----
-
-## 10) Alphabetical API Listing with Directional Flow
-
-The following is an alphabetical listing of all `API_COMMAND` and `API_DATA` enums found in `Communication.h`. Tokens already referenced elsewhere in this document are marked as (documented); others were missing and are included here for coverage.
-
-- `A_AFTERLIFE_GUN_LOOP_1` (added)
-- `A_AFTERLIFE_GUN_LOOP_2` (added)
-- `A_AFTERLIFE_GUN_RAMP_1` (added)
-- `A_AFTERLIFE_GUN_RAMP_2` (added)
-- `A_AFTERLIFE_GUN_RAMP_2_FADE_IN` (added)
-- `A_AFTERLIFE_GUN_RAMP_DOWN_1` (added)
-- `A_AFTERLIFE_GUN_RAMP_DOWN_2` (added)
-- `A_AFTERLIFE_GUN_RAMP_DOWN_2_FADE_OUT` (added)
-- `A_AFTERLIFE_RAMP_LOOP_2_STOP` (added)
-- `A_AFTERLIFE_WAND_BARREL_EXTEND` (added)
-- `A_ALARM_OFF` (documented)
-- `A_ALARM_ON` (documented)
-- `A_BARGRAPH_28_SEGMENTS` (added)
-- `A_BARGRAPH_30_SEGMENTS` (added)
-- `A_BARREL_ERROR_SOUND` (added)
-- `A_BARREL_EXTENDED` (added)
-- `A_BARREL_RETRACTED` (added)
-- `A_BATTERY_VOLTAGE_PACK` (documented)
-- `A_BEEPS_ALT` (added)
-- `A_BEEP_START` (added)
-- `A_BOSON_DART_SOUND` (added)
-- `A_BUTTON_MASHING` (documented)
-- `A_CANCEL_LOCKOUT` (added)
-- `A_CLEAR_CONFIG_EEPROM_SETTINGS` (added)
-- `A_CLEAR_LED_EEPROM_SETTINGS` (added)
-- `A_CMD_NO_OP` (added)
-- `A_CMD_NULL` (added)
-- `A_COM_SOUND_NUMBER` (added)
-- `A_CROSS_THE_STREAMS` (added)
-- `A_CROSS_THE_STREAMS_MIX` (added)
-- `A_CTS_1984` (added)
-- `A_CTS_AFTERLIFE` (added)
-- `A_CTS_DEFAULT` (added)
-- `A_CYCLOTRON_CLOCKWISE` (added)
-- `A_CYCLOTRON_COUNTER_CLOCKWISE` (added)
-- `A_CYCLOTRON_DIMMING` (added)
-- `A_CYCLOTRON_DIRECTION_TOGGLE` (added)
-- `A_CYCLOTRON_INCREASE_SPEED` (added)
-- `A_CYCLOTRON_LED_TOGGLE` (added)
-- `A_CYCLOTRON_LID_OFF` (added)
-- `A_CYCLOTRON_LID_ON` (added)
-- `A_CYCLOTRON_NORMAL_SPEED` (added)
-- `A_CYCLOTRON_PANEL_DIMMING` (added)
-- `A_CYCLOTRON_SIMULATE_RING_TOGGLE` (added)
-- `A_CYCLOTRON_SINGLE_LED` (added)
-- `A_CYCLOTRON_THREE_LED` (added)
-- `A_DATA_NO_OP` (added)
-- `A_DATA_NULL` (added)
-- `A_DEFAULT_BARGRAPH` (added)
-- `A_DEFAULT_FIRING_ANIMATIONS_BARGRAPH` (added)
-- `A_DIMMING` (added)
-- `A_DIMMING_DECREASE` (added)
-- `A_DIMMING_INCREASE` (added)
-- `A_DIMMING_TOGGLE` (added)
-- `A_EEPROM_CONFIG_MENU` (added)
-- `A_EEPROM_LED_MENU` (added)
-- `A_EXTRA_WAND_SOUNDS_STOP` (added)
-- `A_FIRING` (added)
-- `A_FIRING_ALT_MIX` (added)
-- `A_FIRING_ALT_STOPPED_MIX` (added)
-- `A_FIRING_CROSSING_THE_STREAMS_1984` (added)
-- `A_FIRING_CROSSING_THE_STREAMS_2021` (added)
-- `A_FIRING_CROSSING_THE_STREAMS_MIX_1984` (added)
-- `A_FIRING_CROSSING_THE_STREAMS_MIX_2021` (added)
-- `A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_1984` (added)
-- `A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_2021` (added)
-- `A_FIRING_CTS` (added)
-- `A_FIRING_CTS_STOPPED` (added)
-- `A_FIRING_INTENSIFY_MIX` (added)
-- `A_FIRING_INTENSIFY_STOPPED_MIX` (added)
-- `A_FIRING_STOPPED` (added)
-- `A_GB1_WAND_BARREL_EXTEND` (added)
-- `A_GRB_INNER_CYCLOTRON_LEDS` (added)
-- `A_HANDSHAKE` (documented)
-- `A_IMPACT_SOUND` (added)
-- `A_INNER_CYCLOTRON_DIMMING` (added)
-- `A_INNER_CYCLOTRON_PANEL_DISABLED` (added)
-- `A_INNER_CYCLOTRON_PANEL_DYNAMIC` (added)
-- `A_INNER_CYCLOTRON_PANEL_STATIC` (added)
-- `A_ION_ARM_SWITCH_OFF` (added)
-- `A_ION_ARM_SWITCH_ON` (added)
-- `A_MANUAL_OVERHEAT` (added)
-- `A_MANUAL_QUICK_VENT` (added)
-- `A_MASH_ERROR_LOOP` (added)
-- `A_MASH_ERROR_RESTART` (added)
-- `A_MASTER_AUDIO_STATUS` (documented)
-- `A_MESON_COLLIDER_SOUND` (added)
-- `A_MESON_FIRE_PULSE` (added)
-- `A_MODE_1984` (added)
-- `A_MODE_1989` (added)
-- `A_MODE_AFTERLIFE` (added)
-- `A_MODE_FROZEN_EMPIRE` (added)
-- `A_MODE_ORIGINAL` (added)
-- `A_MODE_ORIGINAL_BARGRAPH` (added)
-- `A_MODE_ORIGINAL_FIRING_ANIMATIONS_BARGRAPH` (added)
-- `A_MODE_ORIGINAL_HEATDOWN` (added)
-- `A_MODE_ORIGINAL_HEATDOWN_STOP` (added)
-- `A_MODE_ORIGINAL_HEATUP` (added)
-- `A_MODE_ORIGINAL_HEATUP_STOP` (added)
-- `A_MODE_SUPER_HERO` (added)
-- `A_MODE_SUPER_HERO_BARGRAPH` (added)
-- `A_MODE_SUPER_HERO_FIRING_ANIMATIONS_BARGRAPH` (added)
-- `A_MODE_TOGGLE` (added)
-- `A_MUSIC_IS_NOT_PAUSED` (added)
-- `A_MUSIC_IS_NOT_PLAYING` (documented)
-- `A_MUSIC_IS_PAUSED` (added)
-- `A_MUSIC_IS_PLAYING` (documented)
-- `A_MUSIC_NEXT_TRACK` (added)
-- `A_MUSIC_PAUSE_RESUME` (documented)
-- `A_MUSIC_PLAY_TRACK` (documented)
-- `A_MUSIC_PREV_TRACK` (added)
-- `A_MUSIC_START_STOP` (added)
-- `A_MUSIC_STATUS` (documented)
-- `A_MUSIC_TOGGLE` (added)
-- `A_MUSIC_TRACK_COUNT_SYNC` (added)
-- `A_MUSIC_TRACK_LOOP_STATUS` (documented)
-- `A_MUSIC_TRACK_LOOP_TOGGLE` (documented)
-- `A_MUSIC_TRACK_SHUFFLE_STATUS` (documented)
-- `A_MUSIC_TRACK_SHUFFLE_TOGGLE` (documented)
-- `A_NEUTRONA_WAND_1984_MODE` (added)
-- `A_NEUTRONA_WAND_1989_MODE` (added)
-- `A_NEUTRONA_WAND_AFTERLIFE_MODE` (added)
-- `A_NEUTRONA_WAND_DEFAULT_MODE` (added)
-- `A_NEUTRONA_WAND_FROZEN_EMPIRE_MODE` (added)
-- `A_NEUTRONA_WAND_VOLUME_ADJUSTMENT` (added)
