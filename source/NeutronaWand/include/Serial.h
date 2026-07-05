@@ -215,7 +215,7 @@ bool isExcludedCommand(uint16_t i_command) {
 }
 
 // Outgoing commands to the pack.
-void wandSerialSend(uint16_t i_command, uint16_t i_value) {
+void packSerialSend(uint16_t i_command, uint16_t i_value) {
   uint16_t i_send_size = 0;
 
 #ifdef ESP32
@@ -247,12 +247,12 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
   packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
 }
 // Override function to handle calls with a single parameter.
-void wandSerialSend(uint16_t i_command) {
-  wandSerialSend(i_command, 0);
+void packSerialSend(uint16_t i_command) {
+  packSerialSend(i_command, 0);
 }
 
 // Outgoing payloads to the pack.
-void wandSerialSendData(uint8_t i_message) {
+void packSerialSendData(uint8_t i_message) {
   uint16_t i_send_size = 0;
 
 #ifdef ESP32
@@ -404,13 +404,13 @@ void handleWandPrefsUpdate() {
     default:
       // First set into VG mode with default stream flags.
       gpstarWand.setFiringModeVG();
-      wandSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE); // Tell the pack about the change.
+      packSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE); // Tell the pack about the change.
     break;
 
     case 1:
       // Cross the Streams (CTS)
       gpstarWand.setFiringModeCTS();
-      wandSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
+      packSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
 
       if(gpstarWand.setStreamMode(PROTON)) {
         streamModeCheck();
@@ -420,7 +420,7 @@ void handleWandPrefsUpdate() {
     case 3:
       // CTS Mix
       gpstarWand.setFiringModeCTSMix();
-      wandSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MIX_MODE); // Tell the pack about the change.
+      packSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MIX_MODE); // Tell the pack about the change.
 
       if(gpstarWand.setStreamMode(PROTON)) {
         streamModeCheck();
@@ -579,7 +579,7 @@ void handleWandPrefsUpdate() {
   playEffect(S_BEEPS);
 
   // Inform the pack of our current stream flags.
-  wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
+  packSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
 
 #ifdef ESP32
   if(wandConfig.resetWifiPassword) {
@@ -822,11 +822,11 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
       // The pack is asking us if we are still here so respond accordingly.
       if(WAND_CONN_STATE != PACK_CONNECTED) {
         // If still waiting for the pack, trigger an immediate synchronization.
-        wandSerialSend(A_SYNC_NOW, PROTOCOL_SIGNATURE);
+        packSerialSend(A_SYNC_NOW, PROTOCOL_SIGNATURE);
       }
       else {
         // The wand had already synchronized with the pack, so respond with handshake.
-        wandSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
+        packSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
       }
     break;
 
@@ -846,13 +846,13 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
       sendDebug(F("Pack Sync End"));
 
       // Acknowledgement that the wand is now synchronized.
-      wandSerialSend(A_SYNCHRONIZED);
+      packSerialSend(A_SYNCHRONIZED);
 
       // Inform the pack of our audio configuration.
-      wandSerialSend(A_WAND_AUDIO_VERSION, i_audio_version);
+      packSerialSend(A_WAND_AUDIO_VERSION, i_audio_version);
 
       // Inform the pack of our current stream flags.
-      wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
+      packSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
 
       // If pack is off, switch to our default stream mode before proceeding.
       if(!b_pack_on) {
@@ -867,16 +867,16 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
       else {
         if(gpstarWand.isFiringModeCTS()) {
           // If we are in CTS or CTS Mix, make sure the pack knows.
-          wandSerialSend(A_SET_FIRING_MODE, gpstarWand.isFiringModeCTSMix() ? FLAG_CTS_MIX_MODE : FLAG_CTS_MODE); // Tell the pack about the change.
+          packSerialSend(A_SET_FIRING_MODE, gpstarWand.isFiringModeCTSMix() ? FLAG_CTS_MIX_MODE : FLAG_CTS_MODE); // Tell the pack about the change.
         }
         else {
           // Make sure the pack knows we are in VG mode.
-          wandSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE);
+          packSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE);
         }
       }
 
       // Tell the pack the status of the proton stream effects flag.
-      wandSerialSend(A_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 4 : 3);
+      packSerialSend(A_SET_PROTON_STREAM_IMPACT, b_stream_effects ? 4 : 3);
 
       if(gpstarWand.getBarrelState() == BARREL_UNKNOWN) {
         // If the barrel state is unknown, this function will automatically report upstream.
@@ -884,7 +884,7 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
       }
       else {
         // Tell the pack the status of the Neutrona Wand barrel.
-        wandSerialSend(gpstarWand.getBarrelState() == BARREL_EXTENDED ? A_BARREL_EXTENDED : A_BARREL_RETRACTED);
+        packSerialSend(gpstarWand.getBarrelState() == BARREL_EXTENDED ? A_BARREL_EXTENDED : A_BARREL_RETRACTED);
       }
 
       return true;
@@ -919,12 +919,12 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
 
     case A_SEND_PREFERENCES_WAND:
       // The pack wants the latest wand preferences.
-      wandSerialSendData(A_SEND_PREFERENCES_WAND);
+      packSerialSendData(A_SEND_PREFERENCES_WAND);
     break;
 
     case A_SEND_PREFERENCES_SMOKE:
       // The pack wants the latest smoke preferences.
-      wandSerialSendData(A_SEND_PREFERENCES_SMOKE);
+      packSerialSendData(A_SEND_PREFERENCES_SMOKE);
     break;
 
     default:

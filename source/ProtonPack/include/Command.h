@@ -87,7 +87,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is on.
-      packSerialSend(A_ION_ARM_SWITCH_ON);
+      wandSerialSend(A_ION_ARM_SWITCH_ON);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is on.
       attenuatorSerialSend(A_ION_ARM_SWITCH_ON);
@@ -102,7 +102,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
 
       // Tell the Neutrona Wand that power to the Proton Pack is off.
-      packSerialSend(A_ION_ARM_SWITCH_OFF);
+      wandSerialSend(A_ION_ARM_SWITCH_OFF);
 
       // Tell the Attenuator or any other device that the power to the Proton Pack is off.
       attenuatorSerialSend(A_ION_ARM_SWITCH_OFF);
@@ -110,13 +110,13 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
     case A_WARNING_CANCELLED:
       // Tell wand to reset overheat warning.
-      packSerialSend(A_WARNING_CANCELLED);
+      wandSerialSend(A_WARNING_CANCELLED);
     break;
 
     case A_MANUAL_OVERHEAT:
       // Trigger a manual overheat vent.
       if(WAND_CONN_STATE == WAND_CONNECTED) {
-        packSerialSend(A_MANUAL_OVERHEAT);
+        wandSerialSend(A_MANUAL_OVERHEAT);
       }
       else if(PACK_STATE == MODE_ON) {
         packOverheatingStart();
@@ -126,7 +126,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
     case A_MANUAL_QUICK_VENT:
       // Trigger a manual quick vent.
       if(WAND_CONN_STATE == WAND_CONNECTED) {
-        packSerialSend(A_MANUAL_QUICK_VENT);
+        wandSerialSend(A_MANUAL_QUICK_VENT);
       }
       else if(PACK_STATE == MODE_ON) {
         packVentingStart();
@@ -153,7 +153,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       // Simulate a lockout as if by repeated button presses on the wand.
       if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Tell the wand to lock us out.
-        packSerialSend(A_SYSTEM_LOCKOUT);
+        wandSerialSend(A_SYSTEM_LOCKOUT);
       }
       else {
         // No wand connected, so do it ourselves.
@@ -176,7 +176,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       // Initiate a restart of the pack after a lockout event has occurred.
       if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Tell the wand to restart us.
-        packSerialSend(A_CANCEL_LOCKOUT);
+        wandSerialSend(A_CANCEL_LOCKOUT);
       }
       else {
         // No wand connected, so do it ourselves.
@@ -201,7 +201,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         if(PACK_STATE != MODE_ON) {
           // Only play voice clips when off.
           playEffect(S_VOICE_SMOKE_ENABLED);
-          packSerialSend(A_SET_SMOKE, 1);
+          wandSerialSend(A_SET_SMOKE, 1);
         }
       }
       else {
@@ -210,7 +210,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         if(PACK_STATE != MODE_ON) {
           // Only play voice clips when off.
           playEffect(S_VOICE_SMOKE_DISABLED);
-          packSerialSend(A_SET_SMOKE, 0);
+          wandSerialSend(A_SET_SMOKE, 0);
         }
       }
 
@@ -230,11 +230,11 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       stopEffect(S_VOICE_VIBRATION_DISABLED);
       if(b_vibration_switch_on) {
         playEffect(S_VOICE_VIBRATION_ENABLED);
-        packSerialSend(A_SET_WAND_VIBRATION_MODE, 1); // 1 = ALWAYS
+        wandSerialSend(A_SET_WAND_VIBRATION_MODE, 1); // 1 = ALWAYS
       }
       else {
         playEffect(S_VOICE_VIBRATION_DISABLED);
-        packSerialSend(A_SET_WAND_VIBRATION_MODE, 3); // 3 = NEVER
+        wandSerialSend(A_SET_WAND_VIBRATION_MODE, 3); // 3 = NEVER
       }
 
       attenuatorSerialSend(A_TOGGLE_VIBRATION, b_vibration_switch_on ? 2 : 1);
@@ -258,7 +258,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         if(PACK_STATE != MODE_ON) {
           // Only play voice clips when off.
           playEffect(S_VOICE_CYCLOTRON_CLOCKWISE);
-          packSerialSend(A_CYCLOTRON_CLOCKWISE);
+          wandSerialSend(A_CYCLOTRON_CLOCKWISE);
         }
       }
       else {
@@ -266,7 +266,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         if(PACK_STATE != MODE_ON) {
           // Only play voice clips when off.
           playEffect(S_VOICE_CYCLOTRON_COUNTER_CLOCKWISE);
-          packSerialSend(A_CYCLOTRON_COUNTER_CLOCKWISE);
+          wandSerialSend(A_CYCLOTRON_COUNTER_CLOCKWISE);
         }
       }
 
@@ -276,7 +276,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
     case A_TOGGLE_MUTE:
       toggleMute(i_value == 2);
       attenuatorSerialSend(A_TOGGLE_MUTE, i_volume_master == i_volume_abs_min ? 2 : 1);
-      packSerialSend(A_MASTER_AUDIO_STATUS, i_volume_master == i_volume_abs_min ? 2 : 1);
+      wandSerialSend(A_MASTER_AUDIO_STATUS, i_volume_master == i_volume_abs_min ? 2 : 1);
     break;
 
     case A_VOLUME_DECREASE:
@@ -299,7 +299,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       decreaseVolumeEffects();
 
       // Tell wand to decrease effects volume.
-      packSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
+      wandSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
     break;
 
     case A_VOLUME_SOUND_EFFECTS_INCREASE:
@@ -307,7 +307,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       increaseVolumeEffects();
 
       // Tell wand to increase effects volume.
-      packSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
+      wandSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
     break;
 
     case A_VOLUME_MUSIC_DECREASE:
@@ -356,20 +356,20 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
     case A_MUSIC_TRACK_LOOP_TOGGLE:
       toggleMusicLoop(i_value == 2);
       attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, b_repeat_track ? 2 : 1);
-      packSerialSend(A_MUSIC_TRACK_LOOP_STATUS, b_repeat_track ? 2 : 1);
+      wandSerialSend(A_MUSIC_TRACK_LOOP_STATUS, b_repeat_track ? 2 : 1);
     break;
 
     case A_MUSIC_TRACK_SHUFFLE_TOGGLE:
       toggleMusicShuffle(i_value == 2);
       attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, b_shuffle_tracks ? 2 : 1);
-      packSerialSend(A_MUSIC_TRACK_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
+      wandSerialSend(A_MUSIC_TRACK_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
     break;
 
     case A_YEAR_1984:
       gpstarPack.setSystemTheme(SYSTEM_1984);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_1984);
+      wandSerialSend(A_YEAR_1984);
       attenuatorSerialSend(A_YEAR_1984);
       playEffect(S_VOICE_1984);
       resetRampSpeeds();
@@ -381,7 +381,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       gpstarPack.setSystemTheme(SYSTEM_1989);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_1989);
+      wandSerialSend(A_YEAR_1989);
       attenuatorSerialSend(A_YEAR_1989);
       playEffect(S_VOICE_1989);
       resetRampSpeeds();
@@ -393,7 +393,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       gpstarPack.setSystemTheme(SYSTEM_AFTERLIFE);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_AFTERLIFE);
+      wandSerialSend(A_YEAR_AFTERLIFE);
       attenuatorSerialSend(A_YEAR_AFTERLIFE);
       playEffect(S_VOICE_AFTERLIFE);
       resetRampSpeeds();
@@ -405,7 +405,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       gpstarPack.setSystemTheme(SYSTEM_FROZEN_EMPIRE);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_FROZEN_EMPIRE);
+      wandSerialSend(A_YEAR_FROZEN_EMPIRE);
       attenuatorSerialSend(A_YEAR_FROZEN_EMPIRE);
       playEffect(S_VOICE_FROZEN_EMPIRE);
       resetRampSpeeds();
@@ -419,7 +419,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
       // Propagate the stream mode change to both Attenuator and Wand.
       attenuatorSerialSend(A_SET_STREAM_MODE, gpstarPack.getStreamModeByte());
-      packSerialSend(A_SET_STREAM_MODE, gpstarPack.getStreamModeByte());
+      wandSerialSend(A_SET_STREAM_MODE, gpstarPack.getStreamModeByte());
 
       // Meson requires a more rapid-fire triggering of sound effects.
       if(gpstarPack.inStreamMode(MESON) && i_audio_version < 109) {
@@ -471,7 +471,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
                 playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
               }
 
-              packSerialSend(A_REQUEST_BEEP_SYNC);
+              wandSerialSend(A_REQUEST_BEEP_SYNC);
             break;
             case SYSTEM_FROZEN_EMPIRE:
               stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
@@ -484,7 +484,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
               }
 
               if(!isBrassPack()) {
-                packSerialSend(A_REQUEST_BEEP_SYNC);
+                wandSerialSend(A_REQUEST_BEEP_SYNC);
               }
             break;
           }
@@ -563,7 +563,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       b_received_prefs_wand = false;
 
       if(WAND_CONN_STATE == WAND_CONNECTED) {
-        packSerialSend(A_SEND_PREFERENCES_WAND);
+        wandSerialSend(A_SEND_PREFERENCES_WAND);
       }
     break;
 
@@ -571,7 +571,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       if(WAND_CONN_STATE == WAND_CONNECTED) {
         // If requested by the Attenuator, tell the wand we need its EEPROM preferences.
         // This is merely a command to the wand which tells it to send back a data payload.
-        packSerialSend(A_SEND_PREFERENCES_SMOKE);
+        wandSerialSend(A_SEND_PREFERENCES_SMOKE);
       }
       else {
         // If a wand is not connected, simply return the smoke settings from the pack.
@@ -609,7 +609,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
     case A_SAVE_EEPROM_SETTINGS_WAND:
       // Commit changes to the EEPROM on the wand controller
-      packSerialSend(A_SAVE_EEPROM_WAND);
+      wandSerialSend(A_SAVE_EEPROM_WAND);
 
       // Offer some feedback to the user
       stopEffect(S_VOICE_EEPROM_SAVE);
@@ -628,7 +628,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
     case A_RESET_EEPROM_SETTINGS_WAND:
       // Reset the EEPROM on the wand controller
-      packSerialSend(A_RESET_EEPROM_WAND);
+      wandSerialSend(A_RESET_EEPROM_WAND);
 
       // Offer some feedback to the user
       stopEffect(S_VOICE_EEPROM_ERASE);

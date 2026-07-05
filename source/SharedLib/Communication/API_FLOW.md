@@ -4,7 +4,7 @@ This document captures current, code-verified discoveries from serial handlers a
 
 ## Alphabetical API Listing with Directional Flow
 
-The following is an alphabetical listing of all `API_COMMAND` and `API_DATA` enums found in `Communication.h`, with observed direction(s) inferred from send wrappers and case handlers in the codebase.
+The following is an alphabetical listing of all `API_COMMAND` and `API_DATA` enums found in `Communication.h`, with observed direction(s) inferred from send wrappers in the codebase. Notably `attenuatorSerialSend`, `packSerialSend`, and `wandSerialSend`.
 
 | API Name                                       | P->A | A->P | P->W | W->P |
 | ---------------------------------------------- | ---- | ---- | ---- | ---- |
@@ -301,7 +301,7 @@ The following is an alphabetical listing of all `API_COMMAND` and `API_DATA` enu
 
 ## Special Chained Sequences
 
-### 1) Handshake + Sync: Pack <-> Attenuator
+### 1) Handshake + Sync: Attenuator <-> Pack
 
 ```mermaid
 sequenceDiagram
@@ -317,7 +317,7 @@ sequenceDiagram
 
 ---
 
-### 2) Handshake + Sync: Pack <-> Wand
+### 2) Handshake + Sync: Wand <-> Pack
 
 ```mermaid
 sequenceDiagram
@@ -333,7 +333,7 @@ sequenceDiagram
 
 ---
 
-### 3) Preferences Exchange: Pack <-> Attenuator
+### 3) Preferences Exchange: Attenuator <-> Pack
 
 ```mermaid
 sequenceDiagram
@@ -342,7 +342,6 @@ sequenceDiagram
 
 		A->>P: A_REQUEST_PREFERENCES_PACK
 		P->>A: A_SEND_PREFERENCES_PACK (PACKET_PACK, PackPrefs)
-		A->>P: A_SAVE_PREFERENCES_ATTENUATOR
 		A->>P: A_SEND_PREFERENCES_WAND (PACKET_WAND, WandPrefs)
 		A->>P: A_SEND_PREFERENCES_SMOKE (PACKET_SMOKE, SmokePrefs)
 		P->>P: Persist imported data
@@ -350,7 +349,7 @@ sequenceDiagram
 
 ---
 
-### 4) Preferences Exchange: Pack <-> Wand
+### 4) Preferences Exchange: Wand <-> Pack
 
 ```mermaid
 sequenceDiagram

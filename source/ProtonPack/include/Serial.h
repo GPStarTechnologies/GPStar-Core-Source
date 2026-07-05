@@ -100,7 +100,7 @@ void toggleYearModes() {
       playEffect(S_VOICE_1989);
 
       // Tell the wand to play the 1989 sound effects.
-      packSerialSend(A_MODE_1989);
+      wandSerialSend(A_MODE_1989);
     break;
 
     case SYSTEM_1989:
@@ -115,7 +115,7 @@ void toggleYearModes() {
       playEffect(S_VOICE_AFTERLIFE);
 
       // Tell the wand to play the Afterlife sound effects.
-      packSerialSend(A_MODE_AFTERLIFE);
+      wandSerialSend(A_MODE_AFTERLIFE);
     break;
 
     case SYSTEM_AFTERLIFE:
@@ -131,7 +131,7 @@ void toggleYearModes() {
       playEffect(S_VOICE_FROZEN_EMPIRE);
 
       // Tell the wand to play the Frozen Empire sound effects.
-      packSerialSend(A_MODE_FROZEN_EMPIRE);
+      wandSerialSend(A_MODE_FROZEN_EMPIRE);
     break;
 
     case SYSTEM_FROZEN_EMPIRE:
@@ -146,7 +146,7 @@ void toggleYearModes() {
       playEffect(S_VOICE_1984);
 
       // Tell the wand to play the 1984 sound effects.
-      packSerialSend(A_MODE_1984);
+      wandSerialSend(A_MODE_1984);
     break;
   }
 
@@ -374,7 +374,7 @@ void wandDisconnectCheck() {
       // This should be a last-resort check to make sure it's available and responding.
       WAND_CONN_STATE = WAND_SYNCING;
       sendDebug(String(F("Wand Syncing | Conn. State: ")) + String(WAND_CONN_STATE));
-      packSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
+      wandSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
     }
   }
 }
@@ -492,7 +492,7 @@ void attenuatorSendData(uint8_t i_message) {
 }
 
 // Outgoing commands to the wand
-void packSerialSend(uint16_t i_command, uint16_t i_value) {
+void wandSerialSend(uint16_t i_command, uint16_t i_value) {
   uint16_t i_send_size = 0;
 
   sendDebug(String(F("Command to Wand: ")) + String(i_command));
@@ -506,12 +506,12 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
   wandComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
 }
 // Override function to handle calls with a single parameter.
-void packSerialSend(uint16_t i_command) {
-  packSerialSend(i_command, 0);
+void wandSerialSend(uint16_t i_command) {
+  wandSerialSend(i_command, 0);
 }
 
 // Outgoing payloads to the wand
-void packSerialSendData(uint8_t i_message) {
+void wandSerialSendData(uint8_t i_message) {
   uint16_t i_send_size = 0;
 
   // sendDebug(String(F("Data to Wand: ")) + String(i_message));
@@ -557,13 +557,13 @@ void handlePackPrefsUpdate() {
     case 1:
     default:
       gpstarPack.setSystemMode(MODE_SUPER_HERO);
-      packSerialSend(A_MODE_SUPER_HERO);
+      wandSerialSend(A_MODE_SUPER_HERO);
       attenuatorSerialSend(A_MODE_SUPER_HERO);
     break;
 
     case 2:
       gpstarPack.setSystemMode(MODE_ORIGINAL);
-      packSerialSend(A_MODE_ORIGINAL);
+      wandSerialSend(A_MODE_ORIGINAL);
       attenuatorSerialSend(A_MODE_ORIGINAL);
 
       if(WAND_CONN_STATE != WAND_CONNECTED && !gpstarPack.inStreamMode(PROTON)) {
@@ -600,14 +600,14 @@ void handlePackPrefsUpdate() {
       gpstarPack.setSystemTheme(SYSTEM_1984);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_1984);
+      wandSerialSend(A_YEAR_1984);
       attenuatorSerialSend(A_YEAR_1984);
     break;
     case 3:
       gpstarPack.setSystemTheme(SYSTEM_1989);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_1989);
+      wandSerialSend(A_YEAR_1989);
       attenuatorSerialSend(A_YEAR_1989);
     break;
     case 4:
@@ -615,14 +615,14 @@ void handlePackPrefsUpdate() {
       gpstarPack.setSystemTheme(SYSTEM_AFTERLIFE);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_AFTERLIFE);
+      wandSerialSend(A_YEAR_AFTERLIFE);
       attenuatorSerialSend(A_YEAR_AFTERLIFE);
     break;
     case 5:
       gpstarPack.setSystemTheme(SYSTEM_FROZEN_EMPIRE);
       SYSTEM_THEME_TEMP = gpstarPack.getSystemTheme();
       b_switch_mode_override = true; // Explicit mode set, override mode toggle.
-      packSerialSend(A_YEAR_FROZEN_EMPIRE);
+      wandSerialSend(A_YEAR_FROZEN_EMPIRE);
       attenuatorSerialSend(A_YEAR_FROZEN_EMPIRE);
     break;
   }
@@ -832,7 +832,7 @@ void handlePackPrefsUpdate() {
 void handleWandPrefsUpdate() {
   sendDebug(F("Saving Wand Preferences"));
 
-  packSerialSendData(A_SAVE_PREFERENCES_WAND);
+  wandSerialSendData(A_SAVE_PREFERENCES_WAND);
 
   // Offer some feedback to the user
   stopEffect(S_BEEP_VARIATION);
@@ -859,7 +859,7 @@ void handleSmokePrefsUpdate() {
   updateContinuousSmoke(); // Set other variables as necessary
 
   // This will pass values from the smokeConfig object
-  packSerialSendData(A_SAVE_PREFERENCES_SMOKE);
+  wandSerialSendData(A_SAVE_PREFERENCES_SMOKE);
 
   // Offer some feedback to the user
   stopEffect(S_VENT_SMOKE);
@@ -1118,7 +1118,7 @@ void doWandSync() {
 
   // Begin the synchronization process which tells the wand the pack got the handshake.
   sendDebug(F("Wand Sync Start"));
-  packSerialSend(A_SYNC_START, b_pack_post_finish ? 2 : 1);
+  wandSerialSend(A_SYNC_START, b_pack_post_finish ? 2 : 1);
 
   // Wand sync sound effect if not in demo light mode.
   if(!b_demo_light_mode) {
@@ -1181,15 +1181,15 @@ void doWandSync() {
   wandSyncData.masterMuted = (i_volume_master == i_volume_abs_min);
 
   // Send the completed synchronization packet.
-  packSerialSendData(A_SYNC_DATA);
+  wandSerialSendData(A_SYNC_DATA);
 
   // Send the ribbon cable alarm status if the ribbon cable is detached.
   if(b_pack_alarm && !ribbonCableAttached()) {
-    packSerialSend(A_ALARM_ON, ribbonCableAttached() ? 1 : 0);
+    wandSerialSend(A_ALARM_ON, ribbonCableAttached() ? 1 : 0);
   }
 
   // Tell the wand that we've reached the end of settings to be sync'd.
-  packSerialSend(A_SYNC_END);
+  wandSerialSend(A_SYNC_END);
   sendDebug(F("Wand Sync End"));
 }
 
@@ -1260,7 +1260,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
       if(b_demo_light_mode) {
         // Demo light mode enabled. Send command to turn on the Neutrona Wand.
-        packSerialSend(A_TURN_WAND_ON);
+        wandSerialSend(A_TURN_WAND_ON);
       }
     break;
 
@@ -1329,7 +1329,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_CYCLOTRON_SIMULATE_RING_ENABLED);
         playEffect(S_VOICE_CYCLOTRON_SIMULATE_RING_ENABLED);
 
-        packSerialSend(A_SET_CYCLOTRON_SIMULATE_RING, 1);
+        wandSerialSend(A_SET_CYCLOTRON_SIMULATE_RING, 1);
       }
       else {
         b_cyclotron_simulate_ring = false;
@@ -1338,7 +1338,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_CYCLOTRON_SIMULATE_RING_ENABLED);
         playEffect(S_VOICE_CYCLOTRON_SIMULATE_RING_DISABLED);
 
-        packSerialSend(A_SET_CYCLOTRON_SIMULATE_RING, 0);
+        wandSerialSend(A_SET_CYCLOTRON_SIMULATE_RING, 0);
       }
 
       resetCyclotronLEDs();
@@ -1777,7 +1777,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
                 playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true);
               }
 
-              packSerialSend(A_REQUEST_BEEP_SYNC);
+              wandSerialSend(A_REQUEST_BEEP_SYNC);
             break;
             case SYSTEM_FROZEN_EMPIRE:
               stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
@@ -1790,7 +1790,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
               }
 
               if(!isBrassPack()) {
-                packSerialSend(A_REQUEST_BEEP_SYNC);
+                wandSerialSend(A_REQUEST_BEEP_SYNC);
               }
             break;
           }
@@ -1951,7 +1951,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
           stopEffect(S_VOICE_INNER_CYCLOTRON_LED_PANEL_DISABLED);
           playEffect(S_VOICE_INNER_CYCLOTRON_LED_PANEL_STATIC_COLORS);
 
-          packSerialSend(A_INNER_CYCLOTRON_PANEL_STATIC);
+          wandSerialSend(A_INNER_CYCLOTRON_PANEL_STATIC);
         break;
         case PANEL_RGB_STATIC:
           INNER_CYC_PANEL_MODE = PANEL_RGB_DYNAMIC;
@@ -1961,7 +1961,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
           stopEffect(S_VOICE_INNER_CYCLOTRON_LED_PANEL_DISABLED);
           playEffect(S_VOICE_INNER_CYCLOTRON_LED_PANEL_DYNAMIC_COLORS);
 
-          packSerialSend(A_INNER_CYCLOTRON_PANEL_DYNAMIC);
+          wandSerialSend(A_INNER_CYCLOTRON_PANEL_DYNAMIC);
         break;
         case PANEL_RGB_DYNAMIC:
         default:
@@ -1972,7 +1972,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
           stopEffect(S_VOICE_INNER_CYCLOTRON_LED_PANEL_DISABLED);
           playEffect(S_VOICE_INNER_CYCLOTRON_LED_PANEL_DISABLED);
 
-          packSerialSend(A_INNER_CYCLOTRON_PANEL_DISABLED);
+          wandSerialSend(A_INNER_CYCLOTRON_PANEL_DISABLED);
         break;
       }
 
@@ -1996,7 +1996,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_CYCLOTRON_FADING_ENABLED);
         playEffect(S_VOICE_CYCLOTRON_FADING_ENABLED);
 
-        packSerialSend(A_SET_CYCLOTRON_FADING, 1);
+        wandSerialSend(A_SET_CYCLOTRON_FADING, 1);
       }
       else {
         i_1984_delay = CYCLOTRON_DELAY_1984;
@@ -2004,7 +2004,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_CYCLOTRON_FADING_ENABLED);
         playEffect(S_VOICE_CYCLOTRON_FADING_DISABLED);
 
-        packSerialSend(A_SET_CYCLOTRON_FADING, 0);
+        wandSerialSend(A_SET_CYCLOTRON_FADING, 0);
       }
     break;
 
@@ -2383,10 +2383,10 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
           // Tell the Wand what state the vibration switch is in.
           if(switch_vibration.getState() == LOW) {
-            packSerialSend(A_SET_WAND_VIBRATION_MODE, 1); // ALWAYS
+            wandSerialSend(A_SET_WAND_VIBRATION_MODE, 1); // ALWAYS
           }
           else {
-            packSerialSend(A_SET_WAND_VIBRATION_MODE, 3); // NEVER
+            wandSerialSend(A_SET_WAND_VIBRATION_MODE, 3); // NEVER
           }
         break;
         case 5:
@@ -2403,7 +2403,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_PROTON_PACK_VIBRATION_FIRING_ENABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 2); // FIRING_ONLY
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 2); // FIRING_ONLY
 
               ms_menu_vibration.start(250);
             break;
@@ -2419,7 +2419,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_PROTON_PACK_VIBRATION_DISABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 3); // NEVER
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 3); // NEVER
             break;
 
             case VIBRATION_NEVER:
@@ -2439,7 +2439,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_MOTORIZED_CYCLOTRON_ENABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 5); // CYCLOTRON_MOTOR
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 5); // CYCLOTRON_MOTOR
             break;
 
             case CYCLOTRON_MOTOR:
@@ -2453,7 +2453,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_PROTON_PACK_VIBRATION_ENABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 1); // ALWAYS
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 1); // ALWAYS
 
               ms_menu_vibration.start(250);
             break;
@@ -2476,7 +2476,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_PROTON_PACK_VIBRATION_ENABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 1); // ALWAYS
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 1); // ALWAYS
 
               ms_menu_vibration.start(250);
             break;
@@ -2493,7 +2493,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_PROTON_PACK_VIBRATION_FIRING_ENABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 2); // FIRING_ONLY
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 2); // FIRING_ONLY
 
               ms_menu_vibration.start(250);
             break;
@@ -2509,7 +2509,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_PROTON_PACK_VIBRATION_DISABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 3); // NEVER
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 3); // NEVER
             break;
             case VIBRATION_NEVER:
               VIBRATION_MODE_EEPROM = CYCLOTRON_MOTOR;
@@ -2524,7 +2524,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_MOTORIZED_CYCLOTRON_ENABLED);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 5); // CYCLOTRON_MOTOR
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 5); // CYCLOTRON_MOTOR
             break;
             case CYCLOTRON_MOTOR:
               VIBRATION_MODE_EEPROM = VIBRATION_DEFAULT;
@@ -2545,7 +2545,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
               playEffect(S_VOICE_PROTON_PACK_VIBRATION_DEFAULT);
 
-              packSerialSend(A_SET_PACK_VIBRATION_MODE, 4); // DEFAULT
+              wandSerialSend(A_SET_PACK_VIBRATION_MODE, 4); // DEFAULT
 
               ms_menu_vibration.start(250);
             break;
@@ -2566,7 +2566,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_SMOKE_DISABLED);
 
         // Tell the wand to play the smoke disabled voice.
-        packSerialSend(A_SET_SMOKE, 0);
+        wandSerialSend(A_SET_SMOKE, 0);
       }
       else {
         b_smoke_enabled = true;
@@ -2579,7 +2579,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_SMOKE_ENABLED);
 
         // Tell the wand to play the smoke enabled voice.
-        packSerialSend(A_SET_SMOKE, 1);
+        wandSerialSend(A_SET_SMOKE, 1);
       }
     break;
 
@@ -2598,7 +2598,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_CYCLOTRON_COUNTER_CLOCKWISE);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_CYCLOTRON_COUNTER_CLOCKWISE);
+        wandSerialSend(A_CYCLOTRON_COUNTER_CLOCKWISE);
       }
       else {
         b_clockwise = true;
@@ -2613,7 +2613,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_CYCLOTRON_CLOCKWISE);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_CYCLOTRON_CLOCKWISE);
+        wandSerialSend(A_CYCLOTRON_CLOCKWISE);
       }
     break;
 
@@ -2628,7 +2628,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_THREE_LED);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_CYCLOTRON_THREE_LED);
+        wandSerialSend(A_CYCLOTRON_THREE_LED);
       }
       else {
         b_cyclotron_single_led = true;
@@ -2640,7 +2640,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_SINGLE_LED);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_CYCLOTRON_SINGLE_LED);
+        wandSerialSend(A_CYCLOTRON_SINGLE_LED);
       }
     break;
 
@@ -2659,7 +2659,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_VIDEO_GAME_COLOURS_DISABLED);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_SET_VIDEO_GAME_MODE_COLOURS, 0);
+        wandSerialSend(A_SET_VIDEO_GAME_MODE_COLOURS, 0);
       }
       else if(!b_cyclotron_colour_toggle && !b_powercell_colour_toggle) {
         // Power Cell only.
@@ -2669,7 +2669,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_VIDEO_GAME_COLOURS_POWERCELL_ENABLED);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_VIDEO_GAME_MODE_POWER_CELL_ENABLED);
+        wandSerialSend(A_VIDEO_GAME_MODE_POWER_CELL_ENABLED);
       }
       else if(!b_cyclotron_colour_toggle && b_powercell_colour_toggle) {
         // Cyclotron only.
@@ -2679,7 +2679,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_VIDEO_GAME_COLOURS_CYCLOTRON_ENABLED);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_VIDEO_GAME_MODE_CYCLOTRON_ENABLED);
+        wandSerialSend(A_VIDEO_GAME_MODE_CYCLOTRON_ENABLED);
       }
       else {
         // Enabled, both Cyclotron and Power Cell video game colours.
@@ -2689,7 +2689,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_VIDEO_GAME_COLOURS_ENABLED);
 
         // Tell the wand to play the same sound.
-        packSerialSend(A_SET_VIDEO_GAME_MODE_COLOURS, 1);
+        wandSerialSend(A_SET_VIDEO_GAME_MODE_COLOURS, 1);
       }
     break;
 
@@ -2754,14 +2754,14 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       // Inverting the logic acts as a push-button on/off toggle.
       toggleMusicLoop(!b_repeat_track);
       attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, b_repeat_track ? 2 : 1);
-      packSerialSend(A_MUSIC_TRACK_LOOP_STATUS, b_repeat_track ? 2 : 1);
+      wandSerialSend(A_MUSIC_TRACK_LOOP_STATUS, b_repeat_track ? 2 : 1);
     break;
 
     case A_MUSIC_TRACK_SHUFFLE_TOGGLE:
       // Inverting the logic acts as a push-button on/off toggle.
       toggleMusicShuffle(!b_shuffle_tracks);
       attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, b_shuffle_tracks ? 2 : 1);
-      packSerialSend(A_MUSIC_TRACK_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
+      wandSerialSend(A_MUSIC_TRACK_SHUFFLE_STATUS, b_shuffle_tracks ? 2 : 1);
     break;
 
     case A_TOGGLE_MUTE:
@@ -2770,7 +2770,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
       // Notify serial devices of our mute status.
       attenuatorSerialSend(A_TOGGLE_MUTE, i_volume_master == i_volume_abs_min ? 2 : 1);
-      packSerialSend(A_MASTER_AUDIO_STATUS, i_volume_master == i_volume_abs_min ? 2 : 1);
+      wandSerialSend(A_MASTER_AUDIO_STATUS, i_volume_master == i_volume_abs_min ? 2 : 1);
     break;
 
     case A_NEUTRONA_WAND_VOLUME_ADJUSTMENT:
@@ -2922,8 +2922,8 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
           stopEffect(S_VOICE_MODE_ORIGINAL);
           playEffect(S_VOICE_MODE_SUPER_HERO);
 
-          packSerialSend(A_SOUND_SUPER_HERO);
-          packSerialSend(A_MODE_SUPER_HERO);
+          wandSerialSend(A_SOUND_SUPER_HERO);
+          wandSerialSend(A_MODE_SUPER_HERO);
           attenuatorSerialSend(A_MODE_SUPER_HERO);
         break;
 
@@ -2935,8 +2935,8 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
           stopEffect(S_VOICE_MODE_SUPER_HERO);
           playEffect(S_VOICE_MODE_ORIGINAL);
 
-          packSerialSend(A_SOUND_MODE_ORIGINAL);
-          packSerialSend(A_MODE_ORIGINAL);
+          wandSerialSend(A_SOUND_MODE_ORIGINAL);
+          wandSerialSend(A_MODE_ORIGINAL);
           attenuatorSerialSend(A_MODE_ORIGINAL);
         break;
       }
@@ -3078,7 +3078,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
           playEffect(S_VOICE_CYCLOTRON_INNER_BRIGHTNESS);
 
-          packSerialSend(A_INNER_CYCLOTRON_DIMMING);
+          wandSerialSend(A_INNER_CYCLOTRON_DIMMING);
         break;
 
         case DIM_INNER_CYCLOTRON:
@@ -3091,7 +3091,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
           playEffect(S_VOICE_INNER_CYCLOTRON_PANEL_BRIGHTNESS);
 
-          packSerialSend(A_CYCLOTRON_PANEL_DIMMING);
+          wandSerialSend(A_CYCLOTRON_PANEL_DIMMING);
         break;
 
         case DIM_CYCLOTRON_PANEL:
@@ -3104,7 +3104,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
           playEffect(S_VOICE_POWERCELL_BRIGHTNESS);
 
-          packSerialSend(A_POWERCELL_DIMMING);
+          wandSerialSend(A_POWERCELL_DIMMING);
         break;
 
         case DIM_POWERCELL:
@@ -3118,7 +3118,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
           playEffect(S_VOICE_CYCLOTRON_BRIGHTNESS);
 
-          packSerialSend(A_CYCLOTRON_DIMMING);
+          wandSerialSend(A_CYCLOTRON_DIMMING);
         break;
       }
     break;
@@ -3136,7 +3136,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
             resetCyclotronState();
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3157,7 +3157,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
               i_cyclotron_inner_brightness = i_cyclotron_inner_brightness + 5;
             }
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3178,7 +3178,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
               i_cyclotron_panel_brightness = i_cyclotron_panel_brightness + 5;
             }
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3203,7 +3203,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
             // Reset the Power Cell.
             powercellDraw();
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3230,7 +3230,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
 
             resetCyclotronState();
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3251,7 +3251,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
               i_cyclotron_inner_brightness = i_cyclotron_inner_brightness - 5;
             }
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3272,7 +3272,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
               i_cyclotron_panel_brightness = i_cyclotron_panel_brightness - 5;
             }
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3297,7 +3297,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
             // Reset the Power Cell.
             powercellDraw();
 
-            packSerialSend(A_DIMMING);
+            wandSerialSend(A_DIMMING);
 
             stopEffect(S_BEEPS);
             playEffect(S_BEEPS);
@@ -3599,13 +3599,13 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         CAKE_LED_TYPE = RGB_LED;
         playEffect(S_VOICE_RGB_INNER_CYCLOTRON);
 
-        packSerialSend(A_RGB_INNER_CYCLOTRON_LEDS);
+        wandSerialSend(A_RGB_INNER_CYCLOTRON_LEDS);
       }
       else {
         CAKE_LED_TYPE = GRB_LED;
         playEffect(S_VOICE_GRB_INNER_CYCLOTRON);
 
-        packSerialSend(A_GRB_INNER_CYCLOTRON_LEDS);
+        wandSerialSend(A_GRB_INNER_CYCLOTRON_LEDS);
       }
 
       if(b_spectral_lights_on) {
@@ -3641,7 +3641,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_DEMO_LIGHT_MODE_ENABLED);
 
         // Send back the new state to the Wand
-        packSerialSend(A_SET_DEMO_LIGHT_MODE, 1);
+        wandSerialSend(A_SET_DEMO_LIGHT_MODE, 1);
       }
       else {
         b_demo_light_mode = false;
@@ -3652,7 +3652,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         playEffect(S_VOICE_DEMO_LIGHT_MODE_DISABLED);
 
         // Send back the new state to the Wand
-        packSerialSend(A_SET_DEMO_LIGHT_MODE, 0);
+        wandSerialSend(A_SET_DEMO_LIGHT_MODE, 0);
       }
     break;
 
@@ -3825,7 +3825,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_POWERCELL_INVERTED);
 
         playEffect(S_VOICE_POWERCELL_NOT_INVERTED);
-        packSerialSend(A_SET_POWERCELL_INVERT, 0);
+        wandSerialSend(A_SET_POWERCELL_INVERT, 0);
       }
       else {
         b_powercell_invert = true;
@@ -3834,7 +3834,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_POWERCELL_NOT_INVERTED);
 
         playEffect(S_VOICE_POWERCELL_INVERTED);
-        packSerialSend(A_SET_POWERCELL_INVERT, 1);
+        wandSerialSend(A_SET_POWERCELL_INVERT, 1);
       }
     break;
 
@@ -3997,7 +3997,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_OVERHEAT_STROBE_DISABLED);
         playEffect(S_VOICE_OVERHEAT_STROBE_ENABLED);
 
-        packSerialSend(A_SET_OVERHEAT_STROBE, 1);
+        wandSerialSend(A_SET_OVERHEAT_STROBE, 1);
       }
       else {
         b_overheat_strobe = false;
@@ -4006,7 +4006,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_OVERHEAT_STROBE_ENABLED);
         playEffect(S_VOICE_OVERHEAT_STROBE_DISABLED);
 
-        packSerialSend(A_SET_OVERHEAT_STROBE, 0);
+        wandSerialSend(A_SET_OVERHEAT_STROBE, 0);
       }
     break;
 
@@ -4020,7 +4020,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_OVERHEAT_LIGHTS_OFF_DISABLED);
         playEffect(S_VOICE_OVERHEAT_LIGHTS_OFF_ENABLED);
 
-        packSerialSend(A_SET_OVERHEAT_LIGHTS_OFF, 1);
+        wandSerialSend(A_SET_OVERHEAT_LIGHTS_OFF, 1);
       }
       else {
         b_overheat_lights_off = false;
@@ -4029,7 +4029,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_OVERHEAT_LIGHTS_OFF_ENABLED);
         playEffect(S_VOICE_OVERHEAT_LIGHTS_OFF_DISABLED);
 
-        packSerialSend(A_SET_OVERHEAT_LIGHTS_OFF, 0);
+        wandSerialSend(A_SET_OVERHEAT_LIGHTS_OFF, 0);
       }
     break;
 
@@ -4043,7 +4043,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_OVERHEAT_FAN_SYNC_DISABLED);
         playEffect(S_VOICE_OVERHEAT_FAN_SYNC_ENABLED);
 
-        packSerialSend(A_SET_OVERHEAT_SYNC_FAN, 1);
+        wandSerialSend(A_SET_OVERHEAT_SYNC_FAN, 1);
       }
       else {
         b_overheat_sync_to_fan = false;
@@ -4052,7 +4052,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_OVERHEAT_FAN_SYNC_ENABLED);
         playEffect(S_VOICE_OVERHEAT_FAN_SYNC_DISABLED);
 
-        packSerialSend(A_SET_OVERHEAT_SYNC_FAN, 0);
+        wandSerialSend(A_SET_OVERHEAT_SYNC_FAN, 0);
       }
     break;
 
@@ -4072,7 +4072,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
           stopEffect(S_VOICE_1989);
           playEffect(S_VOICE_YEAR_MODE_DEFAULT);
 
-          packSerialSend(A_YEAR_MODE_DEFAULT);
+          wandSerialSend(A_YEAR_MODE_DEFAULT);
 
           SYSTEM_THEME_EEPROM = SYSTEM_TOGGLE_SWITCH;
         }
@@ -4157,7 +4157,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_PROTON_PACK_GPSTAR_AUDIO_LED_ENABLED);
         playEffect(S_VOICE_PROTON_PACK_GPSTAR_AUDIO_LED_ENABLED);
         setAudioLED(true);
-        packSerialSend(A_SET_PACK_GPSTAR_AUDIO_LED, 1);
+        wandSerialSend(A_SET_PACK_GPSTAR_AUDIO_LED, 1);
       }
       else {
         b_gpstar_audio_led_enabled = false;
@@ -4165,7 +4165,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_PROTON_PACK_GPSTAR_AUDIO_LED_DISABLED);
         playEffect(S_VOICE_PROTON_PACK_GPSTAR_AUDIO_LED_DISABLED);
         setAudioLED(false);
-        packSerialSend(A_SET_PACK_GPSTAR_AUDIO_LED, 0);
+        wandSerialSend(A_SET_PACK_GPSTAR_AUDIO_LED, 0);
       }
     break;
 
@@ -4195,7 +4195,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_QUICK_BOOTUP_DISABLED);
         stopEffect(S_VOICE_QUICK_BOOTUP_ENABLED);
         playEffect(S_VOICE_QUICK_BOOTUP_ENABLED);
-        packSerialSend(A_SET_QUICK_BOOTUP, 1);
+        wandSerialSend(A_SET_QUICK_BOOTUP, 1);
       }
       else {
         // Quick bootup disabled (full startup)
@@ -4203,7 +4203,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         stopEffect(S_VOICE_QUICK_BOOTUP_ENABLED);
         stopEffect(S_VOICE_QUICK_BOOTUP_DISABLED);
         playEffect(S_VOICE_QUICK_BOOTUP_DISABLED);
-        packSerialSend(A_SET_QUICK_BOOTUP, 0);
+        wandSerialSend(A_SET_QUICK_BOOTUP, 0);
       }
     break;
 

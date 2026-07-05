@@ -61,7 +61,7 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
  */
 
 // Sends an API to the Proton Pack
-void attenuatorSerialSend(uint16_t i_command, uint16_t i_value = 0) {
+void packSerialSend(uint16_t i_command, uint16_t i_value = 0) {
   uint16_t i_send_size = 0;
 
   #if defined(DEBUG_SERIAL_COMMS)
@@ -79,7 +79,7 @@ void attenuatorSerialSend(uint16_t i_command, uint16_t i_value = 0) {
 }
 
 // Sends an API to the Proton Pack
-void attenuatorSerialSendData(uint8_t i_message) {
+void packSerialSendData(uint8_t i_message) {
   uint16_t i_send_size = 0;
 
   #if defined(DEBUG_SERIAL_COMMS)
@@ -307,11 +307,11 @@ bool handleCommand(uint16_t i_command, uint16_t i_value) {
       
       if(PACK_CONN_STATE == PACK_CONNECTED) {
         // The pack is asking us if we are still here. Respond back with handshake.
-        attenuatorSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
+        packSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
       }
       else {
         // Not yet connected (or lost connection) - demand a sync!
-        attenuatorSerialSend(A_SYNC_START, PROTOCOL_SIGNATURE);
+        packSerialSend(A_SYNC_START, PROTOCOL_SIGNATURE);
       }
     break;
 
@@ -333,7 +333,7 @@ bool handleCommand(uint16_t i_command, uint16_t i_value) {
       b_state_changed = true;
       ms_packsync.start(i_sync_disconnect_delay);
 
-      attenuatorSerialSend(A_SYNC_END); // Signal end of sync.
+      packSerialSend(A_SYNC_END); // Signal end of sync.
     break;
 
     case A_RESET_WIFI_PASSWORD:
@@ -354,7 +354,7 @@ bool handleCommand(uint16_t i_command, uint16_t i_value) {
       b_state_changed = true;
 
       if (!b_received_prefs_wand) {
-        attenuatorSerialSend(A_REQUEST_PREFERENCES_WAND); // Request current wand prefs.
+        packSerialSend(A_REQUEST_PREFERENCES_WAND); // Request current wand prefs.
       }
     break;
 

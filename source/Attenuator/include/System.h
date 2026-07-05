@@ -96,7 +96,7 @@ void sendStreamModeCommand(STREAM_MODES new_mode) {
   debugf("sendStreamModeCommand() called with mode: %d\n", new_mode);
 
   if(gpstarSystem.supportsStreamMode(new_mode)) {
-    attenuatorSerialSend(A_SET_STREAM_MODE, (uint8_t)new_mode);
+    packSerialSend(A_SET_STREAM_MODE, (uint8_t)new_mode);
   }
 }
 
@@ -440,20 +440,20 @@ void checkRotaryPress() {
       switch(MENU_LEVEL) {
         case MENU_1:
           // A short, single press should start or stop the music.
-          attenuatorSerialSend(A_MUSIC_START_STOP);
+          packSerialSend(A_MUSIC_START_STOP);
           useVibration(i_vibrate_min_time); // Give a quick nudge.
           sendDebug(F("Rotary: Music Start/Stop"));
         break;
 
         case MENU_2:
           // A short, single press should advance to the next track.
-          attenuatorSerialSend(A_MUSIC_NEXT_TRACK);
+          packSerialSend(A_MUSIC_NEXT_TRACK);
           useVibration(i_vibrate_min_time); // Give a quick nudge.
           sendDebug(F("Rotary: Next Track"));
         break;
 
         case MENU_STREAM:
-          attenuatorSerialSend(A_MANUAL_QUICK_VENT);
+          packSerialSend(A_MANUAL_QUICK_VENT);
           useVibration(i_vibrate_min_time); // Give a quick nudge.
           sendDebug(F("Rotary: Quick Vent"));
         break;
@@ -465,14 +465,14 @@ void checkRotaryPress() {
       switch(MENU_LEVEL) {
         case MENU_1:
           // A double press should mute the pack and wand.
-          attenuatorSerialSend(A_TOGGLE_MUTE);
+          packSerialSend(A_TOGGLE_MUTE);
           useVibration(i_vibrate_min_time); // Give a quick nudge.
           sendDebug(F("Rotary: Toggle Mute"));
         break;
 
         case MENU_2:
           // A double press should move back to the previous track.
-          attenuatorSerialSend(A_MUSIC_PREV_TRACK);
+          packSerialSend(A_MUSIC_PREV_TRACK);
           useVibration(i_vibrate_min_time); // Give a quick nudge.
           sendDebug(F("Rotary: Previous Track"));
         break;
@@ -498,7 +498,7 @@ void checkRotaryPress() {
         break;
 
         case MENU_STREAM:
-          attenuatorSerialSend(A_MANUAL_OVERHEAT);
+          packSerialSend(A_MANUAL_OVERHEAT);
           useVibration(i_vibrate_min_time); // Give a quick nudge.
           sendDebug(F("Rotary: Forced Overheat"));
         break;
@@ -529,7 +529,7 @@ void checkRotaryEncoder() {
         // Only do so after 5 turns of the dial (CW).
         i_rotary_count++;
         if(i_rotary_count % 5 == 0) {
-          attenuatorSerialSend(A_WARNING_CANCELLED);
+          packSerialSend(A_WARNING_CANCELLED);
           sendDebug(F("Rotary: Overheat Cancelled"));
           i_rotary_count = 0;
         }
@@ -539,13 +539,13 @@ void checkRotaryEncoder() {
         switch(MENU_LEVEL) {
           case MENU_1:
             // Tell pack to increase overall volume.
-            attenuatorSerialSend(A_VOLUME_INCREASE);
+            packSerialSend(A_VOLUME_INCREASE);
             sendDebug(F("Rotary: Master Volume+"));
           break;
 
           case MENU_2:
             // Tell pack to increase effects volume.
-            attenuatorSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
+            packSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
             sendDebug(F("Rotary: Effects Volume+"));
           break;
 
@@ -567,7 +567,7 @@ void checkRotaryEncoder() {
         // Only do so after 5 turns of the dial (CCW).
         i_rotary_count++;
         if(i_rotary_count % 5 == 0) {
-          attenuatorSerialSend(A_WARNING_CANCELLED);
+          packSerialSend(A_WARNING_CANCELLED);
           sendDebug(F("Rotary: Overheat Cancelled"));
           i_rotary_count = 0;
         }
@@ -577,13 +577,13 @@ void checkRotaryEncoder() {
         switch(MENU_LEVEL) {
           case MENU_1:
             // Tell pack to decrease overall volume.
-            attenuatorSerialSend(A_VOLUME_DECREASE);
+            packSerialSend(A_VOLUME_DECREASE);
             sendDebug(F("Rotary: Master Volume-"));
           break;
 
           case MENU_2:
             // Tell pack to decrease effects volume.
-            attenuatorSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
+            packSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
             sendDebug(F("Rotary: Effects Volume-"));
           break;
 
@@ -645,7 +645,7 @@ void checkUserInputs() {
 
     if(b_left_toggle_on) {
       if(!b_pack_on) {
-        attenuatorSerialSend(A_TURN_PACK_ON);
+        packSerialSend(A_TURN_PACK_ON);
 
         if(!b_comms_open && PACK_CONN_STATE == PACK_CONNECTED && !ms_packsync.isRunning()) {
           // Only force the pack bool to true if in standalone mode.
@@ -655,7 +655,7 @@ void checkUserInputs() {
     }
     else {
       if(b_pack_on) {
-        attenuatorSerialSend(A_TURN_PACK_OFF);
+        packSerialSend(A_TURN_PACK_OFF);
 
         if(!b_comms_open && PACK_CONN_STATE == PACK_CONNECTED && !ms_packsync.isRunning()) {
           // Only force the pack bool to false if in standalone mode.

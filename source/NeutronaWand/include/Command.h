@@ -20,7 +20,7 @@
 #pragma once
 
 // Forward function declaration.
-void wandSerialSend(uint16_t i_command, uint16_t i_value); // From Serial.h
+void packSerialSend(uint16_t i_command, uint16_t i_value); // From Serial.h
 void notifyWSClients(); // From Webhandler.h
 
 /**
@@ -78,7 +78,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       gpstarWand.setPowerLevel(LEVEL_5); // Restore PL5 as the default power level.
       updatePackPowerLevel();
       vgModeCheck(); // Re-check VG/CTS mode.
-      wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts()); // Send the latest flags upstream.
+      packSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts()); // Send the latest flags upstream.
     break;
 
     case A_MODE_ORIGINAL:
@@ -89,7 +89,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         updatePackPowerLevel();
       }
       vgModeCheck(); // Assert CTS mode.
-      wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts()); // Send the latest flags upstream.
+      packSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts()); // Send the latest flags upstream.
     break;
 
     case A_OVERHEATING_FINISHED:
@@ -145,7 +145,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       if(WAND_STATUS == MODE_ON && WAND_ACTION_STATUS != ACTION_SETTINGS && WAND_ACTION_STATUS != ACTION_OVERHEATING && WAND_ACTION_STATUS != ACTION_VENTING) {
         if(b_pack_on && !b_pack_alarm && b_overheat_enabled) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_EXTRA_WAND_SOUNDS_STOP);
+            packSerialSend(A_EXTRA_WAND_SOUNDS_STOP);
           }
 
           switch(getNeutronaWandYearMode()) {
@@ -161,7 +161,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
                 playEffect(S_AFTERLIFE_WAND_RAMP_DOWN_1);
 
                 if(b_extra_pack_sounds) {
-                  wandSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_1);
+                  packSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_1);
                 }
               }
             break;
@@ -171,7 +171,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         }
       }
       else if(WAND_STATUS == MODE_OFF) {
-        wandSerialSend(A_OVERHEATING);
+        packSerialSend(A_OVERHEATING);
       }
     break;
 
@@ -182,7 +182,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         }
       }
       else if(WAND_STATUS == MODE_OFF) {
-        wandSerialSend(A_VENTING);
+        packSerialSend(A_VENTING);
       }
     break;
 
@@ -246,8 +246,8 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       if(WAND_STATUS != MODE_ERROR && WAND_ACTION_STATUS != ACTION_OVERHEATING) {
         if(WAND_STATUS == MODE_ON) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_WAND_SHUTDOWN_SOUND);
-            wandSerialSend(A_EXTRA_WAND_SOUNDS_STOP);
+            packSerialSend(A_WAND_SHUTDOWN_SOUND);
+            packSerialSend(A_EXTRA_WAND_SOUNDS_STOP);
           }
 
           stopEffect(S_WAND_SHUTDOWN);
@@ -267,7 +267,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
                 playEffect(S_AFTERLIFE_WAND_RAMP_DOWN_1);
 
                 if(b_extra_pack_sounds) {
-                  wandSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_1);
+                  packSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_1);
                 }
               }
             break;
@@ -278,7 +278,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
           if(WAND_ACTION_STATUS == ACTION_SETTINGS) {
             // If the wand is in settings mode while the alarm is activated, exit the settings mode.
-            wandSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
+            packSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
             WAND_ACTION_STATUS = ACTION_IDLE;
           }
 
@@ -341,7 +341,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       resetHatLights();
 
       // Next, reset the cyclotron speed on all devices.
-      wandSerialSend(A_CYCLOTRON_NORMAL_SPEED);
+      packSerialSend(A_CYCLOTRON_NORMAL_SPEED);
       cyclotronSpeedRevert();
     break;
 

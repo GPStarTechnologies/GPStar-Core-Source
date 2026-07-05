@@ -780,7 +780,7 @@ void handleSwagger(AsyncWebServerRequest *request) {
 void handlePackSettings(AsyncWebServerRequest *request) {
   // Tell the pack that we'll need the latest pack EEPROM values.
   b_received_prefs_pack = false;
-  attenuatorSerialSend(A_REQUEST_PREFERENCES_PACK);
+  packSerialSend(A_REQUEST_PREFERENCES_PACK);
 
   // Used for the settings page from the web server.
   debugln(F("Sending -> Pack Settings HTML"));
@@ -794,7 +794,7 @@ void handlePackSettings(AsyncWebServerRequest *request) {
 void handleWandSettings(AsyncWebServerRequest *request) {
   // Tell the pack that we'll need the latest wand EEPROM values.
   b_received_prefs_wand = false;
-  attenuatorSerialSend(A_REQUEST_PREFERENCES_WAND);
+  packSerialSend(A_REQUEST_PREFERENCES_WAND);
 
   // Used for the settings page from the web server.
   debugln(F("Sending -> Wand Settings HTML"));
@@ -808,7 +808,7 @@ void handleWandSettings(AsyncWebServerRequest *request) {
 void handleSmokeSettings(AsyncWebServerRequest *request) {
   // Tell the pack that we'll need the latest smoke EEPROM values.
   b_received_prefs_smoke = false;
-  attenuatorSerialSend(A_REQUEST_PREFERENCES_SMOKE);
+  packSerialSend(A_REQUEST_PREFERENCES_SMOKE);
 
   // Used for the settings page from the web server.
   debugln(F("Sending -> Smoke Settings HTML"));
@@ -988,7 +988,7 @@ void handlePackOn(AsyncWebServerRequest *request) {
   }
 
   debugln(F("Web: Turn Pack On"));
-  attenuatorSerialSend(A_TURN_PACK_ON);
+  packSerialSend(A_TURN_PACK_ON);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -999,7 +999,7 @@ void handlePackOff(AsyncWebServerRequest *request) {
   }
 
   debugln(F("Web: Turn Pack Off"));
-  attenuatorSerialSend(A_TURN_PACK_OFF);
+  packSerialSend(A_TURN_PACK_OFF);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1007,7 +1007,7 @@ void handleAttenuatePack(AsyncWebServerRequest *request) {
   if(i_cyclotron_multiplier > 2) {
     // Only send command to pack if cyclotron is not "normal".
     debugln(F("Web: Cancel Overheat Warning"));
-    attenuatorSerialSend(A_WARNING_CANCELLED);
+    packSerialSend(A_WARNING_CANCELLED);
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }
   else {
@@ -1023,7 +1023,7 @@ void handleManualVent(AsyncWebServerRequest *request) {
   }
 
   debugln(F("Web: Manual Vent Triggered"));
-  attenuatorSerialSend(A_MANUAL_OVERHEAT);
+  packSerialSend(A_MANUAL_OVERHEAT);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1034,7 +1034,7 @@ void handleCableOn(AsyncWebServerRequest *request) {
   }
 
   debugln(F("Web: Ribbon Cable Attach Triggered"));
-  attenuatorSerialSend(A_ALARM_OFF);
+  packSerialSend(A_ALARM_OFF);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1045,7 +1045,7 @@ void handleCableOff(AsyncWebServerRequest *request) {
   }
 
   debugln(F("Web: Ribbon Cable Detach Triggered"));
-  attenuatorSerialSend(A_ALARM_ON);
+  packSerialSend(A_ALARM_ON);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1060,7 +1060,7 @@ void handleMashLockout(AsyncWebServerRequest *request) {
   }
 
   debugln(F("Web: Manual Button Mash Lockout Triggered"));
-  attenuatorSerialSend(A_SYSTEM_LOCKOUT);
+  packSerialSend(A_SYSTEM_LOCKOUT);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1071,7 +1071,7 @@ void handleCancelLockout(AsyncWebServerRequest *request) {
   }
 
   debugln(F("Web: Button Mash Lockout Cancelled"));
-  attenuatorSerialSend(A_CANCEL_LOCKOUT);
+  packSerialSend(A_CANCEL_LOCKOUT);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1084,12 +1084,12 @@ void handleToggleSmoke(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "on") {
-        attenuatorSerialSend(A_TOGGLE_SMOKE, 2);
+        packSerialSend(A_TOGGLE_SMOKE, 2);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "off") {
-        attenuatorSerialSend(A_TOGGLE_SMOKE, 1);
+        packSerialSend(A_TOGGLE_SMOKE, 1);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -1109,12 +1109,12 @@ void handleToggleVibration(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "on") {
-        attenuatorSerialSend(A_TOGGLE_VIBRATION, 2);
+        packSerialSend(A_TOGGLE_VIBRATION, 2);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "off") {
-        attenuatorSerialSend(A_TOGGLE_VIBRATION, 1);
+        packSerialSend(A_TOGGLE_VIBRATION, 1);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -1134,12 +1134,12 @@ void handleCyclotronDirection(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "clockwise") {
-        attenuatorSerialSend(A_CYCLOTRON_DIRECTION_TOGGLE, 2);
+        packSerialSend(A_CYCLOTRON_DIRECTION_TOGGLE, 2);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "counterclockwise") {
-        attenuatorSerialSend(A_CYCLOTRON_DIRECTION_TOGGLE, 1);
+        packSerialSend(A_CYCLOTRON_DIRECTION_TOGGLE, 1);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -1182,19 +1182,19 @@ void handleThemeChange(AsyncWebServerRequest *request) {
   switch(i_year) {
     case 1984:
       gpstarSystem.setSystemTheme(SYSTEM_1984);
-      attenuatorSerialSend(A_YEAR_1984);
+      packSerialSend(A_YEAR_1984);
     break;
     case 1989:
       gpstarSystem.setSystemTheme(SYSTEM_1989);
-      attenuatorSerialSend(A_YEAR_1989);
+      packSerialSend(A_YEAR_1989);
     break;
     case 2021:
       gpstarSystem.setSystemTheme(SYSTEM_AFTERLIFE);
-      attenuatorSerialSend(A_YEAR_AFTERLIFE);
+      packSerialSend(A_YEAR_AFTERLIFE);
     break;
     case 2024:
       gpstarSystem.setSystemTheme(SYSTEM_FROZEN_EMPIRE);
-      attenuatorSerialSend(A_YEAR_FROZEN_EMPIRE);
+      packSerialSend(A_YEAR_FROZEN_EMPIRE);
     break;
     default:
       debugln(F("Invalid Theme Year"));
@@ -1269,12 +1269,12 @@ void handleToggleMute(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "mute") {
-        attenuatorSerialSend(A_TOGGLE_MUTE, 2);
+        packSerialSend(A_TOGGLE_MUTE, 2);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "unmute") {
-        attenuatorSerialSend(A_TOGGLE_MUTE, 1);
+        packSerialSend(A_TOGGLE_MUTE, 1);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -1287,13 +1287,13 @@ void handleToggleMute(AsyncWebServerRequest *request) {
 
 void handleMasterVolumeUp(AsyncWebServerRequest *request) {
   debugln(F("Web: Master Volume Up"));
-  attenuatorSerialSend(A_VOLUME_INCREASE);
+  packSerialSend(A_VOLUME_INCREASE);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleMasterVolumeDown(AsyncWebServerRequest *request) {
   debugln(F("Web: Master Volume Down"));
-  attenuatorSerialSend(A_VOLUME_DECREASE);
+  packSerialSend(A_VOLUME_DECREASE);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1312,7 +1312,7 @@ void handleMasterVolumeSet(AsyncWebServerRequest *request) {
 
         // Validate and constrain to 0-100 range
         if(volume <= 100) {
-          attenuatorSerialSend(A_VOLUME_SET, volume);
+          packSerialSend(A_VOLUME_SET, volume);
           request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
           return;
         }
@@ -1326,49 +1326,49 @@ void handleMasterVolumeSet(AsyncWebServerRequest *request) {
 
 void handleEffectsVolumeUp(AsyncWebServerRequest *request) {
   debugln(F("Web: Effects Volume Up"));
-  attenuatorSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
+  packSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleEffectsVolumeDown(AsyncWebServerRequest *request) {
   debugln(F("Web: Effects Volume Down"));
-  attenuatorSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
+  packSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleMusicVolumeUp(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Volume Up"));
-  attenuatorSerialSend(A_VOLUME_MUSIC_INCREASE);
+  packSerialSend(A_VOLUME_MUSIC_INCREASE);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleMusicVolumeDown(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Volume Down"));
-  attenuatorSerialSend(A_VOLUME_MUSIC_DECREASE);
+  packSerialSend(A_VOLUME_MUSIC_DECREASE);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleMusicStartStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Start/Stop"));
-  attenuatorSerialSend(A_MUSIC_START_STOP);
+  packSerialSend(A_MUSIC_START_STOP);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleMusicPauseResume(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Pause/Resume"));
-  attenuatorSerialSend(A_MUSIC_PAUSE_RESUME);
+  packSerialSend(A_MUSIC_PAUSE_RESUME);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleNextMusicTrack(AsyncWebServerRequest *request) {
   debugln(F("Web: Next Music Track"));
-  attenuatorSerialSend(A_MUSIC_NEXT_TRACK);
+  packSerialSend(A_MUSIC_NEXT_TRACK);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handlePrevMusicTrack(AsyncWebServerRequest *request) {
   debugln(F("Web: Prev Music Track"));
-  attenuatorSerialSend(A_MUSIC_PREV_TRACK);
+  packSerialSend(A_MUSIC_PREV_TRACK);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1381,12 +1381,12 @@ void handleLoopMusicTrack(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "one") {
-        attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, 2);
+        packSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, 2);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "all") {
-        attenuatorSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, 1);
+        packSerialSend(A_MUSIC_TRACK_LOOP_TOGGLE, 1);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -1406,12 +1406,12 @@ void handleShuffleMusicTracks(AsyncWebServerRequest *request) {
     if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "on") {
-        attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, 2);
+        packSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, 2);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "off") {
-        attenuatorSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, 1);
+        packSerialSend(A_MUSIC_TRACK_SHUFFLE_TOGGLE, 1);
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -1434,7 +1434,7 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
     uint16_t i_music_track = c_music_track.toInt();
     debug(F("Web: Selected Music Track: "));
     debugln(i_music_track);
-    attenuatorSerialSend(A_MUSIC_PLAY_TRACK, i_music_track); // Inform the pack of the new track.
+    packSerialSend(A_MUSIC_PLAY_TRACK, i_music_track); // Inform the pack of the new track.
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }
   else {
@@ -1445,32 +1445,32 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
 
 void handleSaveAllEEPROM(AsyncWebServerRequest *request) {
   debugln(F("Web: Save All EEPROM"));
-  attenuatorSerialSend(A_SAVE_EEPROM_SETTINGS_PACK);
-  attenuatorSerialSend(A_SAVE_EEPROM_SETTINGS_WAND);
+  packSerialSend(A_SAVE_EEPROM_SETTINGS_PACK);
+  packSerialSend(A_SAVE_EEPROM_SETTINGS_WAND);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleSavePackEEPROM(AsyncWebServerRequest *request) {
   debugln(F("Web: Save Pack EEPROM"));
-  attenuatorSerialSend(A_SAVE_EEPROM_SETTINGS_PACK);
+  packSerialSend(A_SAVE_EEPROM_SETTINGS_PACK);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleResetPackEEPROM(AsyncWebServerRequest *request) {
   debugln(F("Web: Reset Pack EEPROM"));
-  attenuatorSerialSend(A_RESET_EEPROM_SETTINGS_PACK);
+  packSerialSend(A_RESET_EEPROM_SETTINGS_PACK);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleSaveWandEEPROM(AsyncWebServerRequest *request) {
   debugln(F("Web: Save Wand EEPROM"));
-  attenuatorSerialSend(A_SAVE_EEPROM_SETTINGS_WAND);
+  packSerialSend(A_SAVE_EEPROM_SETTINGS_WAND);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleResetWandEEPROM(AsyncWebServerRequest *request) {
   debugln(F("Web: Reset Wand EEPROM"));
-  attenuatorSerialSend(A_RESET_EEPROM_SETTINGS_WAND);
+  packSerialSend(A_RESET_EEPROM_SETTINGS_WAND);
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
@@ -1796,7 +1796,7 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
-        attenuatorSerialSendData(A_SAVE_PREFERENCES_PACK); // Tell the pack to save the new settings.
+        packSerialSendData(A_SAVE_PREFERENCES_PACK); // Tell the pack to save the new settings.
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
       }
     }
@@ -1880,7 +1880,7 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
-        attenuatorSerialSendData(A_SAVE_PREFERENCES_WAND); // Tell the wand (via pack) to save the new settings.
+        packSerialSendData(A_SAVE_PREFERENCES_WAND); // Tell the wand (via pack) to save the new settings.
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
       }
     }
@@ -1941,7 +1941,7 @@ AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHan
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
-        attenuatorSerialSendData(A_SAVE_PREFERENCES_SMOKE); // Tell the pack and wand to save the new settings.
+        packSerialSendData(A_SAVE_PREFERENCES_SMOKE); // Tell the pack and wand to save the new settings.
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
       }
     }

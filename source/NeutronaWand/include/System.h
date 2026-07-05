@@ -176,7 +176,7 @@ void wandHeatUp() {
 }
 
 void streamModeCheck() {
-  wandSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
+  packSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
 
   if(WAND_ACTION_STATUS != ACTION_SETTINGS && WAND_ACTION_STATUS != ACTION_CONFIG_EEPROM_MENU && WAND_ACTION_STATUS != ACTION_LED_EEPROM_MENU && WAND_STATUS == MODE_ON) {
     wandHeatUp();
@@ -207,7 +207,7 @@ bool vgModeCheck() {
     // MODE_ORIGINAL does not support VG modes, so make sure CTS is enabled and firing mode is PROTON.
     if(gpstarWand.isFiringModeVG()) {
       gpstarWand.setFiringModeCTS(); // At a minimum, set the firing mode to CTS for Mode Original.
-      wandSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
+      packSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
     }
 
     if(gpstarWand.setStreamMode(PROTON)) {
@@ -245,7 +245,7 @@ void soundBeepLoopStop() {
       stopEffectLoop(S_AFTERLIFE_BEEP_WAND_S5);
 
       if(b_extra_pack_sounds) {
-        wandSerialSend(A_WAND_BEEP_STOP_LOOP);
+        packSerialSend(A_WAND_BEEP_STOP_LOOP);
       }
     }
     else {
@@ -257,7 +257,7 @@ void soundBeepLoopStop() {
       stopEffect(S_AFTERLIFE_BEEP_WAND_S5);
 
       if(b_extra_pack_sounds) {
-        wandSerialSend(A_WAND_BEEP_STOP);
+        packSerialSend(A_WAND_BEEP_STOP);
       }
 
       ms_reset_sound_beep.start(0);
@@ -280,7 +280,7 @@ void soundBeepLoop() {
 
       if(b_next_gen && b_beep_loop) {
         if(b_extra_pack_sounds) {
-          wandSerialSend(A_WAND_BEEP_START);
+          packSerialSend(A_WAND_BEEP_START);
         }
 
         switch(gpstarWand.getPowerLevel()) {
@@ -309,7 +309,7 @@ void soundBeepLoop() {
       else {
         if(switch_wand.switched()) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_WAND_BEEP);
+            packSerialSend(A_WAND_BEEP);
           }
 
           playEffect(S_AFTERLIFE_BEEP_WAND_S5);
@@ -540,24 +540,24 @@ void toggleWandModes() {
     // Turn off crossing the streams mix and switch back to video game mode.
     // Only supported when the System Mode is not Mode Original.
     gpstarWand.setFiringModeVG();
-    wandSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE); // Tell the pack about the change.
+    packSerialSend(A_SET_FIRING_MODE, FLAG_VG_MODE); // Tell the pack about the change.
 
     playEffect(S_VOICE_VIDEO_GAME_MODES);
 
-    wandSerialSend(A_VIDEO_GAME_MODE);
+    packSerialSend(A_VIDEO_GAME_MODE);
   }
   else if(gpstarWand.isFiringModeCTS()) {
     gpstarWand.setFiringModeCTSMix();
-    wandSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MIX_MODE); // Tell the pack about the change.
+    packSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MIX_MODE); // Tell the pack about the change.
     playEffect(S_VOICE_CROSS_THE_STREAMS_MIX);
-    wandSerialSend(A_CROSS_THE_STREAMS_MIX);
+    packSerialSend(A_CROSS_THE_STREAMS_MIX);
   }
   else {
     // Turn on crossing the streams mode to turn off video game mode.
     gpstarWand.setFiringModeCTS();
-    wandSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
+    packSerialSend(A_SET_FIRING_MODE, FLAG_CTS_MODE); // Tell the pack about the change.
     playEffect(S_VOICE_CROSS_THE_STREAMS);
-    wandSerialSend(A_CROSS_THE_STREAMS);
+    packSerialSend(A_CROSS_THE_STREAMS);
   }
 
   // Reset to proton stream.
@@ -578,7 +578,7 @@ void toggleOverheating() {
     playEffect(S_VOICE_OVERHEAT_DISABLED);
 
     // Tell the Proton Pack that overheating is disabled.
-    wandSerialSend(A_SET_OVERHEATING, 0);
+    packSerialSend(A_SET_OVERHEATING, 0);
   }
   else {
     b_overheat_enabled = true;
@@ -590,7 +590,7 @@ void toggleOverheating() {
     playEffect(S_VOICE_OVERHEAT_ENABLED);
 
     // Tell the Proton Pack that overheating is enabled.
-    wandSerialSend(A_SET_OVERHEATING, 1);
+    packSerialSend(A_SET_OVERHEATING, 1);
   }
 }
 
@@ -1431,7 +1431,7 @@ void afterlifeRampSound1() {
   stopAfterlifeSounds();
 
   if(b_extra_pack_sounds) {
-    wandSerialSend(A_AFTERLIFE_GUN_RAMP_1);
+    packSerialSend(A_AFTERLIFE_GUN_RAMP_1);
   }
 
   ms_gun_ramp_1.start(i_gun_ramp_1_length);
@@ -1519,7 +1519,7 @@ void postActivation(bool shortBoot = false) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
             if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
-              wandSerialSend(A_WAND_BOOTUP_SHORT_SOUND);
+              packSerialSend(A_WAND_BOOTUP_SHORT_SOUND);
             }
           }
           else {
@@ -1535,14 +1535,14 @@ void postActivation(bool shortBoot = false) {
             playEffect(S_WAND_BOOTUP_SHORT);
 
             if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
-              wandSerialSend(A_WAND_BOOTUP_SHORT_SOUND);
+              packSerialSend(A_WAND_BOOTUP_SHORT_SOUND);
             }
           }
           else {
             playEffect(S_GB2_WAND_START);
 
             if(b_extra_pack_sounds && b_pack_on && !b_wand_mash_lockout) {
-              wandSerialSend(A_WAND_BOOTUP_1989);
+              packSerialSend(A_WAND_BOOTUP_1989);
             }
           }
         break;
@@ -1557,7 +1557,7 @@ void postActivation(bool shortBoot = false) {
           else if(switch_vent.on() && shortBoot) {
             stopEffect(S_WAND_BOOTUP);
             playEffect(S_WAND_BOOTUP);
-            wandSerialSend(A_WAND_BOOTUP_SOUND);
+            packSerialSend(A_WAND_BOOTUP_SOUND);
           }
 
           soundIdleLoop(true);
@@ -1588,14 +1588,14 @@ void soundIdleStart() {
             playEffect(S_GB2_WAND_START);
 
             if(b_extra_pack_sounds && !b_overheat_recovery) {
-              wandSerialSend(A_WAND_BOOTUP_1989);
+              packSerialSend(A_WAND_BOOTUP_1989);
             }
           }
           else {
             playEffect(S_WAND_BOOTUP);
 
             if(b_extra_pack_sounds && !b_overheat_recovery) {
-              wandSerialSend(A_WAND_BOOTUP_SOUND);
+              packSerialSend(A_WAND_BOOTUP_SOUND);
             }
           }
         }
@@ -1614,10 +1614,10 @@ void soundIdleStart() {
         // Ramp 2 -> Idle 2
         if(b_extra_pack_sounds) {
           if(b_sound_afterlife_idle_2_fade) {
-            wandSerialSend(A_AFTERLIFE_GUN_RAMP_2_FADE_IN);
+            packSerialSend(A_AFTERLIFE_GUN_RAMP_2_FADE_IN);
           }
           else {
-            wandSerialSend(A_AFTERLIFE_GUN_RAMP_2);
+            packSerialSend(A_AFTERLIFE_GUN_RAMP_2);
           }
         }
 
@@ -1659,7 +1659,7 @@ void soundIdleStart() {
   if(getNeutronaWandYearMode() == SYSTEM_AFTERLIFE || getNeutronaWandYearMode() == SYSTEM_FROZEN_EMPIRE) {
     if(ms_gun_ramp_2.justFinished()) {
       if(b_extra_pack_sounds) {
-        wandSerialSend(A_AFTERLIFE_GUN_LOOP_2);
+        packSerialSend(A_AFTERLIFE_GUN_LOOP_2);
       }
 
       if(AUDIO_DEVICE != AUDIO_GPSTAR_ADV) {
@@ -1685,7 +1685,7 @@ void soundIdleStop() {
 
         if(WAND_ACTION_STATUS != ACTION_OVERHEATING && !b_wand_mash_lockout) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_WAND_SHUTDOWN_SOUND);
+            packSerialSend(A_WAND_SHUTDOWN_SOUND);
           }
 
           stopEffect(S_WAND_SHUTDOWN);
@@ -1698,7 +1698,7 @@ void soundIdleStop() {
       default:
         if(WAND_ACTION_STATUS == ACTION_OVERHEATING || b_pack_alarm || WAND_STATUS == MODE_OFF) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_2_FADE_OUT);
+            packSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_2_FADE_OUT);
           }
 
           playEffect(S_AFTERLIFE_WAND_RAMP_DOWN_2_FADE_OUT);
@@ -1706,7 +1706,7 @@ void soundIdleStop() {
         else if(!b_wand_mash_lockout){
           // Ramp 2 -> Idle 1
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_2);
+            packSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_2);
           }
 
           ms_gun_ramp_1.start(i_gun_ramp_2_length);
@@ -1723,7 +1723,7 @@ void soundIdleStop() {
         }
 
         if(b_extra_pack_sounds) {
-          wandSerialSend(A_AFTERLIFE_RAMP_LOOP_2_STOP);
+          packSerialSend(A_AFTERLIFE_RAMP_LOOP_2_STOP);
         }
 
         stopEffect(S_AFTERLIFE_WAND_RAMP_2);
@@ -1782,7 +1782,7 @@ void updatePackPowerLevel() {
   uint8_t i_level = (uint8_t)gpstarWand.getPowerLevel();
   
   // Send the power level to the pack (d1: 1-5)
-  wandSerialSend(A_SET_POWER_LEVEL, i_level);
+  packSerialSend(A_SET_POWER_LEVEL, i_level);
 
   #ifdef ESP32
   // If firing, also update the IR timer.
@@ -2477,7 +2477,7 @@ void modeFireStop() {
 
   // Tell the pack the wand stopped firing.
   if(!b_wand_mash_lockout) {
-    wandSerialSend(A_FIRING_STOPPED);
+    packSerialSend(A_FIRING_STOPPED);
   }
 
   WAND_ACTION_STATUS = ACTION_IDLE;
@@ -2587,7 +2587,7 @@ void startQuickVent() {
     }
   }
 
-  wandSerialSend(A_VENTING);
+  packSerialSend(A_VENTING);
 }
 
 void startVentSequence() {
@@ -2613,8 +2613,8 @@ void startVentSequence() {
     bargraphClearAlt();
 
     if(b_extra_pack_sounds) {
-      wandSerialSend(A_WAND_BEEP_SOUNDS);
-      wandSerialSend(A_WAND_BEEP_BARGRAPH);
+      packSerialSend(A_WAND_BEEP_SOUNDS);
+      packSerialSend(A_WAND_BEEP_BARGRAPH);
     }
 
     ms_settings_blink.start(i_settings_blink_delay);
@@ -2632,14 +2632,14 @@ void startVentSequence() {
   }
 
   if(b_extra_pack_sounds) {
-    wandSerialSend(A_WAND_SHUTDOWN_SOUND);
+    packSerialSend(A_WAND_SHUTDOWN_SOUND);
   }
 
   stopEffect(S_WAND_SHUTDOWN);
   playEffect(S_WAND_SHUTDOWN);
 
   // Tell the pack we are overheating.
-  wandSerialSend(A_OVERHEATING);
+  packSerialSend(A_OVERHEATING);
 }
 
 void settingsBlinkingLights() {
@@ -2967,7 +2967,7 @@ void altWingButtonCheck() {
           bargraphClearAlt();
 
           // Tell the pack we are in settings mode.
-          wandSerialSend(A_SET_STREAM_MODE, (uint8_t)SETTINGS);
+          packSerialSend(A_SET_STREAM_MODE, (uint8_t)SETTINGS);
         }
         else {
           streamModeCheck();
@@ -3075,7 +3075,7 @@ bool switchBarrel() {
       if(gpstarWand.getBarrelState() != BARREL_UNKNOWN) {
         // Prevents sound from playing on bootup or when the polarity setting is changed.
         if(b_extra_pack_sounds) {
-          wandSerialSend(A_WAND_BARREL_RETRACT);
+          packSerialSend(A_WAND_BARREL_RETRACT);
         }
 
         playEffect(S_WAND_BARREL_RETRACT);
@@ -3097,7 +3097,7 @@ bool switchBarrel() {
         break;
       }
 
-      wandSerialSend(A_BARREL_RETRACTED);
+      packSerialSend(A_BARREL_RETRACTED);
       gpstarWand.setBarrelState(BARREL_RETRACTED);
     }
   }
@@ -3108,7 +3108,7 @@ bool switchBarrel() {
         // Prevents sound from playing on bootup or when the polarity setting is changed.
         if((getNeutronaWandYearMode() == SYSTEM_AFTERLIFE || getNeutronaWandYearMode() == SYSTEM_FROZEN_EMPIRE)) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_AFTERLIFE_WAND_BARREL_EXTEND);
+            packSerialSend(A_AFTERLIFE_WAND_BARREL_EXTEND);
           }
 
           // Plays the "thwoop" barrel extension sound in Afterlife mode.
@@ -3116,7 +3116,7 @@ bool switchBarrel() {
         }
         else {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_GB1_WAND_BARREL_EXTEND);
+            packSerialSend(A_GB1_WAND_BARREL_EXTEND);
           }
 
           // Plays the "thwoop" barrel extension sound in Afterlife mode.
@@ -3139,7 +3139,7 @@ bool switchBarrel() {
         break;
       }
 
-      wandSerialSend(A_BARREL_EXTENDED);
+      packSerialSend(A_BARREL_EXTENDED);
       gpstarWand.setBarrelState(BARREL_EXTENDED);
     }
   }
@@ -3242,7 +3242,7 @@ void wandOff() {
 
   if(WAND_ACTION_STATUS == ACTION_SETTINGS) {
     // If the wand is shut down while we are in settings mode (can happen if the pack is manually turned off), switch the wand and pack to proton mode.
-    wandSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
+    packSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
   }
 
   switch(getNeutronaWandYearMode()) {
@@ -3279,7 +3279,7 @@ void wandOff() {
   }
   else {
     // Full wand shutdown in all other situations.
-    wandSerialSend(A_WAND_ON, (switch_vent.on() && gpstarWand.getSystemMode() == MODE_SUPER_HERO) ? 0 : 1);
+    packSerialSend(A_WAND_ON, (switch_vent.on() && gpstarWand.getSystemMode() == MODE_SUPER_HERO) ? 0 : 1);
     WAND_STATUS = MODE_OFF;
     WAND_ACTION_STATUS = ACTION_IDLE;
 
@@ -3313,7 +3313,7 @@ void wandOff() {
 
           if(!b_wand_mash_lockout) {
             if(b_extra_pack_sounds) {
-              wandSerialSend(A_WAND_SHUTDOWN_SOUND);
+              packSerialSend(A_WAND_SHUTDOWN_SOUND);
             }
 
             stopEffect(S_WAND_SHUTDOWN);
@@ -3337,13 +3337,13 @@ void wandOff() {
   }
 
   if(b_extra_pack_sounds) {
-    wandSerialSend(A_EXTRA_WAND_SOUNDS_STOP);
+    packSerialSend(A_EXTRA_WAND_SOUNDS_STOP);
 
     if(b_play_afterlife_ramp_down) {
-      wandSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_1);
+      packSerialSend(A_AFTERLIFE_GUN_RAMP_DOWN_1);
     }
 
-    wandSerialSend(A_WAND_BEEP_STOP);
+    packSerialSend(A_WAND_BEEP_STOP);
   }
 
   soundBeepLoopStop();
@@ -3441,8 +3441,8 @@ void modeError() {
     ms_settings_blink.start(i_settings_blink_delay);
 
     if(b_extra_pack_sounds) {
-      wandSerialSend(A_WAND_BEEP_BARGRAPH);
-      wandSerialSend(A_WAND_BEEP_SOUNDS);
+      packSerialSend(A_WAND_BEEP_BARGRAPH);
+      packSerialSend(A_WAND_BEEP_SOUNDS);
     }
 
     playEffect(S_BEEPS_LOW, false, i_volume_effects, false, 0, false);
@@ -3470,7 +3470,7 @@ void modeActivate() {
       // If starting up directly from any of the non-toggle-sequence switches, play the wand heatup sound.
       if(!switch_activate.switched()) {
         if(b_extra_pack_sounds) {
-          wandSerialSend(A_MODE_ORIGINAL_HEATUP);
+          packSerialSend(A_MODE_ORIGINAL_HEATUP);
         }
 
         stopEffect(S_WAND_HEATUP_ALT);
@@ -3478,7 +3478,7 @@ void modeActivate() {
       }
 
       // Tell the pack the wand is turned on.
-      wandSerialSend(A_PACK_ON);
+      packSerialSend(A_PACK_ON);
 
       postActivation();
     break;
@@ -3501,7 +3501,7 @@ void modeActivate() {
         }
 
         // Tell the pack the wand is turned on.
-        wandSerialSend(A_PACK_ON);
+        packSerialSend(A_PACK_ON);
       }
 
       postActivation(b_short_boot); // Enable lights and bargraph after wand activation.
@@ -3517,7 +3517,7 @@ void modePulseStart() {
   switch(gpstarWand.getStreamMode()) {
     case PROTON:
       // Boson Dart.
-      wandSerialSend(A_BOSON_DART_SOUND);
+      packSerialSend(A_BOSON_DART_SOUND);
       if(b_stream_effects) {
         playEffect(S_BOSON_DART_FIRE_IMPACT, false, i_volume_effects, false, 0, false);
       }
@@ -3530,14 +3530,14 @@ void modePulseStart() {
 
     case SLIME:
       // Slime Tether.
-      wandSerialSend(A_SLIME_TETHER_SOUND);
+      packSerialSend(A_SLIME_TETHER_SOUND);
       playEffect(S_SLIME_TETHER_FIRE, false, i_volume_effects, false, 0, false);
       ms_firing_pulse.start(0);
     break;
 
     case STASIS:
       // Shock Blast.
-      wandSerialSend(A_SHOCK_BLAST_SOUND);
+      packSerialSend(A_SHOCK_BLAST_SOUND);
       playEffect(S_SHOCK_BLAST_FIRE, false, i_volume_effects, false, 0, false);
       ms_firing_pulse.start(0);
       ms_semi_automatic_firing.start(300);
@@ -3545,7 +3545,7 @@ void modePulseStart() {
 
     case MESON:
       // Meson Collider.
-      wandSerialSend(A_MESON_COLLIDER_SOUND);
+      packSerialSend(A_MESON_COLLIDER_SOUND);
       playEffect(S_MESON_COLLIDER_FIRE, false, i_volume_effects, false, 0, false);
       ms_firing_pulse.start(0);
       ms_semi_automatic_firing.start(200);
@@ -3652,7 +3652,7 @@ void fireControlCheck() {
         break;
       }
       ms_bmash.start(i_timeout);
-      wandSerialSend(A_BUTTON_MASHING, i_timeout);
+      packSerialSend(A_BUTTON_MASHING, i_timeout);
 
       // This is used for the wand mash error sound loops.
       if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE) {
@@ -3662,7 +3662,7 @@ void fireControlCheck() {
       else {
         // Use the standard error alarm for this effect.
         if(b_extra_pack_sounds) {
-          wandSerialSend(A_MASH_ERROR_LOOP);
+          packSerialSend(A_MASH_ERROR_LOOP);
         }
 
         playEffect(S_WAND_MASH_ERROR);
@@ -3683,7 +3683,7 @@ void fireControlCheck() {
       if(gpstarWand.getBarrelState() != BARREL_EXTENDED && switch_wand.on() && switch_vent.on() && (switch_intensify.pushed() || switch_mode.pushed())) {
         // If barrel is not extended and user attempts to fire, play an error sound.
         if(b_extra_pack_sounds) {
-          wandSerialSend(A_BARREL_ERROR_SOUND);
+          packSerialSend(A_BARREL_ERROR_SOUND);
         }
 
         stopEffect(S_VENT_DRY);
@@ -3927,7 +3927,7 @@ void fireControlCheck() {
       // Play a little spark effect if the user tries to fire while the ribbon cable is removed.
       if((switch_intensify.pushed() || ((gpstarWand.isFiringModeCTS() || gpstarWand.isFiringModeCTSMix()) && switch_mode.pushed())) && !ms_wand_heatup_fade.isRunning() && switch_vent.on() && switch_wand.on()) {
         if(b_extra_pack_sounds) {
-          wandSerialSend(A_WAND_MASH_ERROR_SOUND);
+          packSerialSend(A_WAND_MASH_ERROR_SOUND);
         }
 
         stopEffect(S_WAND_MASH_ERROR);
@@ -3997,7 +3997,7 @@ void checkSwitches() {
                   if(switch_vent.switched()) {
                     if(switch_vent.on() && !switch_wand.on() && !switch_intensify.on()) {
                       if(b_extra_pack_sounds) {
-                        wandSerialSend(A_BEEPS_ALT);
+                        packSerialSend(A_BEEPS_ALT);
                       }
 
                       stopEffect(S_BEEPS_ALT);
@@ -4007,8 +4007,8 @@ void checkSwitches() {
 
                   if(switch_vent.on() && switch_wand.on()) {
                     if(b_extra_pack_sounds) {
-                      wandSerialSend(A_MODE_ORIGINAL_HEATDOWN_STOP);
-                      wandSerialSend(A_MODE_ORIGINAL_HEATUP);
+                      packSerialSend(A_MODE_ORIGINAL_HEATDOWN_STOP);
+                      packSerialSend(A_MODE_ORIGINAL_HEATUP);
                     }
 
                     stopEffect(S_WAND_HEATDOWN);
@@ -4023,8 +4023,8 @@ void checkSwitches() {
                   }
                   else if(switch_wand.switched() && switch_vent.on() && !switch_wand.on()) {
                     if(b_extra_pack_sounds) {
-                      wandSerialSend(A_MODE_ORIGINAL_HEATUP_STOP);
-                      wandSerialSend(A_MODE_ORIGINAL_HEATDOWN);
+                      packSerialSend(A_MODE_ORIGINAL_HEATUP_STOP);
+                      packSerialSend(A_MODE_ORIGINAL_HEATDOWN);
                     }
 
                     stopEffect(S_WAND_HEATUP_ALT);
@@ -4033,8 +4033,8 @@ void checkSwitches() {
                   }
                   else if(switch_vent.switched() && switch_wand.on()) {
                     if(b_extra_pack_sounds) {
-                      wandSerialSend(A_MODE_ORIGINAL_HEATUP_STOP);
-                      wandSerialSend(A_MODE_ORIGINAL_HEATDOWN);
+                      packSerialSend(A_MODE_ORIGINAL_HEATUP_STOP);
+                      packSerialSend(A_MODE_ORIGINAL_HEATDOWN);
                     }
 
                     stopEffect(S_WAND_HEATUP_ALT);
@@ -5896,7 +5896,7 @@ void cyclotronSpeedUp(uint8_t i_switch) {
   if(i_switch != i_cyclotron_multiplier && i_cyclotron_multiplier < 4) {
     if(i_switch == 4) {
       // Tell pack to start beeping before we overheat it.
-      wandSerialSend(A_BEEP_START);
+      packSerialSend(A_BEEP_START);
 
       // Play overheat alert beeps before we overheat.
       switch(getSystemYearMode()) {
@@ -5918,7 +5918,7 @@ void cyclotronSpeedUp(uint8_t i_switch) {
     i_cyclotron_multiplier++;
 
     // Tell the pack to speed up the Cyclotron.
-    wandSerialSend(A_CYCLOTRON_INCREASE_SPEED);
+    packSerialSend(A_CYCLOTRON_INCREASE_SPEED);
   }
 }
 
@@ -6123,7 +6123,7 @@ void modeFireStart() {
   modeFireStartSounds();
 
   // Tell the pack the wand is firing, and if in Intensify (1) or Alt (2) mode.
-  wandSerialSend(A_FIRING, b_firing_intensify ? 1 : 2);
+  packSerialSend(A_FIRING, b_firing_intensify ? 1 : 2);
 
   // Just in case a semi-auto was fired before we started firing a stream, stop its timer.
   ms_semi_automatic_firing.stop();
@@ -7510,7 +7510,7 @@ void mixExtraFiringEffects() {
         break;
       }
 
-      wandSerialSend(A_IMPACT_SOUND, i_random_effect); // Trigger an impact sound to play on the pack (matched to the random value chosen here).
+      packSerialSend(A_IMPACT_SOUND, i_random_effect); // Trigger an impact sound to play on the pack (matched to the random value chosen here).
       ms_firing_sound_mix.start(i_impact_sound_debounce); // Restart the debounce timer.
     }
   }
@@ -7576,7 +7576,7 @@ void modeFiring() {
 
     if(gpstarWand.isFiringModeCTSMix() && gpstarWand.inStreamMode(PROTON)) {
       // Tell the Proton Pack that the Neutrona Wand is firing in Intensify mode mix.
-      wandSerialSend(A_FIRING_INTENSIFY_MIX);
+      packSerialSend(A_FIRING_INTENSIFY_MIX);
 
       if(getSystemYearMode() == SYSTEM_1984) {
         playEffect(S_GB1_1984_FIRE_HIGH_POWER_LOOP, true);
@@ -7592,7 +7592,7 @@ void modeFiring() {
 
     if(gpstarWand.isFiringModeCTSMix() && gpstarWand.inStreamMode(PROTON)) {
       // Tell the Proton Pack that the Neutrona Wand is no longer firing in Intensify mode mix.
-      wandSerialSend(A_FIRING_INTENSIFY_STOPPED_MIX);
+      packSerialSend(A_FIRING_INTENSIFY_STOPPED_MIX);
 
       if(getSystemYearMode() == SYSTEM_1984) {
         stopEffect(S_GB1_1984_FIRE_HIGH_POWER_LOOP);
@@ -7608,7 +7608,7 @@ void modeFiring() {
 
     if(gpstarWand.isFiringModeCTSMix() && gpstarWand.inStreamMode(PROTON)) {
       // Tell the Proton Pack that the Neutrona Wand is firing in Alt mode mix.
-      wandSerialSend(A_FIRING_ALT_MIX);
+      packSerialSend(A_FIRING_ALT_MIX);
 
       if(gpstarWand.getPowerLevel() != MAX_POWER_LEVEL) {
         if(getSystemYearMode() == SYSTEM_1989) {
@@ -7635,7 +7635,7 @@ void modeFiring() {
 
     if(gpstarWand.isFiringModeCTSMix() && gpstarWand.inStreamMode(PROTON)) {
       // Tell the Proton Pack that the Neutrona Wand is no longer firing in Alt mode mix.
-      wandSerialSend(A_FIRING_ALT_STOPPED_MIX);
+      packSerialSend(A_FIRING_ALT_STOPPED_MIX);
 
       stopEffect(S_FIRING_LOOP_GB1);
 
@@ -7672,11 +7672,11 @@ void modeFiring() {
 
         if(gpstarWand.isFiringModeCTSMix()) {
           // Tell the Proton Pack that the Neutrona Wand is crossing the streams mix.
-          wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_2021);
+          packSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_2021);
         }
         else {
           // Tell the Proton Pack that the Neutrona Wand is crossing the streams.
-          wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_2021);
+          packSerialSend(A_FIRING_CROSSING_THE_STREAMS_2021);
         }
       break;
 
@@ -7690,11 +7690,11 @@ void modeFiring() {
 
         if(gpstarWand.isFiringModeCTSMix()) {
           // Tell the Proton Pack that the Neutrona Wand is crossing the streams mix.
-          wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_1984);
+          packSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_1984);
         }
         else {
           // Tell the Proton Pack that the Neutrona Wand is crossing the streams.
-          wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_1984);
+          packSerialSend(A_FIRING_CROSSING_THE_STREAMS_1984);
         }
       break;
 
@@ -7711,11 +7711,11 @@ void modeFiring() {
 
             if(gpstarWand.isFiringModeCTSMix()) {
               // Tell the Proton Pack that the Neutrona Wand is crossing the streams mix.
-              wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_2021);
+              packSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_2021);
             }
             else {
               // Tell the Proton Pack that the Neutrona Wand is crossing the streams.
-              wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_2021);
+              packSerialSend(A_FIRING_CROSSING_THE_STREAMS_2021);
             }
           break;
 
@@ -7730,11 +7730,11 @@ void modeFiring() {
 
             if(gpstarWand.isFiringModeCTSMix()) {
               // Tell the Proton Pack that the Neutrona Wand is crossing the streams mix.
-              wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_1984);
+              packSerialSend(A_FIRING_CROSSING_THE_STREAMS_MIX_1984);
             }
             else {
               // Tell the Proton Pack that the Neutrona Wand is crossing the streams.
-              wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_1984);
+              packSerialSend(A_FIRING_CROSSING_THE_STREAMS_1984);
             }
           break;
         }
@@ -7754,7 +7754,7 @@ void modeFiring() {
 
         playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
 
-        wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_2021);
+        packSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_2021);
       break;
 
       case CTS_1984:
@@ -7765,7 +7765,7 @@ void modeFiring() {
 
         playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
 
-        wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_1984);
+        packSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_1984);
       break;
 
       case CTS_DEFAULT:
@@ -7779,7 +7779,7 @@ void modeFiring() {
 
             playEffect(S_AFTERLIFE_CROSS_THE_STREAMS_END, false, i_volume_effects, false, 0, false);
 
-            wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_2021);
+            packSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_2021);
           break;
 
           case SYSTEM_1984:
@@ -7791,7 +7791,7 @@ void modeFiring() {
 
             playEffect(S_CROSS_STREAMS_END, false, i_volume_effects, false, 0, false);
 
-            wandSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_1984);
+            packSerialSend(A_FIRING_CROSSING_THE_STREAMS_STOPPED_MIX_1984);
           break;
         }
       break;
@@ -7829,7 +7829,7 @@ void modeFiring() {
       resetHatLights();
 
       // Tell the pack to revert back to regular Cyclotron speeds.
-      wandSerialSend(A_CYCLOTRON_NORMAL_SPEED);
+      packSerialSend(A_CYCLOTRON_NORMAL_SPEED);
     }
     else if(b_overheat_level[(uint8_t)gpstarWand.getPowerLevel() - 1] && !ms_overheat_initiate.isRunning()) {
       // If the user changes back to power level that overheats while firing, start up a timer.
@@ -7842,7 +7842,7 @@ void modeFiring() {
       ms_overheat_initiate.stop();
 
       // Tell the pack to revert back to regular Cyclotron speeds.
-      wandSerialSend(A_CYCLOTRON_NORMAL_SPEED);
+      packSerialSend(A_CYCLOTRON_NORMAL_SPEED);
     }
   }
 
@@ -9455,7 +9455,7 @@ void overheatVoiceIndicator(uint16_t i_tmp_length) {
   playEffect(i_tmp_sound);
 
   // Tell the Proton Pack to play this sound effect.
-  wandSerialSend(A_COM_SOUND_NUMBER, i_tmp_sound);
+  packSerialSend(A_COM_SOUND_NUMBER, i_tmp_sound);
 }
 
 void overheatTimerIncrement(uint8_t i_tmp_power_level) {
@@ -9580,23 +9580,23 @@ void checkRotaryEncoder() {
             }
             else {
               // Adjust Proton Pack default startup volume.
-              wandSerialSend(A_VOLUME_DECREASE_EEPROM);
+              packSerialSend(A_VOLUME_DECREASE_EEPROM);
             }
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 5 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_DECREASE_LEVEL_5);
+            packSerialSend(A_OVERHEAT_DECREASE_LEVEL_5);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 4 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_DECREASE_LEVEL_4);
+            packSerialSend(A_OVERHEAT_DECREASE_LEVEL_4);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 3 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_DECREASE_LEVEL_3);
+            packSerialSend(A_OVERHEAT_DECREASE_LEVEL_3);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 2 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_DECREASE_LEVEL_2);
+            packSerialSend(A_OVERHEAT_DECREASE_LEVEL_2);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 1 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_DECREASE_LEVEL_1);
+            packSerialSend(A_OVERHEAT_DECREASE_LEVEL_1);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 5 && !switch_intensify.on() && switch_mode.on()) {
             overheatTimerDecrement(5);
@@ -9640,7 +9640,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_2);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 2);
+                packSerialSend(A_SAY_MENU_LEVEL, 2);
               break;
 
               case MENU_LEVEL_2:
@@ -9668,7 +9668,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_3);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 3);
+                packSerialSend(A_SAY_MENU_LEVEL, 3);
               break;
 
               case MENU_LEVEL_3:
@@ -9696,7 +9696,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_4);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 4);
+                packSerialSend(A_SAY_MENU_LEVEL, 4);
               break;
 
               case MENU_LEVEL_4:
@@ -9722,7 +9722,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_5);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 5);
+                packSerialSend(A_SAY_MENU_LEVEL, 5);
               break;
 
               // Menu 5 the deepest level.
@@ -9746,23 +9746,23 @@ void checkRotaryEncoder() {
             }
             else {
               // Adjust Proton Pack default startup volume.
-              wandSerialSend(A_VOLUME_INCREASE_EEPROM);
+              packSerialSend(A_VOLUME_INCREASE_EEPROM);
             }
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 5 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_INCREASE_LEVEL_5);
+            packSerialSend(A_OVERHEAT_INCREASE_LEVEL_5);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 4 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_INCREASE_LEVEL_4);
+            packSerialSend(A_OVERHEAT_INCREASE_LEVEL_4);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 3 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_INCREASE_LEVEL_3);
+            packSerialSend(A_OVERHEAT_INCREASE_LEVEL_3);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 2 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_INCREASE_LEVEL_2);
+            packSerialSend(A_OVERHEAT_INCREASE_LEVEL_2);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 1 && switch_intensify.on() && !switch_mode.on()) {
-            wandSerialSend(A_OVERHEAT_INCREASE_LEVEL_1);
+            packSerialSend(A_OVERHEAT_INCREASE_LEVEL_1);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_4 && i_wand_menu == 5 && !switch_intensify.on() && switch_mode.on()) {
             overheatTimerIncrement(5);
@@ -9806,7 +9806,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_4);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 4);
+                packSerialSend(A_SAY_MENU_LEVEL, 4);
               break;
 
               case MENU_LEVEL_4:
@@ -9834,7 +9834,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_3);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 3);
+                packSerialSend(A_SAY_MENU_LEVEL, 3);
               break;
 
               case MENU_LEVEL_3:
@@ -9862,7 +9862,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_2);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 2);
+                packSerialSend(A_SAY_MENU_LEVEL, 2);
               break;
 
               case MENU_LEVEL_2:
@@ -9888,7 +9888,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_1);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 1);
+                packSerialSend(A_SAY_MENU_LEVEL, 1);
               break;
 
               case MENU_LEVEL_1:
@@ -9927,19 +9927,19 @@ void checkRotaryEncoder() {
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_1 && i_wand_menu == 3 && !switch_intensify.on() && switch_mode.on()) {
             // Change colour of the Power Cell Spectral custom colour.
-            wandSerialSend(A_SPECTRAL_POWERCELL_CUSTOM_DECREASE);
+            packSerialSend(A_SPECTRAL_POWERCELL_CUSTOM_DECREASE);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_1 && i_wand_menu == 2 && !switch_intensify.on() && switch_mode.on()) {
             // Change colour of the Cyclotron Spectral custom colour.
-            wandSerialSend(A_SPECTRAL_CYCLOTRON_CUSTOM_DECREASE);
+            packSerialSend(A_SPECTRAL_CYCLOTRON_CUSTOM_DECREASE);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_1 && i_wand_menu == 1 && !switch_intensify.on() && switch_mode.on()) {
             // Change colour of the Inner Cyclotron Spectral custom colour.
-            wandSerialSend(A_SPECTRAL_INNER_CYCLOTRON_CUSTOM_DECREASE);
+            packSerialSend(A_SPECTRAL_INNER_CYCLOTRON_CUSTOM_DECREASE);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_2 && i_wand_menu == 5 && !switch_intensify.on() && switch_mode.isLongPressed()) {
             // Set default LED dimming level for the entire system.
-            wandSerialSend(A_DIMMING_DECREASE);
+            packSerialSend(A_DIMMING_DECREASE);
           }
           else if(i_wand_menu - 1 < 1) {
             switch(WAND_MENU_LEVEL) {
@@ -9968,7 +9968,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_2);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 2);
+                packSerialSend(A_SAY_MENU_LEVEL, 2);
               break;
 
               case MENU_LEVEL_2:
@@ -9996,7 +9996,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_3);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 3);
+                packSerialSend(A_SAY_MENU_LEVEL, 3);
               break;
 
               // Menu 3 the deepest level.
@@ -10040,19 +10040,19 @@ void checkRotaryEncoder() {
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_1 && i_wand_menu == 3 && !switch_intensify.on() && switch_mode.on()) {
             // Change colour of the Power Cell Spectral custom colour.
-            wandSerialSend(A_SPECTRAL_POWERCELL_CUSTOM_INCREASE);
+            packSerialSend(A_SPECTRAL_POWERCELL_CUSTOM_INCREASE);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_1 && i_wand_menu == 2 && !switch_intensify.on() && switch_mode.on()) {
             // Change colour of the Cyclotron Spectral custom colour.
-            wandSerialSend(A_SPECTRAL_CYCLOTRON_CUSTOM_INCREASE);
+            packSerialSend(A_SPECTRAL_CYCLOTRON_CUSTOM_INCREASE);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_1 && i_wand_menu == 1 && !switch_intensify.on() && switch_mode.on()) {
             // Change colour of the Inner Cyclotron Spectral custom colour.
-            wandSerialSend(A_SPECTRAL_INNER_CYCLOTRON_CUSTOM_INCREASE);
+            packSerialSend(A_SPECTRAL_INNER_CYCLOTRON_CUSTOM_INCREASE);
           }
           else if(WAND_MENU_LEVEL == MENU_LEVEL_2 && i_wand_menu == 5 && !switch_intensify.on() && switch_mode.isLongPressed()) {
             // Set default LED dimming level for the entire system.
-            wandSerialSend(A_DIMMING_INCREASE);
+            packSerialSend(A_DIMMING_INCREASE);
           }
           else if(i_wand_menu + 1 > 5) {
             switch(WAND_MENU_LEVEL) {
@@ -10081,7 +10081,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_2);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 2);
+                packSerialSend(A_SAY_MENU_LEVEL, 2);
               break;
 
               case MENU_LEVEL_2:
@@ -10107,7 +10107,7 @@ void checkRotaryEncoder() {
                 playEffect(S_LEVEL_1);
 
                 // Tell the Proton Pack to play some sounds.
-                wandSerialSend(A_SAY_MENU_LEVEL, 1);
+                packSerialSend(A_SAY_MENU_LEVEL, 1);
               break;
 
               case MENU_LEVEL_1:
@@ -10128,21 +10128,21 @@ void checkRotaryEncoder() {
         if(prev_next_code == 0x0b) {
           if(i_wand_menu == 4 && WAND_MENU_LEVEL == MENU_LEVEL_1 && switch_intensify.on() && !switch_mode.on()) {
             // Tell pack to dim the selected lighting. (Power Cell, Cyclotron or Inner Cyclotron)
-            wandSerialSend(A_DIMMING_DECREASE);
+            packSerialSend(A_DIMMING_DECREASE);
           }
           else if(i_wand_menu == 3 && WAND_MENU_LEVEL == MENU_LEVEL_1 && switch_intensify.on() && !switch_mode.on()) {
             // Lower the sound effects volume.
             decreaseVolumeEffects();
 
             // Tell pack to lower the sound effects volume.
-            wandSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
+            packSerialSend(A_VOLUME_SOUND_EFFECTS_DECREASE);
           }
           else if(i_wand_menu == 3 && WAND_MENU_LEVEL == MENU_LEVEL_1 && !switch_intensify.on() && switch_mode.on() && b_playing_music && !b_music_paused) {
             // Decrease the music volume.
             decreaseVolumeMusic();
 
             // Tell pack to lower the music volume.
-            wandSerialSend(A_VOLUME_MUSIC_DECREASE);
+            packSerialSend(A_VOLUME_MUSIC_DECREASE);
           }
           else if(i_wand_menu - 1 < 1) {
             // We are entering a sub menu. Only accessible when the Proton Pack is powered down.
@@ -10168,7 +10168,7 @@ void checkRotaryEncoder() {
                   playEffect(S_LEVEL_2);
 
                   // Tell the Proton Pack to play some sounds.
-                  wandSerialSend(A_SAY_MENU_LEVEL, 2);
+                  packSerialSend(A_SAY_MENU_LEVEL, 2);
                 break;
 
               #ifdef ESP32
@@ -10193,7 +10193,7 @@ void checkRotaryEncoder() {
                   playEffect(S_LEVEL_3);
 
                   // Tell the Proton Pack to play some sounds.
-                  wandSerialSend(A_SAY_MENU_LEVEL, 3);
+                  packSerialSend(A_SAY_MENU_LEVEL, 3);
                 break;
               #endif
 
@@ -10216,21 +10216,21 @@ void checkRotaryEncoder() {
         if(prev_next_code == 0x07) {
           if(i_wand_menu == 4 && WAND_MENU_LEVEL == MENU_LEVEL_1 && switch_intensify.on() && !switch_mode.on()) {
             // Tell pack to dim the selected lighting. (Power Cell, Cyclotron or Inner Cyclotron)
-            wandSerialSend(A_DIMMING_INCREASE);
+            packSerialSend(A_DIMMING_INCREASE);
           }
           else if(i_wand_menu == 3 && WAND_MENU_LEVEL == MENU_LEVEL_1 && switch_intensify.on() && !switch_mode.on()) {
             // Increase sound effects volume.
             increaseVolumeEffects();
 
             // Tell pack to increase the sound effects volume.
-            wandSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
+            packSerialSend(A_VOLUME_SOUND_EFFECTS_INCREASE);
           }
           else if(i_wand_menu == 3 && WAND_MENU_LEVEL == MENU_LEVEL_1 && !switch_intensify.on() && switch_mode.on() && b_playing_music && !b_music_paused) {
             // Increase music volume.
             increaseVolumeMusic();
 
             // Tell pack to increase music volume.
-            wandSerialSend(A_VOLUME_MUSIC_INCREASE);
+            packSerialSend(A_VOLUME_MUSIC_INCREASE);
           }
           else if(i_wand_menu + 1 > 5) {
             // We are leaving changing menu levels. Only accessible when the Proton Pack is powered down.
@@ -10257,7 +10257,7 @@ void checkRotaryEncoder() {
                   playEffect(S_LEVEL_2);
 
                   // Tell the Proton Pack to play some sounds.
-                  wandSerialSend(A_SAY_MENU_LEVEL, 2);
+                  packSerialSend(A_SAY_MENU_LEVEL, 2);
                 break;
 
                 case MENU_LEVEL_2:
@@ -10281,7 +10281,7 @@ void checkRotaryEncoder() {
                   playEffect(S_LEVEL_1);
 
                   // Tell the Proton Pack to play some sounds.
-                  wandSerialSend(A_SAY_MENU_LEVEL, 1);
+                  packSerialSend(A_SAY_MENU_LEVEL, 1);
                 break;
 
                 case MENU_LEVEL_1:
@@ -10326,11 +10326,11 @@ void checkRotaryEncoder() {
                 decreaseVolumeMusic();
 
                 // Tell pack to lower music volume.
-                wandSerialSend(A_VOLUME_MUSIC_DECREASE);
+                packSerialSend(A_VOLUME_MUSIC_DECREASE);
               }
               else {
                 // Tell pack to lower master volume.
-                wandSerialSend(A_VOLUME_DECREASE);
+                packSerialSend(A_VOLUME_DECREASE);
               }
             }
             else if(WAND_STATUS == MODE_OFF && switch_intensify.on()) {
@@ -10367,11 +10367,11 @@ void checkRotaryEncoder() {
                 increaseVolumeMusic();
 
                 // Tell pack to increase music volume.
-                wandSerialSend(A_VOLUME_MUSIC_INCREASE);
+                packSerialSend(A_VOLUME_MUSIC_INCREASE);
               }
               else {
                 // Tell pack to increase master volume.
-                wandSerialSend(A_VOLUME_INCREASE);
+                packSerialSend(A_VOLUME_INCREASE);
               }
             }
             else if(WAND_STATUS == MODE_OFF && switch_intensify.on()) {
@@ -10401,8 +10401,8 @@ void changeIonArmSwitchState(bool state) {
             case MODE_ORIGINAL:
               if(switch_vent.on() && switch_wand.on()) {
                 if(b_extra_pack_sounds) {
-                  wandSerialSend(A_MODE_ORIGINAL_HEATDOWN_STOP);
-                  wandSerialSend(A_MODE_ORIGINAL_HEATUP);
+                  packSerialSend(A_MODE_ORIGINAL_HEATDOWN_STOP);
+                  packSerialSend(A_MODE_ORIGINAL_HEATUP);
                 }
 
                 stopEffect(S_WAND_HEATDOWN);
@@ -10436,8 +10436,8 @@ void changeIonArmSwitchState(bool state) {
       case MODE_ORIGINAL:
         if(switch_vent.on() && switch_wand.on()) {
           if(b_extra_pack_sounds) {
-            wandSerialSend(A_MODE_ORIGINAL_HEATUP_STOP);
-            wandSerialSend(A_MODE_ORIGINAL_HEATDOWN);
+            packSerialSend(A_MODE_ORIGINAL_HEATUP_STOP);
+            packSerialSend(A_MODE_ORIGINAL_HEATDOWN);
           }
 
           stopEffect(S_WAND_HEATDOWN);
@@ -10465,7 +10465,7 @@ void wandExitMenu() {
     playEffect(S_CLICK);
   }
 
-  wandSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
+  packSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
 
   WAND_ACTION_STATUS = ACTION_IDLE;
 
@@ -10478,14 +10478,14 @@ void wandExitMenu() {
   resetWhiteLEDBlinkRate();
 
   // Send current preferences to the pack for use by the Attenuator.
-  wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
-  wandSerialSend(A_SEND_PREFERENCES_WAND);
+  packSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
+  packSerialSend(A_SEND_PREFERENCES_WAND);
 
   // In original mode, we need to re-initalise the 28 and 30 segment bargraph if some switches are already toggled on.
   if(gpstarWand.getSystemMode() == MODE_ORIGINAL) {
     if(switch_vent.on() && switch_wand.on() && gpstarWand.getIonArmSwitch() == RED_SWITCH_ON) {
       if(b_extra_pack_sounds) {
-        wandSerialSend(A_MODE_ORIGINAL_HEATUP);
+        packSerialSend(A_MODE_ORIGINAL_HEATUP);
       }
 
       stopEffect(S_WAND_HEATUP_ALT);
@@ -10527,9 +10527,9 @@ void wandExitEEPROMMenu() {
   resetWhiteLEDBlinkRate();
 
   // Send current preferences to the pack for use by the Attenuator.
-  wandSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
-  wandSerialSend(A_SEND_PREFERENCES_WAND);
-  wandSerialSend(A_SEND_PREFERENCES_SMOKE);
+  packSerialSend(A_STREAM_FLAGS, gpstarWand.getStreamModeOpts());
+  packSerialSend(A_SEND_PREFERENCES_WAND);
+  packSerialSend(A_SEND_PREFERENCES_SMOKE);
 }
 
 // Toggle between Standalone and non-Standalone operational modes.
