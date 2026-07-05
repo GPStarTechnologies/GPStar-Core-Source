@@ -42,11 +42,11 @@ struct __attribute__((packed)) PackPrefs {
   bool overheatStrobeNF = false;
   bool overheatSyncToFan = false;
   bool overheatLightsOff = false;
-  uint8_t ledCycLidCount = 12; // [12,20,36,40]
+  uint8_t ledCycLidCount = 12; // Cyclotron Lid LED Count [12,20,36,40]
   uint8_t ledCycLidHue = 2; // Spectral custom colour/hue 2-254
   uint8_t ledCycLidSat = 2; // Spectral custom saturation 2-254
   uint8_t ledCycLidLum = 50; // Brightness 20-100
-  uint8_t ledCycLidCenter = 0; // [0=3,1=1]
+  uint8_t ledCycLidCenter = 0; // [0=3 LED, 1=1 LED]
   bool ledCycLidFade = false;
   bool ledCycLidSimRing = false;
   bool disableLidDetection = false; // Ignore cyclotron lid switch state
@@ -177,6 +177,7 @@ struct __attribute__((packed)) AttenuatorSyncData {
   bool cyclotronClockwise = false;
   POWER_LEVELS powerLevel = LEVEL_5;
   bool wandPresent = false;
+  bool wandMismatch = false;
   bool barrelExtended = false;
   bool wandFiring = false;
   bool overheatingNow = false;
@@ -198,6 +199,7 @@ struct __attribute__((packed)) AttenuatorSyncData {
   uint16_t packVoltage = 0;
   bool audioCorrupt = false;
   bool audioOutdated = false;
+  bool esp32Pack = false;
 };
 
 // Output a compiler message if the final struct exceeds a specific size needed for SerialTransfer.

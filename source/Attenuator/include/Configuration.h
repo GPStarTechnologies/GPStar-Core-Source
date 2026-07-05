@@ -71,14 +71,9 @@ bool b_invert_leds = false; // Denotes whether the order should be reversed.
 bool b_grb_leds = false; // Denotes whether to use GRB ordering for LEDs.
 
 /*
- * Wait for pack communication or operate without pack integration.
- */
-bool b_wait_for_pack = true;
-
-/*
  * Custom values from pack EEPROM.
  *
- * Override as desired if b_wait_for_pack is false.
+ * Override as desired if operating in standalone mode.
  */
 uint8_t i_spectral_custom_colour = 0;
 uint8_t i_spectral_custom_saturation = 254;

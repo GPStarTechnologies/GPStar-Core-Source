@@ -106,10 +106,10 @@ function getDevicePrefs() {
             setHtml("audioInfo", "WAV Trigger");
             break;
           case 100:
-            setHtml("audioInfo", "GPStar Audio v100");
+            setHtml("audioInfo", "GPStar Audio Firmware: v100");
             break;
           default:
-            setHtml("audioInfo", "GPStar Audio v" + (jObj.audioVersion || ""));
+            setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
             break;
         }
 

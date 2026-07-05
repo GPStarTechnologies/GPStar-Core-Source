@@ -150,9 +150,48 @@ String getDeviceConfig() {
     jsonBody["songList"] = "";
   }
   jsonBody["buildDate"] = build_date;
+  jsonBody["deviceProtocol"] = PROTOCOL_SIGNATURE;
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
+
+  // Report the Attenuator connection state (when available).
+  switch(ATTENUATOR_CONN_STATE) {
+    case ATTENUATOR_DISCONNECTED:
+      jsonBody["attenuatorConn"] = "Disconnected";
+    break;
+    case ATTENUATOR_MISMATCH:
+      jsonBody["attenuatorConn"] = "Version Mismatch";
+    break;
+    case ATTENUATOR_SYNCING:
+      jsonBody["attenuatorConn"] = "Syncing";
+    break;
+    case ATTENUATOR_CONNECTED:
+      jsonBody["attenuatorConn"] = "Connected";
+    break;
+    default:
+      jsonBody["attenuatorConn"] = "Unknown";
+    break;
+  }
+
+  // Report the Neutrona Wand connection state (when available).
+  switch(WAND_CONN_STATE) {
+    case WAND_DISCONNECTED:
+      jsonBody["wandConn"] = "Disconnected";
+    break;
+    case WAND_MISMATCH:
+      jsonBody["wandConn"] = "Version Mismatch";
+    break;
+    case WAND_SYNCING:
+      jsonBody["wandConn"] = "Syncing";
+    break;
+    case WAND_CONNECTED:
+      jsonBody["wandConn"] = "Connected";
+    break;
+    default:
+      jsonBody["wandConn"] = "Unknown";
+    break;
+  }
 
   // Build list of available stream modes based on device configuration.
   JsonArray streamModes = jsonBody["streamModes"].to<JsonArray>();
@@ -273,7 +312,7 @@ String getWandConfig() {
     // Return current powered state for pack and wand.
     jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down || gpstarPack.isPackActiveModeOriginal());
     jsonBody["wandPowered"] = b_wand_on;
-    jsonBody["wandConnected"] = b_wand_connected;
+    jsonBody["wandConnected"] = (WAND_CONN_STATE == WAND_CONNECTED);
 
     // Neutrona Wand LED Options
     jsonBody["ledWandCount"] = wandConfig.ledWandCount; // [1=Hasbro,2=Frutto,3=GPStar Barrel,4=GPStar Barrel II,5=GPStar Barrel Mini]
@@ -337,7 +376,7 @@ String getSmokeConfig() {
     // Return current powered state for pack and wand.
     jsonBody["packPowered"] = (PACK_STATE == MODE_ON || b_pack_shutting_down || gpstarPack.isPackActiveModeOriginal());
     jsonBody["wandPowered"] = b_wand_on;
-    jsonBody["wandConnected"] = b_wand_connected;
+    jsonBody["wandConnected"] = (WAND_CONN_STATE == WAND_CONNECTED);
 
     // Proton Pack
     jsonBody["smokeEnabled"] = smokeConfig.smokeEnabled; // true|false
@@ -403,7 +442,7 @@ String getEquipmentStatus() {
     jsonBody["modeID"] = gpstarPack.getSystemMode();
     jsonBody["theme"] = gpstarPack.getThemeName();
     jsonBody["themeID"] = gpstarPack.getSystemTheme();
-    jsonBody["vgMode"] = (wandConfig.defaultFiringMode == FLAG_VG_MODE || !b_wand_connected);
+    jsonBody["vgMode"] = (wandConfig.defaultFiringMode == FLAG_VG_MODE || WAND_CONN_STATE != WAND_CONNECTED);
     jsonBody["smoke"] = b_smoke_enabled;
     jsonBody["vibration"] = b_vibration_switch_on;
     jsonBody["direction"] = b_clockwise;
@@ -412,7 +451,7 @@ String getEquipmentStatus() {
     jsonBody["ramping"] = b_pack_shutting_down;
     jsonBody["power"] = gpstarPack.getPowerLevelName();
     jsonBody["safety"] = gpstarPack.getBarrelStateName();
-    jsonBody["wand"] = (b_wand_connected ? "Connected" : "Not Connected");
+    jsonBody["wand"] = (WAND_CONN_STATE == WAND_CONNECTED ? "Connected" : "Not Connected");
     jsonBody["wandPower"] = (b_wand_on ? "Powered" : "Idle");
     jsonBody["wandMode"] = gpstarPack.getStreamModeName();
     jsonBody["firing"] = (b_wand_firing ? "Firing" : "Idle");
@@ -437,8 +476,6 @@ String getEquipmentStatus() {
     jsonBody["packTempC"] = roundFloat(f_temperature_c);
     jsonBody["packTempF"] = roundFloat(f_temperature_f);
     jsonBody["wandAmps"] = roundFloat(f_wand_amps);
-    jsonBody["apClients"] = i_ap_client_count;
-    jsonBody["wsClients"] = i_ws_client_count;
     jsonBody["canChangeStream"] = canChangeStreamMode();
   }
   catch (...) {
@@ -938,6 +975,27 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
   // Serialize JSON object to string.
   serializeJson(jsonBody, wifiNetworks);
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, wifiNetworks);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  request->send(response);
+}
+
+void handleGetNetworkStatus(AsyncWebServerRequest *request) {
+  // Return network status and statistics including DNS request count and connected clients.
+  String statusJson;
+  JsonDocument jsonBody;
+  JsonObject statusObj = jsonBody.to<JsonObject>();
+
+  // Populate with current network configuration and statistics.
+  wirelessMgr->getNetworkStatus(statusObj);
+
+  // Add device-specific client connection counts.
+  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
+  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
+  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, statusJson);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, statusJson);
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }
@@ -1450,7 +1508,7 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
 
   if(c_music_track.toInt() != 0 && c_music_track.toInt() >= i_music_track_start) {
     uint16_t i_music_track = c_music_track.toInt();
-    debugln(F("Web: Selected Music Track: ") + String(i_music_track));
+    debugln(String(F("Web: Selected Music Track: ")) + String(i_music_track));
     executeCommand(A_MUSIC_PLAY_TRACK, i_music_track); // Inform the pack of the new track.
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }

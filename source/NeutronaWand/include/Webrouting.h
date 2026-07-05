@@ -131,6 +131,7 @@ void registerWebRoutes() {
 
   // WiFi Management
   addSimpleRoute("/wifi/settings", HTTP_GET, handleGetWifi, "Get WiFi settings", "Returns current WiFi configuration", TAG_WIFI, RESP_WIFI_SETTINGS);
+  addSimpleRoute("/wifi/status", HTTP_GET, handleGetNetworkStatus, "Get network status", "Returns network status including AP info, statistics, and connection details", TAG_WIFI, RESP_JSON_OBJECT);
   addSimpleRoute("/wifi/networks", HTTP_GET, handleGetSSIDs, "Get available networks", "Returns list of nearby 2.4 GHz WiFi networks", TAG_WIFI, RESP_NETWORK_ARRAY);
   addSimpleRoute("/wifi/network/*", HTTP_DELETE, handleDeleteNetwork, "Delete saved network", "Deletes a saved WiFi network by index", TAG_WIFI);
 

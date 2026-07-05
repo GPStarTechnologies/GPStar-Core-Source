@@ -1287,7 +1287,7 @@ void packShutdown() {
     b_vent_sounds_playing = false;
   }
 
-  if(!b_wand_connected) {
+  if(WAND_CONN_STATE != WAND_CONNECTED) {
     // If we lost connection to the wand, make sure these are stopped!
     wandExtraSoundsStop();
     wandExtraSoundsBeepLoopStop(false);
@@ -1535,7 +1535,7 @@ void packOffReset() {
 }
 
 void setYearModeByToggle() {
-  // We have 4 year modes but only 2 toggle states, so these get grouped by their Haslab defaults.
+  // We have 4 year modes but only 2 toggle states, so these get grouped by their HasLab defaults.
   // Toggling the switch up/down will cycle through 1984 -> Afterlife -> 1989 -> Frozen Empire.
   if(switch_mode.getState() == LOW) {
     if(gpstarPack.isThemeModern()) {
@@ -3779,7 +3779,7 @@ void cyclotron1984Alarm() {
 }
 
 void packOverheatingFinished() {
-  if(!b_wand_syncing) {
+  if(WAND_CONN_STATE != WAND_SYNCING) {
     packSerialSend(P_OVERHEATING_FINISHED);
   }
 
@@ -5737,7 +5737,7 @@ void systemPOST() {
 void resetWifiCommand() {
   bool b_reset_success = false;
   // If not ESP32, send a message to the wireless module to have it reset its password.
-  if(b_attenuator_connected) {
+  if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED) {
     attenuatorSerialSend(A_RESET_WIFI_PASSWORD);
     b_reset_success = true;
   }
@@ -5834,7 +5834,7 @@ void readTemperature() {
     else if(ms_temp_read.justFinished()) {
       f_temperature_c = tempSensor.getTemperature(); // Read value in Celsius
       f_temperature_f = (f_temperature_c * 1.8) + 32; // Convert Celsius to Fahrenheit
-      debugf("\t\tTemp: %.1f C (%.1f F)\n", f_temperature_c, f_temperature_f);
+      //sendDebug(String(F("Temp: ")) + String(f_temperature_c) + String(F(" C (")) + String(f_temperature_f) + String(F(" F)")));
 
       // Send value to the Attenuator, multiplied by 100 to avoid float issues.
       attenuatorSerialSend(A_TEMPERATURE_PACK, f_temperature_c * 100);

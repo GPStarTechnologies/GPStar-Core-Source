@@ -74,7 +74,7 @@ uint8_t i_cyclotron_num_leds = 36;
  * 1000 = 1 second.
  * i_1984_delay will switch based on the setting of b_fade_cyclotron_led.
  *
- * CYCLOTRON_DELAY_2021_12_LED is for the stock Haslab 12 LED setup.
+ * CYCLOTRON_DELAY_2021_12_LED is for the stock HasLab 12 LED setup.
  * CYCLOTRON_DELAY_2021_20_LED is for the Frutto Technology 20 LED setup.
  * CYCLOTRON_DELAY_2021_36_LED is for the GPStar 36 LED setup.
  * CYCLOTRON_DELAY_2021_40_LED is for a 40 LED NeoPixel ring.
@@ -93,7 +93,7 @@ uint16_t i_1984_delay = CYCLOTRON_DELAY_TVG; // Default to TVG as b_fade_cyclotr
  * Put the sequence in order from lowest to highest in both directions. (Top right lens as Cyclotron lens #1)
  *
  * i_1984_cyclotron_4_leds is for a DIY 4 LED setup.
- * i_1984_cyclotron_12_leds is for the stock Haslab 12 LED setup.
+ * i_1984_cyclotron_12_leds is for the stock HasLab 12 LED setup.
  * i_1984_cyclotron_20_leds is for the Frutto Technology 20 LED setup.
  * i_1984_cyclotron_36_leds is for the GPStar 36 LED setup.
  * i_1984_cyclotron_40_leds is for a 40 LED NeoPixel ring.
@@ -126,10 +126,10 @@ bool b_fade_cyclotron_led = true;
 /*
  * When set to true, 1984/1989 will utilise the middle single LED only in each cyclotron lens.
  * When set to false, 3 LEDs from each cyclotron lens will light up instead for 1984/1989 mode.
- * Useful feature for Proton Packs that utiltise 3 LEDs per Cyclotron lens, such as the HasLab Proton Pack.
- * This can also be toggled from the Neutrona Wand sub menu system.
+ * For stock Proton Packs the 1984 will default to using 3 LEDs per cyclotron lens.
+ * This can be toggled from the Neutrona Wand sub menu system or via the web UI.
  */
-bool b_cyclotron_single_led = true;
+bool b_cyclotron_single_led = false;
 
 /*
  * Afterlife and Frozen Empire only.
@@ -229,7 +229,7 @@ enum LED_TYPES : uint8_t {
  * 35 -> For a 35 LED NeoPixel Ring. (Recommended aftermarket ring size)
  * 36 -> For a 36 LED NeoPixel Ring. (GPStar ring)
  */
-uint8_t i_inner_cyclotron_cake_num_leds = 35;
+uint8_t i_inner_cyclotron_cake_num_leds = 36;
 enum LED_TYPES CAKE_LED_TYPE = RGB_LED; // Defaults to RGB
 
 /*

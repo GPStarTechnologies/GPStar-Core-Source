@@ -2,7 +2,7 @@
 
 &starf; For a comparison of the original GPStar and GPStar II controllers please see [this comparison guide](https://gpstartechnologies.com/blogs/gpstar-blog/gpstar-ii-vs-gpstar) on the main GPStar website.
 
-Welcome to the second generation of GPStar Proton Pack controllers, intended for users who wish to fully replace the stock lighting of their Haslab Proton Pack or are building a DIY pack. This device improves on several core feature changes based on real-world use and customer requests.
+Welcome to the second generation of GPStar Proton Pack controllers, intended for users who wish to fully replace the stock lighting of their HasLab Proton Pack or are building a DIY pack. This device improves on several core feature changes based on real-world use and customer requests.
 
 **Significant Features/Changes:**
 
@@ -47,7 +47,7 @@ Connections for the pack should be made according to the tables below.
 
 ### Stock Connectors
 
-These are connections which should match 1:1 on the original Haslab Proton Pack if upgrading from that product.
+These are connections which should match 1:1 on the original HasLab Proton Pack if upgrading from that product.
 
 | Label | Pins | Notes |
 |-------|------|-------|

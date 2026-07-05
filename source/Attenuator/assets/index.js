@@ -132,7 +132,7 @@ function getDevicePrefs() {
         }
 
         // Device Info
-        setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
+        setHtml("buildDate", "Build: " + (jObj.buildDate || "") + " [" + (jObj.deviceProtocol || "-") + "]");
 
         switch (jObj.audioVersion ?? 0) {
           case 0:
@@ -142,10 +142,10 @@ function getDevicePrefs() {
             setHtml("audioInfo", "WAV Trigger");
             break;
           case 100:
-            setHtml("audioInfo", "GPStar Audio v100");
+            setHtml("audioInfo", "GPStar Audio Firmware: v100");
             break;
           default:
-            setHtml("audioInfo", "GPStar Audio v" + (jObj.audioVersion || ""));
+            setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
             break;
         }
 
@@ -182,6 +182,13 @@ function getDevicePrefs() {
         } else if (Boolean(jObj.audioOutdated)) {
           // The file count on the microSD card does not match firmware; alert the user.
           alert("Contents of microSD card do not match current firmware. Please make sure to update your microSD cards after updating firmware.");
+        }
+
+        // Firmware mismatch warnings
+        if (jObj.packConn === "Version Mismatch") {
+          alert("The firmware on the Attenuator/Wireless Module does not match that of the Proton Pack. Please make sure all devices are on the same firmware.");
+        } else if (Boolean(jObj.wandMismatch)) {
+          alert("The firmware on the Proton Pack does not match that of the Neutrona Wand. Please make sure all devices are on the same firmware.")
         }
       }
     } else if (this.readyState == 4) {
@@ -824,6 +831,11 @@ function updateGraphics(jObj) {
 }
 
 function updateEquipment(jObj) {
+  // Always update pack connection status if available
+  if (jObj && jObj.packConn) {
+    setHtml("packConn", "Pack Connection: " + jObj.packConn);
+  }
+
   // Update display if we have the expected data (containing mode and theme at a minimum).
   if (jObj && jObj.mode && jObj.theme) {
     // Current Pack Status

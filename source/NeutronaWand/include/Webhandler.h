@@ -156,11 +156,31 @@ String getDeviceConfig() {
     jsonBody["songList"] = "";
   }
   jsonBody["buildDate"] = build_date;
+  jsonBody["deviceProtocol"] = PROTOCOL_SIGNATURE;
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
   jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
+
+  // Report pack connection state
+  switch(WAND_CONN_STATE) {
+    case PACK_DISCONNECTED:
+      jsonBody["packConn"] = "Disconnected";
+    break;
+    case PACK_MISMATCH:
+      jsonBody["packConn"] = "Version Mismatch";
+    break;
+    case PACK_CONNECTED:
+      jsonBody["packConn"] = "Connected";
+    break;
+    case NC_BENCHTEST:
+      jsonBody["packConn"] = "Standalone Mode";
+    break;
+    default:
+      jsonBody["packConn"] = "Unknown";
+    break;
+  }
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -381,8 +401,6 @@ String getEquipmentStatus() {
     jsonBody["volEffects"] = i_volume_effects_percentage;
     jsonBody["volMusic"] = i_volume_music_percentage;
     jsonBody["sensors"] = getSensorState();
-    jsonBody["apClients"] = i_ap_client_count;
-    jsonBody["wsClients"] = i_ws_client_count;
   }
   catch (...) {
   }
@@ -1028,6 +1046,27 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
   // Serialize JSON object to string.
   serializeJson(jsonBody, wifiNetworks);
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, wifiNetworks);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  request->send(response);
+}
+
+void handleGetNetworkStatus(AsyncWebServerRequest *request) {
+  // Return network status and statistics including DNS request count and connected clients.
+  String statusJson;
+  JsonDocument jsonBody;
+  JsonObject statusObj = jsonBody.to<JsonObject>();
+
+  // Populate with current network configuration and statistics.
+  wirelessMgr->getNetworkStatus(statusObj);
+
+  // Add device-specific client connection counts.
+  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
+  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
+  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, statusJson);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, statusJson);
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }

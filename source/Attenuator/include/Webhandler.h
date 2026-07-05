@@ -156,7 +156,7 @@ String getDeviceConfig() {
   jsonBody["radLensIdle"] = RAD_LENS_IDLE;
   jsonBody["displayType"] = DISPLAY_TYPE;
   jsonBody["useAnimation"] = b_enable_ui_animations;
-  jsonBody["useStandalone"] = (!b_wait_for_pack && !ms_packsync.isRunning());
+  jsonBody["useStandalone"] = (PACK_CONN_STATE == PACK_CONNECTED && !ms_packsync.isRunning());
   if(s_track_listing != "" && s_track_listing != "null") {
     jsonBody["songList"] = s_track_listing;
   }
@@ -164,9 +164,29 @@ String getDeviceConfig() {
     jsonBody["songList"] = "";
   }
   jsonBody["buildDate"] = build_date;
+  jsonBody["deviceProtocol"] = PROTOCOL_SIGNATURE;
   jsonBody["audioVersion"] = i_pack_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
+
+  // Always report pack connection state
+  switch(PACK_CONN_STATE) {
+    case PACK_DISCONNECTED:
+      jsonBody["packConn"] = "Disconnected";
+    break;
+    case PACK_MISMATCH:
+      jsonBody["packConn"] = "Version Mismatch";
+    break;
+    case PACK_CONNECTED:
+      jsonBody["packConn"] = "Connected";
+    break;
+    default:
+      jsonBody["packConn"] = "Unknown";
+    break;
+  }
+
+  // Report wand connection state (if firmware mismatch)
+  jsonBody["wandMismatch"] = b_wand_mismatch;
 
   // Build list of available stream modes based on device configuration.
   JsonArray streamModes = jsonBody["streamModes"].to<JsonArray>();
@@ -189,7 +209,7 @@ String getPackConfig() {
   String equipSettings;
   JsonDocument jsonBody;
 
-  if(!b_wait_for_pack) {
+  if(PACK_CONN_STATE == PACK_CONNECTED) {
     // Provide a flag to indicate prefs were received via serial coms.
     jsonBody["prefsAvailable"] = b_received_prefs_pack;
 
@@ -263,7 +283,7 @@ String getWandConfig() {
   String equipSettings;
   JsonDocument jsonBody;
 
-  if(!b_wait_for_pack) {
+  if(PACK_CONN_STATE == PACK_CONNECTED) {
     // Provide a flag to indicate prefs were received via serial coms.
     jsonBody["prefsAvailable"] = b_received_prefs_wand;
 
@@ -334,7 +354,7 @@ String getSmokeConfig() {
   String equipSettings;
   JsonDocument jsonBody;
 
-  if(!b_wait_for_pack) {
+  if(PACK_CONN_STATE == PACK_CONNECTED) {
     // Provide a flag to indicate prefs were received via serial coms.
     jsonBody["prefsAvailable"] = b_received_prefs_smoke;
 
@@ -394,7 +414,7 @@ String getEquipmentStatus() {
   String equipStatus;
   JsonDocument jsonBody;
 
-  if(!b_wait_for_pack) {
+  if(PACK_CONN_STATE == PACK_CONNECTED) {
     // Only prepare status when not waiting on the pack
     jsonBody["mode"] = gpstarSystem.getModeName();
     jsonBody["modeID"] = gpstarSystem.getSystemMode();
@@ -1602,12 +1622,12 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
 
       if(!b_standalone_mode && !ms_packsync.isRunning()) {
         // Need to disable standalone mode.
-        b_wait_for_pack = true;
+        PACK_CONN_STATE = PACK_DISCONNECTED;
         ms_packsync.start(0);
       }
       else if(b_standalone_mode) {
         // Need to enable standalone mode.
-        b_wait_for_pack = false;
+        PACK_CONN_STATE = PACK_CONNECTED;
         ms_packsync.stop();
         gpstarSystem.setPowerLevel(LEVEL_5);
       }
@@ -1768,7 +1788,7 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       updateJsonBool(packConfig.ledInvertPowercell, jsonBody, "ledInvertPowercell");
       updateJsonBool(packConfig.ledVGPowercell, jsonBody, "ledVGPowercell");
 
-      if(b_wait_for_pack) {
+      if(PACK_CONN_STATE != PACK_CONNECTED) {
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
@@ -1852,7 +1872,7 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       updateJsonBool(wandConfig.isWiFiEnabled, jsonBody, "isWiFiEnabled");
       updateJsonBool(wandConfig.resetWifiPassword, jsonBody, "resetWifiPassword");
 
-      if(b_wait_for_pack) {
+      if(PACK_CONN_STATE != PACK_CONNECTED) {
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {
@@ -1913,7 +1933,7 @@ AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHan
       smokeConfig.overheatDelay2 = jsonBody["overheatDelay2"].as<uint8_t>();
       smokeConfig.overheatDelay1 = jsonBody["overheatDelay1"].as<uint8_t>();
 
-      if(b_wait_for_pack) {
+      if(PACK_CONN_STATE != PACK_CONNECTED) {
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
       }
       else {

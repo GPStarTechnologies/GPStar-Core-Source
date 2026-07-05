@@ -241,15 +241,18 @@ void checkInfraredData() {
     case IR_DEVICE_PSTT: deviceName = "PSTT"; break;
   }
 
+  // Always use the decoded sender ID from the received packet.
+  String senderDeviceId = String(irManager->dataDeviceID());
+
   // Send raw IR data received event
   String rawMsg = String("Pre=0x") + String(irManager->dataPreamble(), HEX) +
-                  " Dev=" + irManager->dataDeviceType() +
-                  " Cmd=" + irManager->dataCommand();
-  sendInfraredJSON("ir_received", deviceName, String(irManager->getDeviceID()).c_str(), "", 0, 0, rawMsg.c_str());
+                    " Dev=" + String(irManager->dataDeviceType()) +
+                    " Cmd=" + String(irManager->dataCommand());
+  sendInfraredJSON("ir_received", deviceName, senderDeviceId.c_str(), "", 0, 0, rawMsg.c_str());
 
   // Exit if not NEC-extended protocol
   if(!irManager->dataIsNEC()) {
-    sendInfraredJSON("ir_ignored", deviceName, String(irManager->getDeviceID()).c_str(), "", 0, 0, "Not NEC-extended protocol");
+    sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), "", 0, 0, "Not NEC-extended protocol");
     irManager->resumeData();
     return;
   }
@@ -257,7 +260,7 @@ void checkInfraredData() {
   // Exit if wrong preamble
   if(irManager->dataPreamble() != IR_GPSTAR_PREAMBLE) {
     String msg = String("Wrong preamble 0x") + String(irManager->dataPreamble(), HEX);
-    sendInfraredJSON("ir_ignored", deviceName, String(irManager->getDeviceID()).c_str(), "", 0, 0, msg.c_str());
+    sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), "", 0, 0, msg.c_str());
     irManager->resumeData();
     return;
   }
@@ -265,7 +268,7 @@ void checkInfraredData() {
   // Exit if unknown device type
   if(irManager->dataDeviceType() != IR_DEVICE_NEUTRONA_WAND && irManager->dataDeviceType() != IR_DEVICE_SINGLE_SHOT) {
     String msg = String("Unknown device type ") + irManager->dataDeviceType();
-    sendInfraredJSON("ir_ignored", deviceName, String(irManager->getDeviceID()).c_str(), "", 0, 0, msg.c_str());
+    sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), "", 0, 0, msg.c_str());
     irManager->resumeData();
     return;
   }
@@ -278,7 +281,7 @@ void checkInfraredData() {
     uint16_t damage = targetConfig.wandPower3;
     reduceTargetHealth(damage);
 
-    sendInfraredJSON("target_hit", deviceName, String(irManager->getDeviceID()).c_str(), "TEST", 3, damage, "Test command processed");
+    sendInfraredJSON("target_hit", deviceName, senderDeviceId.c_str(), "TEST", 3, damage, "Test command processed");
     irManager->resumeData();
     return;
   }
@@ -337,20 +340,21 @@ void checkInfraredData() {
   // Exit if unknown stream type
   if(streamType == 0) {
     String msg = String("Unknown command ") + irManager->dataCommand();
-    sendInfraredJSON("ir_ignored", deviceName, String(irManager->getDeviceID()).c_str(), "", 0, 0, msg.c_str());
+      sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), "", 0, 0, msg.c_str());
     irManager->resumeData();
     return;
   }
 
   // Handle SingleShot instant defeat (only for PROTON stream)
   if(irManager->dataDeviceType() == IR_DEVICE_SINGLE_SHOT) {
-    if(streamType == 1) {
-      pstt_current_health = PSTT_MIN_HEALTH;
-      sendInfraredJSON("target_defeated", deviceName, String(irManager->getDeviceID()).c_str(), streamName, powerLevel + 1, targetConfig.maxHealth, "Instant defeat by SingleShot");
+    if(streamType == 1 || streamType == 5) {
+      // PROTON stream or BOSON DART (alt fire of PROTON), though we should only expect PROTON for the SingleShot device.
+      pstt_current_health = PSTT_MIN_HEALTH; // Instantly defeat the target regardless of current health or power level.
+      sendInfraredJSON("target_defeated", deviceName, senderDeviceId.c_str(), streamName, powerLevel + 1, targetConfig.maxHealth, "Instant defeat by SingleShot");
     }
     else {
       String msg = String("SingleShot can only fire PROTON stream. Received stream type ") + streamName;
-      sendInfraredJSON("ir_ignored", deviceName, String(irManager->getDeviceID()).c_str(), streamName, 0, 0, msg.c_str());
+      sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), streamName, 0, 0, msg.c_str());
     }
     irManager->resumeData();
     return;
@@ -367,7 +371,6 @@ void checkInfraredData() {
     switch(streamType) {
       // Proton, Slime, Stasis, Meson
       case 1 ... 4:
-      default:
         switch(powerLevel) {
           case 0: damage = targetConfig.wandPower1; break;
           case 1: damage = targetConfig.wandPower2; break;
@@ -391,63 +394,72 @@ void checkInfraredData() {
         }
       break;
 
-       case 6:
-          // Slime Blast
-          switch(powerLevel) {
-            case 0: damage = PSTT_MAX_HEALTH / 20; break;
-            case 1: damage = PSTT_MAX_HEALTH / 16; break;
-            case 2: damage = PSTT_MAX_HEALTH / 12; break;
-            case 3: damage = PSTT_MAX_HEALTH / 8; break;
-            case 4:
-            default: damage = PSTT_MAX_HEALTH / 4; break;
+      case 6:
+        // Slime Blast
+        switch(powerLevel) {
+          case 0: damage = PSTT_MAX_HEALTH / 20; break;
+          case 1: damage = PSTT_MAX_HEALTH / 16; break;
+          case 2: damage = PSTT_MAX_HEALTH / 12; break;
+          case 3: damage = PSTT_MAX_HEALTH / 8; break;
+          case 4:
+          default: damage = PSTT_MAX_HEALTH / 4; break;
           }
-        break;
+      break;
 
-        case 7:
-          // Shock Blast
-          // If we can detect how far away the target is from the shooter, then make the damage weaker. Shock blast is suppose to be useless at long range.
-          switch(powerLevel) {
-            case 0: damage = PSTT_MAX_HEALTH / 10; break;
-            case 1: damage = PSTT_MAX_HEALTH / 8; break;
-            case 2: damage = PSTT_MAX_HEALTH / 6; break;
-            case 3: damage = PSTT_MAX_HEALTH / 4; break;
-            case 4:
-            default: damage = PSTT_MAX_HEALTH / 2; break;
-          }
-        break;
+      case 7:
+        // Shock Blast
+        // If we can detect how far away the target is from the shooter, then make the damage weaker. Shock blast is suppose to be useless at long range.
+        switch(powerLevel) {
+          case 0: damage = PSTT_MAX_HEALTH / 10; break;
+          case 1: damage = PSTT_MAX_HEALTH / 8; break;
+          case 2: damage = PSTT_MAX_HEALTH / 6; break;
+          case 3: damage = PSTT_MAX_HEALTH / 4; break;
+          case 4:
+          default: damage = PSTT_MAX_HEALTH / 2; break;
+        }
+      break;
 
-        case 8:
-          // Overload Pulse
-          switch(powerLevel) {
-            case 0: damage = PSTT_MAX_HEALTH / 15; break;
-            case 1: damage = PSTT_MAX_HEALTH / 12; break;
-            case 2: damage = PSTT_MAX_HEALTH / 9; break;
-            case 3: damage = PSTT_MAX_HEALTH / 6; break;
-            case 4:
-            default: damage = PSTT_MAX_HEALTH / 3; break;
-          }
-        break;
+      case 8:
+        // Overload Pulse
+        switch(powerLevel) {
+          case 0: damage = PSTT_MAX_HEALTH / 15; break;
+          case 1: damage = PSTT_MAX_HEALTH / 12; break;
+          case 2: damage = PSTT_MAX_HEALTH / 9; break;
+          case 3: damage = PSTT_MAX_HEALTH / 6; break;
+          case 4:
+          default: damage = PSTT_MAX_HEALTH / 3; break;
+        }
+      break;
 
-        case 9:
-          // Crossing the streams
-          switch(powerLevel) {
-            case 0: damage = targetConfig.wandPower1 * 2; break;
-            case 1: damage = targetConfig.wandPower2 * 3; break;
-            case 2: damage = targetConfig.wandPower3 * 4; break;
-            case 3: damage = targetConfig.wandPower4 * 5; break;
-            case 4:
-            default: damage = targetConfig.wandPower5 * 6; break;
-          }
-        break;
+      case 9:
+        // Crossing the streams
+        switch(powerLevel) {
+          case 0: damage = targetConfig.wandPower1 * 2; break;
+          case 1: damage = targetConfig.wandPower2 * 3; break;
+          case 2: damage = targetConfig.wandPower3 * 4; break;
+          case 3: damage = targetConfig.wandPower4 * 5; break;
+          case 4:
+          default: damage = targetConfig.wandPower5 * 6; break;
+        }
+      break;
+
+      default: {
+        String msg = String("Unhandled streamType ") + streamType
+                   + " (streamName=" + streamName
+                   + ", powerLevel=" + String(powerLevel + 1) + ")";
+        sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), streamName, powerLevel + 1, 0, msg.c_str());
+        irManager->resumeData();
+        return;
+      }
     }
 
     reduceTargetHealth(damage);
 
     // Check if target was defeated
     if(pstt_current_health == PSTT_MIN_HEALTH) {
-      sendInfraredJSON("target_defeated", deviceName, String(irManager->getDeviceID()).c_str(), streamName, powerLevel + 1, damage, "Target defeated");
+      sendInfraredJSON("target_defeated", deviceName, senderDeviceId.c_str(), streamName, powerLevel + 1, damage, "Target defeated");
     } else {
-      sendInfraredJSON("target_hit", deviceName, String(irManager->getDeviceID()).c_str(), streamName, powerLevel + 1, damage, "Target hit");
+      sendInfraredJSON("target_hit", deviceName, senderDeviceId.c_str(), streamName, powerLevel + 1, damage, "Target hit");
     }
   }
 

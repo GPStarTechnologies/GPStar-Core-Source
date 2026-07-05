@@ -41,7 +41,7 @@
 
 ## 👻 Ghost Trap
 
-**Q:** Are there upgrades for the Haslab/Frutto traps?
+**Q:** Are there upgrades for the HasLab/Frutto traps?
 **A:** Yes. Planned upgrades include:
 - Accurate bargraph
 - Screen-accurate sequence/sounds

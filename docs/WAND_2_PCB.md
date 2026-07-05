@@ -2,7 +2,7 @@
 
 &starf; For a comparison of the original GPStar and GPStar II controllers please see [this comparison guide](https://gpstartechnologies.com/blogs/gpstar-blog/gpstar-ii-vs-gpstar) on the main GPStar website.
 
-Welcome to the second generation of GPStar Proton Wand controllers, intended for users who wish to fully replace the stock lighting of their Haslab Neutrona Wand or are building a DIY wand. This device improves on several core feature changes based on real-world use and customer requests.
+Welcome to the second generation of GPStar Proton Wand controllers, intended for users who wish to fully replace the stock lighting of their HasLab Neutrona Wand or are building a DIY wand. This device improves on several core feature changes based on real-world use and customer requests.
 
 **Significant Features/Changes:**
 
