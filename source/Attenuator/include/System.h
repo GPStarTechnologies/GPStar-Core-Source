@@ -167,10 +167,10 @@ bool changeStreamMode(ENCODER_STATES direction) {
 }
 
 /*
- * Turns off the front-facing device LEDs (except top LED).
+ * Turns off the front-facing body LEDs (except top LED).
  */
-void deviceLightsOff() {
-  // Turn off the LEDs by setting to black.
+void deviceBodyLightsOff() {
+  // Turn off the body LEDs by setting to black.
   if(device_leds[i_device_led[1]] != CRGB::Black) {
     device_leds[i_device_led[1]] = getHueAsRGB(i_device_led[1], C_BLACK);
   }
@@ -232,9 +232,9 @@ void vibrateOff() {
 }
 
 /*
- * Determine the current state of any LEDs before next FastLED refresh.
+ * Determine the current state of the top LED which indicates system status.
  */
-void updateLEDs() {
+void updateTopStatusLED() {
   // ESP - Change top LED colour based on wireless connections.
   if(i_ap_client_count > 0 || i_ws_client_count > 0) {
     // Change to green when clients are connected remotely.
@@ -293,7 +293,12 @@ void updateLEDs() {
       }
     break;
   }
+}
 
+/*
+ * Determine the current state of the body (upper/lower) LEDs.
+ */
+void updateBodyLEDs() {
   // Set upper LED based on alarm or overheating state, when connected.
   // Otherwise, use the standard pattern/colour for illumination.
   if(b_pack_alarm || b_overheating) {
