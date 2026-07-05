@@ -499,21 +499,6 @@ bool handleCommand(uint16_t i_command, uint16_t i_value) {
       }
     break;
 
-    case A_MUSIC_TRACK_COUNT_SYNC:
-      sendDebug(String(F("Music Track Sync: ")) + String(i_value));
-
-      if(i_value > 0) {
-        i_music_track_count = i_value;
-      }
-
-      sendDebug(String(F("Track Count: ")) + String(i_music_track_count));
-
-      if(i_music_track_count > 0) {
-        i_music_track_min = i_music_track_offset; // First music track possible (eg. 500)
-        i_music_track_max = i_music_track_offset + i_music_track_count - 1; // 500 + N - 1 to be inclusive of the offset value.
-      }
-    break;
-
     case A_MODE_SUPER_HERO:
       if(gpstarSystem.getSystemMode() != MODE_SUPER_HERO) {
         sendDebug(F("Super Hero Sequence"));

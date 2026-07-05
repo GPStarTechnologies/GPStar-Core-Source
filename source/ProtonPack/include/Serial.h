@@ -2871,12 +2871,6 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       }
     break;
 
-    case A_SOUND_DEFAULT_SYSTEM_VOLUME_ADJUSTMENT:
-      stopEffect(S_VOICE_DEFAULT_SYSTEM_VOLUME_ADJUSTMENT);
-
-      playEffect(S_VOICE_DEFAULT_SYSTEM_VOLUME_ADJUSTMENT);
-    break;
-
     case A_SET_PROTON_STREAM_IMPACT:
       // Enable flag if i_value is even; otherwise disable.
       b_stream_effects = (i_value % 2 == 0);

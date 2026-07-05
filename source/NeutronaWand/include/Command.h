@@ -422,19 +422,6 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
     break;
 
-    case A_PACK_MOTORIZED_CYCLOTRON_ENABLED:
-      // Proton Pack Vibration EEPROM reset to default.
-      stopEffect(S_BEEPS_ALT);
-      playEffect(S_BEEPS_ALT);
-
-      stopEffect(S_VOICE_PROTON_PACK_VIBRATION_FIRING_ENABLED);
-      stopEffect(S_VOICE_PROTON_PACK_VIBRATION_ENABLED);
-      stopEffect(S_VOICE_PROTON_PACK_VIBRATION_DISABLED);
-      stopEffect(S_VOICE_PROTON_PACK_VIBRATION_DEFAULT);
-      stopEffect(S_VOICE_MOTORIZED_CYCLOTRON_ENABLED);
-      playEffect(S_VOICE_MOTORIZED_CYCLOTRON_ENABLED);
-    break;
-
     case A_YEAR_1984:
       // Indicates system (pack) year is 1984 mode
       gpstarWand.setSystemTheme(SYSTEM_1984);
