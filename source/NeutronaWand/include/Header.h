@@ -449,7 +449,7 @@ uint16_t i_last_firing_effect_mix = 0; // Used by standalone Neutrona Wand.
  * Used to identify the state of the Neutrona Wand as it connects to a Proton Pack.
  * These should be mutually exclusive and non-overlapping states for the Neutrona Wand communications.
  */
-enum WAND_CONN_STATES { 
+enum WAND_CONN_STATES {
   PACK_DISCONNECTED,  // No pack detected or connection lost
   PACK_MISMATCH,      // Pack detected but firmware incompatible
   PACK_CONNECTED,     // Pack connected and synchronized

@@ -1206,7 +1206,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         WAND_CONN_STATE = WAND_MISMATCH;
         return; // Block sync due to incompatible firmware.
       }
-      
+
       // Wand has explicitly asked to be synchronized.
       // The wand stops its retry timer when sync starts, but check state to be safe.
       if(WAND_CONN_STATE != WAND_SYNCING) {
@@ -1225,7 +1225,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         WAND_CONN_STATE = WAND_MISMATCH;
         return; // Block sync due to incompatible firmware.
       }
-      
+
       if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
         // If we think we were not connected (or had mismatch), force a resync.
         // Don't sync if already WAND_SYNCING (sync in progress) or WAND_CONNECTED (already synced).

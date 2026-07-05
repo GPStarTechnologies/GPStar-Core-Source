@@ -542,7 +542,7 @@
         setValue("ledCycLidLum", settings.ledCycLidLum || 100);
         setHtml("cycLumOut", getValue("ledCycLidLum"));
         setToggle("cyclotronDirection", settings.cyclotronDirection);
-        setValue("ledCycLidCenter", settings.ledCycLidCenter ?? 1);
+        setValue("ledCycLidCenter", settings.ledCycLidCenter ?? 0);
         setToggle("ledCycLidFade", settings.ledCycLidFade);
         setToggle("ledVGCyclotron", settings.ledVGCyclotron);
         setToggle("ledCycLidSimRing", settings.ledCycLidSimRing);
@@ -685,7 +685,7 @@
           ledCycLidSat: convertRange(getInt("ledCycLidSat"), [0, 100], [1, 254]) || 254,
           ledCycLidLum: getInt("ledCycLidLum") || 100,
           cyclotronDirection: getToggle("cyclotronDirection"),
-          ledCycLidCenter: getInt("ledCycLidCenter") ?? 1,
+          ledCycLidCenter: getInt("ledCycLidCenter") ?? 0,
           ledCycLidFade: getToggle("ledCycLidFade"),
           ledVGCyclotron: getToggle("ledVGCyclotron"),
           ledCycLidSimRing: getToggle("ledCycLidSimRing"),

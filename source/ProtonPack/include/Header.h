@@ -430,7 +430,7 @@ bool b_wand_mash_lockout = false;
  * Used to identify the state of the Neutrona Wand as it connects to a Proton Pack.
  * These should be mutually exclusive and non-overlapping states for the Neutrona Wand communications.
  */
-enum WAND_CONN_STATES { 
+enum WAND_CONN_STATES {
   WAND_DISCONNECTED,  // No wand detected or connection lost
   WAND_MISMATCH,      // Wand detected but firmware incompatible
   WAND_SYNCING,       // Wand synchronization in progress
@@ -447,7 +447,7 @@ const uint16_t i_wand_disconnect_delay = 8000; // Time until the pack considers 
  * Used to identify the state of the Proton Pack as it connects to an Attenuator.
  * These should be mutually exclusive and non-overlapping states for the Attenuator communications.
  */
-enum ATTENUATOR_CONN_STATES { 
+enum ATTENUATOR_CONN_STATES {
   ATTENUATOR_DISCONNECTED,  // No attenuator detected or connection lost
   ATTENUATOR_MISMATCH,      // Attenuator detected but firmware incompatible
   ATTENUATOR_SYNCING,       // Attenuator synchronization in progress

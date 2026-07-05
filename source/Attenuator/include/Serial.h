@@ -328,7 +328,7 @@ bool handleCommand(uint8_t i_command, uint16_t i_value) {
         PACK_CONN_STATE = PACK_MISMATCH;
         return false; // Block sync due to incompatible firmware.
       }
-      
+
       if(PACK_CONN_STATE == PACK_CONNECTED) {
         // The pack is asking us if we are still here. Respond back with handshake.
         attenuatorSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);

@@ -606,7 +606,7 @@ static_assert(A_NO_OP < 255, "WARNING: API_MESSAGE has grown too large for uint8
  * Code derived from torusle2 on Reddit:
  * https://www.reddit.com/r/embedded/comments/1acoobg/crc16_again_with_a_little_gift_for_you_all/
  */
-uint16_t crc16(const uint8_t * pData, size_t numBytes) 
+uint16_t crc16(const uint8_t * pData, size_t numBytes)
 {
 	uint32_t crc = 0;
 
@@ -619,7 +619,7 @@ uint16_t crc16(const uint8_t * pData, size_t numBytes)
 		x ^= x << 1;
 		x ^= x << 2;
 		x ^= x << 4;
-		
+
 		x  = (x & 0x8000) | (y >> 1);
 
 		crc = (crc >> 8) ^ (x >> 15) ^ (x >> 1) ^ x;
@@ -630,12 +630,12 @@ uint16_t crc16(const uint8_t * pData, size_t numBytes)
 /**
  * Generate a signature value that changes when packet sizes or message types change.
  * This helps detect incompatible firmware versions during device synchronization.
- * 
+ *
  * This function places the individual sizes of each serial data struct into a
  * byte array, then performs a CRC16 on the array to return a unique hash.
- * 
+ *
  * Returns a 16-bit signature value.
- * 
+ *
  * When devices sync, they compare these calculated signature values:
  *   - Matching signatures: firmware is compatible, sync proceeds like normal
  *   - Different signatures: incompatible firmware, block sync and set error flag

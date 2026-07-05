@@ -819,7 +819,7 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
         WAND_CONN_STATE = PACK_MISMATCH;
         return false; // Block sync due to incompatible firmware.
       }
-      
+
       // The pack is asking us if we are still here so respond accordingly.
       if(WAND_CONN_STATE != PACK_CONNECTED) {
         // If still waiting for the pack, trigger an immediate synchronization.

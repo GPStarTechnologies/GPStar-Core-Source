@@ -58,7 +58,7 @@ void executeCommand(uint8_t i_command, uint16_t i_value = 0) {
         ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
         return; // Block sync due to incompatible firmware.
       }
-      
+
       ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED; // If we're receiving handshake instead of SYNC_NOW we must be connected.
 
       if(b_diagnostic) {
