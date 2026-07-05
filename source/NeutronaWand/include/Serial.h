@@ -61,7 +61,7 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(SmokePrefs),            // smoke_prefs_size
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
-  A_CMD_NO_OP                    // api_cmd_max
+  A_CMD_MAX                      // api_cmd_max
 );
 
 /*

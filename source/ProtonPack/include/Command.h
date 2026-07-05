@@ -608,7 +608,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
     case A_SAVE_EEPROM_SETTINGS_WAND:
       // Commit changes to the EEPROM on the wand controller
-      wandSerialSend(A_SAVE_EEPROM_WAND);
+      wandSerialSend(A_SAVE_EEPROM_SETTINGS_WAND);
 
       // Offer some feedback to the user
       stopEffect(S_VOICE_EEPROM_SAVE);
@@ -627,7 +627,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
     case A_RESET_EEPROM_SETTINGS_WAND:
       // Reset the EEPROM on the wand controller
-      wandSerialSend(A_RESET_EEPROM_WAND);
+      wandSerialSend(A_RESET_EEPROM_SETTINGS_WAND);
 
       // Offer some feedback to the user
       stopEffect(S_VOICE_EEPROM_ERASE);

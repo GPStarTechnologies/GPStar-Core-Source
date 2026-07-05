@@ -912,7 +912,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
     break;
 
-    case A_SAVE_EEPROM_WAND:
+    case A_SAVE_EEPROM_SETTINGS_WAND:
       // Commit changes to the EEPROM in the wand controller
       saveLEDEEPROM();
       saveConfigEEPROM();
@@ -920,7 +920,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       playEffect(S_VOICE_EEPROM_SAVE);
     break;
 
-    case A_RESET_EEPROM_WAND:
+    case A_RESET_EEPROM_SETTINGS_WAND:
       // Reset the EEPROM on the wand controller
       clearLEDEEPROM();
       clearConfigEEPROM();

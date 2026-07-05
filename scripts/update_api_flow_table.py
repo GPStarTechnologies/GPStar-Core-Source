@@ -61,7 +61,7 @@ def extract_api_enums(source_root):
     apis = set(pattern.findall(text))
     
     # Filter out excluded enums
-    excluded = {'A_COM_START', 'A_COM_END', 'A_CMD_NULL', 'A_CMD_NO_OP', 'A_DATA_NULL', 'A_DATA_NO_OP'}
+    excluded = {'A_COM_START', 'A_COM_END', 'A_CMD_NULL', 'A_CMD_MAX', 'A_DATA_NULL', 'A_DATA_NO_OP'}
     apis = apis - excluded
     
     # Alphabetize and return

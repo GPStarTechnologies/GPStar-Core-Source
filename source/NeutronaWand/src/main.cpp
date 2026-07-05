@@ -490,7 +490,7 @@ void mainLoop() {
         stopEffect(S_EEPROM_LED_MENU);
         playEffect(S_EEPROM_LED_MENU);
 
-        packSerialSend(A_EEPROM_LED_MENU);
+        packSerialSend(A_SAY_EEPROM_LED_MENU);
         packSerialSend(A_SET_SPECTRAL_LIGHTS, 1);
 
         i_wand_menu = 5;
@@ -519,7 +519,7 @@ void mainLoop() {
         stopEffect(S_EEPROM_CONFIG_MENU);
         playEffect(S_EEPROM_CONFIG_MENU);
 
-        packSerialSend(A_EEPROM_CONFIG_MENU);
+        packSerialSend(A_SAY_EEPROM_CONFIG_MENU);
 
         i_wand_menu = 5;
 

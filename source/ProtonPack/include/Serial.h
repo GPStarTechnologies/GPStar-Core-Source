@@ -72,7 +72,7 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(SmokePrefs),            // smoke_prefs_size
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
-  A_CMD_NO_OP                    // api_cmd_max
+  A_CMD_MAX                      // api_cmd_max
 );
 
 /*
@@ -401,17 +401,9 @@ void attenuatorSerialSend(uint16_t i_command, uint16_t i_value) {
 
   // sendDebug(String(F("Command to Attenuator: ")) + String(i_command));
 
-
   // Provide additional data with certain messages.
   switch(i_command) {
     case A_SYNC_DATA:
-      sendDataA.s = A_COM_START;
-      sendDataA.c = i_command;
-      sendDataA.e = A_COM_END;
-
-      // Set all elements of the data array to 0
-      memset(sendDataA.d, 0, sizeof(sendDataA.d));
-
       i_send_size = attenuatorComs.txObj(attenuatorSyncData);
       attenuatorComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
     break;
@@ -488,18 +480,11 @@ void attenuatorSerialSend(uint16_t i_command) {
 void wandSerialSend(uint16_t i_command, uint16_t i_value) {
   uint16_t i_send_size = 0;
 
-  sendDebug(String(F("Command to Wand: ")) + String(i_command));
+  // sendDebug(String(F("Command to Wand: ")) + String(i_command));
 
   // Provide additional data with certain messages.
   switch(i_command) {
     case A_SYNC_DATA:
-      sendDataW.s = A_COM_START;
-      sendDataW.c = i_command;
-      sendDataW.e = A_COM_END;
-
-      // Set all elements of the data array to 0
-      memset(sendDataW.d, 0, sizeof(sendDataW.d));
-
       i_send_size = wandComs.txObj(wandSyncData);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
     break;
@@ -3591,7 +3576,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       }
     break;
 
-    case A_EEPROM_LED_MENU:
+    case A_SAY_EEPROM_LED_MENU:
       stopEffect(S_BEEPS_BARGRAPH);
       playEffect(S_BEEPS_BARGRAPH);
 
@@ -3599,7 +3584,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       playEffect(S_EEPROM_LED_MENU);
     break;
 
-    case A_EEPROM_CONFIG_MENU:
+    case A_SAY_EEPROM_CONFIG_MENU:
       stopEffect(S_BEEPS_BARGRAPH);
       playEffect(S_BEEPS_BARGRAPH);
 
