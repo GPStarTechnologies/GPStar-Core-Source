@@ -30,16 +30,16 @@
  *   - 2 bytes at the end
  *
  * Common packet data sizes for commands and messages:
- *   - CommandPacket = 6 data bytes (s, c(2), d1, e)
- *   - MessagePacket = 6 data bytes (s, m, d[3], e)
- *   - Total bytes sent for these are 12 and 12 (data + 6 overhead), respectively.
+ *   - CommandPacket = 6 packet bytes (s, c, d1, e)
+ *   - DataPacket = 6 packet bytes (s, m, d[3], e)
+ *   - Total bytes sent for these are 12 (packet bytes + 6 overhead).
  *
  * Special packet data sizes for preferences and synchronization:
- *   - PackPrefs = 43 data bytes, 49 total bytes sent
- *   - WandPrefs = 28 data bytes, 34 total bytes sent
- *   - SmokePrefs = 21 data bytes, 27 total bytes sent
- *   - WandSyncData = 15 data bytes, 21 total bytes sent
- *   - AttenuatorSyncData = 39 data bytes, 45 total bytes sent
+ *   - PackPrefs = 46 packet bytes, 52 total bytes sent
+ *   - WandPrefs = 30 packet bytes, 36 total bytes sent
+ *   - SmokePrefs = 21 packet bytes, 27 total bytes sent
+ *   - WandSyncData = 15 packet bytes, 21 total bytes sent
+ *   - AttenuatorSyncData = 39 packet bytes, 45 total bytes sent
  *   - These all fit within one SerialTransfer packet.
  *
  * Byte order notes:
@@ -58,10 +58,10 @@
  * Example device-to-device transmit times at 9600 baud:
  *   - Common command/message packets:
  *       CommandPacket: 12 total bytes, about 12.5 ms
- *       MessagePacket: 12 total bytes, about 12.5 ms
+ *       DataPacket: 12 total bytes, about 12.5 ms
  *   - Special preferences/sync packets:
- *       PackPrefs: 49 total bytes, about 51.0 ms (Pack <-> Attenuator)
- *       WandPrefs: 34 total bytes, about 35.4 ms (Pack <-> Attenuator, Pack <-> Wand)
+ *       PackPrefs: 52 total bytes, about 54.2 ms (Pack <-> Attenuator)
+ *       WandPrefs: 36 total bytes, about 37.5 ms (Pack <-> Attenuator, Pack <-> Wand)
  *       SmokePrefs: 27 total bytes, about 28.1 ms (Pack <-> Attenuator, Pack <-> Wand)
  *       WandSyncData: 21 total bytes, about 21.9 ms (Pack <-> Wand)
  *       AttenuatorSyncData: 45 total bytes, about 46.9 ms (Pack <-> Attenuator)
@@ -107,10 +107,10 @@ struct __attribute__((packed)) CommandPacket {
   uint8_t e;
 };
 
-// For generic data communication (1 byte ID, 3 byte array).
-struct __attribute__((packed)) MessagePacket {
+// For custom data communication (1 byte ID, 3 byte array).
+struct __attribute__((packed)) DataPacket {
   uint8_t s;
-  uint8_t m;
+  uint8_t m; // Data message enum (uint8_t supports up to 255 commands)
   uint8_t d[3]; // Reserved for multiple, arbitrary byte values.
   uint8_t e;
 };
@@ -384,7 +384,7 @@ enum API_COMMAND : uint16_t {
   A_WAND_BEEP_STOP_LOOP,
   A_WAND_BEEP_SOUNDS,
   // Setter Commands
-  A_SAY_MENU_LEVEL, // d1: 1-5 (menu level)
+  A_SAY_MENU_LEVEL, // d1: 1-5 (Menu Levels)
   A_SET_AUTO_VENT_INTENSITY, // d1: 0=DISABLED, 1=ENABLED
   A_SET_BARGRAPH_INVERT, // d1: 0=NOT_INVERTED, 1=INVERTED
   A_SET_BARGRAPH_OVERHEAT_BLINK, // d1: 0=DISABLED, 1=ENABLED
@@ -424,7 +424,7 @@ enum API_COMMAND : uint16_t {
   A_SET_SMOKE, // d1: 0=DISABLED, 1=ENABLED
   A_SET_SPECTRAL_LIGHTS, // d1: 0=OFF, 1=ON
   A_SET_SPECTRAL_MODES, // d1: 0=DISABLED, 1=ENABLED
-  A_SET_STREAM_MODE, // d1: stream mode byte (SETTINGS, LOAD_WAND, etc.)
+  A_SET_STREAM_MODE, // d1: STREAM_MODES (ENUM)
   A_SET_VENT_LIGHT_COLOURS, // d1: 0=DISABLED, 1=ENABLED
   A_SET_VIDEO_GAME_MODE_COLOURS, // d1: 0=DISABLED, 1=ENABLED
   A_SET_VIBRATION_MODE, // d1: VIBRATION_MODES (ENUM)

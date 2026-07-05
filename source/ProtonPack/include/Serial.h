@@ -57,16 +57,16 @@ struct CommandPacket sendCmdW;
 struct CommandPacket recvCmdW;
 struct CommandPacket sendCmdA;
 struct CommandPacket recvCmdA;
-struct MessagePacket sendDataW;
-struct MessagePacket recvDataW;
-struct MessagePacket sendDataA;
-struct MessagePacket recvDataA;
+struct DataPacket sendDataW;
+struct DataPacket recvDataW;
+struct DataPacket sendDataA;
+struct DataPacket recvDataA;
 
 // Protocol signature for detecting incompatible firmware versions.
 // Calculated from packet sizes and message type counts at compile time.
 constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(CommandPacket),         // cmd_packet_size
-  sizeof(MessagePacket),         // msg_packet_size
+  sizeof(DataPacket),         // msg_packet_size
   sizeof(PackPrefs),             // pack_prefs_size
   sizeof(WandPrefs),             // wand_prefs_size
   sizeof(SmokePrefs),            // smoke_prefs_size
@@ -2054,7 +2054,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_SET_POWER_LEVEL:
-      // Power level set (d1: 1-5)
+      // Power level set (d1: POWER_LEVELS)
       if(i_value >= 1 && i_value <= 5) {
         switch(i_value) {
           case 1:

@@ -39,14 +39,14 @@ extern WirelessManager* wirelessMgr;
 // Command and Message Data Packets
 struct CommandPacket sendCmd;
 struct CommandPacket recvCmd;
-struct MessagePacket sendData;
-struct MessagePacket recvData;
+struct DataPacket sendData;
+struct DataPacket recvData;
 
 // Protocol signature for detecting incompatible firmware versions.
 // Calculated from packet sizes and message type counts at compile time.
 constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(CommandPacket),         // cmd_packet_size
-  sizeof(MessagePacket),         // msg_packet_size
+  sizeof(DataPacket),         // msg_packet_size
   sizeof(PackPrefs),             // pack_prefs_size
   sizeof(WandPrefs),             // wand_prefs_size
   sizeof(SmokePrefs),            // smoke_prefs_size
