@@ -606,7 +606,7 @@ static_assert(A_NO_OP < 255, "WARNING: API_MESSAGE has grown too large for uint8
  * Code derived from torusle2 on Reddit:
  * https://www.reddit.com/r/embedded/comments/1acoobg/crc16_again_with_a_little_gift_for_you_all/
  */
-uint16_t crc16(const uint8_t * pData, size_t numBytes)
+uint16_t crc16(const uint8_t *pData, size_t numBytes)
 {
 	uint32_t crc = 0;
 

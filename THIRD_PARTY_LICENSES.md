@@ -258,6 +258,22 @@ This library includes a BSD 3-Clause license with an additional clause (Clause 4
 
 ---
 
+## Communication Library - Special Notice
+
+### Fast CRC-16 Implementation
+
+**Copyright:** Copyright (c) 2024 torusle2
+**License:** N/A
+**Source:** https://www.reddit.com/r/embedded/comments/1acoobg/crc16_again_with_a_little_gift_for_you_all/
+**Location:** `source/SharedLib/Communication/include/Communication.h`
+**Usage:** Creates CRC-16 hash for serial API fingerprinting
+
+### Important Notes:
+
+This is a freely-provided fast and small non-lookup implementation of the standard CRC-16/ARC mathematical algorithm. Information on this algorithm can be found here: https://reveng.sourceforge.io/crc-catalogue/16.htm
+
+---
+
 ## Build Tools and Frameworks
 
 ### Arduino Framework
