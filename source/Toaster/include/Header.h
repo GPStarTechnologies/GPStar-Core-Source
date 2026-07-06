@@ -46,40 +46,112 @@
 #define RELAY2_PIN 26
 #define RELAY3_PIN 27
 #define RELAY4_PIN 32
-const uint8_t relayPins[4] = {
-  RELAY1_PIN,
-  RELAY2_PIN,
-  RELAY3_PIN,
-  RELAY4_PIN
+
+/**
+ * Actuator Locations/IDs
+ * Note that the physical layaout means we should prevent diagonal pairs
+ * from being active at the same time to avoid destabilizing the device.
+ *    _______
+ *   | 1   2 |
+ *   |       |
+ *   |       |
+ *   |       |
+ * ==| 3   4 |
+ *    ‾‾‾‾‾‾‾ 
+ */
+enum ActuatorID {
+  ACTUATOR_1 = 0,
+  ACTUATOR_2 = 1,
+  ACTUATOR_3 = 2,
+  ACTUATOR_4 = 3
 };
 
 /**
+ * Forbidden Actuator Pairs
+ * Defines which actuators cannot be active simultaneously to prevent device destabilization.
+ * Diagonal pairs (1/4 and 2/3) are forbidden as they create opposing forces.
+ */
+struct ForbiddenActuatorPair {
+  ActuatorID element1;  // First element of forbidden pair
+  ActuatorID element2;  // Second element of forbidden pair
+};
+const ForbiddenActuatorPair forbiddenPairs[] = {
+  {ACTUATOR_1, ACTUATOR_4},
+  {ACTUATOR_2, ACTUATOR_3}
+};
+const uint8_t FORBIDDEN_PAIRS_COUNT = 2;
+
+/**
  * ActuatorState
- * Holds the current state of each actuator, including whether it is active and the time it should turn off (for timed activations).
+ * Holds the current state of each relay actuator, including whether it is active and the time it should turn off (for timed activations).
  */
 struct ActuatorState {
   bool relayActive;
   uint32_t relayOffTime;
 };
-ActuatorState actuator[4];
+
+/**
+ * RelayChannel
+ * Represents a single relay output with its hardware pin and state.
+ */
+struct RelayChannel {
+  uint8_t pin;
+  ActuatorState state;
+};
+
 const uint16_t ACTUATOR_PULSE_MS = 400;
 
 /**
- * WebSocketData - Holds all relevant fields received from the WebSocket JSON payload.
+ * RFInputState
+ * Tracks the state of RF inputs for debouncing and edge detection.
  */
-struct WebSocketData {
-  String mode = "";
-  String theme = "";
-  String switchState = "";
-  String pack = "";
-  String safety = "";
-  uint8_t wandPower = 5; // Default to max power.
-  String wandMode = "";
-  String firing = "";
-  bool ctsActive = false; // Default to not crossing streams.
-  String cable = "";
-  String cyclotron = "";
-  bool cyclotronLid = true; // Default to lid on.
-  String temperature = "";
+struct RFInputState {
+  bool currentState;     // Current debounced state (HIGH=true, LOW=false)
+  bool previousState;    // Previous debounced state for edge detection
+  uint8_t debounceCount; // Counter for debouncing (requires consistent reads)
 };
-WebSocketData wsData; // Instance of WebSocketData struct.
+
+/**
+ * RFButtonChannel
+ * Represents a single RF input button with its hardware pin and state.
+ */
+struct RFButtonChannel {
+  uint8_t pin;
+  RFInputState state;
+};
+
+const uint8_t RF_DEBOUNCE_THRESHOLD = 3; // Number of consistent reads required for state change
+const uint8_t RF_DEBOUNCE_MAX = 5;       // Maximum debounce count to prevent overflow
+
+/**
+ * Devices
+ * Contains all relay outputs and RF input buttons as explicit named members instead of arrays.
+ * This eliminates array indexing confusion and makes the hardware layout explicit.
+ */
+struct Devices {
+  // Relay outputs (GPIO 25, 26, 27, 32)
+  RelayChannel relay1;
+  RelayChannel relay2;
+  RelayChannel relay3;
+  RelayChannel relay4;
+  
+  // RF input buttons (GPIO 34, 33, 35, 39)
+  RFButtonChannel button1;
+  RFButtonChannel button2;
+  RFButtonChannel button3;
+  RFButtonChannel button4;
+};
+
+// Global device instance initialized with pin assignments
+Devices devices = {
+  // Relays
+  {RELAY1_PIN, {false, 0}},  // relay1
+  {RELAY2_PIN, {false, 0}},  // relay2
+  {RELAY3_PIN, {false, 0}},  // relay3
+  {RELAY4_PIN, {false, 0}},  // relay4
+  // RF Buttons
+  {RF1_PIN, {false, false, 0}},  // button1
+  {RF2_PIN, {false, false, 0}},  // button2
+  {RF3_PIN, {false, false, 0}},  // button3
+  {RF4_PIN, {false, false, 0}}   // button4
+};

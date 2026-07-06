@@ -84,6 +84,7 @@ WirelessManager* wirelessMgr = nullptr;
 // Task Handles
 TaskHandle_t AnimationTaskHandle = NULL;
 TaskHandle_t PreferencesTaskHandle = NULL;
+TaskHandle_t UserInputTaskHandle = NULL;
 TaskHandle_t WiFiManagementTaskHandle = NULL;
 TaskHandle_t WiFiSetupTaskHandle = NULL;
 
@@ -127,19 +128,22 @@ void AnimationTask(void *parameter) {
     // Track whether at least one relay remains active, affecting the status LED.
     bool b_relay_active = false;
 
-    // Process each actuator (0-based index).
+    // Process each actuator relay and check if it should be turned off
+    RelayChannel* relays[] = {&devices.relay1, &devices.relay2, &devices.relay3, &devices.relay4};
+    uint8_t relayPins[] = {devices.relay1.pin, devices.relay2.pin, devices.relay3.pin, devices.relay4.pin};
+    
     for (uint8_t i = 0; i < 4; i++) {
-      // If this actuator is active and its configured on-time has expired,
+      // If this relay is active and its configured on-time has expired,
       // mark it as inactive (LOW) and turn off the associated relay output.
-      bool b_expired = ((int32_t)(millis() - actuator[i].relayOffTime) >= 0);
-      if(actuator[i].relayActive && b_expired){
-        actuator[i].relayActive = false;
+      bool b_expired = ((int32_t)(millis() - relays[i]->state.relayOffTime) >= 0);
+      if(relays[i]->state.relayActive && b_expired){
+        relays[i]->state.relayActive = false;
         digitalWrite(relayPins[i], LOW);
       }
 
-      // If this actuator is still active, ensure the relay output remains
+      // If this relay is still active, ensure the relay output remains
       // on (HIGH) and record that at least one relay is currently active.
-      if(actuator[i].relayActive){
+      if(relays[i]->state.relayActive){
         b_relay_active = true;
         digitalWrite(relayPins[i], HIGH);
       }
@@ -206,6 +210,65 @@ void PreferencesTask(void *parameter) {
   vTaskDelete(NULL);
 }
 
+// User Input Task (Loop)
+void UserInputTask(void *parameter) {
+  while(true) {
+    #if defined(DEBUG_TASK_TO_CONSOLE)
+      // Confirm the core in use for this task, and when it runs.
+      debug(F("Executing UserInputTask in core"));
+      debug(xPortGetCoreID());
+      // Get the stack high water mark for optimizing bytes allocated.
+      debug(F(" | Stack HWM: "));
+      debugln(uxTaskGetStackHighWaterMark(NULL));
+    #endif
+
+    // Check each RF input pin for triggers.
+    RFButtonChannel* buttons[] = {&devices.button1, &devices.button2, &devices.button3, &devices.button4};
+    uint8_t buttonPins[] = {devices.button1.pin, devices.button2.pin, devices.button3.pin, devices.button4.pin};
+    ActuatorID buttonActuators[] = {ACTUATOR_1, ACTUATOR_2, ACTUATOR_3, ACTUATOR_4};
+    
+    for (uint8_t i = 0; i < 4; i++) {
+      bool rfState = digitalRead(buttonPins[i]) == HIGH;
+
+      // Update debounce counter
+      if (rfState == buttons[i]->state.currentState) {
+        // State is consistent; increment debounce counter up to max
+        if (buttons[i]->state.debounceCount < RF_DEBOUNCE_MAX) {
+          buttons[i]->state.debounceCount++;
+        }
+      } else {
+        // State changed; reset debounce counter
+        buttons[i]->state.debounceCount = 0;
+      }
+
+      // Once debounce threshold is reached, update the current state
+      if (buttons[i]->state.debounceCount >= RF_DEBOUNCE_THRESHOLD) {
+        buttons[i]->state.previousState = buttons[i]->state.currentState;
+        buttons[i]->state.currentState = rfState;
+        buttons[i]->state.debounceCount = RF_DEBOUNCE_THRESHOLD; // Hold at threshold
+      }
+
+      // Detect rising edge (transition from LOW to HIGH)
+      if (buttons[i]->state.currentState && !buttons[i]->state.previousState) {
+        // Attempt to trigger the corresponding actuator
+        // The triggerActuator function will enforce forbidden pair constraints
+        if(triggerActuator(buttonActuators[i])) {
+          #if defined(DEBUG_SEND_TO_CONSOLE)
+            debug(F("RF"));
+            debug(i + 1);
+            debugln(F(" triggered successfully"));
+          #endif
+
+          // Notify all WebSocket clients of the RF trigger event
+          notifyWSClients();
+        }
+      }
+    }
+
+    vTaskDelay(14 / portTICK_PERIOD_MS); // 14ms delay
+  }
+}
+
 // WiFi Management Task (Loop)
 void WiFiManagementTask(void *parameter) {
   while(true) {
@@ -249,9 +312,6 @@ void WiFiManagementTask(void *parameter) {
 
       // Try to start the external WiFi.
       if(!b_ext_wifi_started && !b_ext_wifi_paused) {
-        if(!gpstarSystem.inStreamMode(SELFTEST)) {
-          resetWebSocketData(); // Clear previous information sent from the pack.
-        }
         notifyWSClients(); // Notify clients of this device of a change of data.
         b_ext_wifi_started = startExternalWifi();
       }
@@ -332,6 +392,23 @@ void setup() {
   digitalWrite(RELAY3_PIN, LOW);
   digitalWrite(RELAY4_PIN, LOW);
 
+  // Initialize RF input button states
+  devices.button1.state.currentState = false;
+  devices.button1.state.previousState = false;
+  devices.button1.state.debounceCount = 0;
+  
+  devices.button2.state.currentState = false;
+  devices.button2.state.previousState = false;
+  devices.button2.state.debounceCount = 0;
+  
+  devices.button3.state.currentState = false;
+  devices.button3.state.previousState = false;
+  devices.button3.state.debounceCount = 0;
+  
+  devices.button4.state.currentState = false;
+  devices.button4.state.previousState = false;
+  devices.button4.state.debounceCount = 0;
+
 #if GPSTAR_DEBUG == 1
   // When debugging is enabled, wait for Serial to be ready (max 3 seconds).
   unsigned long startMillis = millis();
@@ -378,18 +455,19 @@ void setup() {
    */
 
   // Create a single-run setup task with the highest priority for WiFi/WebServer startup.
-  xTaskCreatePinnedToCore(PreferencesTask, "PreferencesTask", 4096, NULL, 4, &PreferencesTaskHandle, 1);
+  xTaskCreatePinnedToCore(PreferencesTask, "PreferencesTask", 4096, NULL, 5, &PreferencesTaskHandle, 1);
 
   // Delay all lower priority tasks until Preferences are loaded.
   vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 100ms to avoid competition.
 
   // Create a single-run setup task with the highest priority for WiFi/WebServer startup.
-  xTaskCreatePinnedToCore(WiFiSetupTask, "WiFiSetupTask", 4096, NULL, 3, &WiFiSetupTaskHandle, 1);
+  xTaskCreatePinnedToCore(WiFiSetupTask, "WiFiSetupTask", 4096, NULL, 4, &WiFiSetupTaskHandle, 1);
 
   // Delay all lower priority tasks until WiFi and WebServer setup is done.
   vTaskDelay(200 / portTICK_PERIOD_MS); // Delay for 200ms to avoid competition.
 
   // Create tasks which utilize a loop for continuous operation (prioritized highest to lowest).
+  xTaskCreatePinnedToCore(UserInputTask, "UserInputTask", 4096, NULL, 3, &UserInputTaskHandle, 1);
   xTaskCreatePinnedToCore(AnimationTask, "AnimationTask", 4096, NULL, 2, &AnimationTaskHandle, 1);
   xTaskCreatePinnedToCore(WiFiManagementTask, "WiFiManagementTask", 4096, NULL, 1, &WiFiManagementTaskHandle, 0);
 
@@ -456,6 +534,11 @@ void printMemoryStats() {
   debugln(F(" bytes"));
 
   // Stack memory (for other tasks)
+  if(UserInputTaskHandle != NULL) {
+    debug(F("|--User Input: "));
+    debug(formatBytesWithCommas(uxTaskGetStackHighWaterMark(UserInputTaskHandle)));
+    debugln(F(" / 4,096 bytes"));
+  }
   if(AnimationTaskHandle != NULL) {
     debug(F("|--Animation: "));
     debug(formatBytesWithCommas(uxTaskGetStackHighWaterMark(AnimationTaskHandle)));

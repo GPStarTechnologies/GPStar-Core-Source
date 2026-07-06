@@ -146,19 +146,30 @@ function getDevicePrefs() {
 function updateEquipment(jObj) {
   // Update display if we have the expected data (containing mode and theme at a minimum).
   if (jObj) {
-    // External WiFi Status
-    if (jObj.extWifiEnabled) {
-      setHtml("wifiStatus", jObj.extWifiStarted ? "Connected" : jObj.extWifiPaused ? "Paused" : "Connecting...");
-    } else {
-      setHtml("wifiStatus", "Disabled");
-    }
-
     // Status of remote WebSocket connection
     setHtml("wsStatus", jObj.extWebSocketState || "...");
     setHtml("wsMessage", jObj.extWebSocketMessage || "");
 
     // Connected Wifi Clients - Private AP vs. WebSocket
     setHtml("clientInfo", "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0));
+
+    // Update RF Input Button States
+    if (jObj.buttons && Array.isArray(jObj.buttons)) {
+      for (let i = 0; i < jObj.buttons.length; i++) {
+        const btn = jObj.buttons[i];
+        const stateText = btn.state ? "HIGH" : "LOW";
+        setHtml("button" + btn.id, stateText);
+      }
+    }
+
+    // Update Actuator/Relay States
+    if (jObj.relays && Array.isArray(jObj.relays)) {
+      for (let i = 0; i < jObj.relays.length; i++) {
+        const relay = jObj.relays[i];
+        const statusText = relay.active ? "ACTIVE" : "INACTIVE";
+        setHtml("relay" + relay.id, statusText);
+      }
+    }
   }
 }
 

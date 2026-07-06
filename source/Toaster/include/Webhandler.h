@@ -97,7 +97,7 @@ void checkWebSocketClient();
 void notifyWSClients();
 void sendDebug(const String& message); // From System.h
 void registerWebRoutes(); // From Webrouting.h
-bool triggerActuator(uint8_t actuatorID); // From System.h
+bool triggerActuator(ActuatorID actuatorID); // From System.h
 
 /**
  * JSON Body Helpers - Creates stringified JSON representations of device configurations
@@ -135,39 +135,51 @@ String getEquipmentStatus() {
   String equipStatus;
   JsonDocument jsonBody;
 
-  // Provide current values for the remote device (as available).
-  jsonBody["mode"] = wsData.mode;
-  jsonBody["theme"] = wsData.theme;
-  jsonBody["switch"] = wsData.switchState;
-  jsonBody["pack"] = wsData.pack;
-  jsonBody["safety"] = wsData.safety;
-  jsonBody["power"] = wsData.wandPower;
-  jsonBody["wandMode"] = wsData.wandMode;
-  jsonBody["firing"] = wsData.firing;
-  jsonBody["crossedStreams"] = wsData.ctsActive;
-  jsonBody["cable"] = wsData.cable;
-  jsonBody["cyclotron"] = wsData.cyclotron;
-  jsonBody["cyclotronLid"] = wsData.cyclotronLid;
-  jsonBody["temperature"] = wsData.temperature;
+  // Report on the state of each relay/actuator
+  JsonArray relayArray = jsonBody["relays"].to<JsonArray>();
+  
+  JsonObject relay1Obj = relayArray.add<JsonObject>();
+  relay1Obj["id"] = 1;
+  relay1Obj["pin"] = devices.relay1.pin;
+  relay1Obj["active"] = devices.relay1.state.relayActive;
+  
+  JsonObject relay2Obj = relayArray.add<JsonObject>();
+  relay2Obj["id"] = 2;
+  relay2Obj["pin"] = devices.relay2.pin;
+  relay2Obj["active"] = devices.relay2.state.relayActive;
+  
+  JsonObject relay3Obj = relayArray.add<JsonObject>();
+  relay3Obj["id"] = 3;
+  relay3Obj["pin"] = devices.relay3.pin;
+  relay3Obj["active"] = devices.relay3.state.relayActive;
+  
+  JsonObject relay4Obj = relayArray.add<JsonObject>();
+  relay4Obj["id"] = 4;
+  relay4Obj["pin"] = devices.relay4.pin;
+  relay4Obj["active"] = devices.relay4.state.relayActive;
 
-  // Provide status on the external WiFi connection.
-  jsonBody["extWifiEnabled"] = wirelessMgr->isExtWifiEnabled();
-  jsonBody["extWifiPaused"] = b_ext_wifi_paused;
-  jsonBody["extWifiStarted"] = b_ext_wifi_started;
-
-  // Report on the current state of the remote WebSocket connection.
-  switch(wsRemote.status) {
-    case DISCONNECTED:
-      jsonBody["extWebSocketState"] = "Disconnected";
-    break;
-    case CONNECTING:
-      jsonBody["extWebSocketState"] = "Connecting...";
-    break;
-    case CONNECTED:
-      jsonBody["extWebSocketState"] = "Connected";
-    break;
-  }
-  jsonBody["extWebSocketMessage"] = wsRemote.lastMessage;
+  // Report on the state of each RF input button
+  JsonArray buttonArray = jsonBody["buttons"].to<JsonArray>();
+  
+  JsonObject button1Obj = buttonArray.add<JsonObject>();
+  button1Obj["id"] = 1;
+  button1Obj["pin"] = devices.button1.pin;
+  button1Obj["state"] = devices.button1.state.currentState;
+  
+  JsonObject button2Obj = buttonArray.add<JsonObject>();
+  button2Obj["id"] = 2;
+  button2Obj["pin"] = devices.button2.pin;
+  button2Obj["state"] = devices.button2.state.currentState;
+  
+  JsonObject button3Obj = buttonArray.add<JsonObject>();
+  button3Obj["id"] = 3;
+  button3Obj["pin"] = devices.button3.pin;
+  button3Obj["state"] = devices.button3.state.currentState;
+  
+  JsonObject button4Obj = buttonArray.add<JsonObject>();
+  button4Obj["id"] = 4;
+  button4Obj["pin"] = devices.button4.pin;
+  button4Obj["state"] = devices.button4.state.currentState;
 
   // Serialize JSON object to string.
   serializeJson(jsonBody, equipStatus);
@@ -390,75 +402,6 @@ void webSocketClientEvent(WStype_t type, uint8_t * payload, size_t length) {
       wsRemote.lastMessage = String("Error from ") + String(wsRemote.clientHost) + String(": ") + String((char*)payload);
       debugln(wsRemote.lastMessage);
       notifyWSClients(); // Update local WebSocket clients
-    break;
-
-    case WStype_TEXT:
-      /*
-      * Deserialize incoming JSON String from remote websocket server.
-      * NOTE: Some data from the Attenuator/Wireless may be plain text
-      * which will cause an error to be thrown. Only continue when no
-      * error is present from deserialization.
-      */
-      JsonDocument jsonBody;
-      DeserializationError jsonError = deserializeJson(jsonBody, payload);
-      if(!jsonError) {
-        // Store values as a known datatype (String).
-        wsData.mode = jsonBody["mode"].as<String>();
-        wsData.theme = jsonBody["theme"].as<String>();
-        wsData.switchState = jsonBody["switch"].as<String>();
-        wsData.pack = jsonBody["pack"].as<String>();
-        wsData.safety = jsonBody["safety"].as<String>();
-        wsData.wandPower = jsonBody["power"].as<unsigned char>(); // Only integer value.
-        wsData.wandMode = jsonBody["wandMode"].as<String>();
-        wsData.firing = jsonBody["firing"].as<String>();
-        wsData.ctsActive = jsonBody["crossedStreams"].as<bool>();
-        wsData.cable = jsonBody["cable"].as<String>();
-        wsData.cyclotron = jsonBody["cyclotron"].as<String>();
-        wsData.cyclotronLid = jsonBody["cyclotronLid"].as<bool>();
-        wsData.temperature = jsonBody["temperature"].as<String>();
-
-        // Output some data to the serial console when needed.
-        debugln(wsData.wandMode + " is " + wsData.firing + " at level " + String(wsData.wandPower));
-
-        // Skip further mode changes if in self-test mode.
-        if(gpstarSystem.inStreamMode(SELFTEST)) {
-          return;
-        }
-
-        // Always keep up with the current theme.
-        gpstarSystem.setSystemTheme((SYSTEM_THEMES)jsonBody["themeID"].as<uint8_t>());
-
-        // Always keep up with the current stream mode.
-        if(wsData.wandMode == "Plasm System") {
-          gpstarSystem.setStreamMode(SLIME);
-        }
-        else if(wsData.wandMode == "Dark Matter Gen.") {
-          gpstarSystem.setStreamMode(STASIS);
-        }
-        else if(wsData.wandMode == "Particle System") {
-          gpstarSystem.setStreamMode(MESON);
-        }
-        else if(wsData.wandMode == "Spectral Stream") {
-          gpstarSystem.setStreamMode(SPECTRAL);
-        }
-        else if(wsData.wandMode == "Halloween") {
-          gpstarSystem.setStreamMode(HOLIDAY_HALLOWEEN);
-        }
-        else if(wsData.wandMode == "Christmas") {
-          gpstarSystem.setStreamMode(HOLIDAY_CHRISTMAS);
-        }
-        else if(wsData.wandMode == "Custom Stream") {
-          gpstarSystem.setStreamMode(SPECTRAL_CUSTOM);
-        }
-        else if(wsData.wandMode == "Settings") {
-          gpstarSystem.setStreamMode(SETTINGS);
-        }
-        else {
-          gpstarSystem.setStreamMode(PROTON);
-        }
-
-        notifyWSClients(); // Update local WebSocket clients
-      }
     break;
   }
 }
@@ -765,17 +708,26 @@ void handleActuator(AsyncWebServerRequest *request) {
 
       // Check if segment is a valid number (0 is valid, or toInt() returns non-zero)
       if(segment == "0" || segment.toInt() != 0) {
-        uint8_t actuator = abs(segment.toInt());
+        uint8_t actuatorNum = abs(segment.toInt());
 
-        // Trigger the specified actuator (handles checking the value given).
-        if(triggerActuator(actuator)) {
+        // Convert 1-4 to ActuatorID enum (0-3)
+        if(actuatorNum >= 1 && actuatorNum <= 4) {
+          ActuatorID actuator = (ActuatorID)(actuatorNum - 1);
+          // Trigger the specified actuator (handles checking the value given).
+          if(triggerActuator(actuator)) {
           request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
           notifyWSClients();
           return;
         }
+          else {
+            debugln(F("Failed to trigger actuator"));
+            request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Failed to trigger actuator"));
+            return;
+          }
+        }
         else {
-          debugln(F("Failed to trigger actuator"));
-          request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Failed to trigger actuator"));
+          debugln(F("Invalid Actuator (must be 1-4)"));
+          request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid Actuator (1-4)"));
           return;
         }
       }
