@@ -135,6 +135,29 @@ String getEquipmentStatus() {
   String equipStatus;
   JsonDocument jsonBody;
 
+  uint16_t i_music_track_min = 0;
+  uint16_t i_music_track_max = 0;
+
+  if(i_music_track_count > 0) {
+    i_music_track_min = i_music_track_start; // First music track possible (eg. 500)
+    i_music_track_max = i_music_track_start + i_music_track_count - 1; // 500 + N - 1 to be inclusive of the offset value.
+  }
+
+  try {
+    jsonBody["musicPlaying"] = b_playing_music;
+    jsonBody["musicPaused"] = b_music_paused;
+    jsonBody["musicLooping"] = b_repeat_track;
+    jsonBody["musicShuffled"] = b_shuffle_tracks;
+    jsonBody["musicCurrent"] = i_current_music_track;
+    jsonBody["musicStart"] = i_music_track_min;
+    jsonBody["musicEnd"] = i_music_track_max;
+    jsonBody["volMaster"] = i_volume_master_percentage;
+    jsonBody["volEffects"] = i_volume_effects_percentage;
+    jsonBody["volMusic"] = i_volume_music_percentage;
+  }
+  catch (...) {
+  }
+
   // Report on the state of each relay/actuator
   JsonArray relayArray = jsonBody["relays"].to<JsonArray>();
   

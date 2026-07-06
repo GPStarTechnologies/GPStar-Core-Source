@@ -229,27 +229,30 @@ void UserInputTask(void *parameter) {
     
     for (uint8_t i = 0; i < 4; i++) {
       bool rfState = digitalRead(buttonPins[i]) == HIGH;
+      bool stateChanged = false;
 
-      // Update debounce counter
-      if (rfState == buttons[i]->state.currentState) {
-        // State is consistent; increment debounce counter up to max
+      // Debounce: accumulate when pin state DIFFERS from current debounced state
+      if (rfState != buttons[i]->state.currentState) {
+        // Pin differs from debounced state - accumulate transition count
         if (buttons[i]->state.debounceCount < RF_DEBOUNCE_MAX) {
           buttons[i]->state.debounceCount++;
         }
+        
+        // Once we've accumulated enough consistent reads of the DIFFERENT state, accept transition
+        if (buttons[i]->state.debounceCount >= RF_DEBOUNCE_THRESHOLD) {
+          buttons[i]->state.previousState = buttons[i]->state.currentState;
+          buttons[i]->state.currentState = rfState;
+          buttons[i]->state.debounceCount = 0;  // Reset for next transition
+          stateChanged = true;
+        }
       } else {
-        // State changed; reset debounce counter
+        // Pin matches debounced state - reset transition counter
         buttons[i]->state.debounceCount = 0;
       }
 
-      // Once debounce threshold is reached, update the current state
-      if (buttons[i]->state.debounceCount >= RF_DEBOUNCE_THRESHOLD) {
-        buttons[i]->state.previousState = buttons[i]->state.currentState;
-        buttons[i]->state.currentState = rfState;
-        buttons[i]->state.debounceCount = RF_DEBOUNCE_THRESHOLD; // Hold at threshold
-      }
-
-      // Detect rising edge (transition from LOW to HIGH)
-      if (buttons[i]->state.currentState && !buttons[i]->state.previousState) {
+      // Detect rising edge ONLY on the iteration where state actually changed
+      // This prevents multiple triggers from the same button press
+      if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
         // Attempt to trigger the corresponding actuator
         // The triggerActuator function will enforce forbidden pair constraints
         if(triggerActuator(buttonActuators[i])) {
@@ -392,8 +395,8 @@ void setup() {
   digitalWrite(RELAY3_PIN, LOW);
   digitalWrite(RELAY4_PIN, LOW);
 
-  // Initialize RF input button states
-  devices.button1.state.currentState = false;
+  // Initialize RF input button states (LOW = idle, HIGH = pressed)
+  devices.button1.state.currentState = false;  // LOW (idle)
   devices.button1.state.previousState = false;
   devices.button1.state.debounceCount = 0;
   

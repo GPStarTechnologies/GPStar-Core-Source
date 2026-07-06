@@ -75,38 +75,6 @@ function onMessage(event) {
   }
 }
 
-if (!!window.EventSource) {
-  // Create events for one-way communication.
-  var source = new EventSource("/events");
-
-  source.addEventListener(
-    "open",
-    function (e) {
-      console.log("Server-Side Events connected");
-    },
-    false,
-  );
-
-  source.addEventListener(
-    "error",
-    function (e) {
-      if (e.target.readyState != EventSource.OPEN) {
-        console.log("Server-Side Events disconnected");
-      }
-    },
-    false,
-  );
-
-  source.addEventListener(
-    "debug",
-    function (e) {
-      if (e.data === undefined) return;
-      console.log("Debug: ", e.data);
-    },
-    false,
-  );
-}
-
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
   var xhttp = new XMLHttpRequest();
@@ -146,13 +114,6 @@ function getDevicePrefs() {
 function updateEquipment(jObj) {
   // Update display if we have the expected data (containing mode and theme at a minimum).
   if (jObj) {
-    // Status of remote WebSocket connection
-    setHtml("wsStatus", jObj.extWebSocketState || "...");
-    setHtml("wsMessage", jObj.extWebSocketMessage || "");
-
-    // Connected Wifi Clients - Private AP vs. WebSocket
-    setHtml("clientInfo", "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0));
-
     // Update RF Input Button States
     if (jObj.buttons && Array.isArray(jObj.buttons)) {
       for (let i = 0; i < jObj.buttons.length; i++) {
@@ -187,4 +148,20 @@ function triggerAct3() {
 
 function triggerAct4() {
   sendCommand("/device/actuator/4");
+}
+
+function selectMusic1() {
+  sendCommand("/music/select?track=500");
+}
+
+function selectMusic2() {
+  sendCommand("/music/select?track=501");
+}
+
+function musicStartStop() {
+  sendCommand("/music/startstop");
+}
+
+function musicPauseResume() {
+  sendCommand("/music/pauseresume");
 }
