@@ -737,16 +737,8 @@ void handleActuator(AsyncWebServerRequest *request) {
         if(actuatorNum >= 1 && actuatorNum <= 4) {
           ActuatorID actuator = (ActuatorID)(actuatorNum - 1);
           // Trigger the specified actuator (handles checking the value given).
-          if(triggerActuator(actuator)) {
-          request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+          triggerActuator(actuator);
           notifyWSClients();
-          return;
-        }
-          else {
-            debugln(F("Failed to trigger actuator"));
-            request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Failed to trigger actuator"));
-            return;
-          }
         }
         else {
           debugln(F("Invalid Actuator (must be 1-4)"));
@@ -756,9 +748,7 @@ void handleActuator(AsyncWebServerRequest *request) {
       }
     }
   }
-
-  debugln(F("Invalid Actuator"));
-  request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid Actuator (1-4)"));
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleRestartWiFi(AsyncWebServerRequest *request) {

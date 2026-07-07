@@ -29,12 +29,10 @@ enum sound_fx {
   S_PING1,
   S_PING2,
   S_PING3,
-  S_PING4,
-  S_MUSIC1,
-  S_MUSIC2
+  S_PING4
 };
 
 /*
  * Need to keep track which is the last sound effect, so we can iterate over the effects to adjust the volume gain on them.
  */
-const uint16_t i_last_effects_track = S_MUSIC2;
+const uint16_t i_last_effects_track = S_PING4;

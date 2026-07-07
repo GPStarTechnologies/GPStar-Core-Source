@@ -88,7 +88,7 @@ bool triggerActuator(ActuatorID actuatorID) {
     }
 
     // Play a random sound effect for this actuator trigger.
-    debugln(F("Triggering Actuator ") + String(actuatorID + 1));
+    debugln(String(F("Triggering Actuator ")) + String(actuatorID + 1));
     uint8_t soundEffects[] = {S_PING1, S_PING2, S_PING3, S_PING4};
     playEffect(soundEffects[random(4)]);
 
