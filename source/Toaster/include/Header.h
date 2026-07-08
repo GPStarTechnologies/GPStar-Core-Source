@@ -99,7 +99,7 @@ struct RelayChannel {
   ActuatorState state;
 };
 
-const uint16_t ACTUATOR_PULSE_MS = 400;
+const uint16_t ACTUATOR_PULSE_MS = 300;
 
 /**
  * RFInputState

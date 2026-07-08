@@ -63,6 +63,7 @@ DeviceState gpstarSystem;
 #include "Wireless.h"
 #include "Webhandler.h"
 #include "Webrouting.h"
+#include "Animation.h"
 #include "System.h"
 
 // Writes a debug message to the serial console or sends to the WebSocket.
@@ -155,7 +156,7 @@ void AnimationTask(void *parameter) {
     updateAudio(); // Update the state of the available sound board.
     checkMusic(); // Perform music control as necessary.
 
-    vTaskDelay(8 / portTICK_PERIOD_MS); // 8ms delay
+    vTaskDelay(10 / portTICK_PERIOD_MS); // 10ms delay
   }
 }
 
@@ -545,7 +546,7 @@ void printMemoryStats() {
   if(AnimationTaskHandle != NULL) {
     debug(F("|--Animation: "));
     debug(formatBytesWithCommas(uxTaskGetStackHighWaterMark(AnimationTaskHandle)));
-    debugln(F(" / 2,048 bytes"));
+    debugln(F(" / 4,096 bytes"));
   }
   if(WiFiManagementTaskHandle != NULL) {
     debug(F("|--WiFi Mgmt.: "));
