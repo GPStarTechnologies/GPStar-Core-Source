@@ -25,6 +25,7 @@
 #include "Vibration.h"
 
 // Preferences for the Proton Pack device.
+// All bool values are treated as bits and purposefully placed at the end of the struct to ensure proper and efficient packing.
 struct __attribute__((packed)) PackPrefs {
   SYSTEM_MODES defaultSystemModePack = MODE_SUPER_HERO; // [1=SuperHero,2=ModeOriginal]
   SYSTEM_THEMES defaultYearThemePack = SYSTEM_TOGGLE_SWITCH; // [1=TOGGLE,2=1984,3=1989,4=AFTERLIFE,5=FROZEN_EMPIRE]
@@ -77,6 +78,7 @@ struct __attribute__((packed)) PackPrefs {
 static_assert(sizeof(PackPrefs) < 85, "WARNING: PackPrefs has grown too large (>84 bytes)");
 
 // Preferences for the Neutrona Wand device.
+// All bool values are treated as bits and purposefully placed at the end of the struct to ensure proper and efficient packing.
 struct __attribute__((packed)) WandPrefs {
   uint8_t ledWandCount = 3; // [1=Hasbro,2=Frutto,3=GPStar Barrel,4=GPStar Barrel II,5=GPStar Barrel Mini]
   uint8_t ledWandHue = 2; // Spectral custom colour/hue 2-254
@@ -114,6 +116,7 @@ struct __attribute__((packed)) WandPrefs {
 static_assert(sizeof(WandPrefs) < 35, "WARNING: WandPrefs has grown too large (>34 bytes)");
 
 // Preferences for smoke/overheat behavior.
+// All bool values are treated as bits and purposefully placed at the end of the struct to ensure proper and efficient packing.
 struct __attribute__((packed)) SmokePrefs {
   uint8_t overheatDuration5 = 2; // 2-60 Seconds
   uint8_t overheatDuration4 = 2; // 2-60 Seconds
@@ -142,6 +145,7 @@ struct __attribute__((packed)) SmokePrefs {
 static_assert(sizeof(SmokePrefs) < 35, "WARNING: SmokePrefs has grown too large (>34 bytes)");
 
 // Data for synchronizing the Neutrona Wand.
+// All bool values treated as bits and are purposefully placed at the end of the struct to ensure proper and efficient packing.
 struct __attribute__((packed)) WandSyncData {
   SYSTEM_MODES systemMode = MODE_SUPER_HERO;
   SYSTEM_THEMES systemTheme = SYSTEM_AFTERLIFE;
@@ -164,6 +168,7 @@ struct __attribute__((packed)) WandSyncData {
 static_assert(sizeof(WandSyncData) < 35, "WARNING: WandSyncData has grown too large (>34 bytes)");
 
 // Data for synchronizing the Attenuator.
+// All bool values are treated as bits and purposefully placed at the end of the struct to ensure proper and efficient packing.
 struct __attribute__((packed)) AttenuatorSyncData {
   SYSTEM_MODES systemMode = MODE_SUPER_HERO;
   SYSTEM_THEMES systemTheme = SYSTEM_AFTERLIFE;
