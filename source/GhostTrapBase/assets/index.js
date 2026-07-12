@@ -31,6 +31,7 @@ window.addEventListener("load", onLoad);
 function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
   getDevicePrefs(); // Get all preferences.
+  getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
   getStatus(); // Get status immediately.
 }
@@ -49,6 +50,7 @@ function doHeartbeat() {
   if (websocket.readyState == websocket.OPEN) {
     websocket.send("heartbeat"); // Send a specific message.
   }
+  getNetworkInfo(); // Refresh network statistics.
   setTimeout(doHeartbeat, 8000);
 }
 
@@ -113,69 +115,6 @@ if (!!window.EventSource) {
   );
 }
 
-function setButtonStates(smokeEnabled) {
-  // Assume all functions are not possible, override as necessary.
-  disableEl("btnSmoke2");
-  disableEl("btnSmoke5");
-  disableEl("btnSmokeEnable");
-  disableEl("btnSmokeDisable");
-
-  if (smokeEnabled) {
-    // Enable specific buttons only when smoke is enabled.
-    enableEl("btnSmoke2");
-    enableEl("btnSmoke5");
-    enableEl("btnSmokeDisable");
-  } else {
-    // Otherwise, make sure the user can re-enable smoke.
-    enableEl("btnSmokeEnable");
-  }
-}
-
-function updateGraphics(jObj) {
-  // Update display if we have the expected data (containing door state at a minimum).
-  if (jObj && jObj.doorState) {
-    if (jObj.doorState == "Opened") {
-      colorEl("doorOverlay", 0, 150, 0);
-    } else {
-      colorEl("doorOverlay", 255, 0, 0);
-    }
-  } else {
-    // Reset all screen elements to their defaults to indicate no data available.
-    colorEl("doorOverlay", 100, 100, 100);
-  }
-}
-
-function updateEquipment(jObj) {
-  // Update display if we have the expected data (containing door state at a minimum).
-  if (jObj && jObj.doorState) {
-    // Current Pack Status
-    setHtml("doorState", jObj.doorState || "...");
-
-    // Update special UI elements based on the latest data values.
-    setButtonStates(jObj.smokeEnabled);
-
-    // Connected Wifi Clients - Private AP vs. WebSocket
-    setHtml("clientInfo", "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0));
-
-    updateGraphics(jObj);
-  }
-}
-
-function getStatus() {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
-      // Update the equipment (text) display, which will also update graphical elements.
-      updateEquipment(JSON.parse(this.responseText));
-    } else if (this.readyState == 4) {
-      // Handle error responses
-      handleStatus(this.responseText);
-    }
-  };
-  xhttp.open("GET", "/status", true);
-  xhttp.send();
-}
-
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
   var xhttp = new XMLHttpRequest();
@@ -185,10 +124,7 @@ function getDevicePrefs() {
       if (jObj) {
         // Device Info
         setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
-        setHtml("wifiName", "Private Network: " + jObj.wifiName || "");
-        if (((jObj.wifiNameExt || "") != "" && (jObj.extAddr || "") != "") || (jObj.extMask || "") != "") {
-          setHtml("extWifi", (jObj.wifiNameExt || "") + ": " + jObj.extAddr + " / " + jObj.extMask);
-        }
+
         switch (jObj.audioVersion ?? 0) {
           case 0:
           case 1:
@@ -235,6 +171,99 @@ function getDevicePrefs() {
     }
   };
   xhttp.open("GET", "/config/device", true);
+  xhttp.send();
+}
+
+function getNetworkInfo() {
+  // Fetch network configuration and statistics from dedicated endpoint.
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
+      var jObj = JSON.parse(this.responseText);
+      if (jObj) {
+        // Display local AP network name
+        if (jObj.localAP && jObj.localAP.ssid) {
+          setHtml("wifiName", "Private Network: " + jObj.localAP.ssid);
+        }
+
+        // Display client counts
+        var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
+        setHtml("clientInfo", clientText);
+
+        // Display external WiFi info if connected
+        if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
+          var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;
+          setHtml("extWifi", extInfo);
+        } else {
+          setHtml("extWifi", ""); // Clear if not connected
+        }
+      }
+    } else if (this.readyState == 4) {
+      // Handle error responses
+      console.log("Failed to fetch network info:", this.responseText);
+    }
+  };
+  xhttp.open("GET", "/wifi/status", true);
+  xhttp.send();
+}
+
+function setButtonStates(smokeEnabled) {
+  // Assume all functions are not possible, override as necessary.
+  disableEl("btnSmoke2");
+  disableEl("btnSmoke5");
+  disableEl("btnSmokeEnable");
+  disableEl("btnSmokeDisable");
+
+  if (smokeEnabled) {
+    // Enable specific buttons only when smoke is enabled.
+    enableEl("btnSmoke2");
+    enableEl("btnSmoke5");
+    enableEl("btnSmokeDisable");
+  } else {
+    // Otherwise, make sure the user can re-enable smoke.
+    enableEl("btnSmokeEnable");
+  }
+}
+
+function updateGraphics(jObj) {
+  // Update display if we have the expected data (containing door state at a minimum).
+  if (jObj && jObj.doorState) {
+    if (jObj.doorState == "Opened") {
+      colorEl("doorOverlay", 0, 150, 0);
+    } else {
+      colorEl("doorOverlay", 255, 0, 0);
+    }
+  } else {
+    // Reset all screen elements to their defaults to indicate no data available.
+    colorEl("doorOverlay", 100, 100, 100);
+  }
+}
+
+function updateEquipment(jObj) {
+  // Update display if we have the expected data (containing door state at a minimum).
+  if (jObj && jObj.doorState) {
+    // Current Pack Status
+    setHtml("doorState", jObj.doorState || "...");
+
+    // Update special UI elements based on the latest data values.
+    setButtonStates(jObj.smokeEnabled);
+
+    updateGraphics(jObj);
+  }
+}
+
+function getStatus() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
+      // Update the equipment (text) display, which will also update graphical elements.
+      updateEquipment(JSON.parse(this.responseText));
+    } else if (this.readyState == 4) {
+      // Handle error responses
+      handleStatus(this.responseText);
+    }
+  };
+  xhttp.open("GET", "/status", true);
   xhttp.send();
 }
 

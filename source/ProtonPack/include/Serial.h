@@ -707,7 +707,6 @@ void handlePackPrefsUpdate() {
   i_cyclotron_brightness = packConfig.ledCycLidLum;
   b_clockwise = packConfig.cyclotronDirection;
   b_cyclotron_single_led = packConfig.ledCycLidCenter;
-
   b_fade_cyclotron_led = packConfig.ledCycLidFade;
   b_cyclotron_colour_toggle = packConfig.ledVGCyclotron;
   b_cyclotron_simulate_ring = packConfig.ledCycLidSimRing;
