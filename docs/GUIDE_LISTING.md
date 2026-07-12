@@ -31,6 +31,8 @@ A full installation guide is available as a PDF here:
 
 We must acknowledge and celebrate our community members who have created entertaining and informational videos demonstrating the install processes. Please see this collection of videos curated by creator:
 
+1. [Installs by David Callari](INSTALL_VIDEOS_DC.md)
+
 1. [Installs by Jonogunn](INSTALL_VIDEOS_JONOGUNN.md)
 
 1. [Installs by Nor-Cal Ghostbusters](INSTALL_VIDEOS_NORCALGB.md)

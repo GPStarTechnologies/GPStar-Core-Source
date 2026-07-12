@@ -23,11 +23,8 @@
 /**
  ***** IMPORTANT *****
  * If using a WAV Trigger, please make sure you are running the custom GPStar version firmware version 1.40 or higher.
- * You can download the latest directly from the GPStar github repository.
- * https://github.com/gpstar81/haslab-proton-pack/tree/main/extras
- *
  * Information on how to update your WAV Trigger devices can be found on the GPStar github repository.
- * https://github.com/gpstar81/haslab-proton-pack/blob/main/docs/WAVTRIGGER.md
+ * https://github.com/GPStarTechnologies/GPStar-Core-Source/blob/main/docs/WAVTRIGGER.md
  */
 #include <GPStarAudio.h>
 gpstarAudio audio;

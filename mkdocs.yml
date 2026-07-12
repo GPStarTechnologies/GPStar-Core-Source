@@ -97,6 +97,7 @@ nav:
     - EEPROM Menus: OPERATION_EEPROM.md
     - Attenuator WiFi Operation: WIRELESS_OPERATION.md
   - Install Videos:
+    - David Callari: INSTALL_VIDEOS_DC.md
     - Jonogunn: INSTALL_VIDEOS_JONOGUNN.md
     - Nor-Cal GB: INSTALL_VIDEOS_NORCALGB.md
   - Maintenance:

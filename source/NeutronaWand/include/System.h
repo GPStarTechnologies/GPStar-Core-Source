@@ -1938,7 +1938,7 @@ void bargraphRedraw() {
     }
   }
   else {
-    // Stock haslab bargraph control.
+    // Stock Hasbro bargraph control.
     switch(gpstarWand.getPowerLevel()) {
       case LEVEL_1:
         wandBargraphControl(1);
@@ -2097,7 +2097,7 @@ void bargraphPowerCheck() {
     }
   }
   else {
-    // Stock haslab bargraph control.
+    // Stock Hasbro bargraph control.
     switch(gpstarWand.getPowerLevel()) {
       case LEVEL_1:
         wandBargraphControl(1);

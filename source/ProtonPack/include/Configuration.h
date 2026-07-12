@@ -257,8 +257,8 @@ enum LED_TYPES CAVITY_LED_TYPE = GBR_LED; // Defaults to GBR
 #define INNER_CYCLOTRON_DELAY_2021_35_LED 6 // For 35 LEDs.
 #define INNER_CYCLOTRON_DELAY_1984_36_LED 9 // For 36 LEDs.
 #define INNER_CYCLOTRON_DELAY_2021_36_LED 6 // For 36 LEDs.
-uint8_t i_1984_inner_delay = INNER_CYCLOTRON_DELAY_1984_35_LED;
-uint8_t i_2021_inner_delay = INNER_CYCLOTRON_DELAY_2021_35_LED;
+uint8_t i_1984_inner_delay = INNER_CYCLOTRON_DELAY_1984_36_LED;
+uint8_t i_2021_inner_delay = INNER_CYCLOTRON_DELAY_2021_36_LED;
 
 /*
  * The CHSV colour value for the Spectral Custom mode.
