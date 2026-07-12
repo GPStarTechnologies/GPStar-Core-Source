@@ -55,7 +55,7 @@ or
 
 Device labels can be obtained or created by any means desired. The sizes [offered by this product on GBFans](https://www.gbfans.com/shop/pack-vinyl-labels/) should be sufficient.
 
-* Lower Mode/Indicator: [Clear Dome Lens](https://www.digikey.com/en/products/detail/carclo-technical-plastics/10403/2641656) or [Fluted Dome Lens](https://www.lvelectronics.com/details/item?itemid=CML%2025P-326C#)
+* Lower Mode/Indicator: [Clear Dome Lens](https://www.digikey.com/en/products/detail/carclo-technical-plastics/10403/2641656) or [Fluted Dome Lens](https://mou.sr/4fbfKff)
 * Top Mode/Indicator: [Clip-in Lens SML&#95;190&#95;CTP](https://www.digikey.com/en/products/detail/visual-communications-company-vcc/SML-190-CTP/4515623)
 
 ## Dimensions
