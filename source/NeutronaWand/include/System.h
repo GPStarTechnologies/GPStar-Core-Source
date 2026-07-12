@@ -4199,8 +4199,9 @@ void checkSwitches() {
         case MODE_ORIGINAL:
           // We shut the pack and wand down if any of the right toggle switches are turned off. Activate switch control is handled in fireControlCheck();
           if(!switch_vent.on() || !switch_wand.on()) {
+            resetBargraphSpeed();
+
             if(WAND_STATUS != MODE_OFF) {
-              resetBargraphSpeed();
               // If any of the right toggle switches are turned off, we must turn the cyclotron off and shut the Neutrona Wand down to an off idle status.
               WAND_ACTION_STATUS = ACTION_OFF;
               return;
