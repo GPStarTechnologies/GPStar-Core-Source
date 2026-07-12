@@ -1718,16 +1718,16 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.defaultPackVolume = jsonBody["defaultPackVolume"].as<uint8_t>();
 
       // Boolean fields - Effect toggles
-      if(jsonBody["ribbonCableAlarm"].is<bool>()) packConfig.ribbonCableAlarm = jsonBody["ribbonCableAlarm"].as<bool>();
-      if(jsonBody["wandQuickBootup"].is<bool>()) packConfig.wandQuickBootup = jsonBody["wandQuickBootup"].as<bool>();
-      if(jsonBody["brassStartupLoop"].is<bool>()) packConfig.brassStartupLoop = jsonBody["brassStartupLoop"].as<bool>();
-      if(jsonBody["overheatStrobeNF"].is<bool>()) packConfig.overheatStrobeNF = jsonBody["overheatStrobeNF"].as<bool>();
-      if(jsonBody["overheatLightsOff"].is<bool>()) packConfig.overheatLightsOff = jsonBody["overheatLightsOff"].as<bool>();
-      if(jsonBody["overheatSyncToFan"].is<bool>()) packConfig.overheatSyncToFan = jsonBody["overheatSyncToFan"].as<bool>();
-      if(jsonBody["demoLightMode"].is<bool>()) packConfig.demoLightMode = jsonBody["demoLightMode"].as<bool>();
-      if(jsonBody["fadeoutIdleSounds"].is<bool>()) packConfig.fadeoutIdleSounds = jsonBody["fadeoutIdleSounds"].as<bool>();
-      if(jsonBody["audioVolumeBoosted"].is<bool>()) packConfig.audioVolumeBoosted = jsonBody["audioVolumeBoosted"].as<bool>();
-      if(jsonBody["gpstarAudioLed"].is<bool>()) packConfig.gpstarAudioLed = jsonBody["gpstarAudioLed"].as<bool>();
+      if(jsonBody["ribbonCableAlarm"].is<bool>()) { packConfig.ribbonCableAlarm = jsonBody["ribbonCableAlarm"].as<bool>(); }
+      if(jsonBody["wandQuickBootup"].is<bool>()) { packConfig.wandQuickBootup = jsonBody["wandQuickBootup"].as<bool>(); }
+      if(jsonBody["brassStartupLoop"].is<bool>()) { packConfig.brassStartupLoop = jsonBody["brassStartupLoop"].as<bool>(); }
+      if(jsonBody["overheatStrobeNF"].is<bool>()) { packConfig.overheatStrobeNF = jsonBody["overheatStrobeNF"].as<bool>(); }
+      if(jsonBody["overheatLightsOff"].is<bool>()) { packConfig.overheatLightsOff = jsonBody["overheatLightsOff"].as<bool>(); }
+      if(jsonBody["overheatSyncToFan"].is<bool>()) { packConfig.overheatSyncToFan = jsonBody["overheatSyncToFan"].as<bool>(); }
+      if(jsonBody["demoLightMode"].is<bool>()) { packConfig.demoLightMode = jsonBody["demoLightMode"].as<bool>(); }
+      if(jsonBody["fadeoutIdleSounds"].is<bool>()) { packConfig.fadeoutIdleSounds = jsonBody["fadeoutIdleSounds"].as<bool>(); }
+      if(jsonBody["audioVolumeBoosted"].is<bool>()) { packConfig.audioVolumeBoosted = jsonBody["audioVolumeBoosted"].as<bool>();}
+      if(jsonBody["gpstarAudioLed"].is<bool>()) { packConfig.gpstarAudioLed = jsonBody["gpstarAudioLed"].as<bool>(); }
 
       // Update certain operational values immediately.
       switch(packConfig.defaultSystemModePack) {
@@ -1744,8 +1744,8 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       }
 
       // GPStar II WiFi Toggles
-      if(jsonBody["isWiFiEnabled"].is<bool>()) packConfig.isWiFiEnabled = jsonBody["isWiFiEnabled"].as<bool>();
-      if(jsonBody["resetWifiPassword"].is<bool>()) packConfig.resetWifiPassword = jsonBody["resetWifiPassword"].as<bool>();
+      if(jsonBody["isWiFiEnabled"].is<bool>()) { packConfig.isWiFiEnabled = jsonBody["isWiFiEnabled"].as<bool>(); }
+      if(jsonBody["resetWifiPassword"].is<bool>()) { packConfig.resetWifiPassword = jsonBody["resetWifiPassword"].as<bool>(); }
 
       // Numeric fields - Cyclotron Lid options
       packConfig.ledCycLidCount = jsonBody["ledCycLidCount"].as<uint8_t>();
@@ -1755,11 +1755,11 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.ledCycLidCenter = jsonBody["ledCycLidCenter"].as<uint8_t>();
 
       // Boolean fields - Cyclotron Lid toggles
-      if(jsonBody["cyclotronDirection"].is<bool>()) packConfig.cyclotronDirection = jsonBody["cyclotronDirection"].as<bool>();
-      if(jsonBody["ledCycLidFade"].is<bool>()) packConfig.ledCycLidFade = jsonBody["ledCycLidFade"].as<bool>();
-      if(jsonBody["ledVGCyclotron"].is<bool>()) packConfig.ledVGCyclotron = jsonBody["ledVGCyclotron"].as<bool>();
-      if(jsonBody["ledCycLidSimRing"].is<bool>()) packConfig.ledCycLidSimRing = jsonBody["ledCycLidSimRing"].as<bool>();
-      if(jsonBody["disableLidDetection"].is<bool>()) packConfig.disableLidDetection = jsonBody["disableLidDetection"].as<bool>();
+      if(jsonBody["cyclotronDirection"].is<bool>()) { packConfig.cyclotronDirection = jsonBody["cyclotronDirection"].as<bool>(); }
+      if(jsonBody["ledCycLidFade"].is<bool>()) { packConfig.ledCycLidFade = jsonBody["ledCycLidFade"].as<bool>(); }
+      if(jsonBody["ledVGCyclotron"].is<bool>()) { packConfig.ledVGCyclotron = jsonBody["ledVGCyclotron"].as<bool>(); }
+      if(jsonBody["ledCycLidSimRing"].is<bool>()) { packConfig.ledCycLidSimRing = jsonBody["ledCycLidSimRing"].as<bool>(); }
+      if(jsonBody["disableLidDetection"].is<bool>()) { packConfig.disableLidDetection = jsonBody["disableLidDetection"].as<bool>(); }
 
       // Numeric fields - Inner Cyclotron options
       packConfig.ledCycInnerPanel = jsonBody["ledCycInnerPanel"].as<uint8_t>();
@@ -1775,8 +1775,8 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.ledCycCavType = jsonBody["ledCycCavType"].as<uint8_t>();
 
       // Boolean fields - Inner Cyclotron toggles
-      if(jsonBody["ledCycCakeGRB"].is<bool>()) packConfig.ledCycCakeGRB = jsonBody["ledCycCakeGRB"].as<bool>();
-      if(jsonBody["ledCycCavInvert"].is<bool>()) packConfig.ledCycCavInvert = jsonBody["ledCycCavInvert"].as<bool>();
+      if(jsonBody["ledCycCakeGRB"].is<bool>()) { packConfig.ledCycCakeGRB = jsonBody["ledCycCakeGRB"].as<bool>(); }
+      if(jsonBody["ledCycCavInvert"].is<bool>()) { packConfig.ledCycCavInvert = jsonBody["ledCycCavInvert"].as<bool>(); }
 
       // Numeric fields - Power Cell options
       packConfig.ledPowercellCount = jsonBody["ledPowercellCount"].as<uint8_t>();
@@ -1785,8 +1785,8 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.ledPowercellLum = jsonBody["ledPowercellLum"].as<uint8_t>();
 
       // Boolean field - Power Cell toggles
-      if(jsonBody["ledInvertPowercell"].is<bool>()) packConfig.ledInvertPowercell = jsonBody["ledInvertPowercell"].as<bool>();
-      if(jsonBody["ledVGPowercell"].is<bool>()) packConfig.ledVGPowercell = jsonBody["ledVGPowercell"].as<bool>();
+      if(jsonBody["ledInvertPowercell"].is<bool>()) { packConfig.ledInvertPowercell = jsonBody["ledInvertPowercell"].as<bool>(); }
+      if(jsonBody["ledVGPowercell"].is<bool>()) { packConfig.ledVGPowercell = jsonBody["ledVGPowercell"].as<bool>(); }
 
       if(PACK_CONN_STATE != PACK_CONNECTED) {
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
@@ -1826,9 +1826,9 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.ledWandSat = jsonBody["ledWandSat"].as<uint8_t>();
 
       // Boolean fields - LED toggles
-      if(jsonBody["rgbVentEnabled"].is<bool>()) wandConfig.rgbVentEnabled = jsonBody["rgbVentEnabled"].as<bool>();
-      if(jsonBody["rgbVentColours"].is<bool>()) wandConfig.rgbVentColours = jsonBody["rgbVentColours"].as<bool>();
-      if(jsonBody["autoVentLight"].is<bool>()) wandConfig.autoVentLight = jsonBody["autoVentLight"].as<bool>();
+      if(jsonBody["rgbVentEnabled"].is<bool>()) { wandConfig.rgbVentEnabled = jsonBody["rgbVentEnabled"].as<bool>(); }
+      if(jsonBody["rgbVentColours"].is<bool>()) { wandConfig.rgbVentColours = jsonBody["rgbVentColours"].as<bool>(); }
+      if(jsonBody["autoVentLight"].is<bool>()) { wandConfig.autoVentLight = jsonBody["autoVentLight"].as<bool>(); }
 
       // Stream mode toggles - Update in the config object for the moment, and save back to the device's state object later.
       // Note that PROTON mode can neither be set nor unset (always enabled).
@@ -1850,14 +1850,14 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.defaultWandVolume = jsonBody["defaultWandVolume"].as<uint8_t>();
 
       // Boolean fields - General wand toggles
-      if(jsonBody["overheatEnabled"].is<bool>()) wandConfig.overheatEnabled = jsonBody["overheatEnabled"].as<bool>();
-      if(jsonBody["wandSoundsToPack"].is<bool>()) wandConfig.wandSoundsToPack = jsonBody["wandSoundsToPack"].as<bool>();
-      if(jsonBody["quickVenting"].is<bool>()) wandConfig.quickVenting = jsonBody["quickVenting"].as<bool>();
-      if(jsonBody["wandBeepLoop"].is<bool>()) wandConfig.wandBeepLoop = jsonBody["wandBeepLoop"].as<bool>();
-      if(jsonBody["wandBootError"].is<bool>()) wandConfig.wandBootError = jsonBody["wandBootError"].as<bool>();
-      if(jsonBody["extraProtonSounds"].is<bool>()) wandConfig.extraProtonSounds = jsonBody["extraProtonSounds"].as<bool>();
-      if(jsonBody["audioVolumeBoosted"].is<bool>()) wandConfig.audioVolumeBoosted = jsonBody["audioVolumeBoosted"].as<bool>();
-      if(jsonBody["gpstarAudioLed"].is<bool>()) wandConfig.gpstarAudioLed = jsonBody["gpstarAudioLed"].as<bool>();
+      if(jsonBody["overheatEnabled"].is<bool>()) { wandConfig.overheatEnabled = jsonBody["overheatEnabled"].as<bool>(); }
+      if(jsonBody["wandSoundsToPack"].is<bool>()) { wandConfig.wandSoundsToPack = jsonBody["wandSoundsToPack"].as<bool>(); }
+      if(jsonBody["quickVenting"].is<bool>()) { wandConfig.quickVenting = jsonBody["quickVenting"].as<bool>(); }
+      if(jsonBody["wandBeepLoop"].is<bool>()) { wandConfig.wandBeepLoop = jsonBody["wandBeepLoop"].as<bool>(); }
+      if(jsonBody["wandBootError"].is<bool>()) { wandConfig.wandBootError = jsonBody["wandBootError"].as<bool>(); }
+      if(jsonBody["extraProtonSounds"].is<bool>()) { wandConfig.extraProtonSounds = jsonBody["extraProtonSounds"].as<bool>(); }
+      if(jsonBody["audioVolumeBoosted"].is<bool>()) { wandConfig.audioVolumeBoosted = jsonBody["audioVolumeBoosted"].as<bool>(); }
+      if(jsonBody["gpstarAudioLed"].is<bool>()) { wandConfig.gpstarAudioLed = jsonBody["gpstarAudioLed"].as<bool>(); }
 
       // Numeric fields - Bargraph options
       wandConfig.numBargraphSegments = jsonBody["numBargraphSegments"].as<uint8_t>();
@@ -1865,12 +1865,12 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.bargraphFireAnimation = jsonBody["bargraphFireAnimation"].as<uint8_t>();
 
       // Boolean fields - Bargraph toggles
-      if(jsonBody["invertWandBargraph"].is<bool>()) wandConfig.invertWandBargraph = jsonBody["invertWandBargraph"].as<bool>();
-      if(jsonBody["bargraphOverheatBlink"].is<bool>()) wandConfig.bargraphOverheatBlink = jsonBody["bargraphOverheatBlink"].as<bool>();
+      if(jsonBody["invertWandBargraph"].is<bool>()) { wandConfig.invertWandBargraph = jsonBody["invertWandBargraph"].as<bool>(); }
+      if(jsonBody["bargraphOverheatBlink"].is<bool>()) { wandConfig.bargraphOverheatBlink = jsonBody["bargraphOverheatBlink"].as<bool>(); }
 
       // GPStar II WiFi Toggles
-      if(jsonBody["isWiFiEnabled"].is<bool>()) wandConfig.isWiFiEnabled = jsonBody["isWiFiEnabled"].as<bool>();
-      if(jsonBody["resetWifiPassword"].is<bool>()) wandConfig.resetWifiPassword = jsonBody["resetWifiPassword"].as<bool>();
+      if(jsonBody["isWiFiEnabled"].is<bool>()) { wandConfig.isWiFiEnabled = jsonBody["isWiFiEnabled"].as<bool>(); }
+      if(jsonBody["resetWifiPassword"].is<bool>()) { wandConfig.resetWifiPassword = jsonBody["resetWifiPassword"].as<bool>(); }
 
       if(PACK_CONN_STATE != PACK_CONNECTED) {
         request->send(HTTP_STATUS_503, MIME_JSON, returnJsonStatus("Pack has lost sync, please try saving settings again."));
@@ -1903,7 +1903,7 @@ AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHan
   if(!b_pack_on && !b_wand_on) {
     try {
       // Boolean field - General smoke toggle
-      if(jsonBody["smokeEnabled"].is<bool>()) smokeConfig.smokeEnabled = jsonBody["smokeEnabled"].as<bool>();
+      if(jsonBody["smokeEnabled"].is<bool>()) { smokeConfig.smokeEnabled = jsonBody["smokeEnabled"].as<bool>(); }
 
       // Numeric fields - Overheat duration values (seconds)
       smokeConfig.overheatDuration5 = jsonBody["overheatDuration5"].as<uint8_t>();
@@ -1913,18 +1913,18 @@ AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHan
       smokeConfig.overheatDuration1 = jsonBody["overheatDuration1"].as<uint8_t>();
 
       // Boolean fields - Continuous smoke timers (seconds)
-      if(jsonBody["overheatContinuous5"].is<bool>()) smokeConfig.overheatContinuous5 = jsonBody["overheatContinuous5"].as<bool>();
-      if(jsonBody["overheatContinuous4"].is<bool>()) smokeConfig.overheatContinuous4 = jsonBody["overheatContinuous4"].as<bool>();
-      if(jsonBody["overheatContinuous3"].is<bool>()) smokeConfig.overheatContinuous3 = jsonBody["overheatContinuous3"].as<bool>();
-      if(jsonBody["overheatContinuous2"].is<bool>()) smokeConfig.overheatContinuous2 = jsonBody["overheatContinuous2"].as<bool>();
-      if(jsonBody["overheatContinuous1"].is<bool>()) smokeConfig.overheatContinuous1 = jsonBody["overheatContinuous1"].as<bool>();
+      if(jsonBody["overheatContinuous5"].is<bool>()) { smokeConfig.overheatContinuous5 = jsonBody["overheatContinuous5"].as<bool>(); }
+      if(jsonBody["overheatContinuous4"].is<bool>()) { smokeConfig.overheatContinuous4 = jsonBody["overheatContinuous4"].as<bool>(); }
+      if(jsonBody["overheatContinuous3"].is<bool>()) { smokeConfig.overheatContinuous3 = jsonBody["overheatContinuous3"].as<bool>(); }
+      if(jsonBody["overheatContinuous2"].is<bool>()) { smokeConfig.overheatContinuous2 = jsonBody["overheatContinuous2"].as<bool>(); }
+      if(jsonBody["overheatContinuous1"].is<bool>()) { smokeConfig.overheatContinuous1 = jsonBody["overheatContinuous1"].as<bool>(); }
 
       // Boolean fields - Overheat by level toggles
-      if(jsonBody["overheatLevel5"].is<bool>()) smokeConfig.overheatLevel5 = jsonBody["overheatLevel5"].as<bool>();
-      if(jsonBody["overheatLevel4"].is<bool>()) smokeConfig.overheatLevel4 = jsonBody["overheatLevel4"].as<bool>();
-      if(jsonBody["overheatLevel3"].is<bool>()) smokeConfig.overheatLevel3 = jsonBody["overheatLevel3"].as<bool>();
-      if(jsonBody["overheatLevel2"].is<bool>()) smokeConfig.overheatLevel2 = jsonBody["overheatLevel2"].as<bool>();
-      if(jsonBody["overheatLevel1"].is<bool>()) smokeConfig.overheatLevel1 = jsonBody["overheatLevel1"].as<bool>();
+      if(jsonBody["overheatLevel5"].is<bool>()) { smokeConfig.overheatLevel5 = jsonBody["overheatLevel5"].as<bool>(); }
+      if(jsonBody["overheatLevel4"].is<bool>()) { smokeConfig.overheatLevel4 = jsonBody["overheatLevel4"].as<bool>(); }
+      if(jsonBody["overheatLevel3"].is<bool>()) { smokeConfig.overheatLevel3 = jsonBody["overheatLevel3"].as<bool>(); }
+      if(jsonBody["overheatLevel2"].is<bool>()) { smokeConfig.overheatLevel2 = jsonBody["overheatLevel2"].as<bool>(); }
+      if(jsonBody["overheatLevel1"].is<bool>()) { smokeConfig.overheatLevel1 = jsonBody["overheatLevel1"].as<bool>(); }
 
       // Numeric fields - Overheat delay values (seconds)
       smokeConfig.overheatDelay5 = jsonBody["overheatDelay5"].as<uint8_t>();
