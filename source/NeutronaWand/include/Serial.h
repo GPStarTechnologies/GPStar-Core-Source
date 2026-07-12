@@ -51,6 +51,21 @@ struct CommandPacket recvCmd;
 struct MessagePacket sendData;
 struct MessagePacket recvData;
 
+// Protocol signature for detecting incompatible firmware versions.
+// Calculated from packet sizes and message type counts at compile time.
+const uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
+  sizeof(CommandPacket),         // cmd_packet_size
+  sizeof(MessagePacket),         // msg_packet_size
+  sizeof(PackPrefs),             // pack_prefs_size
+  sizeof(WandPrefs),             // wand_prefs_size
+  sizeof(SmokePrefs),            // smoke_prefs_size
+  sizeof(WandSyncData),          // wand_sync_size
+  sizeof(AttenuatorSyncData),    // atten_sync_size
+  P_NO_OP,                       // pack_msg_max
+  W_NO_OP,                       // wand_msg_max
+  A_NO_OP                        // api_msg_max
+);
+
 /*
  * Serial API Helper Functions
  */
@@ -798,14 +813,21 @@ bool handlePackCommand(uint8_t i_command, uint16_t i_value) {
 
   switch(i_command) {
     case P_HANDSHAKE:
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Pack protocol mismatch!"));
+        WAND_CONN_STATE = PACK_MISMATCH;
+        return false; // Block sync due to incompatible firmware.
+      }
+
       // The pack is asking us if we are still here so respond accordingly.
       if(WAND_CONN_STATE != PACK_CONNECTED) {
         // If still waiting for the pack, trigger an immediate synchronization.
-        wandSerialSend(W_SYNC_NOW);
+        wandSerialSend(W_SYNC_NOW, PROTOCOL_SIGNATURE);
       }
       else {
         // The wand had already synchronized with the pack, so respond with handshake.
-        wandSerialSend(W_HANDSHAKE);
+        wandSerialSend(W_HANDSHAKE, PROTOCOL_SIGNATURE);
       }
     break;
 

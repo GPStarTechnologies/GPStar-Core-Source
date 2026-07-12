@@ -31,6 +31,8 @@ A full installation guide is available as a PDF here:
 
 We must acknowledge and celebrate our community members who have created entertaining and informational videos demonstrating the install processes. Please see this collection of videos curated by creator:
 
+1. [Installs by David Callari](INSTALL_VIDEOS_DC.md)
+
 1. [Installs by Jonogunn](INSTALL_VIDEOS_JONOGUNN.md)
 
 1. [Installs by Nor-Cal Ghostbusters](INSTALL_VIDEOS_NORCALGB.md)
@@ -62,7 +64,7 @@ This section is presented in a way to offer a more complete view of what compone
 | N-Filter<sup>O</sup>        | [7-LED Vent Light](NFILTER.md) |
 | Power Cell<sup>O</sup>      | [13 and 15-LED options](POWERCELL.md) |
 | Smoke Effects<sup>O</sup>   | [Various Solutions Supported](SMOKE.md) |
-| Cyclotron Bypass<sup>R* & O</sup> | [Bypass board for non Haslab Proton Packs](CYCLOTRON_BYPASS.md) |
+| Cyclotron Bypass<sup>R* & O</sup> | [Bypass board for non HasLab Proton Packs](CYCLOTRON_BYPASS.md) |
 
 **Connectivity**
 

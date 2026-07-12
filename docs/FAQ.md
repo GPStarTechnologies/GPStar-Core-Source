@@ -24,7 +24,7 @@
 
 ## Q: Is a GPStar Neutrona Wand required?
 
-**A:** For a pack-only conversion a wand with a GPStar Neutrona Wand board is not required. However, a modified wand is required if you want full control of the pack from the wand. We now offer a "Lite" kit through Frutto Technologies which will allow an unmodified Hasbro wand to turn the Pack on and off and have the Pack respond to firing, similar to the original behavior of the stock Haslab equipment.
+**A:** For a pack-only conversion a wand with a GPStar Neutrona Wand board is not required. However, a modified wand is required if you want full control of the pack from the wand. We now offer a "Lite" kit through Frutto Technologies which will allow an unmodified Hasbro wand to turn the Pack on and off and have the Pack respond to firing, similar to the original behavior of the stock HasLab equipment.
 
 ## Q: How many wires / pins are required for the connection between the Proton Pack and Neutrona Wand?
 
@@ -40,11 +40,11 @@
 
 ## Q: Can I produce and sell kits for others for commercial purposes?
 
-**A:** Yes, the code is released under a GPLv3 License. Modifications or enhancements which may be useful to the community are encouraged to be contributed back to [the original repository](https://github.com/gpstar81/haslab-proton-pack).
+**A:** Yes, the code is released under a GPLv3 License. Modifications or enhancements which may be useful to the community are encouraged to be contributed back to [our code repository](https://github.com/GPStarTechnologies/GPStar-Core-Source).
 
 ## Q: I have some cool ideas, can you add some custom bits in the code for me?
 
-**A:** Feel free to use the [discussion section of the GitHub repository](https://github.com/gpstar81/haslab-proton-pack/discussions) to talk about them. Anybody can contribute modifications or enhancements back to the repository (by use of a branch or fork) for review and final acceptance into the main branch.
+**A:** Feel free to use the [discussion section of the GitHub repository](https://github.com/GPStarTechnologies/GPStar-Core-Source/discussions) to talk about them. Anybody can contribute modifications or enhancements back to the repository (by use of a branch or fork) for review and final acceptance into the main branch.
 
 ## Q: Help, I fried my stock equipment or components!
 

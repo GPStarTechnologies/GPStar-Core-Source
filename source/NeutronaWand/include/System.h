@@ -1938,7 +1938,7 @@ void bargraphRedraw() {
     }
   }
   else {
-    // Stock haslab bargraph control.
+    // Stock Hasbro bargraph control.
     switch(gpstarWand.getPowerLevel()) {
       case LEVEL_1:
         wandBargraphControl(1);
@@ -2097,7 +2097,7 @@ void bargraphPowerCheck() {
     }
   }
   else {
-    // Stock haslab bargraph control.
+    // Stock Hasbro bargraph control.
     switch(gpstarWand.getPowerLevel()) {
       case LEVEL_1:
         wandBargraphControl(1);
@@ -3315,7 +3315,7 @@ void wandOff() {
   else if(WAND_ACTION_STATUS != ACTION_ERROR && (b_wand_boot_error_on || b_wand_mash_lockout)) {
     // We are entering either Wand Boot Error mode or Button Mash Timeout mode, so do nothing.
   }
-  else {
+  else if(WAND_STATUS != MODE_OFF || WAND_ACTION_STATUS != ACTION_IDLE) {
     // Full wand shutdown in all other situations.
     wandSerialSend(W_OFF, (switch_vent.on() && gpstarWand.getSystemMode() == MODE_SUPER_HERO) ? 0 : 1);
     WAND_STATUS = MODE_OFF;
@@ -4200,9 +4200,12 @@ void checkSwitches() {
           // We shut the pack and wand down if any of the right toggle switches are turned off. Activate switch control is handled in fireControlCheck();
           if(!switch_vent.on() || !switch_wand.on()) {
             resetBargraphSpeed();
-            // If any of the right toggle switches are turned off, we must turn the cyclotron off and shut the Neutrona Wand down to an off idle status.
-            WAND_ACTION_STATUS = ACTION_OFF;
-            return;
+
+            if(WAND_STATUS != MODE_OFF) {
+              // If any of the right toggle switches are turned off, we must turn the cyclotron off and shut the Neutrona Wand down to an off idle status.
+              WAND_ACTION_STATUS = ACTION_OFF;
+              return;
+            }
           }
           else {
             // Determine the light status on the wand and any beeps.

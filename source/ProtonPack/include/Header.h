@@ -93,7 +93,10 @@
  #define QUAD_CYCLOTRON_LED_COUNT 4
 
 /*
- * The HasLab Cyclotron Lid has 12 LEDs.
+ * The HasLab Cyclotron Lid has 12 LEDs (4x3)
+ * However, configuration is subject to the stock pack type:
+ * - Afterlife: Each of the 4 lenses has 3 LEDs in an arc.
+ * - 1984: Each of the 4 lenses has 3 LEDs in a triangle.
  */
 #define HASLAB_CYCLOTRON_LED_COUNT 12
 
@@ -419,19 +422,39 @@ bool b_firing_alt = false;
 bool b_firing_intensify = false;
 bool b_sound_firing_intensify_trigger = false;
 bool b_sound_firing_alt_trigger = false;
-bool b_wand_connected = false;
-bool b_wand_syncing = false;
 bool b_wand_on = false;
 bool b_wand_mash_lockout = false;
+
+/*
+ * Wand Connection State
+ * Used to identify the state of the Neutrona Wand as it connects to a Proton Pack.
+ * These should be mutually exclusive and non-overlapping states for the Neutrona Wand communications.
+ */
+enum WAND_CONN_STATES {
+  WAND_DISCONNECTED,  // No wand detected or connection lost
+  WAND_MISMATCH,      // Wand detected but firmware incompatible
+  WAND_SYNCING,       // Wand synchronization in progress
+  WAND_CONNECTED      // Wand connected and synchronized
+};
+enum WAND_CONN_STATES WAND_CONN_STATE = WAND_DISCONNECTED;
+
 millisDelay ms_wand_check; // Timer used to determine whether the wand has been disconnected.
 millisDelay ms_mash_lockout; // Timer for tracking the expected button-mash lockout on the wand.
 const uint16_t i_wand_disconnect_delay = 8000; // Time until the pack considers a wand as disconnected.
 
 /*
- * Attenuator Status
+ * Attenuator State
+ * Used to identify the state of the Proton Pack as it connects to an Attenuator.
+ * These should be mutually exclusive and non-overlapping states for the Attenuator communications.
  */
-bool b_attenuator_connected = false;
-bool b_attenuator_syncing = false;
+enum ATTENUATOR_CONN_STATES {
+  ATTENUATOR_DISCONNECTED,  // No attenuator detected or connection lost
+  ATTENUATOR_MISMATCH,      // Attenuator detected but firmware incompatible
+  ATTENUATOR_SYNCING,       // Attenuator synchronization in progress
+  ATTENUATOR_CONNECTED      // Attenuator connected and synchronized
+};
+enum ATTENUATOR_CONN_STATES ATTENUATOR_CONN_STATE = ATTENUATOR_DISCONNECTED;
+
 millisDelay ms_attenuator_check;
 const uint16_t i_attenuator_disconnect_delay = 8000; // Time until the pack considers the Attenuator disconnected.
 

@@ -414,34 +414,34 @@ void restartFadeoutIdleSounds() {
 void fadeoutIdleSounds(bool fadeFast = false) {
   switch(gpstarPack.getSystemTheme()) {
     case SYSTEM_1984:
-      fadeoutEffect(S_GB1_1984_PACK_LOOP, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_GB1_1984_PACK_LOOP, fadeFast ? 1 : 5000);
     break;
     case SYSTEM_1989:
-      fadeoutEffect(S_GB2_PACK_LOOP, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_GB2_PACK_LOOP, fadeFast ? 1 : 5000);
     break;
     case SYSTEM_AFTERLIFE:
     default:
-      fadeoutEffect(S_AFTERLIFE_PACK_IDLE_LOOP, fadeFast ? 100 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 100 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 100 : 5000);
-      fadeoutEffect(S_POWERCELL, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_AFTERLIFE_PACK_IDLE_LOOP, fadeFast ? 1 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 1 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 1 : 5000);
+      fadeoutEffect(S_POWERCELL, fadeFast ? 1 : 5000);
       wandExtraSoundsBeepLoopStop(true);
       b_powercell_sound_loop = false;
     break;
     case SYSTEM_FROZEN_EMPIRE:
       if(isBrassPack()) {
         if(b_brass_startup_loop) {
-          fadeoutEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, fadeFast ? 100 : 5000);
+          fadeoutEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, fadeFast ? 1 : 5000);
         }
         else {
-          fadeoutEffect(S_FROZEN_EMPIRE_BRASS_IDLE, fadeFast ? 100 : 5000);
+          fadeoutEffect(S_FROZEN_EMPIRE_BRASS_IDLE, fadeFast ? 1 : 5000);
         }
       }
 
-      fadeoutEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, fadeFast ? 100 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 100 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 100 : 5000);
-      fadeoutEffect(S_POWERCELL, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, fadeFast ? 1 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 1 : 5000);
+      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 1 : 5000);
+      fadeoutEffect(S_POWERCELL, fadeFast ? 1 : 5000);
       wandExtraSoundsBeepLoopStop(true);
       b_powercell_sound_loop = false;
     break;
@@ -457,13 +457,13 @@ void fadeoutIdleSounds(bool fadeFast = false) {
       // Do nothing.
     break;
     case SLIME:
-      fadeoutEffect(S_PACK_SLIME_TANK_LOOP, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_PACK_SLIME_TANK_LOOP, fadeFast ? 1 : 5000);
     break;
     case STASIS:
-      fadeoutEffect(S_STASIS_IDLE_LOOP, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_STASIS_IDLE_LOOP, fadeFast ? 1 : 5000);
     break;
     case MESON:
-      fadeoutEffect(S_MESON_IDLE_LOOP, fadeFast ? 100 : 5000);
+      fadeoutEffect(S_MESON_IDLE_LOOP, fadeFast ? 1 : 5000);
     break;
   }
 }
@@ -1024,18 +1024,24 @@ void packStartup(bool fullStartup) {
 
   switch(gpstarPack.getSystemTheme()) {
     case SYSTEM_1984:
+      stopEffect(S_GB1_1984_BOOT_UP);
+      stopEffect(S_GB1_1984_PACK_LOOP);
       playEffect(S_GB1_1984_BOOT_UP);
       playEffect(S_GB1_1984_PACK_LOOP, true, i_volume_effects, true, 3800);
     break;
 
     case SYSTEM_1989:
+      stopEffect(S_GB2_PACK_START);
+      stopEffect(S_GB2_PACK_LOOP);
       playEffect(S_GB2_PACK_START);
       playEffect(S_GB2_PACK_LOOP, true, i_volume_effects, true, 3800);
     break;
 
     case SYSTEM_AFTERLIFE:
     default:
+      stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP);
       if(fullStartup) {
+        stopEffect(S_AFTERLIFE_PACK_STARTUP);
         if(gpstarPack.inStreamMode(SLIME)) {
           playEffect(S_AFTERLIFE_PACK_STARTUP, false, i_volume_effects - i_slime_bootup_level);
           playEffect(S_AFTERLIFE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level, true, 15000);
@@ -1062,13 +1068,18 @@ void packStartup(bool fullStartup) {
     break;
 
     case SYSTEM_FROZEN_EMPIRE:
+      stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP);
       if(isBrassPack()) {
+        stopEffect(S_BOOTUP);
         playEffect(S_BOOTUP);
         playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects, true, 500);
         if(b_brass_startup_loop) {
+          stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP);
           playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, true, i_volume_effects, true, 2000);
         }
         else {
+          stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT);
+          stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE);
           playEffect(S_FROZEN_EMPIRE_BOOT_EFFECT);
           playEffect(S_FROZEN_EMPIRE_BRASS_IDLE, true, i_volume_effects, true, 2300);
         }
@@ -1077,6 +1088,7 @@ void packStartup(bool fullStartup) {
         ms_idle_fire_fade.start(0);
       }
       else {
+        stopEffect(S_FROZEN_EMPIRE_PACK_STARTUP);
         if(fullStartup) {
           if(gpstarPack.inStreamMode(SLIME)) {
             playEffect(S_FROZEN_EMPIRE_PACK_STARTUP, false, i_volume_effects - i_slime_bootup_level);
@@ -1090,6 +1102,7 @@ void packStartup(bool fullStartup) {
           ms_idle_fire_fade.start(10000);
         }
         else {
+          stopEffect(S_BOOTUP);
           if(gpstarPack.inStreamMode(SLIME)) {
             playEffect(S_BOOTUP, false, i_volume_effects - i_slime_bootup_level);
             playEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, true, i_volume_effects - i_slime_idle_level, true, 500);
@@ -1287,7 +1300,7 @@ void packShutdown() {
     b_vent_sounds_playing = false;
   }
 
-  if(!b_wand_connected) {
+  if(WAND_CONN_STATE != WAND_CONNECTED) {
     // If we lost connection to the wand, make sure these are stopped!
     wandExtraSoundsStop();
     wandExtraSoundsBeepLoopStop(false);
@@ -1535,7 +1548,7 @@ void packOffReset() {
 }
 
 void setYearModeByToggle() {
-  // We have 4 year modes but only 2 toggle states, so these get grouped by their Haslab defaults.
+  // We have 4 year modes but only 2 toggle states, so these get grouped by their HasLab defaults.
   // Toggling the switch up/down will cycle through 1984 -> Afterlife -> 1989 -> Frozen Empire.
   if(switch_mode.getState() == LOW) {
     if(gpstarPack.isThemeModern()) {
@@ -3779,7 +3792,7 @@ void cyclotron1984Alarm() {
 }
 
 void packOverheatingFinished() {
-  if(!b_wand_syncing) {
+  if(WAND_CONN_STATE != WAND_SYNCING) {
     packSerialSend(P_OVERHEATING_FINISHED);
   }
 
@@ -5737,7 +5750,7 @@ void systemPOST() {
 void resetWifiCommand() {
   bool b_reset_success = false;
   // If not ESP32, send a message to the wireless module to have it reset its password.
-  if(b_attenuator_connected) {
+  if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED) {
     attenuatorSerialSend(A_RESET_WIFI_PASSWORD);
     b_reset_success = true;
   }
@@ -5834,7 +5847,7 @@ void readTemperature() {
     else if(ms_temp_read.justFinished()) {
       f_temperature_c = tempSensor.getTemperature(); // Read value in Celsius
       f_temperature_f = (f_temperature_c * 1.8) + 32; // Convert Celsius to Fahrenheit
-      debugf("\t\tTemp: %.1f C (%.1f F)\n", f_temperature_c, f_temperature_f);
+      //sendDebug(String(F("Temp: ")) + String(f_temperature_c) + String(F(" C (")) + String(f_temperature_f) + String(F(" F)")));
 
       // Send value to the Attenuator, multiplied by 100 to avoid float issues.
       attenuatorSerialSend(A_TEMPERATURE_PACK, f_temperature_c * 100);

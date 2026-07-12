@@ -156,11 +156,31 @@ String getDeviceConfig() {
     jsonBody["songList"] = "";
   }
   jsonBody["buildDate"] = build_date;
+  jsonBody["deviceProtocol"] = PROTOCOL_SIGNATURE;
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
   jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
+
+  // Report pack connection state
+  switch(WAND_CONN_STATE) {
+    case PACK_DISCONNECTED:
+      jsonBody["packConn"] = "Disconnected";
+    break;
+    case PACK_MISMATCH:
+      jsonBody["packConn"] = "Version Mismatch";
+    break;
+    case PACK_CONNECTED:
+      jsonBody["packConn"] = "Connected";
+    break;
+    case NC_BENCHTEST:
+      jsonBody["packConn"] = "Standalone Mode";
+    break;
+    default:
+      jsonBody["packConn"] = "Unknown";
+    break;
+  }
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -381,8 +401,6 @@ String getEquipmentStatus() {
     jsonBody["volEffects"] = i_volume_effects_percentage;
     jsonBody["volMusic"] = i_volume_music_percentage;
     jsonBody["sensors"] = getSensorState();
-    jsonBody["apClients"] = i_ap_client_count;
-    jsonBody["wsClients"] = i_ws_client_count;
   }
   catch (...) {
   }
@@ -1028,6 +1046,27 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
   // Serialize JSON object to string.
   serializeJson(jsonBody, wifiNetworks);
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, wifiNetworks);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  request->send(response);
+}
+
+void handleGetNetworkStatus(AsyncWebServerRequest *request) {
+  // Return network status and statistics including DNS request count and connected clients.
+  String statusJson;
+  JsonDocument jsonBody;
+  JsonObject statusObj = jsonBody.to<JsonObject>();
+
+  // Populate with current network configuration and statistics.
+  wirelessMgr->getNetworkStatus(statusObj);
+
+  // Add device-specific client connection counts.
+  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
+  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
+  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, statusJson);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, statusJson);
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }
@@ -1752,9 +1791,9 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.ledWandSat = jsonBody["ledWandSat"].as<uint8_t>();
 
       // Boolean fields - LED toggles
-      updateJsonBool(wandConfig.rgbVentEnabled, jsonBody, "rgbVentEnabled");
-      updateJsonBool(wandConfig.rgbVentColours, jsonBody, "rgbVentColours");
-      updateJsonBool(wandConfig.autoVentLight, jsonBody, "autoVentLight");
+      wandConfig.rgbVentEnabled = extractBoolFromJson(jsonBody, "rgbVentEnabled", wandConfig.rgbVentEnabled);
+      wandConfig.rgbVentColours = extractBoolFromJson(jsonBody, "rgbVentColours", wandConfig.rgbVentColours);
+      wandConfig.autoVentLight = extractBoolFromJson(jsonBody, "autoVentLight", wandConfig.autoVentLight);
 
       // Stream mode toggles - Update in the config object for the moment, and save back to the device's state object later.
       // Note that PROTON mode can neither be set nor unset (always enabled).
@@ -1776,14 +1815,14 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.defaultWandVolume = jsonBody["defaultWandVolume"].as<uint8_t>();
 
       // Boolean fields - General wand toggles
-      updateJsonBool(wandConfig.overheatEnabled, jsonBody, "overheatEnabled");
-      updateJsonBool(wandConfig.wandSoundsToPack, jsonBody, "wandSoundsToPack");
-      updateJsonBool(wandConfig.quickVenting, jsonBody, "quickVenting");
-      updateJsonBool(wandConfig.wandBeepLoop, jsonBody, "wandBeepLoop");
-      updateJsonBool(wandConfig.wandBootError, jsonBody, "wandBootError");
-      updateJsonBool(wandConfig.extraProtonSounds, jsonBody, "extraProtonSounds");
-      updateJsonBool(wandConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
-      updateJsonBool(wandConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
+      wandConfig.overheatEnabled = extractBoolFromJson(jsonBody, "overheatEnabled", wandConfig.overheatEnabled);
+      wandConfig.wandSoundsToPack = extractBoolFromJson(jsonBody, "wandSoundsToPack", wandConfig.wandSoundsToPack);
+      wandConfig.quickVenting = extractBoolFromJson(jsonBody, "quickVenting", wandConfig.quickVenting);
+      wandConfig.wandBeepLoop = extractBoolFromJson(jsonBody, "wandBeepLoop", wandConfig.wandBeepLoop);
+      wandConfig.wandBootError = extractBoolFromJson(jsonBody, "wandBootError", wandConfig.wandBootError);
+      wandConfig.extraProtonSounds = extractBoolFromJson(jsonBody, "extraProtonSounds", wandConfig.extraProtonSounds);
+      wandConfig.audioVolumeBoosted = extractBoolFromJson(jsonBody, "audioVolumeBoosted", wandConfig.audioVolumeBoosted);
+      wandConfig.gpstarAudioLed = extractBoolFromJson(jsonBody, "gpstarAudioLed", wandConfig.gpstarAudioLed);
 
       // Numeric fields - Bargraph options
       wandConfig.numBargraphSegments = jsonBody["numBargraphSegments"].as<uint8_t>();
@@ -1791,12 +1830,12 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.bargraphFireAnimation = jsonBody["bargraphFireAnimation"].as<uint8_t>();
 
       // Boolean fields - Bargraph toggles
-      updateJsonBool(wandConfig.invertWandBargraph, jsonBody, "invertWandBargraph");
-      updateJsonBool(wandConfig.bargraphOverheatBlink, jsonBody, "bargraphOverheatBlink");
+      wandConfig.invertWandBargraph = extractBoolFromJson(jsonBody, "invertWandBargraph", wandConfig.invertWandBargraph);
+      wandConfig.bargraphOverheatBlink = extractBoolFromJson(jsonBody, "bargraphOverheatBlink", wandConfig.bargraphOverheatBlink);
 
       // GPStar II WiFi Toggles
-      updateJsonBool(wandConfig.isWiFiEnabled, jsonBody, "isWiFiEnabled");
-      updateJsonBool(wandConfig.resetWifiPassword, jsonBody, "resetWifiPassword");
+      wandConfig.isWiFiEnabled = extractBoolFromJson(jsonBody, "isWiFiEnabled", wandConfig.isWiFiEnabled);
+      wandConfig.resetWifiPassword = extractBoolFromJson(jsonBody, "resetWifiPassword", wandConfig.resetWifiPassword);
 
       handleWandPrefsUpdate(); // Have the wand pass the new settings.
       request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));

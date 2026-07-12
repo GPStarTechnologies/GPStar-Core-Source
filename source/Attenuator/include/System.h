@@ -245,7 +245,7 @@ void updateTopStatusLED() {
     i_top_led_colour = C_RED;
   }
 
-  if(b_wait_for_pack) {
+  if(PACK_CONN_STATE != PACK_CONNECTED) {
     // Keep LED as purple while still awaiting pack synchronization.
     i_top_led_colour = C_PURPLE;
   }
@@ -453,9 +453,11 @@ void checkRotaryPress() {
         break;
 
         case MENU_STREAM:
-          attenuatorSerialSend(A_MANUAL_QUICK_VENT);
-          useVibration(i_vibrate_min_time); // Give a quick nudge.
-          sendDebug(F("Rotary: Quick Vent"));
+          if(!b_overheating && !b_pack_alarm) {
+            attenuatorSerialSend(A_MANUAL_QUICK_VENT);
+            useVibration(i_vibrate_min_time); // Give a quick nudge.
+            sendDebug(F("Rotary: Quick Vent"));
+          }
         break;
       }
     break;
@@ -498,9 +500,11 @@ void checkRotaryPress() {
         break;
 
         case MENU_STREAM:
-          attenuatorSerialSend(A_MANUAL_OVERHEAT);
-          useVibration(i_vibrate_min_time); // Give a quick nudge.
-          sendDebug(F("Rotary: Forced Overheat"));
+          if(!b_overheating && !b_pack_alarm) {
+            attenuatorSerialSend(A_MANUAL_OVERHEAT);
+            useVibration(i_vibrate_min_time); // Give a quick nudge.
+            sendDebug(F("Rotary: Forced Overheat"));
+          }
         break;
       }
     break;
@@ -647,7 +651,7 @@ void checkUserInputs() {
       if(!b_pack_on) {
         attenuatorSerialSend(A_TURN_PACK_ON);
 
-        if(!b_comms_open && !b_wait_for_pack && !ms_packsync.isRunning()) {
+        if(!b_comms_open && PACK_CONN_STATE == PACK_CONNECTED && !ms_packsync.isRunning()) {
           // Only force the pack bool to true if in standalone mode.
           b_pack_on = true;
         }
@@ -657,7 +661,7 @@ void checkUserInputs() {
       if(b_pack_on) {
         attenuatorSerialSend(A_TURN_PACK_OFF);
 
-        if(!b_comms_open && !b_wait_for_pack && !ms_packsync.isRunning()) {
+        if(!b_comms_open && PACK_CONN_STATE == PACK_CONNECTED && !ms_packsync.isRunning()) {
           // Only force the pack bool to false if in standalone mode.
           b_pack_on = false;
         }

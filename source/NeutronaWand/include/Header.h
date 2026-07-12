@@ -446,10 +446,15 @@ uint16_t i_last_firing_effect_mix = 0; // Used by standalone Neutrona Wand.
 
 /*
  * Wand Connection State
- * Used to identify the state of the wand as it connects to a Proton Pack.
- * These should be mutually exclusive and non-overlapping states for the wand communications.
+ * Used to identify the state of the Neutrona Wand as it connects to a Proton Pack.
+ * These should be mutually exclusive and non-overlapping states for the Neutrona Wand communications.
  */
-enum WAND_CONN_STATES { PACK_DISCONNECTED, PACK_CONNECTED, NC_BENCHTEST };
+enum WAND_CONN_STATES {
+  PACK_DISCONNECTED,  // No pack detected or connection lost
+  PACK_MISMATCH,      // Pack detected but firmware incompatible
+  PACK_CONNECTED,     // Pack connected and synchronized
+  NC_BENCHTEST        // Benchtest mode (no pack required)
+};
 enum WAND_CONN_STATES WAND_CONN_STATE;
 uint8_t i_boot_connection_count = 0;
 

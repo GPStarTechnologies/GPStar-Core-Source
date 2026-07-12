@@ -241,15 +241,21 @@ def compress_assets():
         combined_js.unlink()
 
     # Define file extensions that should be compressed for web serving
-    # Note: .css and .js excluded since we handle combined files specially above
-    compress_extensions = ['.html', '.svg', '.ico']
+    # Note: Most .css and .js files are combined above, but we must allow for special checks (eg. index.js)
+    compress_extensions = ['.html', '.svg', '.ico', '.stl']
+    compress_files = ['index.js', 'three.min.js']
 
     # Process each file in the assets directory
     for file_path in assets_dir.iterdir():
         # Skip directories and files with unsupported extensions
         if not file_path.is_file():
             continue
-        if file_path.suffix.lower() not in compress_extensions:
+
+        # Skip files that are neither in compress_extensions nor explicitly listed in compress_files
+        if (
+            file_path.suffix.lower() not in compress_extensions and
+            file_path.name not in compress_files
+        ):
             continue
 
         # Generate the compressed file path

@@ -132,7 +132,7 @@ function getDevicePrefs() {
         }
 
         // Device Info
-        setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
+        setHtml("buildDate", "Build: " + (jObj.buildDate || "") + " [" + (jObj.deviceProtocol || "-") + "]");
 
         switch (jObj.audioVersion ?? 0) {
           case 0:
@@ -142,10 +142,10 @@ function getDevicePrefs() {
             setHtml("audioInfo", "WAV Trigger");
             break;
           case 100:
-            setHtml("audioInfo", "GPStar Audio v100");
+            setHtml("audioInfo", "GPStar Audio Firmware: v100");
             break;
           default:
-            setHtml("audioInfo", "GPStar Audio v" + (jObj.audioVersion || ""));
+            setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
             break;
         }
 
@@ -182,6 +182,13 @@ function getDevicePrefs() {
         } else if (Boolean(jObj.audioOutdated)) {
           // The file count on the microSD card does not match firmware; alert the user.
           alert("Contents of microSD card do not match current firmware. Please make sure to update your microSD cards after updating firmware.");
+        }
+
+        // Firmware mismatch warnings
+        if (jObj.wandConn === "Version Mismatch") {
+          alert("The firmware on the Proton Pack does not match that of the Neutrona Wand. Please make sure all devices are on the same firmware.");
+        } else if (jObj.attenuatorConn === "Version Mismatch") {
+          alert("The firmware on the Proton Pack does not match of the Attenuator/Wireless Module. Please make sure all devices are on the same firmware.");
         }
       }
     } else if (this.readyState == 4) {

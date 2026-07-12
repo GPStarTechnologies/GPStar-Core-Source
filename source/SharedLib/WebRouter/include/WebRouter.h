@@ -87,12 +87,23 @@ String returnJsonStatus(const String &status = String("success")) {
   return s_out;
 }
 
-// Helper function to safely extract boolean values from JSON and update bool field directly
+// Helper to extract a boolean value from JSON and update a regular bool field (8 bits)
+// Only works with true bool fields - cannot be used with bitfield members (: 1 syntax)
+// Example: updateJsonBool(myBool, jsonBody, "fieldName");
 void updateJsonBool(bool& targetField, const JsonDocument& jsonBody, const String& propertyName) {
-  // Updates the target field if property exists and is of the expected type, otherwise the target is unchanged.
   if(jsonBody[propertyName].is<bool>()) {
-    targetField = jsonBody[propertyName].as<bool>(); // Directly assign bool value (true or false)
+    targetField = jsonBody[propertyName].as<bool>();
   }
+}
+
+// Helper to extract a boolean value from JSON, preserving the current value if not found or wrong type,
+// treated as bits and using the currentValue to ensure unmodified fields retain their existing state
+// Example: wandConfig.overheatEnabled = extractBoolFromJson(jsonBody, "overheatEnabled", wandConfig.overheatEnabled);
+bool extractBoolFromJson(const JsonDocument& jsonBody, const String& propertyName, bool currentValue) {
+  if(jsonBody[propertyName].is<bool>()) {
+    return jsonBody[propertyName].as<bool>();
+  }
+  return currentValue; // Keep existing value if property not found or wrong type
 }
 
 /*

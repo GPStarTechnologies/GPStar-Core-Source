@@ -62,6 +62,21 @@ struct MessagePacket recvDataW;
 struct MessagePacket sendDataA;
 struct MessagePacket recvDataA;
 
+// Protocol signature for detecting incompatible firmware versions.
+// Calculated from packet sizes and message type counts at compile time.
+const uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
+  sizeof(CommandPacket),         // cmd_packet_size
+  sizeof(MessagePacket),         // msg_packet_size
+  sizeof(PackPrefs),             // pack_prefs_size
+  sizeof(WandPrefs),             // wand_prefs_size
+  sizeof(SmokePrefs),            // smoke_prefs_size
+  sizeof(WandSyncData),          // wand_sync_size
+  sizeof(AttenuatorSyncData),    // atten_sync_size
+  P_NO_OP,                       // pack_msg_max
+  W_NO_OP,                       // wand_msg_max
+  A_NO_OP                        // api_msg_max
+);
+
 /*
  * Serial API Helper Functions
  */
@@ -268,8 +283,8 @@ void getSmokePrefsObject() {
   // Enable or disable smoke effects overall.
   smokeConfig.smokeEnabled = b_smoke_enabled;
 
-  if(!b_wand_connected) {
-    // Provide some default values when a wand is not attached.
+  if(WAND_CONN_STATE != WAND_CONNECTED) {
+    // Provide some default values when a compatible wand is not attached.
     smokeConfig.overheatLevel5 = 1; // true|false
     smokeConfig.overheatLevel4 = 0; // true|false
     smokeConfig.overheatLevel3 = 0; // true|false
@@ -307,10 +322,10 @@ bool isExcludedCommand(uint8_t i_command) {
  * Serial API Communication Handlers
  */
 
-// Check if the wand is still connected.
+// Check if the wand is still connected via a regular check-in.
 void wandDisconnectCheck() {
   // A wand was previously considered to be connected.
-  if(b_wand_connected) {
+  if(WAND_CONN_STATE == WAND_CONNECTED || WAND_CONN_STATE == WAND_SYNCING) {
     if(ms_wand_check.justFinished()) {
       // Timer just ran out, so we must assume the wand was disconnected.
       if(b_diagnostic) {
@@ -318,8 +333,8 @@ void wandDisconnectCheck() {
         playEffect(S_VENT_BEEP);
       }
 
-      b_wand_connected = false; // Cause the next handshake to trigger a sync.
-      b_wand_syncing = false; // If there is no wand we cannot be syncing with one.
+      WAND_CONN_STATE = WAND_DISCONNECTED; // Cause the next handshake to trigger a sync.
+      sendDebug(String(F("Wand Disconnected | Conn. State: ")) + String(WAND_CONN_STATE));
       b_wand_on = false; // No wand means the device is no longer powered on.
 
       // Tell the Attenuator the wand was disconnected.
@@ -353,30 +368,30 @@ void wandDisconnectCheck() {
       gpstarPack.enableVGStreams();
       gpstarPack.enableAllSpectralStreams();
     }
-    else {
-      if(ms_wand_check.remaining() < (ms_wand_check.delay() / 5) && !b_wand_syncing) {
-        // If we haven't received a handshake from the wand in over 6.5 seconds, force a handshake with the wand.
-        // This is because the wand is supposed to handshake every 3.25 seconds and we haven't heard back in two pings.
-        // This should be a last-resort check to make sure it's available and responding.
-        b_wand_syncing = true;
-        packSerialSend(P_HANDSHAKE);
-      }
+    else if(WAND_CONN_STATE == WAND_CONNECTED && ms_wand_check.remaining() < (ms_wand_check.delay() / 5)) {
+      // If we haven't received a handshake from the wand in over 6.5 seconds, force a handshake with the wand.
+      // This is because the wand is supposed to handshake every 3.25 seconds and we haven't heard back in two pings.
+      // This should be a last-resort check to make sure it's available and responding.
+      WAND_CONN_STATE = WAND_SYNCING;
+      sendDebug(String(F("Wand Syncing | Conn. State: ")) + String(WAND_CONN_STATE));
+      packSerialSend(P_HANDSHAKE, PROTOCOL_SIGNATURE);
     }
   }
 }
 
-// Check if the Attenuator is still connected.
+// Check if the Attenuator is still connected via a regular check-in.
 void attenuatorHandShake() {
-  if(b_attenuator_connected) {
+  if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING) {
     if(ms_attenuator_check.justFinished()) {
       // Attenuator has abandoned us.
-      b_attenuator_syncing = false;
-      b_attenuator_connected = false;
+      ATTENUATOR_CONN_STATE = ATTENUATOR_DISCONNECTED;
+      sendDebug(String(F("Attenuator Disconnected | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
     }
-    else if(ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2) && !b_attenuator_syncing) {
+    else if(ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED && ms_attenuator_check.remaining() < (ms_attenuator_check.delay() / 2)) {
       // Haven't heard from the Attenuator recently; let's check in.
-      b_attenuator_syncing = true;
-      attenuatorSerialSend(A_HANDSHAKE);
+      ATTENUATOR_CONN_STATE = ATTENUATOR_SYNCING;
+      sendDebug(String(F("Attenuator Syncing | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
+      attenuatorSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
     }
   }
 }
@@ -551,7 +566,7 @@ void handlePackPrefsUpdate() {
       packSerialSend(P_MODE_ORIGINAL);
       attenuatorSerialSend(A_MODE_ORIGINAL);
 
-      if(!b_wand_connected && !gpstarPack.inStreamMode(PROTON)) {
+      if(WAND_CONN_STATE != WAND_CONNECTED && !gpstarPack.inStreamMode(PROTON)) {
         // If no wand is connected we need to make sure we're in Proton Stream.
         if(gpstarPack.setStreamMode(PROTON)) {
           attenuatorSerialSend(A_SET_STREAM_MODE, gpstarPack.getStreamModeByte());
@@ -851,9 +866,14 @@ void checkAttenuator() {
     // sendDebug(String(F("Serial PacketID: ")) + String(i_packet_id));
 
     if(i_packet_id > 0) {
-      if(ms_attenuator_check.isRunning() && b_attenuator_connected) {
+      if(ms_attenuator_check.isRunning() && (ATTENUATOR_CONN_STATE == ATTENUATOR_CONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING)) {
         // If the timer is still running and Attenuator is connected, consider any request as proof of life.
         ms_attenuator_check.restart();
+
+        if(ATTENUATOR_CONN_STATE == ATTENUATOR_SYNCING) {
+          // This indicates a response so change state from syncing to connected.
+          ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED;
+        }
       }
 
       // Determine the type of packet which was sent by the Attenuator.
@@ -861,10 +881,10 @@ void checkAttenuator() {
         case PACKET_COMMAND:
           attenuatorComs.rxObj(recvCmdA);
           if(recvCmdA.c > 0 && recvCmdA.s == A_COM_START && recvCmdA.e == A_COM_END) {
-            sendDebug(String(F("Recv. Attenuator Command: ")) + String(recvCmdA.c));
+            sendDebug(String(F("Recv. Att. Command: ")) + String(recvCmdA.c) + String(F(" | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
 
-            if(!b_attenuator_connected) {
-              // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+            if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
+              // Can't proceed if the Attenuator isn't connected/syncing; prevents phantom actions from occurring.
               if(recvCmdA.c != A_SYNC_START && recvCmdA.c != A_HANDSHAKE && recvCmdA.c != A_SYNC_END) {
                 // This applies for any action other than those responsible for sync operations.
                 return;
@@ -877,8 +897,8 @@ void checkAttenuator() {
         break;
 
         case PACKET_DATA:
-          if(!b_attenuator_connected) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 
@@ -890,8 +910,8 @@ void checkAttenuator() {
         break;
 
         case PACKET_PACK:
-          if(!b_attenuator_connected) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 
@@ -904,8 +924,8 @@ void checkAttenuator() {
         break;
 
         case PACKET_WAND:
-          if(!b_attenuator_connected) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 
@@ -917,8 +937,8 @@ void checkAttenuator() {
         break;
 
         case PACKET_SMOKE:
-          if(!b_attenuator_connected) {
-            // Can't proceed if the Attenuator isn't connected; prevents phantom actions from occurring.
+          if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED) {
+            // Can't proceed if the Attenuator isn't explicitly connected; prevents phantom actions from occurring.
             return;
           }
 
@@ -937,30 +957,31 @@ void checkAttenuator() {
 void doAttenuatorSync() {
   // Denote sync in progress, don't run this code again if we get another handshake.
   // This will be cleared once the Attenuator responds back that it has been synchronized.
-  b_attenuator_syncing = true;
-  b_attenuator_connected = false;
+  ATTENUATOR_CONN_STATE = ATTENUATOR_SYNCING;
   ms_attenuator_check.stop();
 
   if(b_diagnostic) {
     playEffect(S_BEEPS_ALT);
   }
 
-  sendDebug(F("Attenuator Sync Start"));
-
-  // Report the hardware type immediately upon sync for identification purposes.
-  #ifdef ESP32
-    // Notify upstream we are a GPStar Pack II.
-    attenuatorSerialSend(A_SYNC_START, 1);
-  #else
-    // Notify upstream we are a GPStar Pack I.
-    attenuatorSerialSend(A_SYNC_START);
-  #endif
+  sendDebug(String(F("Attenuator Sync Start | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
+  attenuatorSerialSend(A_SYNC_START, PROTOCOL_SIGNATURE);
 
   // Export DeviceState data to sync struct using centralized method
   gpstarPack.exportData(attenuatorSyncData);
 
+  // Report the hardware type immediately upon sync for identification purposes.
+  #ifdef ESP32
+    // Notify upstream we are a GPStar Pack II.
+    attenuatorSyncData.esp32Pack = true;
+  #else
+    // Notify upstream we are a GPStar Pack I.
+    attenuatorSyncData.esp32Pack = false;
+  #endif
+
   // Tell the Attenuator about the pack and wand status (not part of DeviceState).
-  attenuatorSyncData.wandPresent = b_wand_connected ? true : false;
+  attenuatorSyncData.wandPresent = (WAND_CONN_STATE == WAND_CONNECTED) ? true : false;
+  attenuatorSyncData.wandMismatch = (WAND_CONN_STATE == WAND_MISMATCH) ? true : false;
   attenuatorSyncData.wandFiring = b_wand_firing ? true : false;
   attenuatorSyncData.packOn = (PACK_STATE != MODE_OFF);
   attenuatorSyncData.smokeOn = b_smoke_enabled;
@@ -981,6 +1002,8 @@ void doAttenuatorSync() {
   // This sends over the music status and the current music track.
   attenuatorSyncData.packAudioVersion = i_audio_version;
   attenuatorSyncData.wandAudioVersion = i_wand_audio_version;
+  attenuatorSyncData.audioCorrupt = b_microsd_corrupt;
+  attenuatorSyncData.audioOutdated = b_microsd_outdated;
   attenuatorSyncData.musicPlaying = b_playing_music;
   attenuatorSyncData.musicPaused = b_music_paused;
   attenuatorSyncData.trackLooped = b_repeat_track;
@@ -1010,7 +1033,7 @@ void checkWand() {
     // sendDebug(String(F("Wand PacketID: ")) + String(i_packet_id));
 
     if(i_packet_id > 0) {
-      if(ms_wand_check.isRunning() && b_wand_connected) {
+      if(ms_wand_check.isRunning() && WAND_CONN_STATE == WAND_CONNECTED) {
         // If the timer is still running and wand is connected, consider any request as proof of life.
         ms_wand_check.restart();
       }
@@ -1020,13 +1043,13 @@ void checkWand() {
         case PACKET_COMMAND:
           wandComs.rxObj(recvCmdW);
           if(recvCmdW.c > 0 && recvCmdW.s == W_COM_START && recvCmdW.e == W_COM_END) {
-            sendDebug(String(F("Recv. Wand Command: ")) + String(recvCmdW.c));
+            sendDebug(String(F("Recv. Wand Command: ")) + String(recvCmdW.c) + String(F(" | Conn. State: ")) + String(WAND_CONN_STATE));
             handleWandCommand(recvCmdW.c, recvCmdW.d1);
           }
         break;
 
         case PACKET_DATA:
-          if(!b_wand_connected) {
+          if(WAND_CONN_STATE != WAND_CONNECTED) {
             // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
             return;
           }
@@ -1039,7 +1062,7 @@ void checkWand() {
         break;
 
         case PACKET_WAND:
-          if(!b_wand_connected) {
+          if(WAND_CONN_STATE != WAND_CONNECTED) {
             // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
             return;
           }
@@ -1049,7 +1072,7 @@ void checkWand() {
 
           // Update the flag for our local wifi if applicable.
           #ifdef ESP32
-          if(WIFI_USER_MODE == WIFI_ENABLED || (WIFI_USER_MODE == WIFI_DEFAULT && !b_attenuator_connected && !b_attenuator_syncing)) {
+          if(WIFI_USER_MODE == WIFI_ENABLED || (WIFI_USER_MODE == WIFI_DEFAULT && ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING)) {
             b_received_prefs_wand = true;
           }
           #endif
@@ -1059,7 +1082,7 @@ void checkWand() {
         break;
 
         case PACKET_SMOKE:
-          if(!b_wand_connected) {
+          if(WAND_CONN_STATE != WAND_CONNECTED) {
             // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
             return;
           }
@@ -1080,8 +1103,7 @@ void checkWand() {
 void doWandSync() {
   // Denote sync in progress, don't run this code again if we get another handshake.
   // This will be cleared once the wand responds back that it has been synchronized.
-  b_wand_syncing = true;
-  b_wand_connected = false;
+  WAND_CONN_STATE = WAND_SYNCING;
   ms_wand_check.stop();
 
   if(b_diagnostic) {
@@ -1167,7 +1189,7 @@ void doWandSync() {
 }
 
 void handleWandCommand(uint8_t i_command, uint16_t i_value) {
-  if(!b_wand_connected) {
+  if(WAND_CONN_STATE != WAND_CONNECTED) {
     // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
     if(i_command != W_SYNC_NOW && i_command != W_HANDSHAKE && i_command != W_SYNCHRONIZED) {
       // This applies for any action other than those responsible for sync operations.
@@ -1177,23 +1199,39 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
 
   switch(i_command) {
     case W_SYNC_NOW:
-      // Wand has explicitly asked to be synchronized, so treat as not yet connected.
-      // First we stop any wand sounds which are playing on the pack.
-      wandExtraSoundsStop();
-      wandExtraSoundsBeepLoopStop(false);
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Wand protocol mismatch!"));
+        WAND_CONN_STATE = WAND_MISMATCH;
+        return; // Block sync due to incompatible firmware.
+      }
 
-      doWandSync();
+      // Wand has explicitly asked to be synchronized.
+      // The wand stops its retry timer when sync starts, but check state to be safe.
+      if(WAND_CONN_STATE != WAND_SYNCING) {
+        // First we stop any wand sounds which are playing on the pack.
+        wandExtraSoundsStop();
+        wandExtraSoundsBeepLoopStop(false);
+
+        doWandSync();
+      }
     break;
 
     case W_HANDSHAKE:
-      if(!b_wand_connected) {
-        // If we think we were not connected, force a resync.
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Wand protocol mismatch!"));
+        WAND_CONN_STATE = WAND_MISMATCH;
+        return; // Block sync due to incompatible firmware.
+      }
+
+      if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
+        // If we think we were not connected (or had mismatch), force a resync.
+        // Don't sync if already WAND_SYNCING (sync in progress) or WAND_CONNECTED (already synced).
         doWandSync();
       }
-      else {
-        b_wand_syncing = false; // No longer attempting to force a sync w/ wand.
-        b_wand_connected = true; // If we're receiving handshake instead of SYNC_NOW we must be connected
-
+      else if(WAND_CONN_STATE == WAND_CONNECTED) {
+        // Already connected - just acknowledge the handshake.
         // Tell the Attenuator the wand is still connected.
         attenuatorSerialSend(A_WAND_CONNECTED);
       }
@@ -1206,12 +1244,11 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
 
     case W_SYNCHRONIZED:
       sendDebug(F("Wand Synchronized"));
-      b_wand_syncing = false; // Stop trying to sync since we've successfully synchronized.
-      b_wand_connected = true; // Wand sent sync confirmation, so it must be connected.
+      WAND_CONN_STATE = WAND_CONNECTED; // Wand sent sync confirmation, so it must be connected.
       ms_wand_check.start(i_wand_disconnect_delay); // Wand is synchronized, so start the keep-alive timer.
       attenuatorSerialSend(A_WAND_CONNECTED); // Tell the Attenuator the wand is (re-)connected.
 
-      if(!b_attenuator_connected && !b_attenuator_syncing) {
+      if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
         // If we have no Attenuator connected, request the current wand settings.
         executeCommand(A_REQUEST_PREFERENCES_WAND);
       }
@@ -3511,7 +3548,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
     break;
 
     case W_CLEAR_CONFIG_EEPROM_SETTINGS:
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Only proceed if a wand is connected.
         stopEffect(S_VOICE_EEPROM_ERASE);
         playEffect(S_VOICE_EEPROM_ERASE);
@@ -3521,7 +3558,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
     break;
 
     case W_SAVE_CONFIG_EEPROM_SETTINGS:
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Only proceed if a wand is connected.
         stopEffect(S_VOICE_EEPROM_SAVE);
         playEffect(S_VOICE_EEPROM_SAVE);
@@ -3531,7 +3568,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
     break;
 
     case W_CLEAR_LED_EEPROM_SETTINGS:
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Only proceed if a wand is connected.
         stopEffect(S_VOICE_EEPROM_ERASE);
         playEffect(S_VOICE_EEPROM_ERASE);
@@ -3541,7 +3578,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
     break;
 
     case W_SAVE_LED_EEPROM_SETTINGS:
-      if(b_wand_connected) {
+      if(WAND_CONN_STATE == WAND_CONNECTED) {
         // Only proceed if a wand is connected.
         stopEffect(S_VOICE_EEPROM_SAVE);
         playEffect(S_VOICE_EEPROM_SAVE);
@@ -3693,8 +3730,19 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         break;
 
         case FRUTTO_CYCLOTRON_LED_COUNT:
-          // Switch to 12 LEDs. Default HasLab.
+          // Switch to stock 12 LEDs configuration.
           i_cyclotron_num_leds = HASLAB_CYCLOTRON_LED_COUNT;
+
+          /**
+           * Functionality Note:
+           *
+           * It is assumed that any user who is utilizing the wand menus
+           * either does not have an Attenuator device nor a GPStar II
+           * system capable of using the web UI to fine-tune those options.
+           *
+           * Therefore, this state should only affect the LED count and not
+           * the choice of stock pack, nor 3 vs. 1 LED center configuration.
+           */
 
           resetCyclotronState();
 
@@ -3703,7 +3751,7 @@ void handleWandCommand(uint8_t i_command, uint16_t i_value) {
         break;
 
         case HASLAB_CYCLOTRON_LED_COUNT:
-          // Switch to 40 LEDs.
+          // Switch to 40 LEDs (true LED ring).
           i_cyclotron_num_leds = OUTER_CYCLOTRON_LED_MAX;
 
           resetCyclotronState();

@@ -80,9 +80,10 @@
 			"name": "StreamEffects",
 			"path": "source/StreamEffects"
 		},
-    		{
-      			"path": "source/PSTT"
-    		}
+		{
+			"name": "PSTT",
+			"path": "source/PSTT"
+		}
 	],
 	"settings": {
 		"C_Cpp.files.exclude": {

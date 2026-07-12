@@ -40,6 +40,21 @@ struct CommandPacket recvCmd;
 struct MessagePacket sendData;
 struct MessagePacket recvData;
 
+// Protocol signature for detecting incompatible firmware versions.
+// Calculated from packet sizes and message type counts at compile time.
+const uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
+  sizeof(CommandPacket),         // cmd_packet_size
+  sizeof(MessagePacket),         // msg_packet_size
+  sizeof(PackPrefs),             // pack_prefs_size
+  sizeof(WandPrefs),             // wand_prefs_size
+  sizeof(SmokePrefs),            // smoke_prefs_size
+  sizeof(WandSyncData),          // wand_sync_size
+  sizeof(AttenuatorSyncData),    // atten_sync_size
+  P_NO_OP,                       // pack_msg_max
+  W_NO_OP,                       // wand_msg_max
+  A_NO_OP                        // api_msg_max
+);
+
 /*
  * Serial API Communication Handlers
  */
@@ -126,7 +141,7 @@ bool checkPack() {
     #endif
 
     if(i_packet_id > 0) {
-      if(ms_packsync.isRunning() && !b_wait_for_pack) {
+      if(ms_packsync.isRunning() && PACK_CONN_STATE == PACK_CONNECTED) {
         // If the timer is still running and Pack is connected, consider any request as proof of life.
         ms_packsync.restart();
       }
@@ -147,8 +162,9 @@ bool checkPack() {
         break;
 
         case PACKET_DATA:
-          if(b_wait_for_pack) {
+          if(PACK_CONN_STATE != PACK_CONNECTED) {
             // Can't proceed if the Pack isn't connected; prevents phantom actions from occurring.
+			// Applies to either the disconnected, syncing, or protocol mismatch states.
             return false;
           }
 
@@ -185,7 +201,7 @@ bool checkPack() {
         break;
 
         case PACKET_PACK:
-          if(b_wait_for_pack) {
+          if(PACK_CONN_STATE != PACK_CONNECTED) {
             // Can't proceed if the Pack isn't connected; prevents phantom actions from occurring.
             return false;
           }
@@ -200,7 +216,7 @@ bool checkPack() {
         break;
 
         case PACKET_WAND:
-          if(b_wait_for_pack) {
+          if(PACK_CONN_STATE != PACK_CONNECTED) {
             // Can't proceed if the Pack isn't connected; prevents phantom actions from occurring.
             return false;
           }
@@ -215,7 +231,7 @@ bool checkPack() {
         break;
 
         case PACKET_SMOKE:
-          if(b_wait_for_pack) {
+          if(PACK_CONN_STATE != PACK_CONNECTED) {
             // Can't proceed if the Pack isn't connected; prevents phantom actions from occurring.
             return false;
           }
@@ -244,6 +260,7 @@ bool checkPack() {
 
           // Import sync data into DeviceState using centralized method
           gpstarSystem.importData(attenuatorSyncData);
+          b_esp32_pack = attenuatorSyncData.esp32Pack; // Set ESP32 pack flag for web UI features.
 
           // Set non-DeviceState variables (Attenuator-specific state)
           b_pack_on = attenuatorSyncData.packOn;
@@ -278,10 +295,12 @@ bool checkPack() {
           if (fullPacketReceived) {
             b_microsd_corrupt = attenuatorSyncData.audioCorrupt;
             b_microsd_outdated = attenuatorSyncData.audioOutdated;
+            b_wand_mismatch = attenuatorSyncData.wandMismatch;
           } else {
             // Ignore these flags from older firmware to prevent false positives
             b_microsd_corrupt = false;
             b_microsd_outdated = false;
+            b_wand_mismatch = false;
           }
 
           if(i_music_track_count > 0) {
@@ -303,27 +322,38 @@ bool handleCommand(uint8_t i_command, uint16_t i_value) {
 
   switch(i_command) {
     case A_HANDSHAKE:
-      if(!b_wait_for_pack) {
-        // The pack is asking us if we are still here. Respond back.
-        attenuatorSerialSend(A_HANDSHAKE);
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Pack protocol mismatch!"));
+        PACK_CONN_STATE = PACK_MISMATCH;
+        return false; // Block sync due to incompatible firmware.
+      }
+
+      if(PACK_CONN_STATE == PACK_CONNECTED) {
+        // The pack is asking us if we are still here. Respond back with handshake.
+        attenuatorSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE);
       }
       else {
-        // Who the heck is this pack!? Demand a sync!
-        attenuatorSerialSend(A_SYNC_START);
+        // Not yet connected (or lost connection) - demand a sync!
+        attenuatorSerialSend(A_SYNC_START, PROTOCOL_SIGNATURE);
       }
     break;
 
     case A_SYNC_START:
-      sendDebug(F("Sync Start"));
+      // Check protocol signature to ensure firmware compatibility.
+      if(i_value != PROTOCOL_SIGNATURE) {
+        sendDebug(F("Pack protocol mismatch!"));
+        PACK_CONN_STATE = PACK_MISMATCH;
+        return false; // Block sync due to incompatible firmware.
+      }
 
-      // Indicates whether we are talking to a GPStar Pack II.
-      b_esp32_pack = (i_value == 1);
+      sendDebug(F("Sync Start"));
     break;
 
     case A_SYNC_END:
       sendDebug(F("Sync End"));
 
-      b_wait_for_pack = false;
+      PACK_CONN_STATE = PACK_CONNECTED;
       b_state_changed = true;
       ms_packsync.start(i_sync_disconnect_delay);
 
