@@ -2,7 +2,7 @@
 
 Please note that this is an older. standalone guide for bringing WiFi-only operation to your GPStar I Proton Pack without need for a full [Attenuator](ATTENUATOR.md) device. With the introduction of the GPStar II controllers you should view the dedicated [GPStar II Wireless Guide](WIRELESS_GPSTAR_II.md) for operation.
 
-Use of the serial expansion port on the gpstar Proton Pack can bring WiFi capabilities to your unlicensed nuclear reactor! This is a minimal version of the Attenuator device without input or output devices (no lights, sound, vibration, or switches) and may be installed directly into your pack alongside the gpstar Proton Pack controller.
+Use of the serial expansion port on the GPStar Proton Pack can bring WiFi capabilities to your unlicensed nuclear reactor! This is a minimal version of the Attenuator device without input or output devices (no lights, sound, vibration, or switches) and may be installed directly into your pack alongside the gpstar Proton Pack controller.
 
 [Video Installation Guide](https://www.youtube.com/watch?v=9r0VZKfhY5o) (YouTube, November 2023).
 [![Attenuator Preview Demonstration Video](https://img.youtube.com/vi/9r0VZKfhY5o/maxresdefault.jpg)](https://www.youtube.com/watch?v=9r0VZKfhY5o)

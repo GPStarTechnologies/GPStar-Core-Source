@@ -57,7 +57,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
         return; // Block sync due to incompatible firmware.
       }
-      
+
       ATTENUATOR_CONN_STATE = ATTENUATOR_CONNECTED; // If we're receiving handshake instead of SYNC_NOW we must be connected.
 
       if(b_diagnostic) {
@@ -113,22 +113,26 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
     break;
 
     case A_MANUAL_OVERHEAT:
-      // Trigger a manual overheat vent.
-      if(WAND_CONN_STATE == WAND_CONNECTED) {
-        wandSerialSend(A_MANUAL_OVERHEAT);
-      }
-      else if(PACK_STATE == MODE_ON) {
-        packOverheatingStart();
+      // Trigger a manual overheat vent if not already overheating/venting/in alarm state.
+      if(!b_venting && !b_overheating && !b_pack_alarm) {
+        if(WAND_CONN_STATE == WAND_CONNECTED) {
+          wandSerialSend(A_MANUAL_OVERHEAT);
+        }
+        else if(PACK_STATE == MODE_ON) {
+          packOverheatingStart();
+        }
       }
     break;
 
     case A_MANUAL_QUICK_VENT:
-      // Trigger a manual quick vent.
-      if(WAND_CONN_STATE == WAND_CONNECTED) {
-        wandSerialSend(A_MANUAL_QUICK_VENT);
-      }
-      else if(PACK_STATE == MODE_ON) {
-        packVentingStart();
+      // Trigger a manual quick vent if not already overheating/venting/in alarm state.
+      if(!b_venting && !b_overheating && !b_pack_alarm) {
+        if(WAND_CONN_STATE == WAND_CONNECTED) {
+          wandSerialSend(A_MANUAL_QUICK_VENT);
+        }
+        else if(PACK_STATE == MODE_ON) {
+          packVentingStart();
+        }
       }
     break;
 

@@ -183,6 +183,13 @@ function getDevicePrefs() {
           // The file count on the microSD card does not match firmware; alert the user.
           alert("Contents of microSD card do not match current firmware. Please make sure to update your microSD cards after updating firmware.");
         }
+
+        // Firmware mismatch warnings
+        if (jObj.wandConn === "Version Mismatch") {
+          alert("The firmware on the Proton Pack does not match that of the Neutrona Wand. Please make sure all devices are on the same firmware.");
+        } else if (jObj.attenuatorConn === "Version Mismatch") {
+          alert("The firmware on the Proton Pack does not match of the Attenuator/Wireless Module. Please make sure all devices are on the same firmware.");
+        }
       }
     } else if (this.readyState == 4) {
       // Handle error responses

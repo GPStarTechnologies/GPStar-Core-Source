@@ -25,6 +25,7 @@ window.addEventListener("load", onLoad);
 function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
   getDevicePrefs(); // Get all preferences.
+  getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
   getStatus(updateEquipment); // Get status immediately.
 }
@@ -43,6 +44,7 @@ function doHeartbeat() {
   if (websocket.readyState == websocket.OPEN) {
     websocket.send("heartbeat"); // Send a specific message.
   }
+  getNetworkInfo(); // Refresh network statistics.
   setTimeout(doHeartbeat, 8000);
 }
 
@@ -116,10 +118,6 @@ function getDevicePrefs() {
       if (jObj) {
         // Device Info
         setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
-        setHtml("wifiName", "Private Network: " + jObj.wifiName || "");
-        if ((jObj.wifiNameExt || "") != "" && (jObj.extAddr || "") != "" && (jObj.extMask || "") != "") {
-          setHtml("extWifi", (jObj.wifiNameExt || "") + ": " + jObj.extAddr + " / " + jObj.extMask);
-        }
       }
     } else if (this.readyState == 4) {
       // Handle error responses
@@ -127,6 +125,39 @@ function getDevicePrefs() {
     }
   };
   xhttp.open("GET", "/config/device", true);
+  xhttp.send();
+}
+
+function getNetworkInfo() {
+  // Fetch network configuration and statistics from dedicated endpoint.
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
+      var jObj = JSON.parse(this.responseText);
+      if (jObj) {
+        // Display local AP network name
+        if (jObj.localAP && jObj.localAP.ssid) {
+          setHtml("wifiName", "Private Network: " + jObj.localAP.ssid);
+        }
+
+        // Display client counts
+        var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
+        setHtml("clientInfo", clientText);
+
+        // Display external WiFi info if connected
+        if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
+          var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;
+          setHtml("extWifi", extInfo);
+        } else {
+          setHtml("extWifi", ""); // Clear if not connected
+        }
+      }
+    } else if (this.readyState == 4) {
+      // Handle error responses
+      console.log("Failed to fetch network info:", this.responseText);
+    }
+  };
+  xhttp.open("GET", "/wifi/status", true);
   xhttp.send();
 }
 

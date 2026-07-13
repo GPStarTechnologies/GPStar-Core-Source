@@ -55,6 +55,21 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   A_CMD_MAX                      // api_cmd_max
 );
 
+// Protocol signature for detecting incompatible firmware versions.
+// Calculated from packet sizes and message type counts at compile time.
+const uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
+  sizeof(CommandPacket),         // cmd_packet_size
+  sizeof(MessagePacket),         // msg_packet_size
+  sizeof(PackPrefs),             // pack_prefs_size
+  sizeof(WandPrefs),             // wand_prefs_size
+  sizeof(SmokePrefs),            // smoke_prefs_size
+  sizeof(WandSyncData),          // wand_sync_size
+  sizeof(AttenuatorSyncData),    // atten_sync_size
+  P_NO_OP,                       // pack_msg_max
+  W_NO_OP,                       // wand_msg_max
+  A_NO_OP                        // api_msg_max
+);
+
 /*
  * Serial API Communication Handlers
  */
@@ -142,7 +157,6 @@ bool checkPack() {
         case PACKET_DATA:
           if(PACK_CONN_STATE != PACK_CONNECTED) {
             // Can't proceed if the Pack isn't connected; prevents phantom actions from occurring.
-			      // Applies to either the disconnected, syncing, or protocol mismatch states.
             return false;
           }
 
@@ -253,10 +267,12 @@ bool checkPack() {
           if (fullPacketReceived) {
             b_microsd_corrupt = attenuatorSyncData.audioCorrupt;
             b_microsd_outdated = attenuatorSyncData.audioOutdated;
+            b_wand_mismatch = attenuatorSyncData.wandMismatch;
           } else {
             // Ignore these flags from older firmware to prevent false positives
             b_microsd_corrupt = false;
             b_microsd_outdated = false;
+            b_wand_mismatch = false;
           }
 
           if(i_music_track_count > 0) {

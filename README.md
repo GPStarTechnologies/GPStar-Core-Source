@@ -44,24 +44,31 @@ In addition to the software, all project design files (including STL and other m
 
 This project incorporates various third-party libraries and components, each with their own licenses (MIT, BSD, LGPL, Apache 2.0) that are compatible with the GPLv3. For complete attribution, copyright notices, and license terms of all third-party dependencies, please see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
-## Acknowledgements
+## Team Members
 
 This project is made possible by Ghostbusters community makers and volunteers spanning 4 countries over 2 continents.
 
 * Michael Rajotte (aka. "GPStar Technologies") - Director of Operations, Software Architect, Product Designer, PCB Design, 3D Modelling, EU & Worldwide Distribution
-* Jonathan Gunn (aka. "Jonogunn") - Video Instruction Guides, Install Testing.
-* Dustin Grau (aka. "JustinDustin") - Prototyping and Testing, Documentation, 3D Modelling, Software Support.
-* Angie Rutto (aka. "Frutto Technology") - Maker and purveyor of fine add-on products, UK Distribution.
-* Nomake Wan - Software Support, Feature Development, and Product Testing.
+* Jonathan Gunn (aka. "Jonogunn") - Video Instruction Guides, Install Testing
+* Dustin Grau (aka. "JustinDustin") - Prototyping and Testing, Documentation, 3D Modelling, Software Support
+* Angie Rutto (aka. "Frutto Technology") - Maker and purveyor of fine add-on products, UK Distribution
+* Nomake Wan - Software Support, Feature Development, and Product Testing
 * David Callari - Social Media Manager
 
-### Special Thanks
+### Special Community Thanks
 
 * Kaden Amaden - For the TVG cyclotron slime animation, TVG firing mode rotary knob selection, TVG-related testing, and for conceptualizing the inner cyclotron switch panel RGB LED board.
 * Emre Sahare (GBFans: One Time) - For the original prop mode "Mode Original" operation deciphering.
 * Alexander Hibbs (@BeaulieuDesigns87) - For his equipment schematics as used in the WiFi web UI.
 
 Thank you to our supporters on [GBFans.com](https://www.gbfans.com/forum) and the [Facebook group](https://www.facebook.com/groups/gpstartechnologies).
+
+## Attributions
+
+All 3D visualizations for web UI displays were sources from the community and are Licensed under the "Creative Commons - Attribution - Share Alike" license.
+
+* Neutrona Wand - ["Proton Gun/Wand" by DoctorEgon on Thingiverse](https://www.thingiverse.com/thing:309201/files)
+* Single-Shot Blaster - ["Ghostbusters Inspired Wrist Blaster" by Samuel Barabé on Thingiverse](https://www.thingiverse.com/thing:7013538/files)
 
 ## Disclaimer
 

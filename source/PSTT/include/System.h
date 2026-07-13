@@ -246,8 +246,8 @@ void checkInfraredData() {
 
   // Send raw IR data received event
   String rawMsg = String("Pre=0x") + String(irManager->dataPreamble(), HEX) +
-                    " Dev=" + String(irManager->dataDeviceType()) +
-                    " Cmd=" + String(irManager->dataCommand());
+                  " Dev=" + String(irManager->dataDeviceType()) +
+                  " Cmd=" + String(irManager->dataCommand());
   sendInfraredJSON("ir_received", deviceName, senderDeviceId.c_str(), "", 0, 0, rawMsg.c_str());
 
   // Exit if not NEC-extended protocol
@@ -340,7 +340,7 @@ void checkInfraredData() {
   // Exit if unknown stream type
   if(streamType == 0) {
     String msg = String("Unknown command ") + irManager->dataCommand();
-      sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), "", 0, 0, msg.c_str());
+    sendInfraredJSON("ir_ignored", deviceName, senderDeviceId.c_str(), "", 0, 0, msg.c_str());
     irManager->resumeData();
     return;
   }

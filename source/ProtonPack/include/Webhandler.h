@@ -1685,16 +1685,16 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.defaultPackVolume = jsonBody["defaultPackVolume"].as<uint8_t>();
 
       // Boolean fields - Effect toggles
-      updateJsonBool(packConfig.ribbonCableAlarm, jsonBody, "ribbonCableAlarm");
-      updateJsonBool(packConfig.wandQuickBootup, jsonBody, "wandQuickBootup");
-      updateJsonBool(packConfig.brassStartupLoop, jsonBody, "brassStartupLoop");
-      updateJsonBool(packConfig.overheatStrobeNF, jsonBody, "overheatStrobeNF");
-      updateJsonBool(packConfig.overheatLightsOff, jsonBody, "overheatLightsOff");
-      updateJsonBool(packConfig.overheatSyncToFan, jsonBody, "overheatSyncToFan");
-      updateJsonBool(packConfig.demoLightMode, jsonBody, "demoLightMode");
-      updateJsonBool(packConfig.fadeoutIdleSounds, jsonBody, "fadeoutIdleSounds");
-      updateJsonBool(packConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
-      updateJsonBool(packConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
+      packConfig.ribbonCableAlarm = extractBoolFromJson(jsonBody, "ribbonCableAlarm", packConfig.ribbonCableAlarm);
+      packConfig.wandQuickBootup = extractBoolFromJson(jsonBody, "wandQuickBootup", packConfig.wandQuickBootup);
+      packConfig.brassStartupLoop = extractBoolFromJson(jsonBody, "brassStartupLoop", packConfig.brassStartupLoop);
+      packConfig.overheatStrobeNF = extractBoolFromJson(jsonBody, "overheatStrobeNF", packConfig.overheatStrobeNF);
+      packConfig.overheatLightsOff = extractBoolFromJson(jsonBody, "overheatLightsOff", packConfig.overheatLightsOff);
+      packConfig.overheatSyncToFan = extractBoolFromJson(jsonBody, "overheatSyncToFan", packConfig.overheatSyncToFan);
+      packConfig.demoLightMode = extractBoolFromJson(jsonBody, "demoLightMode", packConfig.demoLightMode);
+      packConfig.fadeoutIdleSounds = extractBoolFromJson(jsonBody, "fadeoutIdleSounds", packConfig.fadeoutIdleSounds);
+      packConfig.audioVolumeBoosted = extractBoolFromJson(jsonBody, "audioVolumeBoosted", packConfig.audioVolumeBoosted);
+      packConfig.gpstarAudioLed = extractBoolFromJson(jsonBody, "gpstarAudioLed", packConfig.gpstarAudioLed);
 
       // Update certain operational values immediately.
       switch(packConfig.defaultSystemModePack) {
@@ -1711,8 +1711,8 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       }
 
       // GPStar II WiFi Toggles
-      updateJsonBool(packConfig.isWiFiEnabled, jsonBody, "isWiFiEnabled");
-      updateJsonBool(packConfig.resetWifiPassword, jsonBody, "resetWifiPassword");
+      packConfig.isWiFiEnabled = extractBoolFromJson(jsonBody, "isWiFiEnabled", packConfig.isWiFiEnabled);
+      packConfig.resetWifiPassword = extractBoolFromJson(jsonBody, "resetWifiPassword", packConfig.resetWifiPassword);
 
       // Numeric fields - Cyclotron Lid options
       packConfig.ledCycLidCount = jsonBody["ledCycLidCount"].as<uint8_t>();
@@ -1728,11 +1728,11 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       }
 
       // Boolean fields - Cyclotron Lid toggles
-      updateJsonBool(packConfig.cyclotronDirection, jsonBody, "cyclotronDirection");
-      updateJsonBool(packConfig.ledCycLidFade, jsonBody, "ledCycLidFade");
-      updateJsonBool(packConfig.ledVGCyclotron, jsonBody, "ledVGCyclotron");
-      updateJsonBool(packConfig.ledCycLidSimRing, jsonBody, "ledCycLidSimRing");
-      updateJsonBool(packConfig.disableLidDetection, jsonBody, "disableLidDetection");
+      packConfig.cyclotronDirection = extractBoolFromJson(jsonBody, "cyclotronDirection", packConfig.cyclotronDirection);
+      packConfig.ledCycLidFade = extractBoolFromJson(jsonBody, "ledCycLidFade", packConfig.ledCycLidFade);
+      packConfig.ledVGCyclotron = extractBoolFromJson(jsonBody, "ledVGCyclotron", packConfig.ledVGCyclotron);
+      packConfig.ledCycLidSimRing = extractBoolFromJson(jsonBody, "ledCycLidSimRing", packConfig.ledCycLidSimRing);
+      packConfig.disableLidDetection = extractBoolFromJson(jsonBody, "disableLidDetection", packConfig.disableLidDetection);
 
       // Numeric fields - Inner Cyclotron options
       packConfig.ledCycInnerPanel = jsonBody["ledCycInnerPanel"].as<uint8_t>();
@@ -1748,8 +1748,8 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.ledCycCavType = jsonBody["ledCycCavType"].as<uint8_t>();
 
       // Boolean fields - Inner Cyclotron toggles
-      updateJsonBool(packConfig.ledCycCakeGRB, jsonBody, "ledCycCakeGRB");
-      updateJsonBool(packConfig.ledCycCavInvert, jsonBody, "ledCycCavInvert");
+      packConfig.ledCycCakeGRB = extractBoolFromJson(jsonBody, "ledCycCakeGRB", packConfig.ledCycCakeGRB);
+      packConfig.ledCycCavInvert = extractBoolFromJson(jsonBody, "ledCycCavInvert", packConfig.ledCycCavInvert);
 
       // Numeric fields - Power Cell options
       packConfig.ledPowercellCount = jsonBody["ledPowercellCount"].as<uint8_t>();
@@ -1758,8 +1758,8 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
       packConfig.ledPowercellLum = jsonBody["ledPowercellLum"].as<uint8_t>();
 
       // Boolean field - Power Cell toggles
-      updateJsonBool(packConfig.ledInvertPowercell, jsonBody, "ledInvertPowercell");
-      updateJsonBool(packConfig.ledVGPowercell, jsonBody, "ledVGPowercell");
+      packConfig.ledInvertPowercell = extractBoolFromJson(jsonBody, "ledInvertPowercell", packConfig.ledInvertPowercell);
+      packConfig.ledVGPowercell = extractBoolFromJson(jsonBody, "ledVGPowercell", packConfig.ledVGPowercell);
 
       handlePackPrefsUpdate(); // Have the pack save the new settings.
       request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
@@ -1794,9 +1794,9 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.ledWandSat = jsonBody["ledWandSat"].as<uint8_t>();
 
       // Boolean fields - LED toggles
-      updateJsonBool(wandConfig.rgbVentEnabled, jsonBody, "rgbVentEnabled");
-      updateJsonBool(wandConfig.rgbVentColours, jsonBody, "rgbVentColours");
-      updateJsonBool(wandConfig.autoVentLight, jsonBody, "autoVentLight");
+      wandConfig.rgbVentEnabled = extractBoolFromJson(jsonBody, "rgbVentEnabled", wandConfig.rgbVentEnabled);
+      wandConfig.rgbVentColours = extractBoolFromJson(jsonBody, "rgbVentColours", wandConfig.rgbVentColours);
+      wandConfig.autoVentLight = extractBoolFromJson(jsonBody, "autoVentLight", wandConfig.autoVentLight);
 
       // Stream mode toggles - Update in the config object for the moment, and save back to the device's state object later.
       // Note that PROTON mode can neither be set nor unset (always enabled).
@@ -1818,14 +1818,14 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.defaultWandVolume = jsonBody["defaultWandVolume"].as<uint8_t>();
 
       // Boolean fields - General wand toggles
-      updateJsonBool(wandConfig.overheatEnabled, jsonBody, "overheatEnabled");
-      updateJsonBool(wandConfig.wandSoundsToPack, jsonBody, "wandSoundsToPack");
-      updateJsonBool(wandConfig.quickVenting, jsonBody, "quickVenting");
-      updateJsonBool(wandConfig.wandBeepLoop, jsonBody, "wandBeepLoop");
-      updateJsonBool(wandConfig.wandBootError, jsonBody, "wandBootError");
-      updateJsonBool(wandConfig.extraProtonSounds, jsonBody, "extraProtonSounds");
-      updateJsonBool(wandConfig.audioVolumeBoosted, jsonBody, "audioVolumeBoosted");
-      updateJsonBool(wandConfig.gpstarAudioLed, jsonBody, "gpstarAudioLed");
+      wandConfig.overheatEnabled = extractBoolFromJson(jsonBody, "overheatEnabled", wandConfig.overheatEnabled);
+      wandConfig.wandSoundsToPack = extractBoolFromJson(jsonBody, "wandSoundsToPack", wandConfig.wandSoundsToPack);
+      wandConfig.quickVenting = extractBoolFromJson(jsonBody, "quickVenting", wandConfig.quickVenting);
+      wandConfig.wandBeepLoop = extractBoolFromJson(jsonBody, "wandBeepLoop", wandConfig.wandBeepLoop);
+      wandConfig.wandBootError = extractBoolFromJson(jsonBody, "wandBootError", wandConfig.wandBootError);
+      wandConfig.extraProtonSounds = extractBoolFromJson(jsonBody, "extraProtonSounds", wandConfig.extraProtonSounds);
+      wandConfig.audioVolumeBoosted = extractBoolFromJson(jsonBody, "audioVolumeBoosted", wandConfig.audioVolumeBoosted);
+      wandConfig.gpstarAudioLed = extractBoolFromJson(jsonBody, "gpstarAudioLed", wandConfig.gpstarAudioLed);
 
       // Numeric fields - Bargraph options
       wandConfig.numBargraphSegments = jsonBody["numBargraphSegments"].as<uint8_t>();
@@ -1833,12 +1833,12 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       wandConfig.bargraphFireAnimation = jsonBody["bargraphFireAnimation"].as<uint8_t>();
 
       // Boolean fields - Bargraph toggles
-      updateJsonBool(wandConfig.invertWandBargraph, jsonBody, "invertWandBargraph");
-      updateJsonBool(wandConfig.bargraphOverheatBlink, jsonBody, "bargraphOverheatBlink");
+      wandConfig.invertWandBargraph = extractBoolFromJson(jsonBody, "invertWandBargraph", wandConfig.invertWandBargraph);
+      wandConfig.bargraphOverheatBlink = extractBoolFromJson(jsonBody, "bargraphOverheatBlink", wandConfig.bargraphOverheatBlink);
 
       // GPStar II WiFi Toggles
-      updateJsonBool(wandConfig.isWiFiEnabled, jsonBody, "isWiFiEnabled");
-      updateJsonBool(wandConfig.resetWifiPassword, jsonBody, "resetWifiPassword");
+      wandConfig.isWiFiEnabled = extractBoolFromJson(jsonBody, "isWiFiEnabled", wandConfig.isWiFiEnabled);
+      wandConfig.resetWifiPassword = extractBoolFromJson(jsonBody, "resetWifiPassword", wandConfig.resetWifiPassword);
 
       handleWandPrefsUpdate(); // Have the pack pass the new settings.
       request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
@@ -1866,7 +1866,7 @@ AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHan
   if(PACK_STATE != MODE_ON && !b_wand_on) {
     try {
       // Boolean field - General smoke toggle
-      updateJsonBool(smokeConfig.smokeEnabled, jsonBody, "smokeEnabled");
+      smokeConfig.smokeEnabled = extractBoolFromJson(jsonBody, "smokeEnabled", smokeConfig.smokeEnabled);
 
       // Numeric fields - Overheat duration values (seconds)
       smokeConfig.overheatDuration5 = jsonBody["overheatDuration5"].as<uint8_t>();
@@ -1876,18 +1876,18 @@ AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHan
       smokeConfig.overheatDuration1 = jsonBody["overheatDuration1"].as<uint8_t>();
 
       // Boolean fields - Continuous smoke timers (seconds)
-      updateJsonBool(smokeConfig.overheatContinuous5, jsonBody, "overheatContinuous5");
-      updateJsonBool(smokeConfig.overheatContinuous4, jsonBody, "overheatContinuous4");
-      updateJsonBool(smokeConfig.overheatContinuous3, jsonBody, "overheatContinuous3");
-      updateJsonBool(smokeConfig.overheatContinuous2, jsonBody, "overheatContinuous2");
-      updateJsonBool(smokeConfig.overheatContinuous1, jsonBody, "overheatContinuous1");
+      smokeConfig.overheatContinuous5 = extractBoolFromJson(jsonBody, "overheatContinuous5", smokeConfig.overheatContinuous5);
+      smokeConfig.overheatContinuous4 = extractBoolFromJson(jsonBody, "overheatContinuous4", smokeConfig.overheatContinuous4);
+      smokeConfig.overheatContinuous3 = extractBoolFromJson(jsonBody, "overheatContinuous3", smokeConfig.overheatContinuous3);
+      smokeConfig.overheatContinuous2 = extractBoolFromJson(jsonBody, "overheatContinuous2", smokeConfig.overheatContinuous2);
+      smokeConfig.overheatContinuous1 = extractBoolFromJson(jsonBody, "overheatContinuous1", smokeConfig.overheatContinuous1);
 
       // Boolean fields - Overheat by level toggles
-      updateJsonBool(smokeConfig.overheatLevel5, jsonBody, "overheatLevel5");
-      updateJsonBool(smokeConfig.overheatLevel4, jsonBody, "overheatLevel4");
-      updateJsonBool(smokeConfig.overheatLevel3, jsonBody, "overheatLevel3");
-      updateJsonBool(smokeConfig.overheatLevel2, jsonBody, "overheatLevel2");
-      updateJsonBool(smokeConfig.overheatLevel1, jsonBody, "overheatLevel1");
+      smokeConfig.overheatLevel5 = extractBoolFromJson(jsonBody, "overheatLevel5", smokeConfig.overheatLevel5);
+      smokeConfig.overheatLevel4 = extractBoolFromJson(jsonBody, "overheatLevel4", smokeConfig.overheatLevel4);
+      smokeConfig.overheatLevel3 = extractBoolFromJson(jsonBody, "overheatLevel3", smokeConfig.overheatLevel3);
+      smokeConfig.overheatLevel2 = extractBoolFromJson(jsonBody, "overheatLevel2", smokeConfig.overheatLevel2);
+      smokeConfig.overheatLevel1 = extractBoolFromJson(jsonBody, "overheatLevel1", smokeConfig.overheatLevel1);
 
       // Numeric fields - Overheat delay values (seconds)
       smokeConfig.overheatDelay5 = jsonBody["overheatDelay5"].as<uint8_t>();

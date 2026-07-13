@@ -287,8 +287,8 @@
       <div class="setting">
         <b>Ring LED Count:</b>
         <select id="ledCycCakeCount" name="ledCycCakeCount">
-          <option value="36">36 - GPStar</option>
-          <option selected value="35">35</option>
+          <option selected value="36">36 (GPStar)</option>
+          <option value="35">35</option>
           <option value="26">26</option>
           <option value="24">24</option>
           <option value="23">23</option>
@@ -529,13 +529,13 @@
         setValue("ledCycLidLum", settings.ledCycLidLum || 100);
         setHtml("cycLumOut", getValue("ledCycLidLum"));
         setToggle("cyclotronDirection", settings.cyclotronDirection);
-        setValue("ledCycLidCenter", settings.ledCycLidCenter ?? 1);
+        setValue("ledCycLidCenter", settings.ledCycLidCenter ?? 0);
         setToggle("ledCycLidFade", settings.ledCycLidFade);
         setToggle("ledVGCyclotron", settings.ledVGCyclotron);
         setToggle("ledCycLidSimRing", settings.ledCycLidSimRing);
         setToggle("disableLidDetection", settings.disableLidDetection);
 
-        setValue("ledCycCakeCount", settings.ledCycCakeCount || 35);
+        setValue("ledCycCakeCount", settings.ledCycCakeCount || 36);
         setValue("ledCycCakeHue", convertRange(settings.ledCycCakeHue || 254, [1, 254], [0, 360]));
         setValue("ledCycCakeSat", convertRange(settings.ledCycCakeSat || 254, [1, 254], [0, 100]));
         setValue("ledCycCakeLum", settings.ledCycCakeLum || 100);
@@ -657,13 +657,13 @@
           ledCycLidSat: convertRange(getInt("ledCycLidSat"), [0, 100], [1, 254]) || 254,
           ledCycLidLum: getInt("ledCycLidLum") || 100,
           cyclotronDirection: getToggle("cyclotronDirection"),
-          ledCycLidCenter: getInt("ledCycLidCenter") ?? 1,
+          ledCycLidCenter: getInt("ledCycLidCenter") ?? 0,
           ledCycLidFade: getToggle("ledCycLidFade"),
           ledVGCyclotron: getToggle("ledVGCyclotron"),
           ledCycLidSimRing: getToggle("ledCycLidSimRing"),
           disableLidDetection: getToggle("disableLidDetection"),
 
-          ledCycCakeCount: getInt("ledCycCakeCount") || 35,
+          ledCycCakeCount: getInt("ledCycCakeCount") || 36,
           ledCycCakeHue: convertRange(getInt("ledCycCakeHue"), [0, 360], [1, 254]) || 254,
           ledCycCakeSat: convertRange(getInt("ledCycCakeSat"), [0, 100], [1, 254]) || 254,
           ledCycCakeLum: getInt("ledCycCakeLum") || 100,

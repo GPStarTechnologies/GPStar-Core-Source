@@ -75,6 +75,21 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   A_CMD_MAX                      // api_cmd_max
 );
 
+// Protocol signature for detecting incompatible firmware versions.
+// Calculated from packet sizes and message type counts at compile time.
+const uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
+  sizeof(CommandPacket),         // cmd_packet_size
+  sizeof(MessagePacket),         // msg_packet_size
+  sizeof(PackPrefs),             // pack_prefs_size
+  sizeof(WandPrefs),             // wand_prefs_size
+  sizeof(SmokePrefs),            // smoke_prefs_size
+  sizeof(WandSyncData),          // wand_sync_size
+  sizeof(AttenuatorSyncData),    // atten_sync_size
+  P_NO_OP,                       // pack_msg_max
+  W_NO_OP,                       // wand_msg_max
+  A_NO_OP                        // api_msg_max
+);
+
 /*
  * Serial API Helper Functions
  */
@@ -958,6 +973,7 @@ void doAttenuatorSync() {
 
   // Tell the Attenuator about the pack and wand status (not part of DeviceState).
   attenuatorSyncData.wandPresent = (WAND_CONN_STATE == WAND_CONNECTED) ? true : false;
+  attenuatorSyncData.wandMismatch = (WAND_CONN_STATE == WAND_MISMATCH) ? true : false;
   attenuatorSyncData.wandFiring = b_wand_firing ? true : false;
   attenuatorSyncData.packOn = (PACK_STATE != MODE_OFF);
   attenuatorSyncData.smokeOn = b_smoke_enabled;
@@ -978,6 +994,8 @@ void doAttenuatorSync() {
   // This sends over the music status and the current music track.
   attenuatorSyncData.packAudioVersion = i_audio_version;
   attenuatorSyncData.wandAudioVersion = i_wand_audio_version;
+  attenuatorSyncData.audioCorrupt = b_microsd_corrupt;
+  attenuatorSyncData.audioOutdated = b_microsd_outdated;
   attenuatorSyncData.musicPlaying = b_playing_music;
   attenuatorSyncData.musicPaused = b_music_paused;
   attenuatorSyncData.trackLooped = b_repeat_track;
@@ -1179,7 +1197,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         WAND_CONN_STATE = WAND_MISMATCH;
         return; // Block sync due to incompatible firmware.
       }
-      
+
       // Wand has explicitly asked to be synchronized.
       // The wand stops its retry timer when sync starts, but check state to be safe.
       if(WAND_CONN_STATE != WAND_SYNCING) {
@@ -1198,7 +1216,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
         WAND_CONN_STATE = WAND_MISMATCH;
         return; // Block sync due to incompatible firmware.
       }
-      
+
       if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
         // If we think we were not connected (or had mismatch), force a resync.
         // Don't sync if already WAND_SYNCING (sync in progress) or WAND_CONNECTED (already synced).

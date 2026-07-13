@@ -429,13 +429,40 @@ enum API_COMMAND : uint16_t {
 };
 
 /**
+ * Generates a CRC16 value for a given input.
+ *
+ * Returns a 16-bit CRC hash.
+ *
+ * Code derived from torusle2 on Reddit:
+ * https://www.reddit.com/r/embedded/comments/1acoobg/crc16_again_with_a_little_gift_for_you_all/
+ */
+uint16_t crc16(const uint8_t *pData, size_t numBytes)
+{
+	uint32_t crc = 0;
+
+	for (size_t i=0; i<numBytes; i++)
+	{
+		uint8_t  d = *(pData++);
+		uint32_t x = ((crc ^ d) & 0xff) << 8;
+		uint32_t y = x;
+
+		x ^= x << 1;
+		x ^= x << 2;
+		x ^= x << 4;
+
+		x  = (x & 0x8000) | (y >> 1);
+
+		crc = (crc >> 8) ^ (x >> 15) ^ (x >> 1) ^ x;
+	}
+	return crc;
+}
+
+/**
  * Generate a signature value that changes when packet sizes or message types change.
  * This helps detect incompatible firmware versions during device synchronization.
  *
- * The function adds up:
- *   - Sizes of command and message packets
- *   - Sizes of preference and sync data structures
- *   - Maximum values from each message type (API) list
+ * This function places the individual sizes of each serial data struct into a
+ * byte array, then performs a CRC16 on the array to return a unique hash.
  *
  * Returns a 16-bit signature value.
  *
@@ -443,24 +470,28 @@ enum API_COMMAND : uint16_t {
  *   - Matching signatures: firmware is compatible, sync proceeds like normal
  *   - Different signatures: incompatible firmware, block sync and set error flag
  */
-constexpr uint16_t calculateProtocolSignature(
-  uint16_t cmd_packet_size,
-  uint16_t data_packet_size,
-  uint16_t pack_prefs_size,
-  uint16_t wand_prefs_size,
-  uint16_t smoke_prefs_size,
-  uint16_t wand_sync_size,
-  uint16_t atten_sync_size,
-  uint16_t api_cmd_max)
+const uint16_t calculateProtocolSignature(
+  uint8_t cmd_packet_size,
+  uint8_t msg_packet_size,
+  uint8_t pack_prefs_size,
+  uint8_t wand_prefs_size,
+  uint8_t smoke_prefs_size,
+  uint8_t wand_sync_size,
+  uint8_t atten_sync_size,
+  uint8_t pack_msg_max,
+  uint8_t wand_msg_max,
+  uint8_t api_msg_max)
 {
-  return static_cast<uint16_t>(
-    cmd_packet_size +
-    data_packet_size +
-    pack_prefs_size +
-    wand_prefs_size +
-    smoke_prefs_size +
-    wand_sync_size +
-    atten_sync_size +
-    api_cmd_max
-  );
+  uint8_t data[10] = {
+    cmd_packet_size,
+    msg_packet_size,
+    pack_prefs_size,
+    wand_prefs_size,
+    smoke_prefs_size,
+    wand_sync_size,
+    atten_sync_size,
+    pack_msg_max,
+    wand_msg_max,
+    api_msg_max};
+  return crc16(data, sizeof(data));
 }

@@ -103,6 +103,7 @@
     "ledCycCakeLum": "Sets the brightness level (20-100%) for the inner cyclotron ring LEDs.",
     "ledCycCavCount": "Specifies the number of LEDs (0-20) installed in the cyclotron cavity for additional sparking effects. Set to 0 if not installed.",
     "ledCycCavType": "Specifies the colour order of the cyclotron cavity LEDs: RGB, GRB, or GBR depending on your LED string type.",
+    "ledCycCavInvert": "When enabled, reverses the direction of the inner cyclotron cavity LED animation.",
     "ledPowercellCount": "Specifies the number of LEDs in the power cell: 13 (Hasbro) or 15 (Frutto/GPStar).",
     "ledPowercellHue": "Sets the custom colour hue (2-360 degrees) for the power cell LEDs when in Spectral Custom stream mode.",
     "ledPowercellSat": "Sets the colour saturation percentage (2-100%) for the power cell LEDs when in Spectral Custom stream mode.",

@@ -5,13 +5,13 @@
 This project is made possible by Ghostbusters community makers and volunteers spanning 4 countries over 2 continents.
 
 * Michael Rajotte (aka. "GPStar Technologies") - Director of Operations, Software Architect, Product Designer, PCB Design, 3D Modelling, EU & Worldwide Distribution
-* Jonathan Gunn (aka. "Jonogunn") - Video Instruction Guides, Install Testing.
+* Jonathan Gunn (aka. "Jonogunn") - Video Instruction Guides, Install Testing
 * Dustin Grau (aka. "JustinDustin") - Prototyping and Testing, Documentation, 3D Modelling, Software Support
 * Angie Rutto (aka. "Frutto Technology") - Maker and purveyor of fine add-on products, UK Distribution
-* Nomake Wan - Software Support, Testing, and Feature Development
+* Nomake Wan - Software Support, Feature Development, and Product Testing
 * David Callari - Social Media Manager
 
-## Special Community Thanks
+### Special Community Thanks
 
 * Emre Sahare (GBFans: One Time)
     * For the original prop mode "Mode Original" operation deciphering.

@@ -453,9 +453,11 @@ void checkRotaryPress() {
         break;
 
         case MENU_STREAM:
-          packSerialSend(A_MANUAL_QUICK_VENT);
-          useVibration(i_vibrate_min_time); // Give a quick nudge.
-          sendDebug(F("Rotary: Quick Vent"));
+          if(!b_overheating && !b_pack_alarm) {
+            packSerialSend(A_MANUAL_QUICK_VENT);
+            useVibration(i_vibrate_min_time); // Give a quick nudge.
+            sendDebug(F("Rotary: Quick Vent"));
+          }
         break;
       }
     break;
@@ -498,9 +500,11 @@ void checkRotaryPress() {
         break;
 
         case MENU_STREAM:
-          packSerialSend(A_MANUAL_OVERHEAT);
-          useVibration(i_vibrate_min_time); // Give a quick nudge.
-          sendDebug(F("Rotary: Forced Overheat"));
+          if(!b_overheating && !b_pack_alarm) {
+            packSerialSend(A_MANUAL_OVERHEAT);
+            useVibration(i_vibrate_min_time); // Give a quick nudge.
+            sendDebug(F("Rotary: Forced Overheat"));
+          }
         break;
       }
     break;

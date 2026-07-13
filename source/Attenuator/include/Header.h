@@ -312,7 +312,7 @@ String s_track_listing = "";
  * Used to identify the state of the Attenuator as it connects to a Proton Pack.
  * These should be mutually exclusive and non-overlapping states for the Attenuator communications.
  */
-enum PACK_CONN_STATES { 
+enum PACK_CONN_STATES {
   PACK_DISCONNECTED,  // Waiting for pack (or operating standalone)
   PACK_MISMATCH,      // Pack detected but firmware incompatible
   PACK_CONNECTED      // Pack connected and synchronized
@@ -327,6 +327,7 @@ bool b_pack_on = false;
 bool b_pack_shutting_down = false;
 bool b_wand_connected = false;
 bool b_wand_on = false;
+bool b_wand_mismatch = false;
 bool b_pack_alarm = false;
 bool b_wand_firing = false;
 bool b_wand_firing_cts = false;
