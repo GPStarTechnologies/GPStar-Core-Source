@@ -242,8 +242,8 @@ def compress_assets():
 
     # Define file extensions that should be compressed for web serving
     # Note: Most .css and .js files are combined above, but we must allow for special checks (eg. index.js)
-    compress_extensions = ['.html', '.svg', '.ico']
-    compress_files = ['index.js']
+    compress_extensions = ['.html', '.svg', '.ico', '.stl']
+    compress_files = ['index.js', 'three.min.js']
 
     # Process each file in the assets directory
     for file_path in assets_dir.iterdir():

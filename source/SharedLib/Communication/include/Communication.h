@@ -472,26 +472,23 @@ uint16_t crc16(const uint8_t *pData, size_t numBytes)
  */
 const uint16_t calculateProtocolSignature(
   uint8_t cmd_packet_size,
-  uint8_t msg_packet_size,
+  uint8_t data_packet_size,
   uint8_t pack_prefs_size,
   uint8_t wand_prefs_size,
   uint8_t smoke_prefs_size,
   uint8_t wand_sync_size,
   uint8_t atten_sync_size,
-  uint8_t pack_msg_max,
-  uint8_t wand_msg_max,
-  uint8_t api_msg_max)
+  uint16_t api_cmd_max)
 {
   uint8_t data[10] = {
     cmd_packet_size,
-    msg_packet_size,
+    data_packet_size,
     pack_prefs_size,
     wand_prefs_size,
     smoke_prefs_size,
     wand_sync_size,
     atten_sync_size,
-    pack_msg_max,
-    wand_msg_max,
-    api_msg_max};
+    (uint8_t)(api_cmd_max >> 8), // high byte
+    (uint8_t)(api_cmd_max & 0xFF)}; // low byte
   return crc16(data, sizeof(data));
 }

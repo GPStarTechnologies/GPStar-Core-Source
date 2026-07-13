@@ -241,7 +241,6 @@ String getPackConfig() {
 
     // Proton Pack LED Options
     jsonBody["ledCycLidCount"] = packConfig.ledCycLidCount; // [12,20,36,40]
-    jsonBody["stockPackType"] = packConfig.stockPackType; // [0=Afterlife,1=1984]
     jsonBody["ledCycLidHue"] = packConfig.ledCycLidHue; // Spectral custom colour/hue 2-254
     jsonBody["ledCycLidSat"] = packConfig.ledCycLidSat; // Spectral custom saturation 2-254
     jsonBody["ledCycLidLum"] = packConfig.ledCycLidLum; // Brightness 20-100
@@ -1750,16 +1749,10 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
 
       // Numeric fields - Cyclotron Lid options
       packConfig.ledCycLidCount = jsonBody["ledCycLidCount"].as<uint8_t>();
-      packConfig.stockPackType = jsonBody["stockPackType"].as<uint8_t>();
       packConfig.ledCycLidHue = jsonBody["ledCycLidHue"].as<uint8_t>();
       packConfig.ledCycLidSat = jsonBody["ledCycLidSat"].as<uint8_t>();
       packConfig.ledCycLidLum = jsonBody["ledCycLidLum"].as<uint8_t>();
       packConfig.ledCycLidCenter = jsonBody["ledCycLidCenter"].as<uint8_t>();
-
-      // Force the HasLab 1984 stock pack to use 3 center LEDs.
-      if(packConfig.stockPackType == 1 && packConfig.ledCycLidCount == 12) {
-        packConfig.ledCycLidCenter = false;
-      }
 
       // Boolean fields - Cyclotron Lid toggles
       packConfig.cyclotronDirection = extractBoolFromJson(jsonBody, "cyclotronDirection", packConfig.cyclotronDirection);

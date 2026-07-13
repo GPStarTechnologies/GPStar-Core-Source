@@ -64,7 +64,7 @@ struct DataPacket recvDataA;
 
 // Protocol signature for detecting incompatible firmware versions.
 // Calculated from packet sizes and message type counts at compile time.
-constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
+const uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(CommandPacket),         // cmd_packet_size
   sizeof(DataPacket),            // data_packet_size
   sizeof(PackPrefs),             // pack_prefs_size
@@ -73,21 +73,6 @@ constexpr uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
   sizeof(WandSyncData),          // wand_sync_size
   sizeof(AttenuatorSyncData),    // atten_sync_size
   A_CMD_MAX                      // api_cmd_max
-);
-
-// Protocol signature for detecting incompatible firmware versions.
-// Calculated from packet sizes and message type counts at compile time.
-const uint16_t PROTOCOL_SIGNATURE = calculateProtocolSignature(
-  sizeof(CommandPacket),         // cmd_packet_size
-  sizeof(MessagePacket),         // msg_packet_size
-  sizeof(PackPrefs),             // pack_prefs_size
-  sizeof(WandPrefs),             // wand_prefs_size
-  sizeof(SmokePrefs),            // smoke_prefs_size
-  sizeof(WandSyncData),          // wand_sync_size
-  sizeof(AttenuatorSyncData),    // atten_sync_size
-  P_NO_OP,                       // pack_msg_max
-  W_NO_OP,                       // wand_msg_max
-  A_NO_OP                        // api_msg_max
 );
 
 /*
@@ -214,7 +199,6 @@ void getPackPrefsObject() {
 
   // Cyclotron Lid
   packConfig.ledCycLidCount = i_cyclotron_num_leds;
-  packConfig.stockPackType = i_stock_pack_type;
   packConfig.ledCycLidHue = i_spectral_cyclotron_custom_colour;
   packConfig.ledCycLidSat = i_spectral_cyclotron_custom_saturation;
   packConfig.ledCycLidLum = i_cyclotron_brightness;
@@ -686,17 +670,11 @@ void handlePackPrefsUpdate() {
   }
 
   sendDebug(F("Updating outer cyclotron variables..."));
-  i_stock_pack_type = packConfig.stockPackType;
   i_spectral_cyclotron_custom_colour = packConfig.ledCycLidHue;
   i_spectral_cyclotron_custom_saturation = packConfig.ledCycLidSat;
   i_cyclotron_brightness = packConfig.ledCycLidLum;
   b_clockwise = packConfig.cyclotronDirection;
   b_cyclotron_single_led = packConfig.ledCycLidCenter;
-
-  // Force the HasLab 1984 stock pack to use 3 center LEDs.
-  if(i_stock_pack_type == 1 && i_cyclotron_num_leds == 12) {
-    b_cyclotron_single_led = false;
-  }
 
   b_fade_cyclotron_led = packConfig.ledCycLidFade;
   b_cyclotron_colour_toggle = packConfig.ledVGCyclotron;

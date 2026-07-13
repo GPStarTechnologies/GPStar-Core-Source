@@ -84,7 +84,6 @@
     "audioVolumeBoosted": "Allows the connected audio board to reach a maximum of +10dB (200%) if enabled. Otherwise, maximum amplification is 0dB (100%).",
     "gpstarAudioLed": "Controls the status LED on GPStar audio boards, which indicates audio playback activity. Useful for troubleshooting audio issues.",
     "ledCycLidCount": "Specifies the number of LEDs in the cyclotron lid: 12 (Hasbro), 20 (Frutto 4x5), 36 (GPStar 4x9), or 40 (NeoPixel ring).",
-    "stockPackType": "Select the stock pack type in use, either Afterlife or 1984. For stock 1984 HasLab kits the cyclotron LEDs will default to use all 3 LEDs for their center.",
     "ledCycLidHue": "Sets the custom colour hue (2-360 degrees) for the cyclotron lid LEDs when in Spectral Custom stream mode.",
     "ledCycLidSat": "Sets the colour saturation percentage (2-100%) for the cyclotron lid LEDs when in Spectral Custom stream mode. Lower values create more pastel colours, higher values create more vivid colours.",
     "ledCycLidLum": "Sets the brightness level (20-100%) for the cyclotron lid LEDs. Lower values dim the lights to save power or reduce visibility.",

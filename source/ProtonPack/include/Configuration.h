@@ -69,13 +69,6 @@ bool b_enable_ui_animations = true; // Enable/disable UI animation effects
 uint8_t i_cyclotron_num_leds = 36;
 
 /*
- * Stock Pack Type (only relevant when using 12 LEDs - HasLab stock configuration)
- * 0 = Afterlife (default), 1 = 1984
- * This determines the center LED behavior for stock 12-LED cyclotron lids.
- */
-uint8_t i_stock_pack_type = 0;
-
-/*
  * Cyclotron Lid LED delays.
  * Time in milliseconds between when a LED changes.
  * 1000 = 1 second.

@@ -77,7 +77,6 @@ struct objLEDEEPROM {
   uint8_t vg_powercell;
   uint8_t vg_cyclotron;
   uint8_t gpstar_audio_led;
-  uint8_t stock_pack_type;
 };
 
 /*
@@ -235,15 +234,6 @@ void readEEPROM() {
 
     if(obj_led_eeprom.cyclotron_single_center_led > 0 && obj_led_eeprom.cyclotron_single_center_led < 3) {
       b_cyclotron_single_led = (obj_led_eeprom.cyclotron_single_center_led > 1);
-    }
-
-    if(obj_led_eeprom.stock_pack_type < 2) {
-      i_stock_pack_type = obj_led_eeprom.stock_pack_type;
-    }
-
-    // Force the HasLab 1984 stock pack to use 3 center LEDs.
-    if(i_stock_pack_type == 1 && i_cyclotron_num_leds == 12) {
-      b_cyclotron_single_led = false;
     }
 
     if(obj_led_eeprom.vg_powercell > 0 && obj_led_eeprom.vg_powercell < 3) {
@@ -613,8 +603,7 @@ void saveLEDEEPROM() {
     i_cyclotron_single_center_led,
     i_vg_powercell,
     i_vg_cyclotron,
-    i_gpstar_audio_led,
-    i_stock_pack_type
+    i_gpstar_audio_led
   };
 
   // Save and update our object in the EEPROM.
