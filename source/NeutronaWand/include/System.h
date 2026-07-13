@@ -1780,7 +1780,7 @@ void overheatingFinished() {
 // Tell the pack which power level the Neutrona Wand is set at.
 void updatePackPowerLevel() {
   uint8_t i_level = (uint8_t)gpstarWand.getPowerLevel();
-  
+
   // Send the power level to the pack (d1: 1-5)
   packSerialSend(A_SET_POWER_LEVEL, i_level);
 

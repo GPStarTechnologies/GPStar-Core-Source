@@ -132,7 +132,7 @@ void AnimationTask(void *parameter) {
     // Process each actuator relay and check if it should be turned off
     RelayChannel* relays[] = {&devices.relay1, &devices.relay2, &devices.relay3, &devices.relay4};
     uint8_t relayPins[] = {devices.relay1.pin, devices.relay2.pin, devices.relay3.pin, devices.relay4.pin};
-    
+
     for (uint8_t i = 0; i < 4; i++) {
       // If this relay is active and its configured on-time has expired,
       // mark it as inactive (LOW) and turn off the associated relay output.
@@ -227,7 +227,7 @@ void UserInputTask(void *parameter) {
     RFButtonChannel* buttons[] = {&devices.button1, &devices.button2, &devices.button3, &devices.button4};
     uint8_t buttonPins[] = {devices.button1.pin, devices.button2.pin, devices.button3.pin, devices.button4.pin};
     ActuatorID buttonActuators[] = {ACTUATOR_1, ACTUATOR_2, ACTUATOR_3, ACTUATOR_4};
-    
+
     for (uint8_t i = 0; i < 4; i++) {
       bool rfState = digitalRead(buttonPins[i]) == HIGH;
       bool stateChanged = false;
@@ -238,7 +238,7 @@ void UserInputTask(void *parameter) {
         if (buttons[i]->state.debounceCount < RF_DEBOUNCE_MAX) {
           buttons[i]->state.debounceCount++;
         }
-        
+
         // Once we've accumulated enough consistent reads of the DIFFERENT state, accept transition
         if (buttons[i]->state.debounceCount >= RF_DEBOUNCE_THRESHOLD) {
           buttons[i]->state.previousState = buttons[i]->state.currentState;
@@ -400,15 +400,15 @@ void setup() {
   devices.button1.state.currentState = false;  // LOW (idle)
   devices.button1.state.previousState = false;
   devices.button1.state.debounceCount = 0;
-  
+
   devices.button2.state.currentState = false;
   devices.button2.state.previousState = false;
   devices.button2.state.debounceCount = 0;
-  
+
   devices.button3.state.currentState = false;
   devices.button3.state.previousState = false;
   devices.button3.state.debounceCount = 0;
-  
+
   devices.button4.state.currentState = false;
   devices.button4.state.previousState = false;
   devices.button4.state.debounceCount = 0;

@@ -57,7 +57,7 @@
  *   |       |
  *   |       |
  * ==| 3   4 |
- *    ‾‾‾‾‾‾‾ 
+ *    ‾‾‾‾‾‾‾
  */
 enum ActuatorID {
   ACTUATOR_1 = 0,
@@ -134,7 +134,7 @@ struct Devices {
   RelayChannel relay2;
   RelayChannel relay3;
   RelayChannel relay4;
-  
+
   // RF input buttons (GPIO 34, 33, 35, 39)
   RFButtonChannel button1;
   RFButtonChannel button2;

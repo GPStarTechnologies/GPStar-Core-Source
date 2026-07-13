@@ -874,7 +874,7 @@ void checkAttenuator() {
           attenuatorComs.rxObj(recvDataA);
           if(recvDataA.c > 0 && recvDataA.s == A_COM_START && recvDataA.e == A_COM_END) {
             sendDebug(String(F("Recv. Attenuator Message: ")) + String(recvDataA.c));
-            
+
             // No handlers at this time.
           }
         break;

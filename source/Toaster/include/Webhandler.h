@@ -160,22 +160,22 @@ String getEquipmentStatus() {
 
   // Report on the state of each relay/actuator
   JsonArray relayArray = jsonBody["relays"].to<JsonArray>();
-  
+
   JsonObject relay1Obj = relayArray.add<JsonObject>();
   relay1Obj["id"] = 1;
   relay1Obj["pin"] = devices.relay1.pin;
   relay1Obj["active"] = devices.relay1.state.relayActive;
-  
+
   JsonObject relay2Obj = relayArray.add<JsonObject>();
   relay2Obj["id"] = 2;
   relay2Obj["pin"] = devices.relay2.pin;
   relay2Obj["active"] = devices.relay2.state.relayActive;
-  
+
   JsonObject relay3Obj = relayArray.add<JsonObject>();
   relay3Obj["id"] = 3;
   relay3Obj["pin"] = devices.relay3.pin;
   relay3Obj["active"] = devices.relay3.state.relayActive;
-  
+
   JsonObject relay4Obj = relayArray.add<JsonObject>();
   relay4Obj["id"] = 4;
   relay4Obj["pin"] = devices.relay4.pin;
@@ -183,22 +183,22 @@ String getEquipmentStatus() {
 
   // Report on the state of each RF input button
   JsonArray buttonArray = jsonBody["buttons"].to<JsonArray>();
-  
+
   JsonObject button1Obj = buttonArray.add<JsonObject>();
   button1Obj["id"] = 1;
   button1Obj["pin"] = devices.button1.pin;
   button1Obj["state"] = devices.button1.state.currentState;
-  
+
   JsonObject button2Obj = buttonArray.add<JsonObject>();
   button2Obj["id"] = 2;
   button2Obj["pin"] = devices.button2.pin;
   button2Obj["state"] = devices.button2.state.currentState;
-  
+
   JsonObject button3Obj = buttonArray.add<JsonObject>();
   button3Obj["id"] = 3;
   button3Obj["pin"] = devices.button3.pin;
   button3Obj["state"] = devices.button3.state.currentState;
-  
+
   JsonObject button4Obj = buttonArray.add<JsonObject>();
   button4Obj["id"] = 4;
   button4Obj["pin"] = devices.button4.pin;

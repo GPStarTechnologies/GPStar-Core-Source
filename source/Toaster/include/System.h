@@ -59,7 +59,7 @@ void printPartitions() {
 bool wouldCreateForbiddenPair(ActuatorID actuatorID) {
   for(uint8_t i = 0; i < FORBIDDEN_PAIRS_COUNT; i++) {
     ActuatorID opposingID = ACTUATOR_1; // Default, will be overwritten
-    
+
     if(actuatorID == forbiddenPairs[i].element1) {
       opposingID = forbiddenPairs[i].element2;
     }
@@ -69,7 +69,7 @@ bool wouldCreateForbiddenPair(ActuatorID actuatorID) {
     else {
       continue; // Not part of this forbidden pair
     }
-    
+
     // Check if the opposing actuator is already active
     RelayChannel* opposingRelay = getRelayForActuator(opposingID);
     if(opposingRelay && opposingRelay->state.relayActive) {
