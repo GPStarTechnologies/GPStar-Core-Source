@@ -259,10 +259,10 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
     break;
 
     default:
-      sendCmd.s = WAND_COM_START;
+      sendCmd.s = A_COM_START;
       sendCmd.c = i_command;
       sendCmd.d1 = i_value;
-      sendCmd.e = WAND_COM_END;
+      sendCmd.e = A_COM_END;
 
       if(WAND_CONN_STATE == PACK_CONNECTED) {
         // Once connected, each send of data should restart the timer.
@@ -597,7 +597,7 @@ void checkPack() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           packComs.rxObj(recvCmd);
-          if(recvCmd.c > 0 && recvCmd.s == PACK_COM_START && recvCmd.e == PACK_COM_END) {
+          if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
             sendDebug(String(F("Recv. Command: ")) + String(recvCmd.c));
             if(handlePackCommand(recvCmd.c, recvCmd.d1)) {
               // Begin timer for future keepalive handshakes from the wand.
@@ -621,7 +621,8 @@ void checkPack() {
               #endif
             }
           }
-          else if(recvCmd.s == WAND_COM_START && recvCmd.c == A_SYNC_NOW && recvCmd.d1 == PROTOCOL_SIGNATURE && recvCmd.e == WAND_COM_END) {
+          // TODO: As there is no way to differentiate an A_SYNC_NOW from the pack and our own A_SYNC_NOW echoed back this is broken!
+          else if(recvCmd.s == A_COM_START && recvCmd.c == A_SYNC_NOW && recvCmd.d1 == PROTOCOL_SIGNATURE && recvCmd.e == A_COM_END) {
             // We just received our own heartbeat echoed back, so switch to standalone mode.
             toggleStandaloneMode(true);
 
@@ -632,7 +633,7 @@ void checkPack() {
 
         case PACKET_DATA:
           packComs.rxObj(recvData);
-          if(recvData.c > 0 && recvData.s == PACK_COM_START && recvData.e == PACK_COM_END) {
+          if(recvData.c > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
             sendDebug(String(F("Recv. Message: ")) + String(recvData.c));
 
             switch(recvData.c) {

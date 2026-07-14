@@ -97,10 +97,10 @@ void packSerialSend(uint16_t i_command, uint16_t i_value = 0) {
     break;
 
     default:
-      sendCmd.s = ATTN_COM_START;
+      sendCmd.s = A_COM_START;
       sendCmd.c = i_command;
       sendCmd.d1 = i_value;
-      sendCmd.e = ATTN_COM_END;
+      sendCmd.e = A_COM_END;
 
       i_send_size = packComs.txObj(sendCmd);
       packComs.sendData(i_send_size, (uint16_t) PACKET_COMMAND);
@@ -128,7 +128,7 @@ bool checkPack() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           packComs.rxObj(recvCmd);
-          if(recvCmd.c > 0 && recvCmd.s == PACK_COM_START && recvCmd.e == PACK_COM_END) {
+          if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
             #if defined(DEBUG_SERIAL_COMMS)
               sendDebug(String(F("Recv. Command: ")) + String(recvCmd.c));
             #endif
@@ -147,7 +147,7 @@ bool checkPack() {
           }
 
           packComs.rxObj(recvData);
-          if(recvData.c > 0 && recvData.s == PACK_COM_START && recvData.e == PACK_COM_END) {
+          if(recvData.c > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
             #if defined(DEBUG_SERIAL_COMMS)
               sendDebug(String(F("Recv. Message: ")) + String(recvData.c));
             #endif

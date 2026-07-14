@@ -408,9 +408,9 @@ void attenuatorSerialSend(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_SPECTRAL_COLOUR_DATA:
-      sendDataA.s = PACK_COM_START;
+      sendDataA.s = A_COM_START;
       sendDataA.c = i_command;
-      sendDataA.e = PACK_COM_END;
+      sendDataA.e = A_COM_END;
 
       sendDataA.d[0] = i_spectral_cyclotron_custom_colour;
       sendDataA.d[1] = i_spectral_cyclotron_custom_saturation;
@@ -421,9 +421,9 @@ void attenuatorSerialSend(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_VOLUME_SYNC:
-      sendDataA.s = PACK_COM_START;
+      sendDataA.s = A_COM_START;
       sendDataA.c = i_command;
-      sendDataA.e = PACK_COM_END;
+      sendDataA.e = A_COM_END;
 
       // Send the current volume levels.
       sendDataA.d[0] = i_volume_master_percentage;
@@ -453,10 +453,10 @@ void attenuatorSerialSend(uint16_t i_command, uint16_t i_value) {
     break;
 
     default:
-      sendCmdA.s = PACK_COM_START;
+      sendCmdA.s = A_COM_START;
       sendCmdA.c = i_command;
       sendCmdA.d1 = i_value;
-      sendCmdA.e = PACK_COM_END;
+      sendCmdA.e = A_COM_END;
 
       i_send_size = attenuatorComs.txObj(sendCmdA);
       attenuatorComs.sendData(i_send_size, (uint16_t) PACKET_COMMAND);
@@ -499,10 +499,10 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
     break;
 
     default:
-      sendCmdW.s = PACK_COM_START;
+      sendCmdW.s = A_COM_START;
       sendCmdW.c = i_command;
       sendCmdW.d1 = i_value;
-      sendCmdW.e = PACK_COM_END;
+      sendCmdW.e = A_COM_END;
 
       i_send_size = wandComs.txObj(sendCmdW);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
@@ -849,7 +849,7 @@ void checkAttenuator() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           attenuatorComs.rxObj(recvCmdA);
-          if(recvCmdA.c > 0 && recvCmdA.s == ATTN_COM_START && recvCmdA.e == ATTN_COM_END) {
+          if(recvCmdA.c > 0 && recvCmdA.s == A_COM_START && recvCmdA.e == A_COM_END) {
             sendDebug(String(F("Recv. Att. Command: ")) + String(recvCmdA.c) + String(F(" | Conn. State: ")) + String(ATTENUATOR_CONN_STATE));
 
             if(ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING) {
@@ -872,7 +872,7 @@ void checkAttenuator() {
           }
 
           attenuatorComs.rxObj(recvDataA);
-          if(recvDataA.c > 0 && recvDataA.s == ATTN_COM_START && recvDataA.e == ATTN_COM_END) {
+          if(recvDataA.c > 0 && recvDataA.s == A_COM_START && recvDataA.e == A_COM_END) {
             sendDebug(String(F("Recv. Attenuator Message: ")) + String(recvDataA.c));
 
             // No handlers at this time.
@@ -1012,7 +1012,7 @@ void checkWand() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           wandComs.rxObj(recvCmdW);
-          if(recvCmdW.c > 0 && recvCmdW.s == WAND_COM_START && recvCmdW.e == WAND_COM_END) {
+          if(recvCmdW.c > 0 && recvCmdW.s == A_COM_START && recvCmdW.e == A_COM_END) {
             sendDebug(String(F("Recv. Wand Command: ")) + String(recvCmdW.c) + String(F(" | Conn. State: ")) + String(WAND_CONN_STATE));
             handleWandCommand(recvCmdW.c, recvCmdW.d1);
           }
@@ -1025,7 +1025,7 @@ void checkWand() {
           }
 
           wandComs.rxObj(recvDataW);
-          if(recvDataW.c > 0 && recvDataW.s == WAND_COM_START && recvDataW.e == WAND_COM_END) {
+          if(recvDataW.c > 0 && recvDataW.s == A_COM_START && recvDataW.e == A_COM_END) {
             sendDebug(String(F("Recv. Wand Data: ")) + String(recvDataW.c));
             // No handlers at this time.
           }
