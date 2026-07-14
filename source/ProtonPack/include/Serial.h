@@ -1173,6 +1173,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       if(i_value != PROTOCOL_SIGNATURE) {
         sendDebug(F("Wand protocol mismatch!"));
         WAND_CONN_STATE = WAND_MISMATCH;
+        wandSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE); // Send a single message to the wand notifying it of the discrepancy.
         return; // Block sync due to incompatible firmware.
       }
 
@@ -1192,6 +1193,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       if(i_value != PROTOCOL_SIGNATURE) {
         sendDebug(F("Wand protocol mismatch!"));
         WAND_CONN_STATE = WAND_MISMATCH;
+        wandSerialSend(A_HANDSHAKE, PROTOCOL_SIGNATURE); // Send a single message to the wand notifying it of the discrepancy.
         return; // Block sync due to incompatible firmware.
       }
 

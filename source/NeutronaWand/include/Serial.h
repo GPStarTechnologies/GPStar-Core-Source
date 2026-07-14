@@ -786,6 +786,15 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
       if(i_value != PROTOCOL_SIGNATURE) {
         sendDebug(F("Pack protocol mismatch!"));
         WAND_CONN_STATE = PACK_MISMATCH;
+        if(!ms_packsync.isRunning()) {
+          ms_packsync.start(0); // Restart the pack sync timer
+        }
+        #ifdef ESP32
+        if(WIFI_USER_MODE == WIFI_DISABLED) {
+          // Switch the WiFi mode back to default just in case.
+          WIFI_USER_MODE = WIFI_DEFAULT;
+        }
+        #endif
         return false; // Block sync due to incompatible firmware.
       }
 

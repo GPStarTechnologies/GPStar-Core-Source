@@ -701,12 +701,12 @@ void loop() {
     FastLED[0].showLeds(255);
 
     if(b_vent_lights_changed) {
-      if(b_rgb_vent_light || WAND_CONN_STATE == PACK_DISCONNECTED) {
+      if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
         // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
         FastLED[1].showLeds(255);
 
       #ifndef ESP32
-        if(WAND_CONN_STATE == PACK_DISCONNECTED && !vent_leds[1]) {
+        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && !vent_leds[1]) {
           // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
           digitalWriteFast(TOP_LED_PIN, HIGH);
         }
@@ -754,11 +754,11 @@ void loop() {
     case WIFI_DEFAULT:
     default:
       // Take action based solely on the presence of the Pack (Connected = WiFi Off, Disconnected = WiFi On).
-      if(WAND_CONN_STATE == PACK_CONNECTED || WAND_CONN_STATE == PACK_DISCONNECTED && i_boot_connection_count < 10) {
+      if(WAND_CONN_STATE == PACK_CONNECTED || (WAND_CONN_STATE == PACK_DISCONNECTED && i_boot_connection_count < 10)) {
         // Turn off WiFi and the web server if the Pack is connected.
         shutdownWireless();
       }
-      else if(!b_httpd_started) {
+      else if(!wirelessMgr->isWifiActive()) {
         // Begin by setting up WiFi as a prerequisite to all else.
         restartWireless();
       }

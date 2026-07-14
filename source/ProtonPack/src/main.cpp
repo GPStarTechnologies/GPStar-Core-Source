@@ -658,7 +658,7 @@ void loop() {
 
     case WIFI_ENABLED:
       // Force the WiFi to remain on, disregarding any Attenuator connection.
-      if(!b_httpd_started && b_pack_post_finish) {
+      if(!wirelessMgr->isWifiActive() && b_pack_post_finish) {
         // Begin by setting up WiFi as a prerequisite to all else.
         restartWireless();
       }
@@ -671,7 +671,7 @@ void loop() {
         // Turn off WiFi and the web server if the Attenuator is connected.
         shutdownWireless();
       }
-      else if((ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_MISMATCH) && !b_httpd_started && b_pack_post_finish) {
+      else if((ATTENUATOR_CONN_STATE == ATTENUATOR_DISCONNECTED || ATTENUATOR_CONN_STATE == ATTENUATOR_MISMATCH) && !wirelessMgr->isWifiActive() && b_pack_post_finish) {
         // Begin by setting up WiFi as a prerequisite to all else when either disconnected or there was a known a protocol mismatch.
         restartWireless();
       }

@@ -42,6 +42,12 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       if(i_value != PROTOCOL_SIGNATURE) {
         sendDebug(String(F("Attenuator protocol mismatch! | Received: ")) + String(i_value) + String(F(" | Expected: ")) + String(PROTOCOL_SIGNATURE));
         ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
+        #ifdef ESP32
+        if(WIFI_USER_MODE == WIFI_DISABLED) {
+          // Switch the WiFi mode back to default just in case.
+          WIFI_USER_MODE = WIFI_DEFAULT;
+        }
+        #endif
         return; // Block sync due to incompatible firmware.
       }
 
@@ -55,6 +61,12 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       if(i_value != PROTOCOL_SIGNATURE) {
         sendDebug(String(F("Attenuator protocol mismatch! | Received: ")) + String(i_value) + String(F(" | Expected: ")) + String(PROTOCOL_SIGNATURE));
         ATTENUATOR_CONN_STATE = ATTENUATOR_MISMATCH;
+        #ifdef ESP32
+        if(WIFI_USER_MODE == WIFI_DISABLED) {
+          // Switch the WiFi mode back to default just in case.
+          WIFI_USER_MODE = WIFI_DEFAULT;
+        }
+        #endif
         return; // Block sync due to incompatible firmware.
       }
 
