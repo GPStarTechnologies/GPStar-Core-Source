@@ -123,8 +123,8 @@ struct __attribute__((packed)) DataPacket {
 
  // Specifically for device synchronization.
 enum DEVICE_ID : uint8_t {
-  A_COM_START = 0,
-  A_COM_END = 1
+  A_COM_START = 2,
+  A_COM_END = 4
 };
 
 /**
@@ -136,7 +136,7 @@ enum API_COMMAND : uint16_t {
   A_CMD_NULL, // Special case for index 0 (avoiding an implicit or erroneous command).
   // Device initialization and synchronization commands.
   A_HANDSHAKE, // d1: PROTOCOL_SIGNATURE
-  A_SYNC_NOW, // d1: PROTOCOL_SIGNATURE
+  A_SYNC_WAND, // d1: PROTOCOL_SIGNATURE
   A_SYNC_START, // d1: PROTOCOL_SIGNATURE or post-finish state (1/2)
   A_SYNC_DATA, // Sends PACKET_SYNC data struct
   A_SPECTRAL_COLOUR_DATA, // Sends PACKET_DATA with d1: colour, d2: saturation

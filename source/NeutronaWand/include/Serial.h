@@ -203,7 +203,7 @@ void getWandPrefsObject() {
  // Helper function to check if a command is excluded from WebSocket notifications.
 bool isExcludedCommand(uint16_t i_command) {
   return i_command == A_HANDSHAKE ||
-         i_command == A_SYNC_NOW ||
+         i_command == A_SYNC_WAND ||
          i_command == A_SYNCHRONIZED ||
          i_command == A_SAVE_CONFIG_EEPROM_SETTINGS ||
          i_command == A_CLEAR_CONFIG_EEPROM_SETTINGS ||
@@ -597,7 +597,18 @@ void checkPack() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           packComs.rxObj(recvCmd);
-          if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
+
+          // Immediately and always check for a loopback echo FIRST before general command handler, and assuming it came from the Proton Pack.
+          if(recvCmd.s == A_COM_START && recvCmd.c == A_SYNC_WAND && recvCmd.d1 == PROTOCOL_SIGNATURE && recvCmd.e == A_COM_END) {
+            // The user shorted the Tx/Rx pins on the Neutrona Wand, creating a loopback (echo) of the request to start synchronization.
+            // This is a special case where the wand is not connected to a Proton Pack, but the user wants to use it in standalone mode.
+            toggleStandaloneMode(true);
+
+            // Immediately exit the serial data functions because there is no true hardware serial connection.
+            return;
+          }
+          // Handle all other commands from the pack which are a non-zero value.
+          else if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
             sendDebug(String(F("Recv. Command: ")) + String(recvCmd.c));
             if(handlePackCommand(recvCmd.c, recvCmd.d1)) {
               // Begin timer for future keepalive handshakes from the wand.
@@ -620,14 +631,6 @@ void checkPack() {
               }
               #endif
             }
-          }
-          // TODO: As there is no way to differentiate an A_SYNC_NOW from the pack and our own A_SYNC_NOW echoed back this is broken!
-          else if(recvCmd.s == A_COM_START && recvCmd.c == A_SYNC_NOW && recvCmd.d1 == PROTOCOL_SIGNATURE && recvCmd.e == A_COM_END) {
-            // We just received our own heartbeat echoed back, so switch to standalone mode.
-            toggleStandaloneMode(true);
-
-            // Immediately exit the serial data functions.
-            return;
           }
         break;
 
@@ -802,7 +805,7 @@ bool handlePackCommand(uint16_t i_command, uint16_t i_value) {
       // The pack is asking us if we are still here so respond accordingly.
       if(WAND_CONN_STATE != PACK_CONNECTED) {
         // If still waiting for the pack, trigger an immediate synchronization.
-        packSerialSend(A_SYNC_NOW, PROTOCOL_SIGNATURE);
+        packSerialSend(A_SYNC_WAND, PROTOCOL_SIGNATURE);
       }
       else {
         // The wand had already synchronized with the pack, so respond with handshake.

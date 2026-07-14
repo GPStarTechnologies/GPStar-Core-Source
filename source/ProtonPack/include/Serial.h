@@ -1161,14 +1161,14 @@ void doWandSync() {
 void handleWandCommand(uint16_t i_command, uint16_t i_value) {
   if(WAND_CONN_STATE != WAND_CONNECTED) {
     // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
-    if(i_command != A_SYNC_NOW && i_command != A_HANDSHAKE && i_command != A_SYNCHRONIZED) {
+    if(i_command != A_SYNC_WAND && i_command != A_HANDSHAKE && i_command != A_SYNCHRONIZED) {
       // This applies for any action other than those responsible for sync operations.
       return;
     }
   }
 
   switch(i_command) {
-    case A_SYNC_NOW:
+    case A_SYNC_WAND:
       // Check protocol signature to ensure firmware compatibility.
       if(i_value != PROTOCOL_SIGNATURE) {
         sendDebug(F("Wand protocol mismatch!"));

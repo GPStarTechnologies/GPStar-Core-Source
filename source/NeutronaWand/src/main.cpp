@@ -656,7 +656,7 @@ void loop() {
       // While waiting for a compatible proton pack, issue a request for synchronization.
       if(ms_packsync.justFinished()) {
         // If not already doing so, explicitly tell the pack a wand is here to sync.
-        packSerialSend(A_SYNC_NOW, PROTOCOL_SIGNATURE); // Perform an initial synchronization.
+        packSerialSend(A_SYNC_WAND, PROTOCOL_SIGNATURE); // Perform an initial synchronization.
         ms_packsync.start(i_sync_initial_delay); // Prepare for the next sync attempt.
         vent_leds[1] ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
         digitalWriteFast(WAND_STATUS_LED_PIN, (digitalReadFast(WAND_STATUS_LED_PIN) == LOW) ? HIGH : LOW); // Blink the onboard LED on the Neutrona Wand board.
