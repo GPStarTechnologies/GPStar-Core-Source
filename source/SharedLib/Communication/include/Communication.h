@@ -123,8 +123,12 @@ struct __attribute__((packed)) DataPacket {
 
  // Specifically for device synchronization.
 enum DEVICE_ID : uint8_t {
-  A_COM_START = 0,
-  A_COM_END = 1
+  ATTN_COM_START = 42,
+  PACK_COM_START = 55,
+  WAND_COM_START = 67,
+  ATTN_COM_END = 142,
+  PACK_COM_END = 155,
+  WAND_COM_END = 167
 };
 
 /**
