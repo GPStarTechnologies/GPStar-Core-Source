@@ -652,7 +652,7 @@ void checkPack() {
               #endif
             }
           }
-          else if(recvCmd.s == W_COM_START && recvCmd.c == W_SYNC_NOW && recvCmd.d1 == 0 && recvCmd.e == W_COM_END) {
+          else if(recvCmd.s == W_COM_START && recvCmd.c == W_SYNC_NOW && recvCmd.d1 == PROTOCOL_SIGNATURE && recvCmd.e == W_COM_END) {
             // We just received our own heartbeat echoed back, so switch to standalone mode.
             toggleStandaloneMode(true);
 
