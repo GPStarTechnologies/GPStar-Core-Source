@@ -2537,11 +2537,6 @@ void modeFireStop() {
   ms_firing_sound_mix.stop();
   ms_firing_effect_end.start(0);
 
-  #ifdef ESP32
-  // Stop the infrared timer.
-  irManager->stopTXTimer();
-  #endif
-
   wandTipOff();
 
   resetHatLights();
