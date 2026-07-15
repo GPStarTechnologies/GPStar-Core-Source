@@ -382,6 +382,7 @@ void setup() {
   }
 
 #ifdef ESP32
+  irManager->startTXTimer(0); // Start the IR trigger timer.
   debugf("Setup complete, free heap: %u bytes\n", ESP.getFreeHeap());
 #endif
 }
