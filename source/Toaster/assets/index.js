@@ -1,6 +1,6 @@
 /**
  *   GPStar Toaster - Ghostbusters Props, Mods, and Kits.
- *   Copyright (C) 2024-2026 Dustin Grau <dustin.grau@gmail.com>
+ *   Copyright (C) 2026 Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ window.addEventListener("load", onLoad);
 function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
   getDevicePrefs(); // Get all preferences.
+  getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
   getStatus(updateEquipment); // Get status immediately.
 }
@@ -43,6 +44,7 @@ function doHeartbeat() {
   if (websocket.readyState == websocket.OPEN) {
     websocket.send("heartbeat"); // Send a specific message.
   }
+  getNetworkInfo(); // Refresh network statistics.
   setTimeout(doHeartbeat, 8000);
 }
 
@@ -97,9 +99,12 @@ function getDevicePrefs() {
             break;
         }
 
-        setHtml("wifiName", "Private Network: " + jObj.wifiName || "");
-        if ((jObj.wifiNameExt || "") != "" && (jObj.extAddr || "") != "" && (jObj.extMask || "") != "") {
-          setHtml("extWifi", (jObj.wifiNameExt || "") + ": " + jObj.extAddr + " / " + jObj.extMask);
+        // microSD Warnings
+        if (Boolean(jObj.audioCorrupt)) {
+          alert("Corruption has been detected on the microSD card. Please reformat the card as FAT32 and reload audio files.");
+        } else if (Boolean(jObj.audioOutdated)) {
+          // The file count on the microSD card does not match firmware; alert the user.
+          alert("Contents of microSD card do not match current firmware. Please make sure to update your microSD cards after updating firmware.");
         }
       }
     } else if (this.readyState == 4) {
@@ -108,6 +113,39 @@ function getDevicePrefs() {
     }
   };
   xhttp.open("GET", "/config/device", true);
+  xhttp.send();
+}
+
+function getNetworkInfo() {
+  // Fetch network configuration and statistics from dedicated endpoint.
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
+      var jObj = JSON.parse(this.responseText);
+      if (jObj) {
+        // Display local AP network name
+        if (jObj.localAP && jObj.localAP.ssid) {
+          setHtml("wifiName", "Private Network: " + jObj.localAP.ssid);
+        }
+
+        // Display client counts
+        var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
+        setHtml("clientInfo", clientText);
+
+        // Display external WiFi info if connected
+        if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
+          var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;
+          setHtml("extWifi", extInfo);
+        } else {
+          setHtml("extWifi", ""); // Clear if not connected
+        }
+      }
+    } else if (this.readyState == 4) {
+      // Handle error responses
+      console.log("Failed to fetch network info:", this.responseText);
+    }
+  };
+  xhttp.open("GET", "/wifi/status", true);
   xhttp.send();
 }
 
@@ -158,10 +196,14 @@ function selectMusic2() {
   sendCommand("/music/select?track=501");
 }
 
-function musicStartStop() {
-  sendCommand("/music/startstop");
+function recordingStart() {
+  sendCommand("/animations/record/start");
 }
 
-function musicPauseResume() {
-  sendCommand("/music/pauseresume");
+function recordingStop() {
+  sendCommand("/animations/record/stop");
+}
+
+function recordingSave() {
+  sendCommand("/animations/record/save");
 }

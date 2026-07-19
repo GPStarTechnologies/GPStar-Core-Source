@@ -1,6 +1,6 @@
 /**
  *   GPStar Toaster - Ghostbusters Props, Mods, and Kits.
- *   Copyright (C) 2024-2026 Dustin Grau <dustin.grau@gmail.com>
+ *   Copyright (C) 2026 Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 #include <AsyncJson.h>
 #include <ESPAsyncWebServer.h>
 #include <ElegantOTA.h>
-#include <WebSocketsClient.h>
 
 // Declare the external binary data markers for embedded files.
 // common.js
@@ -55,29 +54,23 @@ extern const uint8_t _binary_assets_password_html_gz_end[];
 // swaggerui.html
 extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
 extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
+// help.json
+extern const uint8_t _binary_assets_help_json_gz_start[];
+extern const uint8_t _binary_assets_help_json_gz_end[];
 
 // Define standard ports and URI endpoints.
 const uint16_t WS_PORT = 80; // Web Server (+WebSocket) port
 const char WS_URI[] = "/ws"; // WebSocket endpoint URI
 bool b_httpd_started = false; // Denotes the web server has been started.
 
-// Keep track of the state of the remote WebSocket connection.
-uint16_t i_websocket_retry_wait = 500; // Delay for WS retry attempts (ms).
-enum SOCKET_STATUS { DISCONNECTED, CONNECTING, CONNECTED };
-struct WebSocketState {
-  WebSocketsClient client; // Client instance for the remote WebSocket server.
-  SOCKET_STATUS status = DISCONNECTED; // Initialized as DISCONNECTED.
-  unsigned long lastAttempt = 0; // Time of last connection attempt.
-  char clientHost[16] = ""; // IP of current/connected WebSocket host.
-  String lastMessage = ""; // Last status of the WebSocket connection.
-};
-WebSocketState wsRemote;
-
 // Define an asynchronous web server at TCP port 80.
 AsyncWebServer httpServer(WS_PORT);
 
 // Define a websocket endpoint for the async web server.
 AsyncWebSocket ws(WS_URI);
+
+// Create a server-side event source on /events.
+AsyncEventSource events("/events");
 
 // Track the number of connected WebSocket clients.
 uint8_t i_ws_client_count = 0;
@@ -93,8 +86,6 @@ millisDelay ms_cleanup;
 const uint16_t i_websocketCleanup = 5000;
 
 // Forward function declarations.
-void checkWebSocketClient();
-void notifyWSClients();
 void sendDebug(const String& message); // From System.h
 void registerWebRoutes(); // From Webrouting.h
 bool triggerActuator(ActuatorID actuatorID); // From System.h
@@ -113,17 +104,6 @@ String getDeviceConfig() {
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
-  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
-  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
-
-  // Refresh external WiFi info when/if connected and get the values.
-  if(wirelessMgr->getExtWifiNetworkInfo()) {
-    jsonBody["extAddr"] = wirelessMgr->getExtWifiAddress().toString();
-    jsonBody["extMask"] = wirelessMgr->getExtWifiSubnet().toString();
-  } else {
-    jsonBody["extAddr"] = "";
-    jsonBody["extMask"] = "";
-  }
 
   // Serialize JSON object to string.
   serializeJson(jsonBody, equipSettings);
@@ -333,6 +313,14 @@ void startWebServer() {
   ws.onEvent(onWebSocketEventHandler);
   httpServer.addHandler(&ws);
 
+  // Handle web server Events for telemetry data.
+  events.onConnect([](AsyncEventSourceClient *client){
+    if(client->lastId()){
+      debugf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+    }
+  });
+  httpServer.addHandler(&events);
+
   // Configure the OTA firmware endpoint handler.
   ElegantOTA.begin(&httpServer);
 
@@ -355,6 +343,10 @@ void startWebServer() {
 // Perform management if the AP and web server are started.
 void webLoops() {
   if(b_local_ap_started && b_httpd_started) {
+    // Process DNS requests for captive portal detection via WirelessManager.
+    // This must be called frequently to handle incoming DNS queries.
+    wirelessMgr->handleDNS();
+
     if(ms_cleanup.remaining() < 1) {
       // Clean up oldest WebSocket connections.
       ws.cleanupClients();
@@ -381,130 +373,9 @@ void webLoops() {
   }
 }
 
-// Act upon data sent via the websocket (as a client).
-void webSocketClientEvent(WStype_t type, uint8_t * payload, size_t length) {
-  switch(type) {
-    case WStype_DISCONNECTED:
-      switch(wsRemote.status) {
-        case CONNECTING:
-          // Connection attempt failed, try next host
-          wsRemote.lastMessage = String("Connection failed to ") + String(wsRemote.clientHost) + String(", trying next host");
-          debugln(wsRemote.lastMessage);
-          wsRemote.status = DISCONNECTED;
-          notifyWSClients(); // Update local WebSocket clients
-        break;
-
-        case CONNECTED:
-          // If previously connected, we lost connection and must try to reconnect.
-          wsRemote.lastMessage = String("Connection to ") + String(wsRemote.clientHost) + String(" was lost, attempting to reconnect");
-          debugln(wsRemote.lastMessage);
-          if(wsRemote.client.isConnected()) {
-            wsRemote.client.disconnect();
-          }
-          wsRemote.status = DISCONNECTED;
-          notifyWSClients(); // Update local WebSocket clients
-        break;
-
-        case DISCONNECTED:
-        default:
-          // Nothing to report if already DISCONNECTED or has an unknown status.
-        break;
-      }
-    break;
-
-    case WStype_CONNECTED:
-      wsRemote.status = CONNECTED; // Ensure we set a connected status.
-      wsRemote.lastMessage = String("Successfully connected to ") + String(wsRemote.clientHost);
-      debugln(wsRemote.lastMessage);
-      wsRemote.client.sendTXT("Hello from Belt Gizmo");
-      notifyWSClients(); // Update local WebSocket clients
-    break;
-
-    case WStype_ERROR:
-      // Log the error but don't change status - let the library handle it
-      wsRemote.lastMessage = String("Error from ") + String(wsRemote.clientHost) + String(": ") + String((char*)payload);
-      debugln(wsRemote.lastMessage);
-      notifyWSClients(); // Update local WebSocket clients
-    break;
-  }
-}
-
-// Function to check on the WebSocket connection, called by the WiFiManagementTask.
-void checkWebSocketClient() {
-  // Skip checks if already connected to the WebSocket server.
-  if(wsRemote.status == CONNECTED) {
-    return;
-  }
-
-  // Check if we've been trying to connect for too long and need to timeout (>2 seconds).
-  if(wsRemote.status == CONNECTING && (millis() - wsRemote.lastAttempt > 2000)) {
-    wsRemote.lastMessage = String("Connection attempt timed out, trying host discovery again...");
-    debugln(wsRemote.lastMessage);
-    wsRemote.status = DISCONNECTED; // Set to DISCONNECTED to trigger another attempt.
-    notifyWSClients();
-  }
-
-  // Attempt to discover the WebSocket server via mDNS which will resolve the hostname to an IP address.
-  if(wirelessMgr->discoverWebSocketServer()) {
-    // Use the first valid discovered device IP address.
-    IPAddress hostIP = wirelessMgr->getFirstDiscoveredDevice();
-    if(wirelessMgr->IsValidIP(hostIP)) {
-      // Copy IP string into char[16] (eg. "192.168.1.N") with space for a null terminator.
-      strncpy(wsRemote.clientHost, hostIP.toString().c_str(), sizeof(wsRemote.clientHost) - 1);
-      wsRemote.clientHost[sizeof(wsRemote.clientHost) - 1] = '\0'; // Ensure null termination
-      wsRemote.lastMessage = String("Discovered WebSocket connection via ") + String(wsRemote.clientHost) + String("...");
-      debugln(wsRemote.lastMessage);
-
-      // Update status and last attempt time before attempting connection.
-      wsRemote.status = CONNECTING;
-      wsRemote.lastAttempt = millis();
-
-      // Set up the event handler for the new client connection attempt.
-      wsRemote.client.onEvent(webSocketClientEvent);
-
-      // Begin connection attempt in a non-blocking manner (let the event handler manage status).
-      wsRemote.client.begin(wsRemote.clientHost, WS_PORT, WS_URI);
-      wsRemote.client.setReconnectInterval(i_websocket_retry_wait);
-      notifyWSClients();
-    } else {
-      // Should not get here but just in case...
-      wsRemote.lastMessage = String("Unable to obtain a valid WebSocket server, retrying...");
-      debugln(wsRemote.lastMessage);
-    }
-  } else {
-    // Report the discovery failure and prepare to retry.
-    wsRemote.lastMessage = String("WebSocket server discovery failed, retrying...");
-    debugln(wsRemote.lastMessage);
-    notifyWSClients();
-  }
-}
-
-void handleConnectivityCheck(AsyncWebServerRequest *request) {
-  // Handle OS-specific connectivity checks.
-  // Return exact responses that tell the OS "internet works, dismiss captive portal".
-  captivePortalRequests++;
-
-  String path = request->url();
-
-  // Android expects 204 No Content for /generate_204 and /gen_204
-  if (path.indexOf("/generate_204") >= 0 || path.indexOf("/gen_204") >= 0) {
-    debugln(F("Sending -> 204 No Content (Android connectivity check)"));
-    request->send(204);
-    return;
-  }
-
-  // iOS expects 200 with EXACT HTML format that Apple's server returns
-  // This signals "captive portal authenticated, dismiss the view"
-  if (path.indexOf("hotspot-detect") >= 0 || path.indexOf("success.html") >= 0) {
-    debugln(F("Sending -> Apple Success HTML (iOS connectivity check)"));
-    request->send(HTTP_STATUS_200, MIME_HTML,
-      F("<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>"));
-    return;
-  }
-
-  // Windows and other endpoints - return Microsoft's expected format
-  debugln(F("Sending -> Microsoft Success (Generic connectivity check)"));
-  request->send(HTTP_STATUS_200, MIME_PLAIN, F("Microsoft Connect Test"));
+// Send a debug event to connected clients via Server-Sent Events (SSE).
+void sendDebugEvent(const char* message) {
+  events.send(message, "debug", millis());
 }
 
 /**
@@ -569,6 +440,16 @@ void handleFavSvg(AsyncWebServerRequest *request) {
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
   request->send(response); // Serve gzipped .svg file.
+}
+
+void handleContextHelp(AsyncWebServerRequest *request) {
+  // Serves the contextual help JSON file for web UI field descriptions.
+  debugln(F("Sending -> Help JSON"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_help_json_gz_start, _binary_assets_help_json_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, _binary_assets_help_json_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response);
 }
 
 void handleNetwork(AsyncWebServerRequest *request) {
@@ -714,6 +595,41 @@ void handleRestart(AsyncWebServerRequest *request) {
   request->send(HTTP_STATUS_204, MIME_JSON, returnJsonStatus());
   delay(1000);
   ESP.restart();
+}
+
+/**
+ * Connectivity Check Handler
+ * Purpose: Intercept OS connectivity checks to signal this is a captive portal without internet.
+ * This prevents mobile devices (especially Android) from thinking they have internet access,
+ * allowing them to fall back to cellular data for actual internet while staying connected to
+ * the device's WiFi for local configuration.
+ */
+void handleConnectivityCheck(AsyncWebServerRequest *request) {
+  // Handle OS-specific connectivity checks.
+  // Return exact responses that tell the OS "internet works, dismiss captive portal".
+  captivePortalRequests++;
+
+  String path = request->url();
+
+  // Android expects 204 No Content for /generate_204 and /gen_204
+  if (path.indexOf("/generate_204") >= 0 || path.indexOf("/gen_204") >= 0) {
+    debugln(F("Sending -> 204 No Content (Android connectivity check)"));
+    request->send(204);
+    return;
+  }
+
+  // iOS expects 200 with EXACT HTML format that Apple's server returns
+  // This signals "captive portal authenticated, dismiss the view"
+  if (path.indexOf("hotspot-detect") >= 0 || path.indexOf("success.html") >= 0) {
+    debugln(F("Sending -> Apple Success HTML (iOS connectivity check)"));
+    request->send(HTTP_STATUS_200, MIME_HTML,
+      F("<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>"));
+    return;
+  }
+
+  // Windows and other endpoints - return Microsoft's expected format
+  debugln(F("Sending -> Microsoft Success (Generic connectivity check)"));
+  request->send(HTTP_STATUS_200, MIME_PLAIN, F("Microsoft Connect Test"));
 }
 
 /**
@@ -1137,12 +1053,12 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     newSSID = sanitizeSSID(newSSID); // Jacques, clean him!
     bool b_ssid_changed = false;
 
-    // Create Preferences object to handle non-volatile storage (NVS).
-    Preferences preferences;
-
     // Update the private network name ONLY if the new value differs from the current SSID.
     if(newSSID != "" && newSSID != wirelessMgr->getLocalNetworkName()){
       if(newSSID.length() >= 8 && newSSID.length() <= 32) {
+        // Create Preferences object to handle non-volatile storage (NVS).
+        Preferences preferences;
+
         // Accesses namespace in read/write mode.
         if(preferences.begin("credentials", false)) {
           #if defined(DEBUG_SEND_TO_CONSOLE)
@@ -1160,6 +1076,9 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
         request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Error: Network name must be between 8 and 32 characters in length.")); // 400 Bad Request
       }
     }
+
+    // Create Preferences object to handle non-volatile storage (NVS).
+    Preferences preferences;
 
     // Accesses namespace in read/write mode.
     // if(preferences.begin("device", false)) {

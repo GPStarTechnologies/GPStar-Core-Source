@@ -1,6 +1,6 @@
 /**
  *   GPStar Toaster - Ghostbusters Props, Mods, and Kits.
- *   Copyright (C) 2024-2026 Dustin Grau <dustin.grau@gmail.com>
+ *   Copyright (C) 2026 Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -344,7 +344,6 @@ void WiFiManagementTask(void *parameter) {
 
       if(WiFi.status() == WL_CONNECTED && b_ext_wifi_started) {
         b_ext_wifi_paused = false; // Resume WiFi retries when needed.
-        checkWebSocketClient(); // Always check the WebSocket client.
       }
     }
 
@@ -603,10 +602,4 @@ void loop() {
   printMemoryStats();  // Print memory usage
   delay(3000);         // Wait 3 seconds before printing again
   #endif
-
-  // Exception: Run the WebSocket client loop if connected to WiFi
-  // and the WebSocket client is either CONNECTING or CONNECTED.
-  if(b_ext_wifi_started && (wsRemote.status == CONNECTING || wsRemote.status == CONNECTED)) {
-    wsRemote.client.loop();
-  }
 }

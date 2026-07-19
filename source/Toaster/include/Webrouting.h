@@ -1,6 +1,6 @@
 /**
  *   GPStar Toaster - Ghostbusters Props, Mods, and Kits.
- *   Copyright (C) 2024-2026 Dustin Grau <dustin.grau@gmail.com>
+ *   Copyright (C) 2026 Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -70,6 +70,7 @@ void registerWebRoutes() {
   addSimpleRoute("/network", HTTP_GET, handleNetwork, "Network page", "Serves the network configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/password", HTTP_GET, handlePassword, "Password page", "Serves the password change page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/settings/device", HTTP_GET, handleDeviceSettings, "Device settings page", "Serves the device settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
+  addSimpleRoute("/help.json", HTTP_GET, handleContextHelp, "Help JSON", "Serves the help JSON file", TAG_ASSETS, RESP_JSON_OBJECT);
 
   // Configuration Endpoints
   addSimpleRoute("/config/device", HTTP_GET, handleGetDeviceConfig, "Get device config", "Returns current device configuration as JSON", TAG_CONFIGURATION, RESP_CONFIG_OBJECT);
@@ -84,8 +85,8 @@ void registerWebRoutes() {
   // Animation Control
   addSimpleRoute("/animations/record/start", HTTP_POST, handleRecordStart, "Start recording animation", "Begins recording a new animation sequence", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/record/stop", HTTP_POST, handleRecordStop, "Stop recording", "Stops recording and returns frame count", TAG_DEVICE_CONTROL);
-  addSimpleRoute("/animations/record/save", HTTP_POST, handleRecordSave, "Save animation", "Saves recorded animation to NVS (query param: index [0-3])", TAG_DEVICE_CONTROL);
-  addSimpleRoute("/animations/play", HTTP_POST, handlePlayAnimation, "Play animation", "Loads and plays a recorded animation (query param: index [0-3])", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/record/save", HTTP_POST, handleRecordSave, "Save animation", "Saves recorded animation to NVS (query param: index=[0-3])", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/play", HTTP_POST, handlePlayAnimation, "Play animation", "Loads and plays a recorded animation (query param: index=[0-3])", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/stop", HTTP_POST, handleStopAnimation, "Stop animation", "Stops current animation playback", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/status", HTTP_GET, handleAnimationStatus, "Get animation status", "Returns current animation mode, frame count, and playback progress", TAG_DEVICE_CONTROL);
 

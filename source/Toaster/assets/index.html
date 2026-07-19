@@ -14,29 +14,13 @@
   <body class="dark">
     <div class="tabs dark">
       <button class="tablinks" onclick="openTab(event, 'tab1')">&#9883;</button>
-      <button class="tablinks" onclick="openTab(event, 'tab2')">&#9211;</button>
-      <button class="tablinks" onclick="openTab(event, 'tab3')">&#9881;</button>
+      <button class="tablinks" onclick="openTab(event, 'tab2')">&#9836;</button>
+      <button class="tablinks" onclick="openTab(event, 'tab3')">&#9211;</button>
+      <button class="tablinks" onclick="openTab(event, 'tab4')">&#9881;</button>
     </div>
 
     <div id="tab1" class="tab">
       <div id="equipTXT" class="card">
-        <p>
-          <span class="infoLabel">RF Button 1:</span>
-          <span class="infoState" id="button1">&mdash;</span>
-        </p>
-        <p>
-          <span class="infoLabel">RF Button 2:</span>
-          <span class="infoState" id="button2">&mdash;</span>
-        </p>
-        <p>
-          <span class="infoLabel">RF Button 3:</span>
-          <span class="infoState" id="button3">&mdash;</span>
-        </p>
-        <p>
-          <span class="infoLabel">RF Button 4:</span>
-          <span class="infoState" id="button4">&mdash;</span>
-        </p>
-        <br />
         <p>
           <span class="infoLabel">Actuator 1:</span>
           <span class="infoState" id="relay1">&mdash;</span>
@@ -53,13 +37,70 @@
           <span class="infoLabel">Actuator 4:</span>
           <span class="infoState" id="relay4">&mdash;</span>
         </p>
+        <br />
+        <p>
+          <span class="infoLabel">RF Button 1:</span>
+          <span class="infoState" id="button1">&mdash;</span>
+        </p>
+        <p>
+          <span class="infoLabel">RF Button 2:</span>
+          <span class="infoState" id="button2">&mdash;</span>
+        </p>
+        <p>
+          <span class="infoLabel">RF Button 3:</span>
+          <span class="infoState" id="button3">&mdash;</span>
+        </p>
+        <p>
+          <span class="infoLabel">RF Button 4:</span>
+          <span class="infoState" id="button4">&mdash;</span>
+        </p>
       </div>
     </div>
 
     <div id="tab2" class="tab">
+      <div>
+        <div class="volume-container">
+          <div class="volume-control">
+            <h3>Master</h3>
+            <button type="button" id="btnVolSysUp" onclick="volSysUp()">+</button>
+            <span id="masterVolume"></span>
+            <button type="button" id="btnVolSysDown" onclick="volSysDown()">&minus;</button>
+          </div>
+          <div class="volume-control">
+            <h3>Effects</h3>
+            <button type="button" id="btnVolFxUp" onclick="volFxUp()">+</button>
+            <span id="effectsVolume"></span>
+            <button type="button" id="btnVolFxDown" onclick="volFxDown()">&minus;</button>
+          </div>
+          <div class="volume-control">
+            <h3>Music</h3>
+            <button type="button" id="btnVolMusicUp" onclick="volMusicUp()">+</button>
+            <span id="musicVolume"></span>
+            <button type="button" id="btnVolMusicDown" onclick="volMusicDown()">&minus;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="centered">Music Controls</h3>
+        <div class="music-navigation">
+          <button type="button" id="btnMusicStartStop" onclick="musicStartStop()" title="Start/Stop">&#9634;&nbsp;&#9654;</button>
+          <button type="button" id="btnMusicPauseResume" onclick="musicPauseResume()" title="Play/Pause">&#9646;&#9646;&nbsp;&#9654;</button>
+        </div>
+        <div class="music-playback">
+            <button type="button" class="blue" onclick="selectMusic1()" id="btnMusic1">Track 1</button>
+            &nbsp;&nbsp;
+            <button type="button" class="blue" onclick="selectMusic2()" id="btnMusic2">Track 2</button>
+            <br />
+            <br />
+        </div>
+      </div>
+    </div>
+
+    <div id="tab3" class="tab">
       <div class="card" style="text-align: center">
         <br />
-        <h2>Device Controls</h2>
+        <h2>Actuator Controls</h2>
         <br />
         <button type="button" class="green" onclick="triggerAct1()" id="btnAct1">#1</button>
         &nbsp;&nbsp;
@@ -72,22 +113,19 @@
         <br />
         <br />
         <br />
-        <button type="button" class="blue" onclick="selectMusic1()" id="btnMusic1">Music 1</button>
-        &nbsp;&nbsp;
-        <button type="button" class="blue" onclick="selectMusic2()" id="btnMusic2">Music 2</button>
+        <h2>Animation Controls</h2>
         <br />
-        <br />
-        <button type="button" class="orange" onclick="musicStartStop()" id="btnStartStop">&#9634;&nbsp;&#9654;</button>
+        <button type="button" class="orange" onclick="recordingStart()" id="recStart">Start</button>
         &nbsp;&nbsp;
-        <button type="button" class="orange" onclick="musicPauseResume()" id="btnPauseResume">&#9646;&#9646;&nbsp;&#9654;</button>
+        <button type="button" class="orange" onclick="recordingStop()" id="recStop">Stop</button>
         <br />
         <br />
       </div>
     </div>
 
-    <div id="tab3" class="tab">
+    <div id="tab4" class="tab">
       <div class="card" style="text-align: center">
-        <a href="/settings/device">Device Settings</a>
+        <a href="/settings/device">Toaster Settings</a>
         <br />
         <br />
         <hr />
@@ -106,10 +144,10 @@
         <br />
         <hr />
         <br />
-        <a href="https://gpstartechnologies.github.io/GPStar-Core-Source/" target="_blank" onclick="alert('This external link requires an active internet connection, not just device WiFi.')">Official Documentation</a>
+        <a href="https://gpstartechnologies.github.io/GPStar-Core-Source/" target="_blank" onclick="alert('This external link requires an active internet connection.')">Official Documentation</a>
         <br />
         <br />
-        <a href="/swaggerui" target="_blank" onclick="alert('This page requires internet access to download required files from CDN.')">Web API Listing</a>
+        <a href="/swaggerui" target="_blank" onclick="alert('This page requires internet access to download required files.')">Web API Listing</a>
       </div>
 
       <div class="footer">
