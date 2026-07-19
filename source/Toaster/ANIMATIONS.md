@@ -95,10 +95,26 @@ struct AnimationData {
   uint8_t frames[600];      // The recorded frame data (0 = no action, 1-4 = relay ID)
 };
 
+// Runtime state (NOT persisted)
+enum AnimationMode : uint8_t {
+  ANIM_IDLE = 0,
+  ANIM_RECORDING = 1,
+  ANIM_PLAYBACK = 2
+};
+
+struct AnimationSession {
+  uint8_t buffer[600];      // Current animation being recorded or played
+  uint16_t frameCount;      // How many frames in current animation
+  uint32_t startTime;       // When recording/playback started (for timing)
+  uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
+};
+
 const uint16_t ANIM_MAX_FRAMES = 600;        // 1 minute @ 100ms
 const uint16_t ANIM_TIME_UNIT_MS = 100;      // Frame duration in milliseconds
 const uint8_t ANIM_MAX_STORED = 4;           // One per RF button
 const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
+
+extern AnimationSession g_anim;  // Global animation session state
 ```
 
 ---
@@ -107,19 +123,48 @@ const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
 
 ## NVS Storage
 
-Each animation is stored as an `AnimationData` struct under fixed keys (one per RF button).
+Each animation is stored as an `AnimationData` struct under fixed keys derived from `ANIMATION_NAMES[4]`.
 
 **What's stored:**
 - `frameCount`: Tells playback how many frames to execute
 - `checksum`: CRC16 of the `frames[]` array—optional, for verifying data matches what's in NVS if needed
 - `frames[]`: The 600-byte array of relay values
 
-**Storage:**
+**Storage Keys & Layout:**
 ```
-NVS Key: "anim1"  →  AnimationData struct (2 + 2 + 600 = 604 bytes)
-NVS Key: "anim2"  →  AnimationData struct (2 + 2 + 600 = 604 bytes)
-NVS Key: "anim3"  →  AnimationData struct (2 + 2 + 600 = 604 bytes)
-NVS Key: "anim4"  →  AnimationData struct (2 + 2 + 600 = 604 bytes)
+NVS Namespace: Default
+NVS Keys:      "anim1", "anim2", "anim3", "anim4"
+Type:          Blob (binary)
+Size:          AnimationData struct (2 + 2 + 600 = 604 bytes per animation)
+Total:         4 animations × 604 bytes = ~2.4KB (16KB NVS available ✅)
+```
+
+**NVS Access Pattern (from Animation.cpp):**
+```cpp
+nvs_handle_t handle;
+nvs_open("animations", NVS_READWRITE, &handle);
+
+// Write animation to NVS
+AnimationData data = {...};
+nvs_set_blob(handle, ANIMATION_NAMES[animIndex], &data, sizeof(data));
+nvs_commit(handle);
+
+// Read animation from NVS
+AnimationData data;
+size_t size = sizeof(data);
+nvs_get_blob(handle, ANIMATION_NAMES[animIndex], &data, &size);
+
+nvs_close(handle);
+```
+
+**Checksum Validation (optional):**
+```cpp
+// When loading from NVS, optionally verify data integrity
+uint16_t computed = computeChecksum(data.frames);
+if (computed != data.checksum) {
+  // Checksum mismatch—data corrupted or load failed
+  // Skip this animation or alert user
+}
 ```
 
 **Example: Storing a 5-frame animation**
@@ -137,25 +182,10 @@ Stored as AnimationData:
 ```cpp
 AnimationData anim = {
   .frameCount = 5,
-  .checksum = crc16_compute(anim.frames, 600),  // Computed when saving
+  .checksum = computeChecksum(anim.frames),  // Computed when saving
   .frames = {1, 0, 2, 0, 3, 0, 0, 0, ...}  // Rest is zero-filled
 };
-
-// Write to NVS
-nvs_set_blob(handle, "anim1", &anim, sizeof(anim));
-
-// Read from NVS (optional validation)
-AnimationData anim;
-nvs_get_blob(handle, "anim1", &anim, &size);
-
-// Verify against NVS checksum if desired
-uint16_t computed = crc16_compute(anim.frames, 600);
-if (computed != anim.checksum) {
-  // Checksum mismatch—could skip this animation
-}
 ```
-
-**Memory usage:** 4 animations × 604 bytes = ~2.4KB NVS (16KB available ✅)
 
 ---
 
@@ -171,93 +201,163 @@ RF buttons are **playback control only**:
 
 ---
 
-## Core Functions
+## Core Functions (Animation Class)
 
-**`startRecording()`**
+**`void startRecording()`**
 - Clear buffer, set mode = ANIM_RECORDING, capture startTime
+- File: [src/Animation.cpp](src/Animation.cpp)
 
-**`recordRelayAtCurrentFrame(uint8_t actuatorID)`**
-- frame = (millis() - startTime) / 100
-- Write actuatorID to buffer[frame]
-- Update frameCount
+**`void recordRelayAtCurrentFrame(uint8_t actuatorID)`**
+- Calculate frame index: `(millis() - startTime) / ANIM_TIME_UNIT_MS`
+- Write actuatorID to `buffer[frame]` (values 1-4 for ACTUATOR_1 through ACTUATOR_4)
+- Bound frame to `[0, ANIM_MAX_FRAMES-1]` to prevent buffer overflow
+- Update frameCount if this frame is new
 
-**`stopRecording()`**
-- Set mode = ANIM_IDLE, return frameCount
-
-**`saveRecordingToNVS(uint8_t animIndex)`**
-- Write to NVS: frameCount + buffer data
-- Clear, mode = ANIM_IDLE
-
-**`loadAnimationFromNVS(uint8_t animIndex)`**
-- Read from NVS into buffer, parse frameCount
-
-**`startPlayback(uint8_t animIndex)`**
-- Load animation, set mode = ANIM_PLAYBACK, capture startTime
-
-**`stopPlayback()`**
+**`uint16_t stopRecording()`**
 - Set mode = ANIM_IDLE
+- Return frameCount
 
-**`updatePlayback()`** (called each AnimationTask cycle)
-- If mode != ANIM_PLAYBACK, return
-- frame = (millis() - startTime) / 100
-- If frame < frameCount: trigger relay if buffer[frame] != 0
-- If frame >= frameCount: stop playback
+**`bool saveRecordingToNVS(uint8_t animIndex)`**
+- Validate `animIndex` is in range `[0, ANIM_MAX_STORED-1]`
+- Compute checksum of buffer
+- Create AnimationData struct with frameCount, checksum, and frames
+- Write to NVS under key `ANIMATION_NAMES[animIndex]`
+- Return true if successful
+
+**`bool loadAnimationFromNVS(uint8_t animIndex)`**
+- Validate `animIndex` is in range
+- Read AnimationData from NVS
+- Optionally validate checksum (warn if mismatch)
+- Copy frames and frameCount into buffer
+- Clear mode (leave as IDLE)
+- Return true if successful
+
+**`bool startPlayback(uint8_t animIndex)`**
+- Call loadAnimationFromNVS(animIndex)
+- If load fails, return false
+- Set mode = ANIM_PLAYBACK, capture startTime
+- Return true
+
+**`void stopPlayback()`**
+- Set mode = ANIM_IDLE
+- Clear buffer and frameCount
+
+**`void updatePlayback()`** (called each AnimationTask cycle ~10ms)
+- If mode != ANIM_PLAYBACK, return immediately
+- Calculate current frame: `(millis() - startTime) / ANIM_TIME_UNIT_MS`
+- If `frame >= frameCount`: playback complete → stopPlayback()
+- Else if `buffer[frame] != 0`: trigger the relay via `triggerActuator()`
+  - Note: Only trigger once per frame (use previous frame tracking to avoid repeat triggers)
+- File: [src/Animation.cpp](src/Animation.cpp)
 
 ---
 
 ## Integration
 
-**UserInputTask (RF Buttons):**
+**Global Animation Instance (main.cpp):**
 ```cpp
-static uint8_t currentPlayingAnim = 0xFF;
+// Near top of main.cpp, after includes
+AnimationSession g_anim = {};  // Initialize to all zeros (IDLE mode)
+```
 
-if (g_anim.mode == ANIM_IDLE || g_anim.mode == ANIM_PLAYBACK) {
-  if (buttonIndex == currentPlayingAnim && g_anim.mode == ANIM_PLAYBACK) {
-    g_anim.stopPlayback();
-    currentPlayingAnim = 0xFF;
-  } else {
-    if (g_anim.mode == ANIM_PLAYBACK) {
-      g_anim.stopPlayback();
-    }
-    g_anim.startPlayback(buttonIndex);
-    currentPlayingAnim = buttonIndex;
+**AnimationTask (main.cpp, line ~122):**
+```cpp
+void AnimationTask(void *parameter) {
+  while(true) {
+    // ... existing relay logic ...
+    
+    // Update animation playback each cycle
+    g_anim.updatePlayback();
+    
+    updateAudio();
+    checkMusic();
+    vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
 ```
 
-**AnimationTask:**
+**UserInputTask (main.cpp, RF Button Handler):**
 ```cpp
-if (g_anim.mode == ANIM_PLAYBACK) {
-  g_anim.updatePlayback();
+// Track which animation is currently playing
+static uint8_t currentPlayingAnim = 0xFF;  // 0xFF = no animation playing
+
+// When RF button triggers (after debounce detection):
+if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
+  uint8_t buttonIndex = i;  // 0-3 maps to anim 0-3
+  
+  // Check current animation state
+  if (g_anim.mode == ANIM_IDLE) {
+    // Not playing - start this animation
+    if (g_anim.startPlayback(buttonIndex)) {
+      currentPlayingAnim = buttonIndex;
+    }
+  } else if (g_anim.mode == ANIM_PLAYBACK) {
+    // Currently playing
+    if (buttonIndex == currentPlayingAnim) {
+      // Same button pressed - stop playback
+      g_anim.stopPlayback();
+      currentPlayingAnim = 0xFF;
+    } else {
+      // Different button - stop current, play new
+      g_anim.stopPlayback();
+      if (g_anim.startPlayback(buttonIndex)) {
+        currentPlayingAnim = buttonIndex;
+      }
+    }
+  }
+  
+  notifyWSClients();
 }
 ```
 
-**Web Endpoints:**
+**Web Endpoints (Webrouting.h & Webhandler.h):**
 ```
-POST /api/animations/record/start
-POST /api/animations/record/relay?actuatorID=N
-POST /api/animations/record/stop
-POST /api/animations/record/save?animIndex=0
-POST /api/animations/play?animIndex=0
-POST /api/animations/stop
+POST   /api/animations/record/start           → Start recording
+POST   /api/animations/record/relay?id=N      → Record relay trigger at current frame
+POST   /api/animations/record/stop            → Stop recording, return frame count
+POST   /api/animations/record/save?index=N    → Save to NVS under slot N (0-3)
+POST   /api/animations/play?index=N           → Load & play animation N
+POST   /api/animations/stop                   → Stop playback immediately
+GET    /api/animations/status                 → Get current mode & animation info
 ```
 
 ---
 
-## Implementation
+## Implementation Phases
 
-**Phase 1: Structure & Constants**
-- Add AnimationMode enum and AnimationSession struct to Header.h
-- Add constants: ANIM_MAX_FRAMES=480, ANIM_TIME_UNIT_MS=250, ANIM_MAX_STORED=4
-- Create Animation.h, Animation.cpp
-- Add global g_anim to main.cpp
+**Phase 1: Structure & Constants** ✅ DONE
+- ✅ Add AnimationMode enum, AnimationData & AnimationSession structs to [include/Header.h](include/Header.h)
+- ✅ Add animation constants to [include/Header.h](include/Header.h)
+- ✅ Declare global `g_anim` in [include/Header.h](include/Header.h)
+- ✅ Create Animation class interface in [include/Animation.h](include/Animation.h)
+- Define all public methods with documentation
 
-**Phase 2: Recording**
-- Implement startRecording, recordRelayAtCurrentFrame, stopRecording, saveRecordingToNVS
-- Add web endpoints: /record/start, /record/relay, /record/stop, /record/save
+**Phase 2: Core Implementation (Recording & Playback)**
+- Implement [src/Animation.cpp](src/Animation.cpp):
+  - Constructor: Initialize buffer to zeros, mode = IDLE
+  - `startRecording()`, `recordRelayAtCurrentFrame()`, `stopRecording()`
+  - `saveRecordingToNVS()`, `loadAnimationFromNVS()`
+  - `startPlayback()`, `stopPlayback()`, `updatePlayback()`
+  - `computeChecksum()`, `validateChecksum()`, `clearBuffer()`
+  - Helper functions for CRC16 computation and NVS access
 
-**Phase 3: Playback**
-- Implement loadAnimationFromNVS, startPlayback, stopPlayback, updatePlayback
-- Integrate RF button control in UserInputTask
-- Add web endpoints: /play, /stop
+**Phase 3: Task Integration**
+- Update [src/main.cpp](src/main.cpp):
+  - Instantiate global `g_anim` object
+  - Add `g_anim.updatePlayback()` call to AnimationTask loop
+  - Add RF button playback logic to UserInputTask
+
+**Phase 4: Web API**
+- Add handlers to [include/Webhandler.h](include/Webhandler.h):
+  - `handleRecordStart()`, `handleRecordRelay()`, `handleRecordStop()`, `handleRecordSave()`
+  - `handlePlayAnimation()`, `handleStopAnimation()`, `handleAnimationStatus()`
+- Register routes in [include/Webrouting.h](include/Webrouting.h):
+  - Map endpoints to handlers with documentation tags
+  - Use `addSimpleRoute()` for PUT/POST endpoints
+
+**Phase 5: Testing & Validation**
+- Unit tests for recording/playback timing
+- Integration tests with NVS persistence
+- Manual RF button trigger verification
+- Web API endpoint testing
 

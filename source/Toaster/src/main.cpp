@@ -61,10 +61,10 @@ DeviceState gpstarSystem;
 #include "Header.h"
 #include "Audio.h"
 #include "Wireless.h"
+#include "System.h"
+#include "Animation.h"
 #include "Webhandler.h"
 #include "Webrouting.h"
-#include "Animation.h"
-#include "System.h"
 
 // Writes a debug message to the serial console or sends to the WebSocket.
 void sendDebug(const String& message) {
@@ -153,6 +153,9 @@ void AnimationTask(void *parameter) {
     // Use the built-in LED to indicate if any relays are active.
     digitalWrite(BUILT_IN_LED, b_relay_active ? HIGH : LOW);
 
+    // Update animation playback if currently playing
+    updatePlayback();
+
     updateAudio(); // Update the state of the available sound board.
     checkMusic(); // Perform music control as necessary.
 
@@ -213,6 +216,9 @@ void PreferencesTask(void *parameter) {
 
 // User Input Task (Loop)
 void UserInputTask(void *parameter) {
+  // Track which animation is currently playing (0xFF = no animation playing)
+  static uint8_t currentPlayingAnim = 0xFF;
+
   while(true) {
     #if defined(DEBUG_TASK_TO_CONSOLE)
       // Confirm the core in use for this task, and when it runs.
@@ -226,7 +232,6 @@ void UserInputTask(void *parameter) {
     // Check each RF input pin for triggers.
     RFButtonChannel* buttons[] = {&devices.button1, &devices.button2, &devices.button3, &devices.button4};
     uint8_t buttonPins[] = {devices.button1.pin, devices.button2.pin, devices.button3.pin, devices.button4.pin};
-    ActuatorID buttonActuators[] = {ACTUATOR_1, ACTUATOR_2, ACTUATOR_3, ACTUATOR_4};
 
     for (uint8_t i = 0; i < 4; i++) {
       bool rfState = digitalRead(buttonPins[i]) == HIGH;
@@ -252,19 +257,53 @@ void UserInputTask(void *parameter) {
       }
 
       // Detect rising edge ONLY on the iteration where state actually changed
-      // This prevents multiple triggers from the same button press
+      // RF buttons control animation playback
       if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
-        // Attempt to trigger the corresponding actuator
-        // The triggerActuator function will enforce forbidden pair constraints
-        if(triggerActuator(buttonActuators[i])) {
-          #if defined(DEBUG_SEND_TO_CONSOLE)
-            debug(F("RF"));
-            debug(i + 1);
-            debugln(F(" triggered successfully"));
-          #endif
+        uint8_t buttonIndex = i;  // 0-3 maps to animation slots 0-3
 
-          // Notify all WebSocket clients of the RF trigger event
-          notifyWSClients();
+        // Handle animation playback control based on current state
+        if (anim.mode == ANIM_IDLE || anim.mode == ANIM_RECORDING) {
+          // Not playing - start this animation
+          if (startPlayback(buttonIndex)) {
+            currentPlayingAnim = buttonIndex;
+
+            #if defined(DEBUG_SEND_TO_CONSOLE)
+              debug(F("RF"));
+              debug(buttonIndex + 1);
+              debugln(F(" started animation playback"));
+            #endif
+
+            notifyWSClients();
+          }
+        } else if (anim.mode == ANIM_PLAYBACK) {
+          // Currently playing - handle same or different button
+          if (buttonIndex == currentPlayingAnim) {
+            // Same button pressed - stop playback
+            stopPlayback();
+            currentPlayingAnim = 0xFF;
+
+            #if defined(DEBUG_SEND_TO_CONSOLE)
+              debug(F("RF"));
+              debug(buttonIndex + 1);
+              debugln(F(" stopped animation playback"));
+            #endif
+
+            notifyWSClients();
+          } else {
+            // Different button - stop current, play new animation
+            stopPlayback();
+            if (startPlayback(buttonIndex)) {
+              currentPlayingAnim = buttonIndex;
+
+              #if defined(DEBUG_SEND_TO_CONSOLE)
+                debug(F("RF"));
+                debug(buttonIndex + 1);
+                debugln(F(" switched to new animation"));
+              #endif
+
+              notifyWSClients();
+            }
+          }
         }
       }
     }

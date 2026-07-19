@@ -81,6 +81,13 @@ void registerWebRoutes() {
   // Device Control
   addSimpleRoute("/device/actuator/*", HTTP_PUT, handleActuator, "Trigger actuator", "Trigger an actuator (1-4)", TAG_DEVICE_CONTROL);
 
+  // Animation Control
+  addSimpleRoute("/animations/record/start", HTTP_POST, handleRecordStart, "Start recording animation", "Begins recording a new animation sequence", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/record/stop", HTTP_POST, handleRecordStop, "Stop recording", "Stops recording and returns frame count", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/record/save", HTTP_POST, handleRecordSave, "Save animation", "Saves recorded animation to NVS (query param: index [0-3])", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/play", HTTP_POST, handlePlayAnimation, "Play animation", "Loads and plays a recorded animation (query param: index [0-3])", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/stop", HTTP_POST, handleStopAnimation, "Stop animation", "Stops current animation playback", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/status", HTTP_GET, handleAnimationStatus, "Get animation status", "Returns current animation mode, frame count, and playback progress", TAG_DEVICE_CONTROL);
 
   // Volume Control
   addSimpleRoute("/volume/mute", HTTP_PUT, handleToggleMute, "Mute audio", "Mutes all audio output", TAG_VOLUME_CONTROL);

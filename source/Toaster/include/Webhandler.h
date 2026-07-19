@@ -738,6 +738,12 @@ void handleActuator(AsyncWebServerRequest *request) {
           ActuatorID actuator = (ActuatorID)(actuatorNum - 1);
           // Trigger the specified actuator (handles checking the value given).
           triggerActuator(actuator);
+          
+          // If currently recording an animation, record this relay trigger at current frame
+          if(anim.mode == ANIM_RECORDING) {
+            recordRelayAtCurrentFrame(actuatorNum);  // 1-4
+          }
+          
           notifyWSClients();
         }
         else {
@@ -988,6 +994,128 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
     // Tell the user why the requested action failed.
     request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid track number requested")); // 400 Bad Request
   }
+}
+
+/**
+ * Animation Control Handlers - Manage recording and playback of relay sequences
+ */
+
+void handleRecordStart(AsyncWebServerRequest *request) {
+  debugln(F("Web: Animation Record Start"));
+  startRecording();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Recording started"));
+}
+
+void handleRecordStop(AsyncWebServerRequest *request) {
+  debugln(F("Web: Animation Record Stop"));
+  
+  if (anim.mode != ANIM_RECORDING) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Not currently recording"));
+    return;
+  }
+
+  uint16_t frameCount = stopRecording();
+  
+  JsonDocument jsonResponse;
+  jsonResponse["status"] = "success";
+  jsonResponse["message"] = "Recording stopped";
+  jsonResponse["frameCount"] = frameCount;
+  
+  String response;
+  serializeJson(jsonResponse, response);
+  request->send(HTTP_STATUS_200, MIME_JSON, response);
+}
+
+void handleRecordSave(AsyncWebServerRequest *request) {
+  debugln(F("Web: Animation Record Save"));
+  
+  if (!request->hasParam("index")) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Missing parameter: index"));
+    return;
+  }
+
+  uint8_t animIndex = request->getParam("index")->value().toInt();
+  if (animIndex >= ANIM_MAX_STORED) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid animation index (0-3)"));
+    return;
+  }
+
+  if (saveRecordingToNVS(animIndex)) {
+    JsonDocument jsonResponse;
+    jsonResponse["status"] = "success";
+    jsonResponse["message"] = "Animation saved";
+    jsonResponse["slot"] = animIndex;
+    jsonResponse["name"] = ANIMATION_NAMES[animIndex];
+    
+    String response;
+    serializeJson(jsonResponse, response);
+    request->send(HTTP_STATUS_200, MIME_JSON, response);
+  } else {
+    request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Failed to save animation to NVS"));
+  }
+}
+
+void handlePlayAnimation(AsyncWebServerRequest *request) {
+  debugln(F("Web: Animation Play"));
+  
+  if (!request->hasParam("index")) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Missing parameter: index"));
+    return;
+  }
+
+  uint8_t animIndex = request->getParam("index")->value().toInt();
+  if (animIndex >= ANIM_MAX_STORED) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid animation index (0-3)"));
+    return;
+  }
+
+  if (startPlayback(animIndex)) {
+    JsonDocument jsonResponse;
+    jsonResponse["status"] = "success";
+    jsonResponse["message"] = "Playback started";
+    jsonResponse["slot"] = animIndex;
+    jsonResponse["frameCount"] = anim.frameCount;
+    
+    String response;
+    serializeJson(jsonResponse, response);
+    request->send(HTTP_STATUS_200, MIME_JSON, response);
+  } else {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Failed to load animation or invalid animation slot"));
+  }
+}
+
+void handleStopAnimation(AsyncWebServerRequest *request) {
+  debugln(F("Web: Animation Stop"));
+  
+  if (anim.mode != ANIM_PLAYBACK) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("No animation currently playing"));
+    return;
+  }
+
+  stopPlayback();
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Playback stopped"));
+}
+
+void handleAnimationStatus(AsyncWebServerRequest *request) {
+  debugln(F("Web: Animation Status"));
+  
+  const char* modeNames[] = {"IDLE", "RECORDING", "PLAYBACK"};
+  
+  JsonDocument jsonResponse;
+  jsonResponse["mode"] = modeNames[anim.mode];
+  jsonResponse["frameCount"] = anim.frameCount;
+  
+  if (anim.mode == ANIM_PLAYBACK) {
+    uint32_t elapsed = millis() - anim.startTime;
+    uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
+    jsonResponse["currentFrame"] = currentFrame;
+    jsonResponse["progress"] = (anim.frameCount > 0) ? 
+      (float)currentFrame / anim.frameCount * 100.0 : 0.0;
+  }
+  
+  String response;
+  serializeJson(jsonResponse, response);
+  request->send(HTTP_STATUS_200, MIME_JSON, response);
 }
 
 /**
