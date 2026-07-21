@@ -20,12 +20,12 @@
 /**
  * Animation Recording & Playback System
  * =====================================
- * 
+ *
  * OVERVIEW:
  * Records sequences of relay actuations and stores them for later playback.
  * Each animation is a 600-frame buffer where each frame represents 100ms.
  * Animations are persisted to NVS (4 slots) and mapped to RF buttons 1-4.
- * 
+ *
  * WORKFLOW:
  * 1. startRecording()             → Clear buffer, enter RECORDING mode
  * 2. [User triggers relays via RF/web, calls recordRelayAtCurrentFrame() at each trigger]
@@ -34,7 +34,7 @@
  * 5. startPlayback(index)         → Load animation from NVS, enter PLAYBACK mode
  * 6. updatePlayback() [in loop]   → Calculate current frame, trigger relays, stop when done
  * 7. stopPlayback()               → Exit PLAYBACK mode, clear buffer
- * 
+ *
  * KEY CONCEPTS:
  * - Frame Buffer:     anim.buffer[600] holds frame data (0=idle, 1-4=relay ID)
  * - Frame Timing:     Each frame = 100ms. At 100fps, max duration = 1 minute
@@ -42,18 +42,18 @@
  * - Playback Mode:    Replays recorded frames by calculating elapsed time and firing relays
  * - NVS Persistence:  AnimationData struct stored with CRC16 checksum for validation
  * - Button Binding:   4 NVS slots map directly to 4 RF buttons (slot 0→button 1, etc.)
- * 
+ *
  * SESSION vs PERSISTENT DATA:
  * - AnimationSession (anim):      Runtime state (buffer, frameCount, mode, timing)
  * - AnimationData (NVS):          Persistent struct (frameCount, checksum, frames[600])
- * 
+ *
  * AUTOMATIC RECORDING:
  * When anim.mode == ANIM_RECORDING, any call to recordRelayAtCurrentFrame(actuatorID)
  * will write that actuator ID to the frame buffer at the calculated frame position.
  * This happens automatically when:
  *   - User presses RF button (calls recordRelayAtCurrentFrame in UserInputTask)
  *   - Web API /device/actuator/N called (calls recordRelayAtCurrentFrame in Webhandler)
- * 
+ *
  * DEFERRED PERSISTENCE:
  * Recording and persistence are intentionally decoupled. After stopRecording(), the
  * buffer remains in RAM. User must explicitly call saveRecordingToNVS(index) to commit
@@ -295,7 +295,7 @@ inline void updatePlayback() {
       // Trigger the relay via the system function
       ActuatorID actuatorID = static_cast<ActuatorID>(relayID - 1);  // Convert 1-4 to 0-3
       triggerActuator(actuatorID);
-      
+
       // NOTE: Recording check happens in calling function (handleActuator) for web API
       // During playback, we're just replaying recorded animation, so no additional recording needed
     }

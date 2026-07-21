@@ -587,6 +587,16 @@ void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
   uint8_t i_colour_scheme = C_BLACK; // Colour scheme for lighting, to be set later.
   uint8_t i_brightness = getBrightness(i_cyclotron_inner_brightness);
 
+  // Sanity check to make sure the midpoint is set to a sane value.
+  if(i_midpoint > (i_ic_cavity_start + INNER_CYCLOTRON_CAVITY_LED_MAX)) {
+    // If i_midpoint is greater than the maximum possible number of LEDs, it must've gone negative.
+    i_midpoint = i_ic_cavity_start; // Set midpoint to i_ic_cavity_start, same as if we had two LEDs.
+  }
+  else if(i_midpoint < i_ic_cavity_start) {
+    // If i_midpoint is less than i_ic_cavity_start, we must also have gone negative.
+    i_midpoint = i_ic_cavity_start; // Set midpoint to i_ic_cavity_start, same as if we had two LEDs.
+  }
+
   // Cannot go lower than the starting point for this segment of LEDs.
   if(i_led_cyclotron_cavity < i_ic_cavity_start) {
     i_led_cyclotron_cavity = i_ic_cavity_start;
@@ -5301,6 +5311,11 @@ void updateProtonPackLEDCounts() {
     i_ic_cake_end = i_ic_cake_start + i_inner_cyclotron_cake_num_leds - 1;
     i_ic_cavity_start = i_ic_cake_end + 1;
     i_ic_cavity_end = i_ic_cavity_start + i_inner_cyclotron_cavity_num_leds - 1;
+
+    // Make sure we have a sane end value for the cavity.
+    if(i_ic_cavity_end < i_ic_cavity_start) {
+      i_ic_cavity_end = i_ic_cavity_start;
+    }
   }
   else {
     i_ic_panel_end = 0;
@@ -5308,6 +5323,11 @@ void updateProtonPackLEDCounts() {
     i_ic_cake_end = i_ic_cake_start + i_inner_cyclotron_cake_num_leds - 1;
     i_ic_cavity_start = i_ic_cake_end + 1;
     i_ic_cavity_end = i_ic_cavity_start + i_inner_cyclotron_cavity_num_leds - 1;
+
+    // Make sure we have a sane end value for the cavity.
+    if(i_ic_cavity_end < i_ic_cavity_start) {
+      i_ic_cavity_end = i_ic_cavity_start;
+    }
   }
 }
 

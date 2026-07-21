@@ -265,10 +265,10 @@ AnimationSession g_anim = {};  // Initialize to all zeros (IDLE mode)
 void AnimationTask(void *parameter) {
   while(true) {
     // ... existing relay logic ...
-    
+
     // Update animation playback each cycle
     g_anim.updatePlayback();
-    
+
     updateAudio();
     checkMusic();
     vTaskDelay(10 / portTICK_PERIOD_MS);
@@ -284,7 +284,7 @@ static uint8_t currentPlayingAnim = 0xFF;  // 0xFF = no animation playing
 // When RF button triggers (after debounce detection):
 if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
   uint8_t buttonIndex = i;  // 0-3 maps to anim 0-3
-  
+
   // Check current animation state
   if (g_anim.mode == ANIM_IDLE) {
     // Not playing - start this animation
@@ -305,7 +305,7 @@ if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previou
       }
     }
   }
-  
+
   notifyWSClients();
 }
 ```
