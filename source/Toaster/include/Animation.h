@@ -36,7 +36,7 @@
  * 7. stopPlayback()               → Exit PLAYBACK mode, clear buffer
  *
  * KEY CONCEPTS:
- * - Frame Buffer:     anim.buffer[600] holds frame data (0=idle, 1-4=relay ID)
+ * - Frame Buffer:     currentAnimation.buffer[600] holds frame data (0=idle, 1-4=relay ID)
  * - Frame Timing:     Each frame = 100ms. At 100fps, max duration = 1 minute
  * - Recording Mode:   Automatically captures relay triggers via recordRelayAtCurrentFrame()
  * - Playback Mode:    Replays recorded frames by calculating elapsed time and firing relays
@@ -44,11 +44,11 @@
  * - Button Binding:   4 NVS slots map directly to 4 RF buttons (slot 0→button 1, etc.)
  *
  * SESSION vs PERSISTENT DATA:
- * - AnimationSession (anim):      Runtime state (buffer, frameCount, mode, timing)
+ * - AnimationSession (currentAnimation):      Runtime state (buffer, frameCount, mode, timing)
  * - AnimationData (NVS):          Persistent struct (frameCount, checksum, frames[600])
  *
  * AUTOMATIC RECORDING:
- * When anim.mode == ANIM_RECORDING, any call to recordRelayAtCurrentFrame(actuatorID)
+ * When currentAnimation.mode == ANIM_RECORDING, any call to recordRelayAtCurrentFrame(actuatorID)
  * will write that actuator ID to the frame buffer at the calculated frame position.
  * This happens automatically when:
  *   - User presses RF button (calls recordRelayAtCurrentFrame in UserInputTask)
@@ -66,24 +66,19 @@
 #include <cstring>
 #include "Header.h"
 #include <Communication.h>
-#include <nvs_flash.h>
-#include <nvs.h>
 
 // Forward declarations
 bool triggerActuator(ActuatorID actuatorID);
-
-// Global animation session instance
-// Shared across main.cpp, AnimationTask, and UserInputTask
-AnimationSession anim = {};
 
 /**
  * Clear the animation buffer and reset runtime state
  */
 inline void clearBuffer() {
-  memset(anim.buffer, 0, sizeof(anim.buffer));
-  anim.frameCount = 0;
-  anim.startTime = 0;
-  anim.mode = ANIM_IDLE;
+  memset(currentAnimation.buffer, 0, sizeof(currentAnimation.buffer));
+  currentAnimation.frameCount = 0;
+  currentAnimation.startTime = 0;
+  currentAnimation.mode = ANIM_IDLE;
+  currentAnimation.sourceSlot = 0xFF;   // Mark as idle/no context
 }
 
 /**
@@ -91,18 +86,19 @@ inline void clearBuffer() {
  * Reuses shared crc16 function from Communication.h for consistency
  */
 inline uint16_t computeChecksum() {
-  return crc16(anim.buffer, ANIM_MAX_FRAMES);
+  return crc16(currentAnimation.buffer, ANIM_MAX_FRAMES);
 }
 
 /**
  * Start a new recording session
- * Clears buffer, sets mode to RECORDING, captures start time
+ * Clears buffer, sets mode to RECORDING, captures start time, marks as fresh recording
  */
 inline void startRecording() {
   clearBuffer();
-  anim.mode = ANIM_RECORDING;
-  anim.startTime = millis();
-  anim.frameCount = 0;
+  currentAnimation.mode = ANIM_RECORDING;
+  currentAnimation.startTime = millis();
+  currentAnimation.frameCount = 0;
+  currentAnimation.sourceSlot = -1;     // Mark as fresh recording (not yet saved to any slot)
 }
 
 /**
@@ -111,7 +107,7 @@ inline void startRecording() {
  * Bounds checking prevents buffer overflow
  */
 inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
-  if (anim.mode != ANIM_RECORDING) {
+  if (currentAnimation.mode != ANIM_RECORDING) {
     return;  // Only record when in RECORDING mode
   }
 
@@ -120,7 +116,7 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
   }
 
   // Calculate current frame based on elapsed time
-  uint32_t elapsed = millis() - anim.startTime;
+  uint32_t elapsed = millis() - currentAnimation.startTime;
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
 
   // Bound frame to valid range
@@ -129,11 +125,11 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
   }
 
   // Write actuator ID to buffer at this frame
-  anim.buffer[currentFrame] = actuatorID;
+  currentAnimation.buffer[currentFrame] = actuatorID;
 
   // Update frameCount if this is a new frame we haven't recorded
-  if (currentFrame >= anim.frameCount) {
-    anim.frameCount = currentFrame + 1;
+  if (currentFrame >= currentAnimation.frameCount) {
+    currentAnimation.frameCount = currentFrame + 1;
   }
 }
 
@@ -141,54 +137,48 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
  * Stop recording and return the number of frames recorded
  */
 inline uint16_t stopRecording() {
-  if (anim.mode != ANIM_RECORDING) {
+  if (currentAnimation.mode != ANIM_RECORDING) {
     return 0;
   }
 
-  anim.mode = ANIM_IDLE;
-  return anim.frameCount;
+  currentAnimation.mode = ANIM_IDLE;
+  return currentAnimation.frameCount;
 }
 
 /**
  * Save the current recording to NVS under a specific animation slot
- * Computes checksum and writes AnimationData struct to persistent storage
+ * Computes checksum and writes AnimationData struct to persistent storage.
+ * Updates sourceSlot to indicate this animation is now saved to that slot.
  */
 inline bool saveRecordingToNVS(uint8_t animIndex) {
   if (animIndex >= ANIM_MAX_STORED) {
     return false;  // Invalid animation slot
   }
 
-  if (anim.frameCount == 0) {
+  if (currentAnimation.frameCount == 0) {
     return false;  // Nothing to save
   }
 
   // Create AnimationData structure
   AnimationData data;
-  data.frameCount = anim.frameCount;
-  memcpy(data.frames, anim.buffer, sizeof(data.frames));
+  data.frameCount = currentAnimation.frameCount;
+  memcpy(data.frames, currentAnimation.buffer, sizeof(data.frames));
 
   // Compute checksum over entire 600-byte frame buffer
   data.checksum = computeChecksum();
 
-  // Open NVS and write the blob
-  nvs_handle_t handle;
-  esp_err_t err = nvs_open("animations", NVS_READWRITE, &handle);
-  if (err != ESP_OK) {
+  // Open Preferences and write the blob
+  Preferences preferences;
+  if (!preferences.begin("animations", false)) {
     return false;
   }
 
-  err = nvs_set_blob(handle, ANIMATION_NAMES[animIndex], &data, sizeof(data));
-  if (err != ESP_OK) {
-    nvs_close(handle);
-    return false;
-  }
+  size_t written = preferences.putBytes(ANIMATION_NAMES[animIndex], &data, sizeof(data));
+  preferences.end();
 
-  err = nvs_commit(handle);
-  nvs_close(handle);
-
-  if (err == ESP_OK) {
-    // Clear the session after successful save
-    clearBuffer();
+  if (written == sizeof(data)) {
+    // Update sourceSlot to indicate this recording is now saved to this slot
+    currentAnimation.sourceSlot = animIndex;
     return true;
   }
 
@@ -198,26 +188,21 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
 /**
  * Load an animation from NVS into the buffer
  * Optionally validates checksum to detect corruption
+ * Sets sourceSlot to indicate where this animation came from
  */
 inline bool loadAnimationFromNVS(uint8_t animIndex) {
   if (animIndex >= ANIM_MAX_STORED) {
     return false;
   }
 
-  nvs_handle_t handle;
-  esp_err_t err = nvs_open("animations", NVS_READONLY, &handle);
-  if (err != ESP_OK) {
+  Preferences preferences;
+  if (!preferences.begin("animations", true)) {
     return false;
   }
 
   AnimationData data;
-  size_t size = sizeof(data);
-  err = nvs_get_blob(handle, ANIMATION_NAMES[animIndex], &data, &size);
-  nvs_close(handle);
-
-  if (err != ESP_OK) {
-    return false;
-  }
+  size_t size = preferences.getBytes(ANIMATION_NAMES[animIndex], &data, sizeof(data));
+  preferences.end();
 
   if (size != sizeof(data) || data.frameCount == 0 || data.frameCount > ANIM_MAX_FRAMES) {
     return false;
@@ -231,24 +216,26 @@ inline bool loadAnimationFromNVS(uint8_t animIndex) {
   }
 
   // Copy data into runtime buffer
-  memcpy(anim.buffer, data.frames, sizeof(data.frames));
-  anim.frameCount = data.frameCount;
-  anim.mode = ANIM_IDLE;  // Leave in IDLE, caller will set to PLAYBACK
+  memcpy(currentAnimation.buffer, data.frames, sizeof(data.frames));
+  currentAnimation.frameCount = data.frameCount;
+  currentAnimation.mode = ANIM_IDLE;  // Leave in IDLE, caller will set to PLAYBACK
+  currentAnimation.sourceSlot = animIndex;  // Mark which slot this came from
 
   return true;
 }
 
 /**
  * Start playback of a recorded animation
- * Loads from NVS, sets mode to PLAYBACK, captures start time
+ * Loads from NVS, sets mode to PLAYBACK, captures start time, records source slot
  */
 inline bool startPlayback(uint8_t animIndex) {
   if (!loadAnimationFromNVS(animIndex)) {
     return false;
   }
 
-  anim.mode = ANIM_PLAYBACK;
-  anim.startTime = millis();
+  currentAnimation.mode = ANIM_PLAYBACK;
+  currentAnimation.startTime = millis();
+  currentAnimation.sourceSlot = animIndex;  // Explicitly mark which slot we're playing from
 
   return true;
 }
@@ -257,10 +244,11 @@ inline bool startPlayback(uint8_t animIndex) {
  * Stop current playback immediately
  */
 inline void stopPlayback() {
-  anim.mode = ANIM_IDLE;
-  anim.startTime = 0;
-  anim.frameCount = 0;
-  memset(anim.buffer, 0, sizeof(anim.buffer));
+  currentAnimation.mode = ANIM_IDLE;
+  currentAnimation.startTime = 0;
+  currentAnimation.frameCount = 0;
+  currentAnimation.sourceSlot = 0xFF;  // Mark as idle/no context
+  memset(currentAnimation.buffer, 0, sizeof(currentAnimation.buffer));
 }
 
 /**
@@ -269,27 +257,27 @@ inline void stopPlayback() {
  * Only processes if mode is ANIM_PLAYBACK
  */
 inline void updatePlayback() {
-  if (anim.mode != ANIM_PLAYBACK) {
+  if (currentAnimation.mode != ANIM_PLAYBACK) {
     return;  // Only update if actually playing
   }
 
   // Calculate current frame based on elapsed time
-  uint32_t elapsed = millis() - anim.startTime;
+  uint32_t elapsed = millis() - currentAnimation.startTime;
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
 
   // Check if playback is complete
-  if (currentFrame >= anim.frameCount) {
+  if (currentFrame >= currentAnimation.frameCount) {
     stopPlayback();
     return;
   }
 
   // Check if there's a relay to trigger at this frame
-  uint8_t relayID = anim.buffer[currentFrame];
+  uint8_t relayID = currentAnimation.buffer[currentFrame];
   if (relayID >= 1 && relayID <= 4) {
     // Only trigger if this frame is different from the previous one
     // (prevents repeated triggers for multi-cycle frames)
     uint16_t prevFrame = (currentFrame > 0) ? currentFrame - 1 : 0xFFFF;
-    uint8_t prevRelayID = (currentFrame > 0) ? anim.buffer[prevFrame] : 0;
+    uint8_t prevRelayID = (currentFrame > 0) ? currentAnimation.buffer[prevFrame] : 0;
 
     if (relayID != prevRelayID) {
       // Trigger the relay via the system function
@@ -306,14 +294,14 @@ inline void updatePlayback() {
  * Get the current animation mode
  */
 inline uint8_t getMode() {
-  return anim.mode;
+  return currentAnimation.mode;
 }
 
 /**
  * Get the frame count of the current animation in buffer
  */
 inline uint16_t getFrameCount() {
-  return anim.frameCount;
+  return currentAnimation.frameCount;
 }
 
 /**
@@ -325,18 +313,16 @@ inline bool validateChecksum(uint8_t animIndex) {
     return false;
   }
 
-  nvs_handle_t handle;
-  esp_err_t err = nvs_open("animations", NVS_READONLY, &handle);
-  if (err != ESP_OK) {
+  Preferences preferences;
+  if (!preferences.begin("animations", true)) {
     return false;
   }
 
   AnimationData data;
-  size_t size = sizeof(data);
-  err = nvs_get_blob(handle, ANIMATION_NAMES[animIndex], &data, &size);
-  nvs_close(handle);
+  size_t size = preferences.getBytes(ANIMATION_NAMES[animIndex], &data, sizeof(data));
+  preferences.end();
 
-  if (err != ESP_OK || size != sizeof(data)) {
+  if (size != sizeof(data)) {
     return false;
   }
 

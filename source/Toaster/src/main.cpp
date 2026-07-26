@@ -45,6 +45,7 @@
 #include <millisDelay.h>
 #include <esp_system.h>
 #include <nvs_flash.h>
+#include <Preferences.h>
 #include <HardwareSerial.h>
 
 // Shared Libraries
@@ -262,7 +263,7 @@ void UserInputTask(void *parameter) {
         uint8_t buttonIndex = i;  // 0-3 maps to animation slots 0-3
 
         // Handle animation playback control based on current state
-        if (anim.mode == ANIM_IDLE || anim.mode == ANIM_RECORDING) {
+        if (currentAnimation.mode == ANIM_IDLE || currentAnimation.mode == ANIM_RECORDING) {
           // Not playing - start this animation
           if (startPlayback(buttonIndex)) {
             currentPlayingAnim = buttonIndex;
@@ -275,7 +276,7 @@ void UserInputTask(void *parameter) {
 
             notifyWSClients();
           }
-        } else if (anim.mode == ANIM_PLAYBACK) {
+        } else if (currentAnimation.mode == ANIM_PLAYBACK) {
           // Currently playing - handle same or different button
           if (buttonIndex == currentPlayingAnim) {
             // Same button pressed - stop playback

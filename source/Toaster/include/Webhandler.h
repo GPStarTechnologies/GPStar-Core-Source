@@ -86,9 +86,46 @@ millisDelay ms_cleanup;
 const uint16_t i_websocketCleanup = 5000;
 
 // Forward function declarations.
-void sendDebug(const String& message); // From System.h
 void registerWebRoutes(); // From Webrouting.h
+void sendDebug(const String& message); // From System.h
 bool triggerActuator(ActuatorID actuatorID); // From System.h
+
+/**
+ * Scan NVS and populate animation slot cache.
+ * Called once on startup and whenever a recording is saved.
+ * Checks for animation blob existence and reads frameCount.
+ */
+void refreshAnimationSlotCache() {
+  Preferences preferences;
+  
+  if (!preferences.begin("animations", true)) {
+    // Unable to open namespace - mark all slots as empty
+    for (uint8_t i = 0; i < 4; i++) {
+      animationSlots[i].id = i;
+      animationSlots[i].hasAnimation = false;
+      animationSlots[i].frameCount = 0;
+    }
+    return;
+  }
+
+  // Check each animation slot
+  for (uint8_t i = 0; i < 4; i++) {
+    animationSlots[i].id = i;
+    
+    AnimationData data;
+    size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
+    
+    if (size == sizeof(data) && data.frameCount > 0 && data.frameCount <= ANIM_MAX_FRAMES) {
+      animationSlots[i].hasAnimation = true;
+      animationSlots[i].frameCount = data.frameCount;
+    } else {
+      animationSlots[i].hasAnimation = false;
+      animationSlots[i].frameCount = 0;
+    }
+  }
+  
+  preferences.end();
+}
 
 /**
  * JSON Body Helpers - Creates stringified JSON representations of device configurations
@@ -183,6 +220,15 @@ String getEquipmentStatus() {
   button4Obj["id"] = 4;
   button4Obj["pin"] = devices.button4.pin;
   button4Obj["state"] = devices.button4.state.currentState;
+
+  // Report on animation slot availability (for playback selection)
+  JsonArray slotArray = jsonBody["animationSlots"].to<JsonArray>();
+  for (uint8_t i = 0; i < 4; i++) {
+    JsonObject slotObj = slotArray.add<JsonObject>();
+    slotObj["id"] = animationSlots[i].id;
+    slotObj["hasAnimation"] = animationSlots[i].hasAnimation;
+    slotObj["frameCount"] = animationSlots[i].frameCount;
+  }
 
   // Serialize JSON object to string.
   serializeJson(jsonBody, equipStatus);
@@ -292,6 +338,9 @@ void onOTAEnd(bool success) {
 }
 
 void startWebServer() {
+  // Initialize animation slot cache from NVS
+  refreshAnimationSlotCache();
+
   // Register all routes and handlers for the web server.
   registerWebRoutes();
 
@@ -376,6 +425,60 @@ void webLoops() {
 // Send a debug event to connected clients via Server-Sent Events (SSE).
 void sendDebugEvent(const char* message) {
   events.send(message, "debug", millis());
+}
+
+/**
+ * Prepare a JSON object with current animation frame and progress data.
+ * Sends real-time updates during recording and playback sessions.
+ * 
+ * RAW measurements:
+ * - mode: Current animation state (IDLE, RECORDING, PLAYBACK)
+ * - sourceSlot: Context indicator: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
+ * - totalFrames: Total frame capacity for this animation
+ * - currentFrame: Current frame index (0-based)
+ * 
+ * DERIVED values:
+ * - elapsedSeconds: Human-readable elapsed time (currentFrame × 0.1s per frame)
+ * - progress: Percentage completion for progress bars (currentFrame / totalFrames × 100)
+ */
+String getAnimationFrame() {
+  String frameData;
+  JsonDocument jsonFrame;
+  
+  const char* modeNames[] = {"IDLE", "RECORDING", "PLAYBACK"};
+  jsonFrame["mode"] = modeNames[currentAnimation.mode];
+  jsonFrame["sourceSlot"] = currentAnimation.sourceSlot;
+  jsonFrame["totalFrames"] = currentAnimation.frameCount;
+  
+  uint32_t elapsed = millis() - currentAnimation.startTime;
+  uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
+  jsonFrame["currentFrame"] = currentFrame;
+  
+  // Derive elapsed time in seconds (ANIM_TIME_UNIT_MS = 100ms, so 0.1s per frame)
+  jsonFrame["elapsedSeconds"] = (float)currentFrame * 0.1f;
+  
+  // Derive progress percentage
+  if(currentAnimation.frameCount > 0) {
+    jsonFrame["progress"] = (float)currentFrame / currentAnimation.frameCount * 100.0f;
+  }
+  
+  // Include which actuator (if any) is firing at current frame
+  // Value: 0 = no action, 1-4 = actuator ID
+  uint8_t currentActuator = (currentFrame < currentAnimation.frameCount) ? currentAnimation.buffer[currentFrame] : 0;
+  jsonFrame["actuator"] = currentActuator;
+  
+  // Serialize JSON object to string.
+  serializeJson(jsonFrame, frameData);
+  return frameData;
+}
+
+void sendAnimationFrameData() {
+  if(b_httpd_started && (currentAnimation.mode == ANIM_RECORDING || currentAnimation.mode == ANIM_PLAYBACK)) {
+    // Gather the latest animation frame data, serialize it to a JSON string,
+    // and send it to all connected EventSource (SSE) clients as an "animation"
+    // event name (using the current ms time as a unique event identifier).
+    events.send(getAnimationFrame().c_str(), "animation", millis());
+  }
 }
 
 /**
@@ -656,7 +759,7 @@ void handleActuator(AsyncWebServerRequest *request) {
           triggerActuator(actuator);
 
           // If currently recording an animation, record this relay trigger at current frame
-          if(anim.mode == ANIM_RECORDING) {
+          if(currentAnimation.mode == ANIM_RECORDING) {
             recordRelayAtCurrentFrame(actuatorNum);  // 1-4
           }
 
@@ -702,11 +805,13 @@ void handleToggleMute(AsyncWebServerRequest *request) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "mute") {
         toggleMute(true);
+        notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "unmute") {
         toggleMute(false);
+        notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -721,12 +826,14 @@ void handleMasterVolumeUp(AsyncWebServerRequest *request) {
   debugln(F("Web: Master Volume Up"));
   increaseVolume();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleMasterVolumeDown(AsyncWebServerRequest *request) {
   debugln(F("Web: Master Volume Down"));
   decreaseVolume();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleMasterVolumeSet(AsyncWebServerRequest *request) {
@@ -768,24 +875,28 @@ void handleEffectsVolumeUp(AsyncWebServerRequest *request) {
   debugln(F("Web: Effects Volume Up"));
   increaseVolumeEffects();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleEffectsVolumeDown(AsyncWebServerRequest *request) {
   debugln(F("Web: Effects Volume Down"));
   decreaseVolumeEffects();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleMusicVolumeUp(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Volume Up"));
   increaseVolumeMusic();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleMusicVolumeDown(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Volume Down"));
   decreaseVolumeMusic();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleMusicStartStop(AsyncWebServerRequest *request) {
@@ -815,18 +926,21 @@ void handleMusicPauseResume(AsyncWebServerRequest *request) {
     playMusic();
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleNextMusicTrack(AsyncWebServerRequest *request) {
   debugln(F("Web: Next Music Track"));
   musicNextTrack();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handlePrevMusicTrack(AsyncWebServerRequest *request) {
   debugln(F("Web: Prev Music Track"));
   musicPrevTrack();
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleLoopMusicTrack(AsyncWebServerRequest *request) {
@@ -839,11 +953,13 @@ void handleLoopMusicTrack(AsyncWebServerRequest *request) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "one") {
         toggleMusicLoop(true);
+        notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "all") {
         toggleMusicLoop(false);
+        notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -864,11 +980,13 @@ void handleShuffleMusicTracks(AsyncWebServerRequest *request) {
       String segment = s_path.substring(lastSlash + 1);
       if(segment == "on") {
         toggleMusicShuffle(true);
+        notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
       else if(segment == "off") {
         toggleMusicShuffle(false);
+        notifyWSClients();
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
         return;
       }
@@ -925,7 +1043,7 @@ void handleRecordStart(AsyncWebServerRequest *request) {
 void handleRecordStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Animation Record Stop"));
 
-  if (anim.mode != ANIM_RECORDING) {
+  if (currentAnimation.mode != ANIM_RECORDING) {
     request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Not currently recording"));
     return;
   }
@@ -945,65 +1063,83 @@ void handleRecordStop(AsyncWebServerRequest *request) {
 void handleRecordSave(AsyncWebServerRequest *request) {
   debugln(F("Web: Animation Record Save"));
 
-  if (!request->hasParam("index")) {
-    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Missing parameter: index"));
-    return;
-  }
+  String s_path = request->url();
+  if(s_path.length() > 0) {
+    int lastSlash = s_path.lastIndexOf('/');
+    if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
+      String segment = s_path.substring(lastSlash + 1);
 
-  uint8_t animIndex = request->getParam("index")->value().toInt();
-  if (animIndex >= ANIM_MAX_STORED) {
-    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid animation index (0-3)"));
-    return;
-  }
+      // Check if segment is a valid number (0 is valid, or toInt() returns non-zero)
+      if(segment == "0" || segment.toInt() != 0) {
+        uint8_t animIndex = abs(segment.toInt());
 
-  if (saveRecordingToNVS(animIndex)) {
-    JsonDocument jsonResponse;
-    jsonResponse["status"] = "success";
-    jsonResponse["message"] = "Animation saved";
-    jsonResponse["slot"] = animIndex;
-    jsonResponse["name"] = ANIMATION_NAMES[animIndex];
+        if (animIndex >= ANIM_MAX_STORED) {
+          request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid animation index (0-3)"));
+          return;
+        }
 
-    String response;
-    serializeJson(jsonResponse, response);
-    request->send(HTTP_STATUS_200, MIME_JSON, response);
-  } else {
-    request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Failed to save animation to NVS"));
+        if (saveRecordingToNVS(animIndex)) {
+          JsonDocument jsonResponse;
+          jsonResponse["status"] = "success";
+          jsonResponse["message"] = "Animation saved";
+          jsonResponse["slot"] = animIndex;
+          jsonResponse["name"] = ANIMATION_NAMES[animIndex];
+
+          String response;
+          serializeJson(jsonResponse, response);
+          request->send(HTTP_STATUS_200, MIME_JSON, response);
+        } else {
+          request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Failed to save animation to NVS"));
+        }
+        return;
+      }
+    }
   }
+  request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Missing or invalid path parameter: id (0-3)"));
 }
 
 void handlePlayAnimation(AsyncWebServerRequest *request) {
   debugln(F("Web: Animation Play"));
 
-  if (!request->hasParam("index")) {
-    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Missing parameter: index"));
-    return;
-  }
+  String s_path = request->url();
+  if(s_path.length() > 0) {
+    int lastSlash = s_path.lastIndexOf('/');
+    if(lastSlash >= 0 && lastSlash < s_path.length() - 1) {
+      String segment = s_path.substring(lastSlash + 1);
 
-  uint8_t animIndex = request->getParam("index")->value().toInt();
-  if (animIndex >= ANIM_MAX_STORED) {
-    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid animation index (0-3)"));
-    return;
-  }
+      // Check if segment is a valid number (0 is valid, or toInt() returns non-zero)
+      if(segment == "0" || segment.toInt() != 0) {
+        uint8_t animIndex = abs(segment.toInt());
 
-  if (startPlayback(animIndex)) {
-    JsonDocument jsonResponse;
-    jsonResponse["status"] = "success";
-    jsonResponse["message"] = "Playback started";
-    jsonResponse["slot"] = animIndex;
-    jsonResponse["frameCount"] = anim.frameCount;
+        if (animIndex >= ANIM_MAX_STORED) {
+          request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid animation index (0-3)"));
+          return;
+        }
 
-    String response;
-    serializeJson(jsonResponse, response);
-    request->send(HTTP_STATUS_200, MIME_JSON, response);
-  } else {
-    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Failed to load animation or invalid animation slot"));
+        if (startPlayback(animIndex)) {
+          JsonDocument jsonResponse;
+          jsonResponse["status"] = "success";
+          jsonResponse["message"] = "Playback started";
+          jsonResponse["slot"] = animIndex;
+          jsonResponse["frameCount"] = currentAnimation.frameCount;
+
+          String response;
+          serializeJson(jsonResponse, response);
+          request->send(HTTP_STATUS_200, MIME_JSON, response);
+        } else {
+          request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Failed to load animation or invalid animation slot"));
+        }
+        return;
+      }
+    }
   }
+  request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Missing or invalid path parameter: id (0-3)"));
 }
 
 void handleStopAnimation(AsyncWebServerRequest *request) {
   debugln(F("Web: Animation Stop"));
 
-  if (anim.mode != ANIM_PLAYBACK) {
+  if (currentAnimation.mode != ANIM_PLAYBACK) {
     request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("No animation currently playing"));
     return;
   }
@@ -1018,15 +1154,15 @@ void handleAnimationStatus(AsyncWebServerRequest *request) {
   const char* modeNames[] = {"IDLE", "RECORDING", "PLAYBACK"};
 
   JsonDocument jsonResponse;
-  jsonResponse["mode"] = modeNames[anim.mode];
-  jsonResponse["frameCount"] = anim.frameCount;
+  jsonResponse["mode"] = modeNames[currentAnimation.mode];
+  jsonResponse["frameCount"] = currentAnimation.frameCount;
 
-  if (anim.mode == ANIM_PLAYBACK) {
-    uint32_t elapsed = millis() - anim.startTime;
+  if (currentAnimation.mode == ANIM_PLAYBACK) {
+    uint32_t elapsed = millis() - currentAnimation.startTime;
     uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
     jsonResponse["currentFrame"] = currentFrame;
-    jsonResponse["progress"] = (anim.frameCount > 0) ?
-      (float)currentFrame / anim.frameCount * 100.0 : 0.0;
+    jsonResponse["progress"] = (currentAnimation.frameCount > 0) ?
+      (float)currentFrame / currentAnimation.frameCount * 100.0 : 0.0;
   }
 
   String response;

@@ -19,6 +19,7 @@
 
 var websocket;
 var statusInterval;
+var animationSlots = []; // Cache of animation slot metadata from server
 
 window.addEventListener("load", onLoad);
 
@@ -28,6 +29,16 @@ function onLoad(event) {
   getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
   getStatus(updateEquipment); // Get status immediately.
+
+  // Initialize animation controls visibility
+  hideEl("recSaveButton");
+  hideEl("recPlayButton");
+  hideEl("saveSlotSelector");
+  hideEl("playSlotSelector");
+  hideEl("animationProgress");
+
+  // Initialize EventSource for animation updates
+  initAnimationEventSource();
 }
 
 function initWebSocket() {
@@ -169,6 +180,13 @@ function updateEquipment(jObj) {
         setHtml("relay" + relay.id, statusText);
       }
     }
+
+    // Update animation slot availability for save and play dropdowns
+    if (jObj.animationSlots && Array.isArray(jObj.animationSlots)) {
+      animationSlots = jObj.animationSlots;
+      updateSaveSlots();
+      updatePlaySlots();
+    }
   }
 }
 
@@ -198,12 +216,170 @@ function selectMusic2() {
 
 function recordingStart() {
   sendCommand("/animations/record/start");
+  // Show the save button after recording starts
+  showEl("recSaveButton");
 }
 
 function recordingStop() {
   sendCommand("/animations/record/stop");
+  // Hide the save button after recording stops
+  hideEl("recSaveButton");
+  // Always show the play button
+  showEl("recPlayButton");
 }
 
-function recordingSave() {
-  sendCommand("/animations/record/save");
+function showSaveSlotSelector() {
+  showEl("saveSlotSelector");
+  hideEl("recSaveButton");
+}
+
+function cancelSaveSlot() {
+  hideEl("saveSlotSelector");
+  showEl("recSaveButton");
+}
+
+function recordingSaveToSlot() {
+  const slot = parseInt(getEl("saveSlot").value);
+
+  // Check if the selected slot already has an animation
+  const slotInfo = animationSlots.find((s) => s.id === slot);
+  if (slotInfo && slotInfo.hasAnimation) {
+    // Confirm before overwriting
+    const confirmMsg = "Slot " + slot + " already has an animation (" + slotInfo.frameCount + " frames). Overwrite?";
+    if (!confirm(confirmMsg)) {
+      return; // User cancelled
+    }
+  }
+
+  sendCommand("/animations/record/save/" + slot);
+  hideEl("saveSlotSelector");
+}
+
+function showPlaySlotSelector() {
+  showEl("playSlotSelector");
+  hideEl("recPlayButton");
+}
+
+function cancelPlaySlot() {
+  hideEl("playSlotSelector");
+  showEl("recPlayButton");
+}
+
+function playAnimationFromSlot() {
+  const slot = getEl("playSlot").value;
+  sendCommand("/animations/play/" + slot);
+  hideEl("playSlotSelector");
+}
+
+function initAnimationEventSource() {
+  // Create EventSource connection to receive animation updates from server
+  const eventSource = new EventSource("/events");
+
+  // Listen for animation frame updates
+  eventSource.addEventListener("animation", function (event) {
+    if (isJsonString(event.data)) {
+      const animData = JSON.parse(event.data);
+      updateAnimationDisplay(animData);
+    }
+  });
+
+  // Handle connection errors
+  eventSource.onerror = function (event) {
+    console.log("Animation EventSource error", event);
+  };
+}
+
+function buildAnimationProgressHTML(animData) {
+  // Build mode display with context based on sourceSlot
+  let modeDisplay = animData.mode;
+  if (animData.sourceSlot === -1) {
+    modeDisplay = "Recording (unsaved)";
+  } else if (animData.sourceSlot >= 0 && animData.sourceSlot <= 3) {
+    if (animData.mode === "PLAYBACK") {
+      modeDisplay = "Playing Slot " + animData.sourceSlot;
+    } else if (animData.mode === "RECORDING") {
+      modeDisplay = "Recording → Slot " + animData.sourceSlot;
+    }
+  }
+
+  let progressValue = "—";
+  if (animData.progress !== undefined) {
+    progressValue = animData.progress.toFixed(1);
+  }
+
+  let actuatorDisplay = "—";
+  if (animData.actuator && animData.actuator > 0 && animData.actuator <= 4) {
+    actuatorDisplay = "Actuator " + animData.actuator;
+  }
+
+  const html = 
+    "<p>Mode: " + modeDisplay + "</p>" +
+    "<p>Frame: " + (animData.currentFrame || 0) + " / " + (animData.totalFrames || 0) + "</p>" +
+    "<p>Progress: " + progressValue + "%</p>" +
+    "<p>Elapsed: " + (animData.elapsedSeconds || 0).toFixed(1) + "s</p>" +
+    "<p>Actuator: " + actuatorDisplay + "</p>";
+
+  return html;
+}
+
+function updateAnimationDisplay(animData) {
+  // Show or hide the progress display based on mode
+  if (animData.mode === "IDLE") {
+    hideEl("animationProgressTab1");
+    hideEl("animationProgressTab3");
+  } else {
+    showEl("animationProgressTab1");
+    showEl("animationProgressTab3");
+
+    // Build HTML once and inject into both display locations
+    const progressHTML = buildAnimationProgressHTML(animData);
+    setHtml("animationProgressTab1", progressHTML);
+    setHtml("animationProgressTab3", progressHTML);
+  }
+}
+
+function updateSaveSlots() {
+  // Update save slot dropdown - all slots always enabled for save
+  if (!animationSlots || !Array.isArray(animationSlots)) return;
+
+  const saveSelect = getEl("saveSlot");
+  if (!saveSelect) return;
+
+  // Slots are always available for saving (shows frame count if already has data)
+  for (let i = 0; i < animationSlots.length; i++) {
+    const slot = animationSlots[i];
+    const option = saveSelect.options[i];
+    if (option) {
+      // Update option label to show frameCount if it has data
+      const label = slot.hasAnimation ? "Slot " + slot.id + " (" + slot.frameCount + " frames)" : "Slot " + slot.id;
+      option.text = label;
+      option.disabled = false; // All slots available for saving
+    }
+  }
+}
+
+function updatePlaySlots() {
+  // Update play slot dropdown - only enable slots with recordings
+  if (!animationSlots || !Array.isArray(animationSlots)) return;
+
+  const playSelect = getEl("playSlot");
+  if (!playSelect) return;
+
+  for (let i = 0; i < animationSlots.length; i++) {
+    const slot = animationSlots[i];
+    const option = playSelect.options[i];
+    if (option) {
+      // Show frameCount and enable only if has animation
+      const label = slot.hasAnimation ? "Animation " + slot.id + " (" + slot.frameCount + " frames)" : "Animation " + slot.id + " (empty)";
+      option.text = label;
+      option.disabled = !slot.hasAnimation;
+    }
+  }
+
+  // Disable Play button if no slots have animations
+  const hasAnySaved = animationSlots.some((s) => s.hasAnimation);
+  const playButton = getEl("recPlayButton");
+  if (playButton) {
+    playButton.disabled = !hasAnySaved;
+  }
 }

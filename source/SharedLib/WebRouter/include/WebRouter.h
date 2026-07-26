@@ -433,6 +433,12 @@ String generateOpenAPISpec() {
     if(openApiPath.equals("/device/actuator/*")) {
       openApiPath = "/device/actuator/{id}";
     }
+    if(openApiPath.equals("/animations/record/save/*")) {
+      openApiPath = "/animations/record/save/{id}";
+    }
+    if(openApiPath.equals("/animations/play/*")) {
+      openApiPath = "/animations/play/{id}";
+    }
 
     // Create path object
     JsonObject pathItem = paths[openApiPath].to<JsonObject>();

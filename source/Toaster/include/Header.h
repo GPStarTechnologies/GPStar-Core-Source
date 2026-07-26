@@ -186,6 +186,7 @@ struct AnimationSession {
   uint16_t frameCount;      // How many frames in current animation
   uint32_t startTime;       // When recording/playback started (for timing)
   uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
+  int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
 };
 
 // Animation Constants
@@ -193,3 +194,15 @@ const uint16_t ANIM_MAX_FRAMES = 600;        // 1 minute @ 100ms
 const uint16_t ANIM_TIME_UNIT_MS = 100;      // Frame duration in milliseconds
 const uint8_t ANIM_MAX_STORED = 4;           // One per RF button
 const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
+
+// Animation slot cache: tracks which slots have recordings and their frame counts
+struct AnimationSlot {
+  uint8_t id;           // Slot index (0-3)
+  bool hasAnimation;    // Whether NVS blob exists and is valid
+  uint16_t frameCount;  // Animation duration in frames
+};
+const uint8_t ANIMATION_SLOTS_COUNT = 4;
+AnimationSlot animationSlots[ANIMATION_SLOTS_COUNT] = {};
+
+// Global animation session instance, represents the primary animation frame buffer
+AnimationSession currentAnimation = {};
