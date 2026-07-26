@@ -260,7 +260,7 @@ function recordingSaveToSlot() {
   const slotInfo = animationSlots.find((s) => s.id === slot);
   if (slotInfo && slotInfo.hasAnimation) {
     // Confirm before overwriting
-    const confirmMsg = "Slot " + slot + " already has an animation (" + slotInfo.frameCount + " frames). Overwrite?";
+    const confirmMsg = "Slot " + slot + " already has an animation (" + slotInfo.keyFrames + " frames). Overwrite?";
     if (!confirm(confirmMsg)) {
       return; // User cancelled
     }
@@ -310,8 +310,8 @@ function updateSaveSlots() {
     const slot = animationSlots[i];
     const option = saveSelect.options[i];
     if (option) {
-      // Update option label to show frameCount if it has data
-      const label = slot.hasAnimation ? "Slot " + slot.id + " (" + slot.frameCount + " frames)" : "Slot " + slot.id;
+      // Update option label to show keyFrames if it has data
+      const label = slot.hasAnimation ? "Slot " + slot.id + " (" + slot.keyFrames + " frames)" : "Slot " + slot.id;
       option.text = label;
       option.disabled = false; // All slots available for saving
     }
@@ -329,8 +329,8 @@ function updatePlaySlots() {
     const slot = animationSlots[i];
     const option = playSelect.options[i];
     if (option) {
-      // Show frameCount and enable only if has animation
-      const label = slot.hasAnimation ? "Animation " + slot.id + " (" + slot.frameCount + " frames)" : "Animation " + slot.id + " (empty)";
+      // Show keyFrames and enable only if has animation
+      const label = slot.hasAnimation ? "Animation " + slot.id + " (" + slot.keyFrames + " frames)" : "Animation " + slot.id + " (empty)";
       option.text = label;
       option.disabled = !slot.hasAnimation;
     }
@@ -399,42 +399,28 @@ if (!!window.EventSource) {
 window.addEventListener("load", onLoad);
 
 function buildAnimationProgressHTML(animData) {
-  // Build mode display with context based on sourceSlot
-  let modeDisplay = animData.mode;
-  if (animData.sourceSlot === -1) {
-    modeDisplay = "Recording (unsaved)";
-  } else if (animData.sourceSlot >= 0 && animData.sourceSlot <= 3) {
-    if (animData.mode === "PLAYBACK") {
-      modeDisplay = "Playing Slot " + animData.sourceSlot;
-    } else if (animData.mode === "RECORDING") {
-      modeDisplay = "Recording → Slot " + animData.sourceSlot;
-    }
-  }
-
-  let progressValue = "-";
   let frameDisplay = "-";
+  let progressValue = "-";
   
-  if (animData.mode === "RECORDING") {
-    // During recording: show max capacity, current elapsed frame, and frames with relay activity
-    frameDisplay = "Total: " + (animData.totalFrames || 600) + " | Current: " + (animData.currentFrame || 0) + " | Captured: " + (animData.capturedFrames || 0);
-    progressValue = (animData.elapsedSeconds || 0).toFixed(1) + "s elapsed";
-  } else if (animData.mode === "PLAYBACK") {
-    // During playback: show frame progression out of captured frames
-    frameDisplay = "Total: " + (animData.totalFrames || 600) + " | Current: " + (animData.currentFrame || 0) + " / " + (animData.capturedFrames || 0);
-    if (animData.progress !== undefined) {
-      progressValue = animData.progress.toFixed(1) + "%";
-    }
+  if (animData.mode === "RECORDING" || animData.mode === "PLAYBACK") {
+    const current = animData.currentFrame || 0;
+    const total = animData.capturedFrames || animData.totalFrames || 0;
+    const percentage = total > 0 ? ((current / total) * 100).toFixed(1) : 0;
+    frameDisplay = current + " / " + total + " (" + percentage + "%)";
+    
+    const elapsed = (animData.elapsedSeconds || 0).toFixed(1);
+    const duration = (animData.totalTime || 0).toFixed(1);
+    progressValue = elapsed + " / " + duration + "s";
   }
 
   let actuatorDisplay = "-";
-  if (animData.actuator && animData.actuator > 0 && animData.actuator <= 4) {
-    actuatorDisplay = "Actuator " + animData.actuator;
+  if (animData.frameValue && animData.frameValue > 0 && animData.frameValue <= 4) {
+    actuatorDisplay = "Actuator " + animData.frameValue;
   }
 
   const html = 
-    "<p><b>Mode:</b> " + modeDisplay + "</p>" +
     "<p><b>Frames:</b> " + frameDisplay + "</p>" +
-    "<p><b>Progress:</b> " + progressValue + "</p>" +
+    "<p><b>Time:</b> " + progressValue + "</p>" +
     "<p><b>Last Actuator:</b> " + actuatorDisplay + "</p>";
 
   return html;

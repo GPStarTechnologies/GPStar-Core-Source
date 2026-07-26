@@ -90,10 +90,19 @@ void registerWebRoutes(); // From Webrouting.h
 void sendDebug(const String& message); // From System.h
 bool triggerActuator(ActuatorID actuatorID); // From System.h
 
+/*
+ * Text Helper Functions - Converts ENUM values to consistent, user-friendly text
+ */
+
+// Rounds a float to 2 decimal places.
+float roundFloat(float value) {
+  return roundf(value * 100.0f) / 100.0f;
+}
+
 /**
  * Scan NVS and populate animation slot cache.
  * Called once on startup and whenever a recording is saved.
- * Checks for animation blob existence and reads frameCount.
+ * Checks for animation blob existence and reads keyFrames.
  */
 void refreshAnimationSlotCache() {
   Preferences preferences;
@@ -103,7 +112,7 @@ void refreshAnimationSlotCache() {
     for (uint8_t i = 0; i < 4; i++) {
       animationSlots[i].id = i;
       animationSlots[i].hasAnimation = false;
-      animationSlots[i].frameCount = 0;
+      animationSlots[i].keyFrames = 0;
     }
     return;
   }
@@ -115,12 +124,12 @@ void refreshAnimationSlotCache() {
     AnimationData data;
     size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
     
-    if (size == sizeof(data) && data.frameCount > 0 && data.frameCount <= ANIM_MAX_FRAMES) {
+    if (size == sizeof(data) && data.keyFrames > 0 && data.keyFrames <= ANIM_MAX_FRAMES) {
       animationSlots[i].hasAnimation = true;
-      animationSlots[i].frameCount = data.frameCount;
+      animationSlots[i].keyFrames = data.keyFrames;
     } else {
       animationSlots[i].hasAnimation = false;
-      animationSlots[i].frameCount = 0;
+      animationSlots[i].keyFrames = 0;
     }
   }
   
@@ -227,7 +236,7 @@ String getEquipmentStatus() {
     JsonObject slotObj = slotArray.add<JsonObject>();
     slotObj["id"] = animationSlots[i].id;
     slotObj["hasAnimation"] = animationSlots[i].hasAnimation;
-    slotObj["frameCount"] = animationSlots[i].frameCount;
+    slotObj["keyFrames"] = animationSlots[i].keyFrames;
   }
 
   // Serialize JSON object to string.
@@ -451,24 +460,27 @@ String getAnimationFrame() {
   jsonFrame["mode"] = modeNames[currentAnimation.mode];
   jsonFrame["sourceSlot"] = currentAnimation.sourceSlot;
   jsonFrame["totalFrames"] = ANIM_MAX_FRAMES;  // Always 600
-  jsonFrame["capturedFrames"] = currentAnimation.frameCount;  // Frames with relay activity
+  jsonFrame["capturedFrames"] = currentAnimation.keyFrames;  // Frames with relay activity
   
   uint32_t elapsed = millis() - currentAnimation.startTime;
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
   jsonFrame["currentFrame"] = currentFrame;
   
-  // Derive elapsed time in seconds (ANIM_TIME_UNIT_MS = 100ms, so 0.1s per frame)
-  jsonFrame["elapsedSeconds"] = (float)currentFrame * 0.1f;
+  // Derive elapsed time in seconds (frames × frame duration / 1000 for ms to seconds)
+  jsonFrame["elapsedSeconds"] = roundFloat((float)currentFrame * ANIM_TIME_UNIT_MS / 1000.0f);
+  
+  // Total duration of recorded animation in seconds (keyFrames × frame duration / 1000)
+  jsonFrame["totalTime"] = roundFloat((float)currentAnimation.keyFrames * ANIM_TIME_UNIT_MS / 1000.0f);
   
   // Derive progress percentage (based on captured frames for playback)
-  if(currentAnimation.frameCount > 0) {
-    jsonFrame["progress"] = (float)currentFrame / currentAnimation.frameCount * 100.0f;
+  if(currentAnimation.keyFrames > 0) {
+    jsonFrame["progress"] = roundFloat((float)currentFrame / currentAnimation.keyFrames * 100.0f);
   }
   
   // Include which actuator (if any) is firing at current frame
   // Value: 0 = no action, 1-4 = actuator ID
-  uint8_t currentActuator = (currentFrame < currentAnimation.frameCount) ? currentAnimation.buffer[currentFrame] : 0;
-  jsonFrame["actuator"] = currentActuator;
+  uint8_t currentActuator = (currentFrame < currentAnimation.keyFrames) ? currentAnimation.buffer[currentFrame] : 0;
+  jsonFrame["frameValue"] = currentActuator;
   
   // Serialize JSON object to string.
   serializeJson(jsonFrame, frameData);
@@ -1040,7 +1052,7 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
 void handleRecordStart(AsyncWebServerRequest *request) {
   debugln(F("Web: Animation Record Start"));
   startRecording();
-  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Recording started"));
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
 
 void handleRecordStop(AsyncWebServerRequest *request) {
@@ -1051,12 +1063,12 @@ void handleRecordStop(AsyncWebServerRequest *request) {
     return;
   }
 
-  uint16_t frameCount = stopRecording();
+  uint16_t keyFrames = stopRecording();
 
   JsonDocument jsonResponse;
   jsonResponse["status"] = "success";
   jsonResponse["message"] = "Recording stopped";
-  jsonResponse["frameCount"] = frameCount;
+  jsonResponse["keyFrames"] = keyFrames;
 
   String response;
   serializeJson(jsonResponse, response);
@@ -1124,7 +1136,7 @@ void handlePlayAnimation(AsyncWebServerRequest *request) {
           jsonResponse["status"] = "success";
           jsonResponse["message"] = "Playback started";
           jsonResponse["slot"] = animIndex;
-          jsonResponse["frameCount"] = currentAnimation.frameCount;
+          jsonResponse["keyFrames"] = currentAnimation.keyFrames;
 
           String response;
           serializeJson(jsonResponse, response);
@@ -1158,14 +1170,14 @@ void handleAnimationStatus(AsyncWebServerRequest *request) {
 
   JsonDocument jsonResponse;
   jsonResponse["mode"] = modeNames[currentAnimation.mode];
-  jsonResponse["frameCount"] = currentAnimation.frameCount;
+  jsonResponse["keyFrames"] = currentAnimation.keyFrames;
 
   if (currentAnimation.mode == ANIM_PLAYBACK) {
     uint32_t elapsed = millis() - currentAnimation.startTime;
     uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
     jsonResponse["currentFrame"] = currentFrame;
-    jsonResponse["progress"] = (currentAnimation.frameCount > 0) ?
-      (float)currentFrame / currentAnimation.frameCount * 100.0 : 0.0;
+    jsonResponse["progress"] = (currentAnimation.keyFrames > 0) ?
+      (float)currentFrame / currentAnimation.keyFrames * 100.0 : 0.0;
   }
 
   String response;

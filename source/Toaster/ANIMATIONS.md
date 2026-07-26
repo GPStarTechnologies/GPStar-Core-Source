@@ -47,7 +47,7 @@ enum AnimationMode : uint8_t {
 // In-memory runtime state (used during recording/playback)
 struct AnimationSession {
   uint8_t buffer[600];      // Current animation being recorded or played
-  uint16_t frameCount;      // How many frames in current animation
+  uint16_t keyFrames;      // How many frames in current animation
   uint32_t startTime;       // When recording/playback started (for timing)
   uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
   int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
@@ -56,7 +56,7 @@ struct AnimationSession {
 AnimationSession currentAnimation;
 ```
 
-When saved to NVS, only the `frameCount` and `buffer` are stored (as AnimationData struct). The `startTime`, `mode`, and `sourceSlot` are runtime only.
+When saved to NVS, only the `keyFrames` and `buffer` are stored (as AnimationData struct). The `startTime`, `mode`, and `sourceSlot` are runtime only.
 
 **sourceSlot Context Tracking:**
 
@@ -110,7 +110,7 @@ The `sourceSlot` field tracks where an animation came from for UI display purpos
 ```cpp
 // Persistent animation data (stored in NVS)
 struct AnimationData {
-  uint16_t frameCount;      // How many frames were recorded
+  uint16_t keyFrames;      // How many frames were recorded
   uint16_t checksum;        // CRC16 of frames[] for optional validation against NVS
   uint8_t frames[600];      // The recorded frame data (0 = no action, 1-4 = relay ID)
 };
@@ -124,7 +124,7 @@ enum AnimationMode : uint8_t {
 
 struct AnimationSession {
   uint8_t buffer[600];      // Current animation being recorded or played
-  uint16_t frameCount;      // How many frames in current animation
+  uint16_t keyFrames;      // How many frames in current animation
   uint32_t startTime;       // When recording/playback started (for timing)
   uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
   int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
@@ -149,7 +149,7 @@ Each animation is stored as an `AnimationData` struct under fixed keys derived f
 
 **What's stored:**
 
-- `frameCount`: Tells playback how many frames to execute
+- `keyFrames`: Tells playback how many frames to execute
 - `checksum`: CRC16 of the `frames[]` array—optional, for verifying data matches what's in NVS if needed
 - `frames[]`: The 600-byte array of relay values
 
@@ -209,7 +209,7 @@ Stored as AnimationData:
 
 ```cpp
 AnimationData animData = {
-  .frameCount = 5,
+  .keyFrames = 5,
   .checksum = computeChecksum(animData.frames),  // Computed when saving
   .frames = {1, 0, 2, 0, 3, 0, 0, 0, ...}  // Rest is zero-filled
 };
@@ -241,18 +241,18 @@ RF buttons are **playback control only**:
 - Calculate frame index: `(millis() - startTime) / ANIM_TIME_UNIT_MS`
 - Write actuatorID to `buffer[frame]` (values 1-4 for ACTUATOR_1 through ACTUATOR_4)
 - Bound frame to `[0, ANIM_MAX_FRAMES-1]` to prevent buffer overflow
-- Update frameCount if this frame is new
+- Update keyFrames if this frame is new
 
 **`uint16_t stopRecording()`**
 
 - Set mode = ANIM_IDLE
-- Return frameCount
+- Return keyFrames
 
 **`bool saveRecordingToNVS(uint8_t animIndex)`**
 
 - Validate `animIndex` is in range `[0, ANIM_MAX_STORED-1]`
 - Compute checksum of buffer
-- Create AnimationData struct with frameCount, checksum, and frames
+- Create AnimationData struct with keyFrames, checksum, and frames
 - Write to NVS under key `ANIMATION_NAMES[animIndex]`
 - Return true if successful
 
@@ -261,7 +261,7 @@ RF buttons are **playback control only**:
 - Validate `animIndex` is in range
 - Read AnimationData from NVS
 - Optionally validate checksum (warn if mismatch)
-- Copy frames and frameCount into buffer
+- Copy frames and keyFrames into buffer
 - Clear mode (leave as IDLE)
 - Return true if successful
 
@@ -275,13 +275,13 @@ RF buttons are **playback control only**:
 **`void stopPlayback()`**
 
 - Set mode = ANIM_IDLE
-- Clear buffer and frameCount
+- Clear buffer and keyFrames
 
 **`void updatePlayback()`** (called each AnimationTask cycle ~10ms)
 
 - If mode != ANIM_PLAYBACK, return immediately
 - Calculate current frame: `(millis() - startTime) / ANIM_TIME_UNIT_MS`
-- If `frame >= frameCount`: playback complete → stopPlayback()
+- If `frame >= keyFrames`: playback complete → stopPlayback()
 - Else if `buffer[frame] != 0`: trigger the relay via `triggerActuator()`
   - Note: Only trigger once per frame (use previous frame tracking to avoid repeat triggers)
 - File: [src/Animation.cpp](src/Animation.cpp)
@@ -374,7 +374,7 @@ GET    /api/status                            → Device status (includes animat
 struct AnimationSlot {
   uint8_t id;           // Slot ID (0-3)
   bool hasAnimation;    // Whether this slot has a valid recording
-  uint16_t frameCount;  // Frame count if hasAnimation=true, 0 otherwise
+  uint16_t keyFrames;  // Frame count if hasAnimation=true, 0 otherwise
 };
 
 AnimationSlot animationSlots[4] = {};  // Global cache array
@@ -384,7 +384,7 @@ AnimationSlot animationSlots[4] = {};  // Global cache array
 
 - `refreshAnimationSlotCache()` is called on startup in `startWebServer()`
 - Scans NVS for each animation slot (0-3)
-- Validates AnimationData structure and frameCount
+- Validates AnimationData structure and keyFrames
 - Populates cache with slot availability and frame count
 
 **Cache Updates:**
@@ -407,22 +407,22 @@ The device status endpoint now includes `animationSlots` array:
     {
       "id": 0,
       "hasAnimation": true,
-      "frameCount": 120
+      "keyFrames": 120
     },
     {
       "id": 1,
       "hasAnimation": false,
-      "frameCount": 0
+      "keyFrames": 0
     },
     {
       "id": 2,
       "hasAnimation": true,
-      "frameCount": 300
+      "keyFrames": 300
     },
     {
       "id": 3,
       "hasAnimation": false,
-      "frameCount": 0
+      "keyFrames": 0
     }
   ]
 }

@@ -44,8 +44,8 @@
  * - Button Binding:   4 NVS slots map directly to 4 RF buttons (slot 0→button 1, etc.)
  *
  * SESSION vs PERSISTENT DATA:
- * - AnimationSession (currentAnimation):      Runtime state (buffer, frameCount, mode, timing)
- * - AnimationData (NVS):          Persistent struct (frameCount, checksum, frames[600])
+ * - AnimationSession (currentAnimation):      Runtime state (buffer, keyFrames, mode, timing)
+ * - AnimationData (NVS):          Persistent struct (keyFrames, checksum, frames[600])
  *
  * AUTOMATIC RECORDING:
  * When currentAnimation.mode == ANIM_RECORDING, any call to recordRelayAtCurrentFrame(actuatorID)
@@ -75,10 +75,10 @@ bool triggerActuator(ActuatorID actuatorID);
  */
 inline void clearBuffer() {
   memset(currentAnimation.buffer, 0, sizeof(currentAnimation.buffer));
-  currentAnimation.frameCount = 0;
+  currentAnimation.keyFrames = 0;
   currentAnimation.startTime = 0;
   currentAnimation.mode = ANIM_IDLE;
-  currentAnimation.sourceSlot = 0xFF;   // Mark as idle/no context
+  currentAnimation.sourceSlot = -1;
 }
 
 /**
@@ -97,8 +97,8 @@ inline void startRecording() {
   clearBuffer();
   currentAnimation.mode = ANIM_RECORDING;
   currentAnimation.startTime = millis();
-  currentAnimation.frameCount = 0;
-  currentAnimation.sourceSlot = -1;     // Mark as fresh recording (not yet saved to any slot)
+  currentAnimation.keyFrames = 0;
+  currentAnimation.sourceSlot = -1; // Mark as fresh recording (not yet saved to any slot)
 }
 
 /**
@@ -127,9 +127,9 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
   // Write actuator ID to buffer at this frame
   currentAnimation.buffer[currentFrame] = actuatorID;
 
-  // Update frameCount if this is a new frame we haven't recorded
-  if (currentFrame >= currentAnimation.frameCount) {
-    currentAnimation.frameCount = currentFrame + 1;
+  // Update keyFrames if this is a new frame we haven't recorded
+  if (currentFrame >= currentAnimation.keyFrames) {
+    currentAnimation.keyFrames = currentFrame + 1;
   }
 }
 
@@ -142,7 +142,7 @@ inline uint16_t stopRecording() {
   }
 
   currentAnimation.mode = ANIM_IDLE;
-  return currentAnimation.frameCount;
+  return currentAnimation.keyFrames;
 }
 
 /**
@@ -155,13 +155,13 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
     return false;  // Invalid animation slot
   }
 
-  if (currentAnimation.frameCount == 0) {
+  if (currentAnimation.keyFrames == 0) {
     return false;  // Nothing to save
   }
 
   // Create AnimationData structure
   AnimationData data;
-  data.frameCount = currentAnimation.frameCount;
+  data.keyFrames = currentAnimation.keyFrames;
   memcpy(data.frames, currentAnimation.buffer, sizeof(data.frames));
 
   // Compute checksum over entire 600-byte frame buffer
@@ -204,7 +204,7 @@ inline bool loadAnimationFromNVS(uint8_t animIndex) {
   size_t size = preferences.getBytes(ANIMATION_NAMES[animIndex], &data, sizeof(data));
   preferences.end();
 
-  if (size != sizeof(data) || data.frameCount == 0 || data.frameCount > ANIM_MAX_FRAMES) {
+  if (size != sizeof(data) || data.keyFrames == 0 || data.keyFrames > ANIM_MAX_FRAMES) {
     return false;
   }
 
@@ -217,7 +217,7 @@ inline bool loadAnimationFromNVS(uint8_t animIndex) {
 
   // Copy data into runtime buffer
   memcpy(currentAnimation.buffer, data.frames, sizeof(data.frames));
-  currentAnimation.frameCount = data.frameCount;
+  currentAnimation.keyFrames = data.keyFrames;
   currentAnimation.mode = ANIM_IDLE;  // Leave in IDLE, caller will set to PLAYBACK
   currentAnimation.sourceSlot = animIndex;  // Mark which slot this came from
 
@@ -246,8 +246,8 @@ inline bool startPlayback(uint8_t animIndex) {
 inline void stopPlayback() {
   currentAnimation.mode = ANIM_IDLE;
   currentAnimation.startTime = 0;
-  currentAnimation.frameCount = 0;
-  currentAnimation.sourceSlot = 0xFF;  // Mark as idle/no context
+  currentAnimation.keyFrames = 0;
+  currentAnimation.sourceSlot = -1;
   memset(currentAnimation.buffer, 0, sizeof(currentAnimation.buffer));
 }
 
@@ -266,7 +266,7 @@ inline void updatePlayback() {
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
 
   // Check if playback is complete
-  if (currentFrame >= currentAnimation.frameCount) {
+  if (currentFrame >= currentAnimation.keyFrames) {
     stopPlayback();
     return;
   }
@@ -288,20 +288,6 @@ inline void updatePlayback() {
       // During playback, we're just replaying recorded animation, so no additional recording needed
     }
   }
-}
-
-/**
- * Get the current animation mode
- */
-inline uint8_t getMode() {
-  return currentAnimation.mode;
-}
-
-/**
- * Get the frame count of the current animation in buffer
- */
-inline uint16_t getFrameCount() {
-  return currentAnimation.frameCount;
 }
 
 /**

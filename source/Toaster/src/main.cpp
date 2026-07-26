@@ -220,8 +220,8 @@ void PreferencesTask(void *parameter) {
 
 // User Input Task (Loop)
 void UserInputTask(void *parameter) {
-  // Track which animation is currently playing (0xFF = no animation playing)
-  static uint8_t currentPlayingAnim = 0xFF;
+  // Track which animation is currently playing (-1 = no animation playing)
+  static int8_t currentPlayingAnim = -1;
 
   while(true) {
     #if defined(DEBUG_TASK_TO_CONSOLE)
@@ -284,7 +284,7 @@ void UserInputTask(void *parameter) {
           if (buttonIndex == currentPlayingAnim) {
             // Same button pressed - stop playback
             stopPlayback();
-            currentPlayingAnim = 0xFF;
+            currentPlayingAnim = -1;
 
             #if defined(DEBUG_SEND_TO_CONSOLE)
               debug(F("RF"));

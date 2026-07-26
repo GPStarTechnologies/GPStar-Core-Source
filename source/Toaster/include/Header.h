@@ -167,14 +167,20 @@ enum AnimationMode : uint8_t {
   ANIM_PLAYBACK = 2
 };
 
+// Animation Constants
+#define ANIM_MAX_FRAMES 600             // 1 minute @ 100ms = 600 frames
+const uint16_t ANIM_TIME_UNIT_MS = 100; // Frame duration in milliseconds
+const uint8_t ANIM_MAX_STORED = 4;      // One per RF button
+const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
+
 /**
  * AnimationData - Persistent structure stored in NVS
  * Contains the recorded animation frames and metadata.
  */
 struct AnimationData {
-  uint16_t frameCount;      // How many frames were recorded (0-600)
-  uint16_t checksum;        // CRC16 of frames[] for optional validation against NVS
-  uint8_t frames[600];      // The recorded frame data (0 = no action, 1-4 = relay ID)
+  uint16_t keyFrames;              // How many key frames were recorded (0-600)
+  uint16_t checksum;               // CRC16 of frames[] for optional validation against NVS
+  uint8_t frames[ANIM_MAX_FRAMES]; // The recorded frame data (0 = no action, 1-4 = relay ID)
 };
 
 /**
@@ -182,24 +188,18 @@ struct AnimationData {
  * Not persisted; recreated from NVS data when needed.
  */
 struct AnimationSession {
-  uint8_t buffer[600];      // Current animation being recorded or played
-  uint16_t frameCount;      // How many frames in current animation
-  uint32_t startTime;       // When recording/playback started (for timing)
-  uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
-  int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
+  uint8_t mode;                    // Current AnimationMode (IDLE, RECORDING, PLAYBACK)
+  uint8_t buffer[ANIM_MAX_FRAMES]; // Current animation being recorded or played
+  uint16_t keyFrames;              // How many key frames in current animation
+  uint32_t startTime;              // millis() timestamp when recording/playback began
+  int8_t sourceSlot;               // Source context: -1=no slot, 0-3=loaded from slot
 };
-
-// Animation Constants
-const uint16_t ANIM_MAX_FRAMES = 600;        // 1 minute @ 100ms
-const uint16_t ANIM_TIME_UNIT_MS = 100;      // Frame duration in milliseconds
-const uint8_t ANIM_MAX_STORED = 4;           // One per RF button
-const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
 
 // Animation slot cache: tracks which slots have recordings and their frame counts
 struct AnimationSlot {
-  uint8_t id;           // Slot index (0-3)
-  bool hasAnimation;    // Whether NVS blob exists and is valid
-  uint16_t frameCount;  // Animation duration in frames
+  uint8_t id;         // Slot index (0-3)
+  bool hasAnimation;  // Whether NVS data exists and is valid
+  uint16_t keyFrames; // Animation duration in frames
 };
 const uint8_t ANIMATION_SLOTS_COUNT = 4;
 AnimationSlot animationSlots[ANIMATION_SLOTS_COUNT] = {};
