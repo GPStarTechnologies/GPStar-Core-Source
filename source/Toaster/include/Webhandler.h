@@ -431,15 +431,17 @@ void sendDebugEvent(const char* message) {
  * Prepare a JSON object with current animation frame and progress data.
  * Sends real-time updates during recording and playback sessions.
  * 
- * RAW measurements:
+ * FIELDS:
  * - mode: Current animation state (IDLE, RECORDING, PLAYBACK)
  * - sourceSlot: Context indicator: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
- * - totalFrames: Total frame capacity for this animation
- * - currentFrame: Current frame index (0-based)
+ * - totalFrames: Total frame capacity (600)
+ * - currentFrame: Current frame index (0-based) based on elapsed time
+ * - capturedFrames: Highest frame index with relay activity (only non-zero if relays triggered)
  * 
  * DERIVED values:
  * - elapsedSeconds: Human-readable elapsed time (currentFrame × 0.1s per frame)
- * - progress: Percentage completion for progress bars (currentFrame / totalFrames × 100)
+ * - progress: Percentage completion for playback (currentFrame / capturedFrames × 100)
+ * - actuator: Which actuator (if any) is firing at current frame (0 = no action, 1-4 = relay ID)
  */
 String getAnimationFrame() {
   String frameData;
@@ -448,7 +450,8 @@ String getAnimationFrame() {
   const char* modeNames[] = {"IDLE", "RECORDING", "PLAYBACK"};
   jsonFrame["mode"] = modeNames[currentAnimation.mode];
   jsonFrame["sourceSlot"] = currentAnimation.sourceSlot;
-  jsonFrame["totalFrames"] = currentAnimation.frameCount;
+  jsonFrame["totalFrames"] = ANIM_MAX_FRAMES;  // Always 600
+  jsonFrame["capturedFrames"] = currentAnimation.frameCount;  // Frames with relay activity
   
   uint32_t elapsed = millis() - currentAnimation.startTime;
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
@@ -457,7 +460,7 @@ String getAnimationFrame() {
   // Derive elapsed time in seconds (ANIM_TIME_UNIT_MS = 100ms, so 0.1s per frame)
   jsonFrame["elapsedSeconds"] = (float)currentFrame * 0.1f;
   
-  // Derive progress percentage
+  // Derive progress percentage (based on captured frames for playback)
   if(currentAnimation.frameCount > 0) {
     jsonFrame["progress"] = (float)currentFrame / currentAnimation.frameCount * 100.0f;
   }

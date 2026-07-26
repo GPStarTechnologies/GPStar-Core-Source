@@ -21,24 +21,13 @@ var websocket;
 var statusInterval;
 var animationSlots = []; // Cache of animation slot metadata from server
 
-window.addEventListener("load", onLoad);
-
 function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
+  disableAnimationButtons(); // Set button states by default.
   getDevicePrefs(); // Get all preferences.
   getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
   getStatus(updateEquipment); // Get status immediately.
-
-  // Initialize animation controls visibility
-  hideEl("recSaveButton");
-  hideEl("recPlayButton");
-  hideEl("saveSlotSelector");
-  hideEl("playSlotSelector");
-  hideEl("animationProgress");
-
-  // Initialize EventSource for animation updates
-  initAnimationEventSource();
 }
 
 function initWebSocket() {
@@ -160,9 +149,34 @@ function getNetworkInfo() {
   xhttp.send();
 }
 
+function disableAnimationButtons() {
+  // Used to just disable all the animation-related buttons initially
+  // Use centralized helpers to manage disabled state consistently.
+  hideEl("recSaveButton");
+  hideEl("recPlayButton");
+  hideEl("saveSlotSelector");
+  hideEl("playSlotSelector");
+  hideEl("animationProgressTab1");
+  hideEl("animationProgressTab3");
+}
+
 function updateEquipment(jObj) {
   // Update display if we have the expected data (containing mode and theme at a minimum).
   if (jObj) {
+    // Volume Information
+    setHtml("masterVolume", (jObj.volMaster ?? 0) + "%");
+    if ((jObj.volMaster ?? 0) == 0) {
+      setHtml("masterVolume", "Min");
+    }
+    setHtml("effectsVolume", (jObj.volEffects ?? 0) + "%");
+    if ((jObj.volEffects ?? 0) == 0) {
+      setHtml("effectsVolume", "Min");
+    }
+    setHtml("musicVolume", (jObj.volMusic ?? 0) + "%");
+    if ((jObj.volMusic ?? 0) == 0) {
+      setHtml("musicVolume", "Min");
+    }
+
     // Update RF Input Button States
     if (jObj.buttons && Array.isArray(jObj.buttons)) {
       for (let i = 0; i < jObj.buttons.length; i++) {
@@ -190,6 +204,8 @@ function updateEquipment(jObj) {
   }
 }
 
+/** API Calls **/
+
 function triggerAct1() {
   sendCommand("/device/actuator/1");
 }
@@ -216,26 +232,25 @@ function selectMusic2() {
 
 function recordingStart() {
   sendCommand("/animations/record/start");
-  // Show the save button after recording starts
-  showEl("recSaveButton");
+  // Hide all save/play buttons and selectors during recording
+  hideEl("recSaveButton");
+  hideEl("recPlayButton");
+  hideEl("saveSlotSelector");
+  hideEl("playSlotSelector");
+  // Show the progress displays during recording
+  showEl("animationProgressTab1");
+  showEl("animationProgressTab3");
 }
 
 function recordingStop() {
   sendCommand("/animations/record/stop");
-  // Hide the save button after recording stops
-  hideEl("recSaveButton");
-  // Always show the play button
-  showEl("recPlayButton");
-}
-
-function showSaveSlotSelector() {
-  showEl("saveSlotSelector");
-  hideEl("recSaveButton");
-}
-
-function cancelSaveSlot() {
-  hideEl("saveSlotSelector");
-  showEl("recSaveButton");
+  // Hide the progress displays after recording stops
+  hideEl("animationProgressTab1");
+  hideEl("animationProgressTab3");
+  
+  // Don't show save option if no frames were captured
+  // The SSE handler will receive the final animation state and decide
+  // whether to show the save UI based on capturedFrames value
 }
 
 function recordingSaveToSlot() {
@@ -255,6 +270,18 @@ function recordingSaveToSlot() {
   hideEl("saveSlotSelector");
 }
 
+/** State Management **/
+
+function showSaveSlotSelector() {
+  showEl("saveSlotSelector");
+  hideEl("recSaveButton");
+}
+
+function cancelSaveSlot() {
+  hideEl("saveSlotSelector");
+  showEl("recSaveButton");
+}
+
 function showPlaySlotSelector() {
   showEl("playSlotSelector");
   hideEl("recPlayButton");
@@ -269,73 +296,6 @@ function playAnimationFromSlot() {
   const slot = getEl("playSlot").value;
   sendCommand("/animations/play/" + slot);
   hideEl("playSlotSelector");
-}
-
-function initAnimationEventSource() {
-  // Create EventSource connection to receive animation updates from server
-  const eventSource = new EventSource("/events");
-
-  // Listen for animation frame updates
-  eventSource.addEventListener("animation", function (event) {
-    if (isJsonString(event.data)) {
-      const animData = JSON.parse(event.data);
-      updateAnimationDisplay(animData);
-    }
-  });
-
-  // Handle connection errors
-  eventSource.onerror = function (event) {
-    console.log("Animation EventSource error", event);
-  };
-}
-
-function buildAnimationProgressHTML(animData) {
-  // Build mode display with context based on sourceSlot
-  let modeDisplay = animData.mode;
-  if (animData.sourceSlot === -1) {
-    modeDisplay = "Recording (unsaved)";
-  } else if (animData.sourceSlot >= 0 && animData.sourceSlot <= 3) {
-    if (animData.mode === "PLAYBACK") {
-      modeDisplay = "Playing Slot " + animData.sourceSlot;
-    } else if (animData.mode === "RECORDING") {
-      modeDisplay = "Recording → Slot " + animData.sourceSlot;
-    }
-  }
-
-  let progressValue = "—";
-  if (animData.progress !== undefined) {
-    progressValue = animData.progress.toFixed(1);
-  }
-
-  let actuatorDisplay = "—";
-  if (animData.actuator && animData.actuator > 0 && animData.actuator <= 4) {
-    actuatorDisplay = "Actuator " + animData.actuator;
-  }
-
-  const html = 
-    "<p>Mode: " + modeDisplay + "</p>" +
-    "<p>Frame: " + (animData.currentFrame || 0) + " / " + (animData.totalFrames || 0) + "</p>" +
-    "<p>Progress: " + progressValue + "%</p>" +
-    "<p>Elapsed: " + (animData.elapsedSeconds || 0).toFixed(1) + "s</p>" +
-    "<p>Actuator: " + actuatorDisplay + "</p>";
-
-  return html;
-}
-
-function updateAnimationDisplay(animData) {
-  // Show or hide the progress display based on mode
-  if (animData.mode === "IDLE") {
-    hideEl("animationProgressTab1");
-    hideEl("animationProgressTab3");
-  } else {
-    showEl("animationProgressTab1");
-    showEl("animationProgressTab3");
-
-    // Build HTML once and inject into both display locations
-    const progressHTML = buildAnimationProgressHTML(animData);
-    setHtml("animationProgressTab1", progressHTML);
-    setHtml("animationProgressTab3", progressHTML);
-  }
 }
 
 function updateSaveSlots() {
@@ -383,3 +343,133 @@ function updatePlaySlots() {
     playButton.disabled = !hasAnySaved;
   }
 }
+
+/** Animation Visualizations **/
+
+if (!!window.EventSource) {
+  // Create events for one-way communication.
+  var source = new EventSource("/events");
+
+  source.addEventListener(
+    "open",
+    function (e) {
+      console.log("Server-Side Events connected");
+    },
+    false,
+  );
+
+  source.addEventListener(
+    "error",
+    function (e) {
+      if (e.target.readyState != EventSource.OPEN) {
+        console.log("Server-Side Events disconnected");
+      }
+    },
+    false,
+  );
+
+  source.addEventListener(
+    "debug",
+    function (e) {
+      if (e.data === undefined) return;
+      console.log("Debug: ", e.data);
+    },
+    false,
+  );
+
+  source.addEventListener(
+    "animation",
+    function (e) {
+      if (e.data === undefined) return;
+
+      var animData = {}; // Always begin with an empty object.
+      try {
+        animData = JSON.parse(e.data); // JSON with frame position, timings
+      } catch (e) {}
+
+      // Listen for and update on animation frame information.
+      updateAnimationDisplay(animData);
+    },
+    false
+  );
+
+}
+
+// Delay the onLoad event until all necessary JS has been loaded
+window.addEventListener("load", onLoad);
+
+function buildAnimationProgressHTML(animData) {
+  // Build mode display with context based on sourceSlot
+  let modeDisplay = animData.mode;
+  if (animData.sourceSlot === -1) {
+    modeDisplay = "Recording (unsaved)";
+  } else if (animData.sourceSlot >= 0 && animData.sourceSlot <= 3) {
+    if (animData.mode === "PLAYBACK") {
+      modeDisplay = "Playing Slot " + animData.sourceSlot;
+    } else if (animData.mode === "RECORDING") {
+      modeDisplay = "Recording → Slot " + animData.sourceSlot;
+    }
+  }
+
+  let progressValue = "-";
+  let frameDisplay = "-";
+  
+  if (animData.mode === "RECORDING") {
+    // During recording: show max capacity, current elapsed frame, and frames with relay activity
+    frameDisplay = "Total: " + (animData.totalFrames || 600) + " | Current: " + (animData.currentFrame || 0) + " | Captured: " + (animData.capturedFrames || 0);
+    progressValue = (animData.elapsedSeconds || 0).toFixed(1) + "s elapsed";
+  } else if (animData.mode === "PLAYBACK") {
+    // During playback: show frame progression out of captured frames
+    frameDisplay = "Total: " + (animData.totalFrames || 600) + " | Current: " + (animData.currentFrame || 0) + " / " + (animData.capturedFrames || 0);
+    if (animData.progress !== undefined) {
+      progressValue = animData.progress.toFixed(1) + "%";
+    }
+  }
+
+  let actuatorDisplay = "-";
+  if (animData.actuator && animData.actuator > 0 && animData.actuator <= 4) {
+    actuatorDisplay = "Actuator " + animData.actuator;
+  }
+
+  const html = 
+    "<p><b>Mode:</b> " + modeDisplay + "</p>" +
+    "<p><b>Frames:</b> " + frameDisplay + "</p>" +
+    "<p><b>Progress:</b> " + progressValue + "</p>" +
+    "<p><b>Last Actuator:</b> " + actuatorDisplay + "</p>";
+
+  return html;
+}
+
+var lastAnimationMode = "IDLE";  // Track mode transitions to handle save UI display
+
+function updateAnimationDisplay(animData) {
+  // Show or hide the progress display based on mode
+  if (animData.mode === "IDLE") {
+    hideEl("animationProgressTab1");
+    hideEl("animationProgressTab3");
+    
+    // Transition from RECORDING to IDLE: decide whether to show save UI
+    if (lastAnimationMode === "RECORDING") {
+      if (animData.capturedFrames > 0) {
+        // Recording completed with captured frames - show save option
+        showSaveSlotSelector();
+      } else {
+        // Recording completed with NO captured frames - hide save UI
+        hideEl("saveSlotSelector");
+        hideEl("recSaveButton");
+      }
+    }
+  } else {
+    showEl("animationProgressTab1");
+    showEl("animationProgressTab3");
+
+    // Build HTML once and inject into both display locations
+    const progressHTML = buildAnimationProgressHTML(animData);
+    setHtml("animationProgressTab1", progressHTML);
+    setHtml("animationProgressTab3", progressHTML);
+  }
+  
+  // Remember this mode for next transition check
+  lastAnimationMode = animData.mode;
+}
+

@@ -157,6 +157,9 @@ void AnimationTask(void *parameter) {
     // Update animation playback if currently playing
     updatePlayback();
 
+    // Send animation frame data to connected clients via SSE
+    sendAnimationFrameData();
+
     updateAudio(); // Update the state of the available sound board.
     checkMusic(); // Perform music control as necessary.
 

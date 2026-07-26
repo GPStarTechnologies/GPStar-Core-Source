@@ -83,11 +83,11 @@ void registerWebRoutes() {
   addSimpleRoute("/device/actuator/*", HTTP_PUT, handleActuator, "Trigger actuator", "Trigger an actuator (1-4)", TAG_DEVICE_CONTROL);
 
   // Animation Control
-  addSimpleRoute("/animations/record/start", HTTP_POST, handleRecordStart, "Start recording animation", "Begins recording a new animation sequence", TAG_DEVICE_CONTROL);
-  addSimpleRoute("/animations/record/stop", HTTP_POST, handleRecordStop, "Stop recording", "Stops recording and returns frame count", TAG_DEVICE_CONTROL);
-  addSimpleRoute("/animations/record/save/*", HTTP_POST, handleRecordSave, "Save animation", "Saves recorded animation to NVS (id=[0-3])", TAG_DEVICE_CONTROL);
-  addSimpleRoute("/animations/play/*", HTTP_POST, handlePlayAnimation, "Play animation", "Loads and plays a recorded animation (id=[0-3])", TAG_DEVICE_CONTROL);
-  addSimpleRoute("/animations/stop", HTTP_POST, handleStopAnimation, "Stop animation", "Stops current animation playback", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/record/start", HTTP_PUT, handleRecordStart, "Start recording animation", "Begins recording a new animation sequence", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/record/stop", HTTP_PUT, handleRecordStop, "Stop recording", "Stops recording and returns frame count", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/record/save/*", HTTP_PUT, handleRecordSave, "Save animation", "Saves recorded animation to NVS (id=[0-3])", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/play/*", HTTP_PUT, handlePlayAnimation, "Play animation", "Loads and plays a recorded animation (id=[0-3])", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/stop", HTTP_PUT, handleStopAnimation, "Stop animation", "Stops current animation playback", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/status", HTTP_GET, handleAnimationStatus, "Get animation status", "Returns current animation mode, frame count, and playback progress", TAG_DEVICE_CONTROL);
 
   // Volume Control

@@ -31,7 +31,8 @@ function getValue(id) {
 }
 
 function setHtml(id, value) {
-  getEl(id).innerHTML = value || "";
+  var el = getEl(id);
+  if (el) el.innerHTML = value || "";
 }
 
 function setToggle(id, value) {
@@ -47,30 +48,38 @@ function setValue(id, value) {
 }
 
 function hideEl(id) {
-  getEl(id).style.display = "none";
+  var el = getEl(id);
+  if (el) el.style.display = "none";
 }
 
 function showEl(id) {
-  getEl(id).style.display = "block";
+  var el = getEl(id);
+  if (el) el.style.display = "block";
 }
 
 function disableEl(id) {
-  getEl(id).disabled = true;
+  var el = getEl(id);
+  if (el) el.disabled = true;
 }
 
 function enableEl(id) {
-  getEl(id).disabled = false;
+  var el = getEl(id);
+  if (el) el.disabled = false;
 }
 
 function colorEl(id, red, green, blue, alpha = 0.5) {
-  getEl(id).style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alpha + ")";
+  var el = getEl(id);
+  if (el) el.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alpha + ")";
 }
 
 function blinkEl(id, state) {
-  if (state) {
-    getEl(id).classList.add("blinking");
-  } else {
-    getEl(id).classList.remove("blinking");
+  var el = getEl(id);
+  if (el) {
+    if (state) {
+      el.classList.add("blinking");
+    } else {
+      el.classList.remove("blinking");
+    }
   }
 }
 
