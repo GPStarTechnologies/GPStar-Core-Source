@@ -620,13 +620,6 @@ void updateMasterVolume(bool startup) {
       // Nothing.
     break;
   }
-
-  if(!startup) {
-    // If this isn't being called at boot, provide audio feedback and report the change.
-    if(!(b_playing_music && !b_music_paused)) {
-      // Reserved to play a sound effect indicating the volume change.
-    }
-  }
 }
 
 void increaseVolumeEEPROM() {

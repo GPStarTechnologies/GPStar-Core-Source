@@ -21,14 +21,15 @@
       </p>
       <br />
     </div>
-    <h1>General Options</h1>
+
+    <h1>Device Identification</h1>
     <div class="block left">
       <div class="setting">
-        <b>Private Network:</b>
+        <b>Custom Name:</b>
         <input
           type="text"
           id="wifiName"
-          size="60"
+          size="40"
           maxlength="32"
           placeholder="Custom SSID"
           title="Only letters, numbers, hyphens, and underscores are allowed, up to 32 characters."
@@ -52,6 +53,9 @@
       function onLoad(event) {
         // Wait 0.1s for page to fully load.
         setTimeout(getSettings, 100);
+
+        // Initialize contextual help system
+        initializeHelp("device");
       }
 
       function getSettings() {
@@ -102,6 +106,7 @@
           if (this.readyState == 4) {
             if (this.status == 200 || this.status == 201) {
               handleStatus(this.responseText);
+              getSettings(); // Refresh settings.
 
               if (this.status == 201) {
                 if (confirm("Restart device now?")) {

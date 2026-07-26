@@ -401,21 +401,24 @@ window.addEventListener("load", onLoad);
 function buildAnimationProgressHTML(animData) {
   let frameDisplay = "-";
   let progressValue = "-";
+  let actuatorDisplay = "-";
   
   if (animData.mode === "RECORDING" || animData.mode === "PLAYBACK") {
     const current = animData.currentFrame || 0;
-    const total = animData.capturedFrames || animData.totalFrames || 0;
+    const total = animData.totalFrames || 0;  // Use totalFrames for timeline span display
     const percentage = total > 0 ? ((current / total) * 100).toFixed(1) : 0;
     frameDisplay = current + " / " + total + " (" + percentage + "%)";
     
     const elapsed = (animData.elapsedSeconds || 0).toFixed(1);
     const duration = (animData.totalTime || 0).toFixed(1);
     progressValue = elapsed + " / " + duration + "s";
-  }
-
-  let actuatorDisplay = "-";
-  if (animData.frameValue && animData.frameValue > 0 && animData.frameValue <= 4) {
-    actuatorDisplay = "Actuator " + animData.frameValue;
+    
+    // Use lastActuator field if available (sent from backend), otherwise fall back to frameValue
+    if (animData.lastActuator && animData.lastActuator > 0 && animData.lastActuator <= 4) {
+      actuatorDisplay = "Actuator " + animData.lastActuator;
+    } else if (animData.frameValue && animData.frameValue > 0 && animData.frameValue <= 4) {
+      actuatorDisplay = "Actuator " + animData.frameValue;
+    }
   }
 
   const html = 

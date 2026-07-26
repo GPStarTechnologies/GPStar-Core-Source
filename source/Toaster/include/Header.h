@@ -178,7 +178,8 @@ const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
  * Contains the recorded animation frames and metadata.
  */
 struct AnimationData {
-  uint16_t keyFrames;              // How many key frames were recorded (0-600)
+  uint16_t keyFrames;              // How many frames contain a non-zero value
+  uint16_t totalFrames;            // How many frames were recorded (0-ANIM_MAX_FRAMES)
   uint16_t checksum;               // CRC16 of frames[] for optional validation against NVS
   uint8_t frames[ANIM_MAX_FRAMES]; // The recorded frame data (0 = no action, 1-4 = relay ID)
 };
@@ -190,8 +191,9 @@ struct AnimationData {
 struct AnimationSession {
   uint8_t mode;                    // Current AnimationMode (IDLE, RECORDING, PLAYBACK)
   uint8_t buffer[ANIM_MAX_FRAMES]; // Current animation being recorded or played
-  uint16_t keyFrames;              // How many key frames in current animation
-  uint32_t startTime;              // millis() timestamp when recording/playback began
+  uint16_t keyFrames;              // How many frames contain a non-zero value (recorded frames)
+  uint16_t totalFrames;            // How many total frames exist in the buffer (0-ANIM_MAX_FRAMES)
+  uint32_t wallTime;               // millis() timestamp when recording/playback began
   int8_t sourceSlot;               // Source context: -1=no slot, 0-3=loaded from slot
 };
 

@@ -462,25 +462,36 @@ String getAnimationFrame() {
   jsonFrame["totalFrames"] = ANIM_MAX_FRAMES;  // Always 600
   jsonFrame["capturedFrames"] = currentAnimation.keyFrames;  // Frames with relay activity
   
-  uint32_t elapsed = millis() - currentAnimation.startTime;
+  uint32_t elapsed = millis() - currentAnimation.wallTime;
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
   jsonFrame["currentFrame"] = currentFrame;
   
   // Derive elapsed time in seconds (frames × frame duration / 1000 for ms to seconds)
   jsonFrame["elapsedSeconds"] = roundFloat((float)currentFrame * ANIM_TIME_UNIT_MS / 1000.0f);
   
-  // Total duration of recorded animation in seconds (keyFrames × frame duration / 1000)
-  jsonFrame["totalTime"] = roundFloat((float)currentAnimation.keyFrames * ANIM_TIME_UNIT_MS / 1000.0f);
+  // Total duration of animation in seconds (totalFrames × frame duration / 1000)
+  jsonFrame["totalTime"] = roundFloat((float)currentAnimation.totalFrames * ANIM_TIME_UNIT_MS / 1000.0f);
   
-  // Derive progress percentage (based on captured frames for playback)
-  if(currentAnimation.keyFrames > 0) {
-    jsonFrame["progress"] = roundFloat((float)currentFrame / currentAnimation.keyFrames * 100.0f);
+  // Derive progress percentage (based on animation timeline span)
+  if(currentAnimation.totalFrames > 0) {
+    jsonFrame["progress"] = roundFloat((float)currentFrame / currentAnimation.totalFrames * 100.0f);
   }
   
   // Include which actuator (if any) is firing at current frame
   // Value: 0 = no action, 1-4 = actuator ID
-  uint8_t currentActuator = (currentFrame < currentAnimation.keyFrames) ? currentAnimation.buffer[currentFrame] : 0;
+  uint8_t currentActuator = (currentFrame < currentAnimation.totalFrames) ? currentAnimation.buffer[currentFrame] : 0;
   jsonFrame["frameValue"] = currentActuator;
+  
+  // Find the last actuator that was recorded (search backwards from totalFrames-1)
+  // This ensures we always display the most recent trigger, even if current frame is empty
+  uint8_t lastRecordedActuator = 0;
+  for(int16_t i = (int16_t)currentAnimation.totalFrames - 1; i >= 0; i--) {
+    if(currentAnimation.buffer[i] > 0) {
+      lastRecordedActuator = currentAnimation.buffer[i];
+      break;
+    }
+  }
+  jsonFrame["lastActuator"] = lastRecordedActuator;  // Will be 0 if no actuators recorded, 1-4 otherwise
   
   // Serialize JSON object to string.
   serializeJson(jsonFrame, frameData);
@@ -1063,12 +1074,15 @@ void handleRecordStop(AsyncWebServerRequest *request) {
     return;
   }
 
-  uint16_t keyFrames = stopRecording();
+  // Capture current keyFrames BEFORE calling stopRecording() (which freezes totalFrames)
+  uint16_t keyFrames = currentAnimation.keyFrames;
+  uint16_t totalFrames = stopRecording();  // Returns frozen totalFrames span
 
   JsonDocument jsonResponse;
   jsonResponse["status"] = "success";
   jsonResponse["message"] = "Recording stopped";
-  jsonResponse["keyFrames"] = keyFrames;
+  jsonResponse["keyFrames"] = keyFrames;  // Count of relay trigger events
+  jsonResponse["totalFrames"] = totalFrames;  // Timeline span
 
   String response;
   serializeJson(jsonResponse, response);
@@ -1171,13 +1185,14 @@ void handleAnimationStatus(AsyncWebServerRequest *request) {
   JsonDocument jsonResponse;
   jsonResponse["mode"] = modeNames[currentAnimation.mode];
   jsonResponse["keyFrames"] = currentAnimation.keyFrames;
+  jsonResponse["totalFrames"] = currentAnimation.totalFrames;
 
   if (currentAnimation.mode == ANIM_PLAYBACK) {
-    uint32_t elapsed = millis() - currentAnimation.startTime;
+    uint32_t elapsed = millis() - currentAnimation.wallTime;
     uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
     jsonResponse["currentFrame"] = currentFrame;
-    jsonResponse["progress"] = (currentAnimation.keyFrames > 0) ?
-      (float)currentFrame / currentAnimation.keyFrames * 100.0 : 0.0;
+    jsonResponse["progress"] = (currentAnimation.totalFrames > 0) ?
+      (float)currentFrame / currentAnimation.totalFrames * 100.0 : 0.0;
   }
 
   String response;

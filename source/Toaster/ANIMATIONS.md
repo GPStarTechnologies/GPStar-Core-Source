@@ -46,17 +46,25 @@ enum AnimationMode : uint8_t {
 
 // In-memory runtime state (used during recording/playback)
 struct AnimationSession {
-  uint8_t buffer[600];      // Current animation being recorded or played
-  uint16_t keyFrames;      // How many frames in current animation
-  uint32_t startTime;       // When recording/playback started (for timing)
-  uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
-  int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
+  uint8_t buffer[600];       // Current animation being recorded or played
+  uint16_t keyFrames;        // Count of frames containing non-zero values (trigger events)
+  uint16_t totalFrames;      // Timeline span from 0 to last frame (0-ANIM_MAX_FRAMES)
+  uint32_t wallTime;         // millis() timestamp when recording/playback began
+  uint8_t mode;              // Current mode (IDLE, RECORDING, PLAYBACK)
+  int8_t sourceSlot;         // Source context: -1=fresh recording, 0-3=loaded from slot
 };
 
 AnimationSession currentAnimation;
 ```
 
-When saved to NVS, only the `keyFrames` and `buffer` are stored (as AnimationData struct). The `startTime`, `mode`, and `sourceSlot` are runtime only.
+When saved to NVS, `keyFrames`, `totalFrames`, and `buffer` are stored (as AnimationData struct). The `wallTime`, `mode`, and `sourceSlot` are runtime-only (recalculated on each session).
+
+**keyFrames vs totalFrames:**
+
+- **keyFrames**: Count of relay trigger events recorded (non-zero frame count). Used to validate save (must be > 0).
+- **totalFrames**: Timeline span from frame 0 to the last frame when recording stopped. Used for progress bar and playback duration.
+
+Example: If user records for 5 seconds (50 frames) and triggers relays 3 times → `keyFrames=3, totalFrames=50`
 
 **sourceSlot Context Tracking:**
 
@@ -64,16 +72,17 @@ The `sourceSlot` field tracks where an animation came from for UI display purpos
 
 | Value | State                           | UI Display                    |
 | ----- | ------------------------------- | ----------------------------- |
-| -1    | Fresh recording (not yet saved) | "Recording: Frame X / Y"      |
-| 0-3   | Loaded from NVS slot            | "Playing Slot N: Frame X / Y" |
-| 0xFF  | Idle (no animation)             | Hidden progress display       |
+| -1    | Fresh recording (not yet saved) | "Recording: Frame X / totalFrames"  |
+| 0-3   | Loaded from NVS slot            | "Playing Slot N: Frame X / totalFrames" |
 
 **State Transitions:**
 
-- `startRecording()` → sourceSlot = -1 (fresh recording)
-- `saveRecordingToNVS(2)` → sourceSlot = 2 (now persisted to slot 2)
-- `startPlayback(0)` → sourceSlot = 0 (loaded from slot 0)
-- `stopPlayback()` → sourceSlot = 0xFF (idle)
+- `startRecording()` → sourceSlot = -1, keyFrames = 0, totalFrames = 0
+- `recordRelayAtCurrentFrame()` → keyFrames++, totalFrames updated as timeline extends
+- `stopRecording()` → mode = IDLE, totalFrames frozen at current span
+- `saveRecordingToNVS(slot)` → if keyFrames > 0 → save succeeds, sourceSlot = slot
+- `startPlayback(slot)` → load from NVS, sourceSlot = slot, wallTime = millis(), playback runs for totalFrames
+- `stopPlayback()` → sourceSlot = -1, all fields cleared
 
 ---
 
@@ -110,7 +119,8 @@ The `sourceSlot` field tracks where an animation came from for UI display purpos
 ```cpp
 // Persistent animation data (stored in NVS)
 struct AnimationData {
-  uint16_t keyFrames;      // How many frames were recorded
+  uint16_t keyFrames;       // Count of frames with relay activity (trigger events)
+  uint16_t totalFrames;     // Timeline span (0 to last frame when user pressed stop)
   uint16_t checksum;        // CRC16 of frames[] for optional validation against NVS
   uint8_t frames[600];      // The recorded frame data (0 = no action, 1-4 = relay ID)
 };
@@ -124,10 +134,11 @@ enum AnimationMode : uint8_t {
 
 struct AnimationSession {
   uint8_t buffer[600];      // Current animation being recorded or played
-  uint16_t keyFrames;      // How many frames in current animation
-  uint32_t startTime;       // When recording/playback started (for timing)
+  uint16_t keyFrames;       // Count of frames containing non-zero values
+  uint16_t totalFrames;     // Timeline span from 0 to last frame
+  uint32_t wallTime;        // millis() timestamp when recording/playback began
   uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
-  int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
+  int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot
 };
 
 
@@ -149,18 +160,19 @@ Each animation is stored as an `AnimationData` struct under fixed keys derived f
 
 **What's stored:**
 
-- `keyFrames`: Tells playback how many frames to execute
+- `keyFrames`: Count of relay trigger events (non-zero frame count)
+- `totalFrames`: Timeline span from recording start to stop
 - `checksum`: CRC16 of the `frames[]` array—optional, for verifying data matches what's in NVS if needed
 - `frames[]`: The 600-byte array of relay values
 
 **Storage Keys & Layout:**
 
 ```
-NVS Namespace: Default
+NVS Namespace: animations
 NVS Keys:      "anim1", "anim2", "anim3", "anim4"
 Type:          Blob (binary)
-Size:          AnimationData struct (2 + 2 + 600 = 604 bytes per animation)
-Total:         4 animations × 604 bytes = ~2.4KB (16KB NVS available ✅)
+Size:          AnimationData struct (2 + 2 + 2 + 600 = 606 bytes per animation)
+Total:         4 animations × 606 bytes = ~2.4KB (16KB NVS available ✅)
 ```
 
 **NVS Access Pattern (from Animation.cpp):**
@@ -233,26 +245,28 @@ RF buttons are **playback control only**:
 
 **`void startRecording()`**
 
-- Clear buffer, set mode = ANIM_RECORDING, capture startTime
+- Clear buffer, set mode = ANIM_RECORDING, capture wallTime, set keyFrames = 0, totalFrames = 0
 - File: [src/Animation.cpp](src/Animation.cpp)
 
 **`void recordRelayAtCurrentFrame(uint8_t actuatorID)`**
 
-- Calculate frame index: `(millis() - startTime) / ANIM_TIME_UNIT_MS`
+- Calculate frame index: `(millis() - wallTime) / ANIM_TIME_UNIT_MS`
 - Write actuatorID to `buffer[frame]` (values 1-4 for ACTUATOR_1 through ACTUATOR_4)
+- Increment `keyFrames` (count of relay events)
+- Update `totalFrames` to track timeline span
 - Bound frame to `[0, ANIM_MAX_FRAMES-1]` to prevent buffer overflow
-- Update keyFrames if this frame is new
 
 **`uint16_t stopRecording()`**
 
 - Set mode = ANIM_IDLE
-- Return keyFrames
+- Return totalFrames (timeline span)
 
 **`bool saveRecordingToNVS(uint8_t animIndex)`**
 
+- Validate `keyFrames > 0` (must have at least one relay event to save)
 - Validate `animIndex` is in range `[0, ANIM_MAX_STORED-1]`
 - Compute checksum of buffer
-- Create AnimationData struct with keyFrames, checksum, and frames
+- Create AnimationData struct with keyFrames, totalFrames, checksum, and frames
 - Write to NVS under key `ANIMATION_NAMES[animIndex]`
 - Return true if successful
 
@@ -260,8 +274,9 @@ RF buttons are **playback control only**:
 
 - Validate `animIndex` is in range
 - Read AnimationData from NVS
+- Validate `keyFrames > 0 && totalFrames > 0 && totalFrames <= ANIM_MAX_FRAMES`
 - Optionally validate checksum (warn if mismatch)
-- Copy frames and keyFrames into buffer
+- Copy frames, keyFrames, and totalFrames into runtime buffer
 - Clear mode (leave as IDLE)
 - Return true if successful
 
@@ -269,20 +284,21 @@ RF buttons are **playback control only**:
 
 - Call loadAnimationFromNVS(animIndex)
 - If load fails, return false
-- Set mode = ANIM_PLAYBACK, capture startTime
+- Set mode = ANIM_PLAYBACK, capture wallTime = millis()
 - Return true
 
 **`void stopPlayback()`**
 
 - Set mode = ANIM_IDLE
-- Clear buffer and keyFrames
+- Clear buffer, keyFrames, totalFrames, wallTime
 
 **`void updatePlayback()`** (called each AnimationTask cycle ~10ms)
 
 - If mode != ANIM_PLAYBACK, return immediately
-- Calculate current frame: `(millis() - startTime) / ANIM_TIME_UNIT_MS`
-- If `frame >= keyFrames`: playback complete → stopPlayback()
-- Else if `buffer[frame] != 0`: trigger the relay via `triggerActuator()`
+- Calculate current frame: `(millis() - wallTime) / ANIM_TIME_UNIT_MS`
+- If `currentFrame >= totalFrames`: playback complete → stopPlayback()
+- Else if `buffer[currentFrame] != 0`: trigger the relay via `triggerActuator()`
+- File: [src/Animation.cpp](src/Animation.cpp)
   - Note: Only trigger once per frame (use previous frame tracking to avoid repeat triggers)
 - File: [src/Animation.cpp](src/Animation.cpp)
 

@@ -20,9 +20,9 @@
 /** Common JavaScript - Device Specific **/
 
 /**
- * Appended shared JavaScript functions from SharedLib/WebAssets/*.js below:
- *  - api.js
- *  - dom.js
- *  - help.js
- *  - utils.js
+ * NOTICE: Some required functions exist in shared JS files:
+ * - api.js
+ * - dom.js
+ * - help.js
+ * - utils.js
  */

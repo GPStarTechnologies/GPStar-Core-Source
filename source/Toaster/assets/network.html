@@ -13,8 +13,8 @@
     <h1>WiFi Settings</h1>
     <div class="block left">
       <p>
-        Configure and enable the parent device (eg. an Attenuator or Proton Pack) as an external WiFi network to join when in range. Once a network configuration has been saved, it
-        will be stored for future use. Up to 10 networks can be saved for quick selection.
+        Configure and enable a preferred external WiFi network for this device to join when in range (eg. your home network). Enabling this feature allows you to make use of a
+        preferred WiFi network such as those used by your mobile device(s).
       </p>
     </div>
 
@@ -103,6 +103,9 @@
           getNetworks();
           getSettings();
         }, 50);
+
+        // Initialize contextual help system
+        initializeHelp("network");
       }
 
       // Ensure the select element reflects the current network input value.
@@ -445,7 +448,7 @@
             getSettings(); // Refresh the current network settings.
           } else if (this.readyState == 4) {
             // Handle error responses
-            handleStatus(this.responseText);
+            handleStatus(this.responseText || "An unknown error occurred. Please try again.");
           }
         };
         xhttp.open("PUT", "/wifi/update", true);
