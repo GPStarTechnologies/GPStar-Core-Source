@@ -256,10 +256,21 @@ RF buttons are **playback control only**:
 - Update `totalFrames` to track timeline span
 - Bound frame to `[0, ANIM_MAX_FRAMES-1]` to prevent buffer overflow
 
+**`void updateRecordingElapsedTime()`** (NEW - called continuously during recording)
+
+- If mode != ANIM_RECORDING, return immediately
+- Calculate elapsed time: `(millis() - wallTime) / ANIM_TIME_UNIT_MS`
+- Update `totalFrames` to track timeline span continuously (not just when keyFrames recorded)
+- Bound to `[0, ANIM_MAX_FRAMES-1]` to prevent overflow
+- **Purpose:** Ensure totalFrames always reflects true elapsed time, not locked to last keyFrame position
+- **Called from:** AnimationTask every ~10ms during recording, and from `recordRelayAtCurrentFrame()` before each trigger
+- File: [include/Animation.h](include/Animation.h)
+
 **`uint16_t stopRecording()`**
 
+- Call `updateRecordingElapsedTime()` for final update
 - Set mode = ANIM_IDLE
-- Return totalFrames (timeline span)
+- Return totalFrames (timeline span frozen at true duration)
 
 **`bool saveRecordingToNVS(uint8_t animIndex)`**
 
@@ -318,10 +329,14 @@ AnimationSession currentAnimation = {};  // Initialize to all zeros (IDLE mode)
 ```cpp
 void AnimationTask(void *parameter) {
   while(true) {
-    // ... existing relay logic ...
+    // ... relay cleanup logic ...
 
-    // Update animation playback each cycle
-    currentAnimation.updatePlayback();
+    // Update animation playback state if currently playing
+    updatePlayback();
+
+    // Update recording elapsed time AND send animation frame data to connected clients via SSE
+    // (sendAnimationFrameData calls updateRecordingElapsedTime() internally)
+    sendAnimationFrameData();
 
     updateAudio();
     checkMusic();
@@ -329,6 +344,12 @@ void AnimationTask(void *parameter) {
   }
 }
 ```
+
+**Key Points:**
+- `sendAnimationFrameData()` is the **controlling point** for all animation state updates
+- It calls `updateRecordingElapsedTime()` internally before building frame data
+- This ensures timeline tracking happens atomically with data transmission
+- Atomic updates prevent frontend from seeing stale or inconsistent state
 
 **UserInputTask (main.cpp, RF Button Handler):**
 
@@ -380,7 +401,79 @@ GET    /api/status                            → Device status (includes animat
 
 ---
 
-## Slot Metadata Cache
+## Real-Time Data Stream (SSE Events)
+
+**Purpose:** Send animation frame updates to frontend in real-time during recording and playback.
+
+**Function: `String getAnimationFrame()`** (Webhandler.h)
+
+Serializes current animation state as JSON object with these fields:
+
+```json
+{
+  "mode": "RECORDING|PLAYBACK|IDLE",
+  "sourceSlot": -1 to 3,
+  "totalFrames": 600,
+  "currentFrame": 0-600,
+  "capturedFrames": 0-600,
+  "elapsedSeconds": 0.0-60.0,
+  "totalTime": 0.0-60.0,
+  "progress": 0.0-100.0,
+  "frameValue": 0-4,
+  "lastActuator": 0-4
+}
+```
+
+**Field Descriptions:**
+
+- `mode`: Current state (string for UI display)
+- `sourceSlot`: Context indicator (-1=fresh recording, 0-3=loaded slot, -1 again on idle)
+- `totalFrames`: Timeline capacity (always 600 for now)
+- `currentFrame`: Frame position based on elapsed time since wallTime
+- `capturedFrames`: Count of non-zero frames (keyFrames) - used to validate save was captured
+- `elapsedSeconds`: Human-readable elapsed time (currentFrame × 0.1s), rounded to 2 decimals
+- `totalTime`: Total duration of animation (totalFrames × 0.1s), rounded to 2 decimals
+- `progress`: Percentage completion (currentFrame / totalFrames × 100), rounded to 2 decimals
+- `frameValue`: Actuator ID at current frame (0=idle, 1-4=relay triggering now)
+- `lastActuator`: Most recent actuator triggered (backward search from totalFrames-1), always shows recent activity
+
+**Function: `void sendAnimationFrameData()`** (Webhandler.h)
+
+- **Controlling point for all animation state updates**
+- Calls `updateRecordingElapsedTime()` first (before building frame data)
+- Builds current animation state via `getAnimationFrame()`
+- Sends SSE "animation" event if:
+  - Mode is RECORDING or PLAYBACK (active modes), OR
+  - Mode is IDLE **AND** keyFrames > 0 (transition event with recorded data)
+- **Purpose:** Atomically update and transmit animation state every AnimationTask cycle (~10ms)
+- Ensures frontend sees consistent snapshot of state (timestamps sync'd to single moment)
+
+**SSE Event Flow:**
+
+1. **During RECORDING:**
+   - `sendAnimationFrameData()` called every ~10ms from AnimationTask
+   - Sends frame position, elapsed time, lastActuator to frontend
+   - Frontend updates progress display in real-time
+   - **When user presses Stop:**
+     - `stopRecording()` called, mode set to IDLE
+     - Next `sendAnimationFrameData()` detects IDLE with keyFrames > 0
+     - Sends **final event** with recorded state
+     - Frontend receives it, transitions UI to show save selector
+
+2. **During PLAYBACK:**
+   - `sendAnimationFrameData()` called every ~10ms from AnimationTask
+   - Sends current frame, elapsed time, triggered actuator
+   - Frontend updates progress display in real-time
+   - **When animation finishes:**
+     - `updatePlayback()` detects currentFrame >= totalFrames
+     - Calls `stopPlayback()`, mode set to IDLE
+     - Next `sendAnimationFrameData()` sees IDLE with keyFrames == 0 (after stopPlayback cleared it)
+     - No event sent (IDLE with no keyFrames = not a "recordable" state)
+
+3. **Idle State:**
+   - SSE events stop being sent (mode = IDLE with keyFrames = 0)
+   - Frontend continues displaying last known state
+   - Ready for next recording or playback start
 
 **Purpose:** Track which NVS animation slots have valid recordings so the UI can display available animations and disable empty slots in the play dropdown.
 
@@ -446,7 +539,35 @@ The device status endpoint now includes `animationSlots` array:
 
 ---
 
-## Client-Side Slot Management
+## Frontend UI (index.html & index.js)
+
+**Simplified Direct Slot Selection:**
+
+Removed redundant trigger buttons (`recSaveButton`, `recPlayButton`). Slot selectors now show/hide directly based on animation state:
+
+- **Save Selector:** Hidden by default. Shows directly when recording stops with captured frames (SSE event with `mode=IDLE, capturedFrames>0`)
+- **Play Selector:** Hidden by default. Shows when user clicks would-be "Play" button (future feature)
+
+**Recording UI Flow:**
+
+1. User clicks "Start" → progress displays show, selectors hide
+2. User triggers actuators → progress updates in real-time via SSE
+3. User clicks "Stop" → progress hides, **save selector appears directly**
+4. User selects slot and clicks "Save" → animation persisted to NVS
+5. UI refreshes slot cache, Play dropdown updates to show saved animation
+
+**Frontend Functions (index.js):**
+
+- `recordingStart()` - Hide selectors, show progress during active recording
+- `recordingStop()` - Hide progress, wait for SSE final event
+- `updateAnimationDisplay(animData)` - Main state handler:
+  - If transitioning RECORDING→IDLE with capturedFrames>0: `showEl("saveSlotSelector")`
+  - If transitioning RECORDING→IDLE with no capturedFrames: `hideEl("saveSlotSelector")`
+  - During active modes: update progress HTML from animData fields
+- `cancelSaveSlot()` - Hide save selector
+- `recordingSaveToSlot()` - POST to /animations/record/save/{slot}, hide selector on complete
+
+**Key UI Simplification:** No intermediate button clicks needed. Recording→Stop triggers direct save UI appearance via SSE event. One-click path to save.
 
 **JavaScript Functions (index.js):**
 

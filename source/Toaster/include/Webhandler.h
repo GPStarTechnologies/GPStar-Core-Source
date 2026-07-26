@@ -104,6 +104,31 @@ float roundFloat(float value) {
  * Called once on startup and whenever a recording is saved.
  * Checks for animation blob existence and reads keyFrames.
  */
+/**
+ * refreshAnimationSlotCache() - Scan NVS and rebuild the animation availability cache
+ * 
+ * HOW IT WORKS:
+ * - Queries NVS for each of the 4 animation slots ("anim0", "anim1", "anim2", "anim3")
+ * - For each slot, attempts to deserialize AnimationData using getBytes()
+ * - Updates the in-memory animationSlots[] array with hasAnimation flag and keyFrames count
+ * - This cache is used by the UI to populate dropdowns and enable/disable the Play button
+ * 
+ * CACHE ARRAY (animationSlots[4]):
+ * - animationSlots[i].id = slot number (0-3)
+ * - animationSlots[i].hasAnimation = true if slot contains valid data
+ * - animationSlots[i].keyFrames = number of relay triggers in animation (or 0 if empty)
+ * 
+ * WHEN TO CALL:
+ * - After saveRecordingToNVS() completes (so UI learns about new saved animation)
+ * - On system startup (to populate UI with any previously saved animations)
+ * - When user explicitly requests "refresh" action
+ * 
+ * OPERATION:
+ * - Opens Preferences in read-only mode, iterates all 4 slots
+ * - For each slot, getBytes() returns 0 if key doesn't exist (empty slot)
+ * - For each slot, getBytes() returns size if key exists; validates keyFrames > 0
+ * - After all slots checked, closes Preferences connection
+ */
 void refreshAnimationSlotCache() {
   Preferences preferences;
   
@@ -121,9 +146,14 @@ void refreshAnimationSlotCache() {
   for (uint8_t i = 0; i < 4; i++) {
     animationSlots[i].id = i;
     
+    // getBytes() deserializes the AnimationData struct from NVS for this slot
+    // Parameters: key name (ANIMATION_NAMES[i]), pointer to data buffer, max size
+    // Returns: number of bytes read (should equal sizeof(AnimationData) if slot has animation)
+    // Returns 0 if key doesn't exist (slot is empty)
     AnimationData data;
     size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
     
+    // Validation: only mark slot as "hasAnimation" if read succeeded and data is valid
     if (size == sizeof(data) && data.keyFrames > 0 && data.keyFrames <= ANIM_MAX_FRAMES) {
       animationSlots[i].hasAnimation = true;
       animationSlots[i].keyFrames = data.keyFrames;
@@ -499,11 +529,18 @@ String getAnimationFrame() {
 }
 
 void sendAnimationFrameData() {
-  if(b_httpd_started && (currentAnimation.mode == ANIM_RECORDING || currentAnimation.mode == ANIM_PLAYBACK)) {
-    // Gather the latest animation frame data, serialize it to a JSON string,
-    // and send it to all connected EventSource (SSE) clients as an "animation"
-    // event name (using the current ms time as a unique event identifier).
-    events.send(getAnimationFrame().c_str(), "animation", millis());
+  // Update recording elapsed time at the controlling point (before building frame data)
+  updateRecordingElapsedTime();
+
+  if(b_httpd_started) {
+    // Send SSE events during active recording/playback, OR on transition to IDLE with data
+    if((currentAnimation.mode == ANIM_RECORDING || currentAnimation.mode == ANIM_PLAYBACK) ||
+       (currentAnimation.mode == ANIM_IDLE && currentAnimation.keyFrames > 0)) {
+      // Gather the latest animation frame data, serialize it to a JSON string,
+      // and send it to all connected EventSource (SSE) clients as an "animation"
+      // event name (using the current ms time as a unique event identifier).
+      events.send(getAnimationFrame().c_str(), "animation", millis());
+    }
   }
 }
 
@@ -1108,6 +1145,12 @@ void handleRecordSave(AsyncWebServerRequest *request) {
         }
 
         if (saveRecordingToNVS(animIndex)) {
+          // Update the animation slot cache from NVS
+          refreshAnimationSlotCache();
+          
+          // Notify all clients that slots have changed
+          notifyWSClients();
+          
           JsonDocument jsonResponse;
           jsonResponse["status"] = "success";
           jsonResponse["message"] = "Animation saved";

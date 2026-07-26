@@ -102,10 +102,10 @@
         <br />
         <button type="button" class="orange" onclick="recordingStart()" id="recStart">Start</button>
         &nbsp;&nbsp;
-        <button type="button" class="orange" onclick="recordingStop()" id="recStop">Stop</button>
+        <button type="button" class="blue" onclick="recordingStop()" id="recStop">Stop</button>
         <br />
         <br />
-        <div id="saveSlotSelector">
+        <div id="saveSlotSelector" style="display: none;">
           <label for="saveSlot">Save Slot:</label>
           <select id="saveSlot">
             <option value="0">Slot 0</option>
@@ -114,13 +114,11 @@
             <option value="3">Slot 3</option>
           </select>
           <br />
-          <button type="button" class="orange" onclick="recordingSaveToSlot()" id="recSave">Save</button>
+          <button type="button" class="green" onclick="recordingSaveToSlot()" id="recSave">Save</button>
+          &nbsp;&nbsp;
           <button type="button" class="orange" onclick="cancelSaveSlot()" id="recCancel">Cancel</button>
         </div>
-        <button type="button" class="orange" onclick="showSaveSlotSelector()" id="recSaveButton">Save</button>
-        <br />
-        <br />
-        <div id="playSlotSelector">
+        <div id="playSlotSelector" style="display: none;">
           <label for="playSlot">Play Animation:</label>
           <select id="playSlot">
             <option value="0">Animation 0</option>
@@ -129,12 +127,10 @@
             <option value="3">Animation 3</option>
           </select>
           <br />
-          <button type="button" class="orange" onclick="playAnimationFromSlot()" id="recPlay">Play</button>
-          <button type="button" class="orange" onclick="cancelPlaySlot()" id="recPlayCancel">Cancel</button>
+          <button type="button" class="green" onclick="playAnimationFromSlot()" id="recPlay">Play</button>
+          &nbsp;&nbsp;
+          <button type="button" class="blue" onclick="cancelPlaySlot()" id="recPlayCancel">Cancel</button>
         </div>
-        <button type="button" class="orange" onclick="showPlaySlotSelector()" id="recPlayButton">Play</button>
-        <br />
-        <br />
         <div style="text-align: left">
           <div id="animationProgressTab3"></div>
         </div>

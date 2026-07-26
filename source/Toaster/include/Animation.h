@@ -104,18 +104,46 @@ inline void startRecording() {
 }
 
 /**
+ * Update the recording timeline span based on current elapsed time
+ * Called continuously during RECORDING mode to track actual duration
+ * (not just when keyFrames are recorded)
+ */
+inline void updateRecordingElapsedTime() {
+  if (currentAnimation.mode != ANIM_RECORDING) {
+    return;
+  }
+
+  // Calculate current frame based on elapsed time since recording started
+  uint32_t elapsed = millis() - currentAnimation.wallTime;
+  uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
+
+  // Bound to valid range
+  if (currentFrame >= ANIM_MAX_FRAMES) {
+    currentFrame = ANIM_MAX_FRAMES - 1;
+  }
+
+  // Update totalFrames to track timeline span (even if no keyFrames in this interval)
+  if (currentFrame >= currentAnimation.totalFrames) {
+    currentAnimation.totalFrames = currentFrame + 1;
+  }
+}
+
+/**
  * Record a relay trigger at the current frame
  * Calculates frame index based on elapsed time since recording started
  * Bounds checking prevents buffer overflow. Increments keyFrames count.
  */
 inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
   if (currentAnimation.mode != ANIM_RECORDING) {
-    return;  // Only record when in RECORDING mode
+    return; // Only record when in RECORDING mode
   }
 
   if (actuatorID < 1 || actuatorID > 4) {
     return;  // Invalid actuator ID (valid range is 1-4)
   }
+
+  // Update timeline span first (tracks elapsed time)
+  updateRecordingElapsedTime();
 
   // Calculate current frame based on elapsed time
   uint32_t elapsed = millis() - currentAnimation.wallTime;
@@ -139,12 +167,16 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
 }
 
 /**
- * Stop recording and return the total duration (totalFrames)
+ * Stop recording and return the total duration (totalFrames).
+ * This just freezes the timeline and exits RECORDING mode
  */
 inline uint16_t stopRecording() {
   if (currentAnimation.mode != ANIM_RECORDING) {
     return 0;
   }
+
+  // Final update to capture any elapsed time since last update
+  updateRecordingElapsedTime();
 
   currentAnimation.mode = ANIM_IDLE;
   return currentAnimation.totalFrames;
@@ -154,6 +186,29 @@ inline uint16_t stopRecording() {
  * Save the current recording to NVS under a specific animation slot
  * Computes checksum and writes AnimationData struct to persistent storage.
  * Updates sourceSlot to indicate this animation is now saved to that slot.
+ */
+/**
+ * saveRecordingToNVS() - Serialize and persist the current recording to flash storage
+ * 
+ * HOW IT WORKS:
+ * - Animation data is stored as a binary blob under a text KEY NAME in NVS
+ * - Key names are fixed: "anim0", "anim1", "anim2", "anim3" (from ANIMATION_NAMES array)
+ * - Each slot stores an AnimationData struct serialized as bytes (606 total: metadata + frame buffer)
+ * - putBytes() writes the struct directly to NVS; subsequent reads via getBytes() deserialize it back
+ * 
+ * STRUCTURE SAVED (AnimationData - 606 bytes total):
+ * - keyFrames (2 bytes): Count of frames that contain relay triggers
+ * - totalFrames (2 bytes): Timeline duration in frames (1 frame = 100ms)
+ * - checksum (2 bytes): CRC16 of frames buffer for corruption detection
+ * - frames[600] (600 bytes): The actual animation data (0=idle, 1-4=relay ID to trigger)
+ * 
+ * PERSISTENCE MODEL:
+ * - NVS namespace "animations" holds 4 slots, each up to ~606 bytes
+ * - Slot name determines where it's stored (e.g., animIndex=0 → saved under key "anim0")
+ * - Once written, data persists across power cycles until explicitly deleted or overwritten
+ * 
+ * @param animIndex: Slot number 0-3; determines which ANIMATION_NAMES key is used
+ * @return: true if write succeeded (written bytes == struct size), false otherwise
  */
 inline bool saveRecordingToNVS(uint8_t animIndex) {
   if (animIndex >= ANIM_MAX_STORED) {
@@ -179,6 +234,10 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
     return false;
   }
 
+  // putBytes() serializes the AnimationData struct and writes it to NVS
+  // Parameters: key name (ANIMATION_NAMES[animIndex]), pointer to data, size in bytes
+  // Returns: number of bytes written (should equal sizeof(AnimationData) = ~1212 bytes)
+  // Returns 0 if write failed (NVS full, corrupted, etc.)
   size_t written = preferences.putBytes(ANIMATION_NAMES[animIndex], &data, sizeof(data));
   preferences.end();
 
@@ -196,6 +255,24 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
  * Optionally validates checksum to detect corruption
  * Sets sourceSlot to indicate where this animation came from
  */
+/**
+ * loadAnimationFromNVS() - Deserialize and load a saved animation from flash storage
+ * 
+ * HOW IT WORKS:
+ * - Reverse of saveRecordingToNVS(): reads the binary blob from NVS and reconstructs the AnimationData struct
+ * - Looks up the animation by slot number (0-3), which maps to ANIMATION_NAMES key ("anim0", "anim1", etc.)
+ * - getBytes() pulls the 606-byte struct from NVS and deserializes it back into an AnimationData struct
+ * - Validates the deserialized data before loading it into the runtime buffer
+ * 
+ * VALIDATION CHECKS:
+ * - Size: Must equal sizeof(AnimationData) - indicates data is structurally intact
+ * - keyFrames: Must be > 0 - slot must contain at least one frame with an action
+ * - totalFrames: Must be > 0 and <= ANIM_MAX_FRAMES (600) - duration must be valid
+ * - Checksum: CRC16 of frames buffer must match stored checksum (corruption detection)
+ * 
+ * @param animIndex: Slot number 0-3
+ * @return: true if load and validation succeeded, false if slot is empty or data is corrupted
+ */
 inline bool loadAnimationFromNVS(uint8_t animIndex) {
   if (animIndex >= ANIM_MAX_STORED) {
     return false;
@@ -206,6 +283,10 @@ inline bool loadAnimationFromNVS(uint8_t animIndex) {
     return false;
   }
 
+  // getBytes() deserializes data from NVS back into the AnimationData struct
+  // Parameters: key name (ANIMATION_NAMES[animIndex]), pointer to destination buffer, max size
+  // Returns: number of bytes read (should equal sizeof(AnimationData) if successful)
+  // Returns 0 if key doesn't exist or read failed
   AnimationData data;
   size_t size = preferences.getBytes(ANIMATION_NAMES[animIndex], &data, sizeof(data));
   preferences.end();

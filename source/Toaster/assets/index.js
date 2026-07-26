@@ -152,8 +152,6 @@ function getNetworkInfo() {
 function disableAnimationButtons() {
   // Used to just disable all the animation-related buttons initially
   // Use centralized helpers to manage disabled state consistently.
-  hideEl("recSaveButton");
-  hideEl("recPlayButton");
   hideEl("saveSlotSelector");
   hideEl("playSlotSelector");
   hideEl("animationProgressTab1");
@@ -233,8 +231,6 @@ function selectMusic2() {
 function recordingStart() {
   sendCommand("/animations/record/start");
   // Hide all save/play buttons and selectors during recording
-  hideEl("recSaveButton");
-  hideEl("recPlayButton");
   hideEl("saveSlotSelector");
   hideEl("playSlotSelector");
   // Show the progress displays during recording
@@ -247,10 +243,6 @@ function recordingStop() {
   // Hide the progress displays after recording stops
   hideEl("animationProgressTab1");
   hideEl("animationProgressTab3");
-  
-  // Don't show save option if no frames were captured
-  // The SSE handler will receive the final animation state and decide
-  // whether to show the save UI based on capturedFrames value
 }
 
 function recordingSaveToSlot() {
@@ -274,22 +266,18 @@ function recordingSaveToSlot() {
 
 function showSaveSlotSelector() {
   showEl("saveSlotSelector");
-  hideEl("recSaveButton");
 }
 
 function cancelSaveSlot() {
   hideEl("saveSlotSelector");
-  showEl("recSaveButton");
 }
 
 function showPlaySlotSelector() {
   showEl("playSlotSelector");
-  hideEl("recPlayButton");
 }
 
 function cancelPlaySlot() {
   hideEl("playSlotSelector");
-  showEl("recPlayButton");
 }
 
 function playAnimationFromSlot() {
@@ -334,13 +322,6 @@ function updatePlaySlots() {
       option.text = label;
       option.disabled = !slot.hasAnimation;
     }
-  }
-
-  // Disable Play button if no slots have animations
-  const hasAnySaved = animationSlots.some((s) => s.hasAnimation);
-  const playButton = getEl("recPlayButton");
-  if (playButton) {
-    playButton.disabled = !hasAnySaved;
   }
 }
 
@@ -437,15 +418,14 @@ function updateAnimationDisplay(animData) {
     hideEl("animationProgressTab1");
     hideEl("animationProgressTab3");
     
-    // Transition from RECORDING to IDLE: decide whether to show save UI
+    // Transition from RECORDING to IDLE: show save UI if frames were captured
     if (lastAnimationMode === "RECORDING") {
       if (animData.capturedFrames > 0) {
-        // Recording completed with captured frames - show save option
-        showSaveSlotSelector();
+        // Recording completed with captured frames - show save selector directly
+        showEl("saveSlotSelector");
       } else {
         // Recording completed with NO captured frames - hide save UI
         hideEl("saveSlotSelector");
-        hideEl("recSaveButton");
       }
     }
   } else {
