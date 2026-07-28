@@ -1218,42 +1218,54 @@ void handleMusicVolumeDown(AsyncWebServerRequest *request) {
 
 void handleMusicStartStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Start/Stop"));
-  if(!b_playing_music && !b_music_paused) {
-    playMusic();
-    setPowerOnReminder(false);
-  }
-  else {
-    stopMusic();
-
-    if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && ((!b_pack_on && gpstarWand.getSystemMode() == MODE_SUPER_HERO) || gpstarWand.isPackInactiveModeOriginal())) {
-      setPowerOnReminder(true);
+  if(b_wand_standalone) {
+    if(!b_playing_music && !b_music_paused) {
+      playMusic();
+      setPowerOnReminder(false);
     }
+    else {
+      stopMusic();
+
+      if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && (gpstarWand.getSystemMode() == MODE_SUPER_HERO || gpstarWand.isPackInactiveModeOriginal())) {
+        setPowerOnReminder(true);
+      }
+    }
+    request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+    notifyWSClients();
+    return;
   }
-  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
-  notifyWSClients();
+
+  debugln(F("Invalid Music Request"));
+  request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Cannot play music unless Neutrona Wand is in Standalone operation mode"));
 }
 
 void handleMusicPauseResume(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Pause/Resume"));
-  if(b_playing_music) {
-    if(b_music_paused) {
-      resumeMusic();
-      setPowerOnReminder(false);
-    }
-    else {
-      pauseMusic();
+  if(b_wand_standalone) {
+    if(b_playing_music) {
+      if(b_music_paused) {
+        resumeMusic();
+        setPowerOnReminder(false);
+      }
+      else {
+        pauseMusic();
 
-      if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && ((!b_pack_on && gpstarWand.getSystemMode() == MODE_SUPER_HERO) || gpstarWand.isPackInactiveModeOriginal())) {
-        setPowerOnReminder(true);
+        if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && (gpstarWand.getSystemMode() == MODE_SUPER_HERO || gpstarWand.isPackInactiveModeOriginal())) {
+          setPowerOnReminder(true);
+        }
       }
     }
+    else {
+      playMusic();
+      setPowerOnReminder(false);
+    }
+    request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+    notifyWSClients();
+    return;
   }
-  else {
-    playMusic();
-    setPowerOnReminder(false);
-  }
-  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
-  notifyWSClients();
+
+  debugln(F("Invalid Music Request"));
+  request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Cannot play music unless Neutrona Wand is in Standalone operation mode"));
 }
 
 void handleNextMusicTrack(AsyncWebServerRequest *request) {

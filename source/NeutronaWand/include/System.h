@@ -10580,7 +10580,7 @@ void toggleStandaloneMode(bool on) {
 
 // Function to handle blinking for the power-on reminder (if enabled).
 void checkPowerOnReminder() {
-  if(WAND_ACTION_STATUS == ACTION_IDLE && (!b_pack_on || b_wand_standalone)) {
+  if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && (!b_pack_on || b_wand_standalone)) {
     if(ms_power_indicator.justFinished()) {
       if(gpstarWand.isPackInactiveModeOriginal() || gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
         // Blink the Clippard LED to indicate to the user that the system battery is still powered on.
