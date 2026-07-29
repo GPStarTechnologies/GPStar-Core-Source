@@ -415,7 +415,7 @@ Serializes current animation state as JSON object with these fields:
   "sourceSlot": -1 to 3,
   "totalFrames": 600,
   "currentFrame": 0-600,
-  "capturedFrames": 0-600,
+  "keyFrames": 0-600,
   "elapsedSeconds": 0.0-60.0,
   "totalTime": 0.0-60.0,
   "progress": 0.0-100.0,
@@ -430,7 +430,7 @@ Serializes current animation state as JSON object with these fields:
 - `sourceSlot`: Context indicator (-1=fresh recording, 0-3=loaded slot, -1 again on idle)
 - `totalFrames`: Timeline capacity (always 600 for now)
 - `currentFrame`: Frame position based on elapsed time since wallTime
-- `capturedFrames`: Count of non-zero frames (keyFrames) - used to validate save was captured
+- `keyFrames`: Count of non-zero frames (keyFrames) - used to validate save was captured
 - `elapsedSeconds`: Human-readable elapsed time (currentFrame × 0.1s), rounded to 2 decimals
 - `totalTime`: Total duration of animation (totalFrames × 0.1s), rounded to 2 decimals
 - `progress`: Percentage completion (currentFrame / totalFrames × 100), rounded to 2 decimals
@@ -543,9 +543,9 @@ The device status endpoint now includes `animationSlots` array:
 
 **Simplified Direct Slot Selection:**
 
-Removed redundant trigger buttons (`recSaveButton`, `recPlayButton`). Slot selectors now show/hide directly based on animation state:
+Removed redundant trigger buttons (`btnSaveButton`, `btnPlayButton`). Slot selectors now show/hide directly based on animation state:
 
-- **Save Selector:** Hidden by default. Shows directly when recording stops with captured frames (SSE event with `mode=IDLE, capturedFrames>0`)
+- **Save Selector:** Hidden by default. Shows directly when recording stops with captured frames (SSE event with `mode=IDLE, keyFrames>0`)
 - **Play Selector:** Hidden by default. Shows when user clicks would-be "Play" button (future feature)
 
 **Recording UI Flow:**
@@ -561,11 +561,11 @@ Removed redundant trigger buttons (`recSaveButton`, `recPlayButton`). Slot selec
 - `recordingStart()` - Hide selectors, show progress during active recording
 - `recordingStop()` - Hide progress, wait for SSE final event
 - `updateAnimationDisplay(animData)` - Main state handler:
-  - If transitioning RECORDING→IDLE with capturedFrames>0: `showEl("saveSlotSelector")`
-  - If transitioning RECORDING→IDLE with no capturedFrames: `hideEl("saveSlotSelector")`
+  - If transitioning RECORDING→IDLE with keyFrames>0: `showEl("saveSlotSelector")`
+  - If transitioning RECORDING→IDLE with no keyFrames: `hideEl("saveSlotSelector")`
   - During active modes: update progress HTML from animData fields
 - `cancelSaveSlot()` - Hide save selector
-- `recordingSaveToSlot()` - POST to /animations/record/save/{slot}, hide selector on complete
+- `saveToSlot()` - POST to /animations/record/save/{slot}, hide selector on complete
 
 **Key UI Simplification:** No intermediate button clicks needed. Recording→Stop triggers direct save UI appearance via SSE event. One-click path to save.
 
@@ -609,7 +609,7 @@ Removed redundant trigger buttons (`recSaveButton`, `recPlayButton`). Slot selec
   - `startRecording()`, `recordRelayAtCurrentFrame()`, `stopRecording()`
   - `saveRecordingToNVS()`, `loadAnimationFromNVS()`
   - `startPlayback()`, `stopPlayback()`, `updatePlayback()`
-  - `computeChecksum()`, `validateChecksum()`, `clearBuffer()`
+  - `computeChecksum()`, `validateChecksum()`, `clearAnimationBuffer()`
   - Helper functions for CRC16 computation and NVS access
 
 **Phase 3: Task Integration**

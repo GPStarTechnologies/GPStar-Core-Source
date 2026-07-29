@@ -178,33 +178,29 @@ const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
  * Contains the recorded animation frames and metadata.
  */
 struct AnimationData {
-  uint16_t keyFrames;              // How many frames contain a non-zero value
   uint16_t totalFrames;            // How many frames were recorded (0-ANIM_MAX_FRAMES)
+  uint16_t keyFrames;              // How many frames contain a non-zero value
   uint16_t checksum;               // CRC16 of frames[] for optional validation against NVS
   uint8_t frames[ANIM_MAX_FRAMES]; // The recorded frame data (0 = no action, 1-4 = relay ID)
 };
 
 /**
  * AnimationSession - Runtime state used during recording/playback
- * Not persisted; recreated from NVS data when needed.
+ * Encapsulates both the animation frame data and playback session metadata.
  */
 struct AnimationSession {
-  uint8_t mode;                    // Current AnimationMode (IDLE, RECORDING, PLAYBACK)
-  uint8_t buffer[ANIM_MAX_FRAMES]; // Current animation being recorded or played
-  uint16_t keyFrames;              // How many frames contain a non-zero value (recorded frames)
-  uint16_t totalFrames;            // How many total frames exist in the buffer (0-ANIM_MAX_FRAMES)
-  uint32_t wallTime;               // millis() timestamp when recording/playback began
-  int8_t sourceSlot;               // Source context: -1=no slot, 0-3=loaded from slot
+  int8_t sourceSlot;  // Source context: -1=no slot, 0-3=loaded from slot
+  uint8_t mode;       // Current AnimationMode (IDLE, RECORDING, PLAYBACK)
+  uint32_t wallTime;  // millis() timestamp when recording/playback began
+  AnimationData data; // Frame buffer and metadata (frames, keyFrames, totalFrames, checksum)
 };
+AnimationSession currentAnimation = {};
 
-// Animation slot cache: tracks which slots have recordings and their frame counts
+// AnimationSlot[N] - Tracks which slots have recordings and their durations
 struct AnimationSlot {
-  uint8_t id;         // Slot index (0-3)
-  bool hasAnimation;  // Whether NVS data exists and is valid
-  uint16_t keyFrames; // Animation duration in frames
+  uint8_t id;             // Slot index (0-3)
+  bool hasAnimation;      // Whether NVS data exists and is valid
+  float animationSeconds; // Animation duration in seconds (calculated from keyFrames * ANIM_TIME_UNIT_MS / 1000)
 };
 const uint8_t ANIMATION_SLOTS_COUNT = 4;
 AnimationSlot animationSlots[ANIMATION_SLOTS_COUNT] = {};
-
-// Global animation session instance, represents the primary animation frame buffer
-AnimationSession currentAnimation = {};

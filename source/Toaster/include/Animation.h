@@ -36,7 +36,7 @@
  * 7. stopPlayback()               → Exit PLAYBACK mode, clear buffer
  *
  * KEY CONCEPTS:
- * - Frame Buffer:     currentAnimation.buffer[600] holds frame data (0=idle, 1-4=relay ID)
+ * - Frame Buffer:     currentAnimation.data.frames[600] holds frame data (0=idle, 1-4=relay ID)
  * - Frame Timing:     Each frame = 100ms. At 100fps, max duration = 1 minute
  * - Recording Mode:   Automatically captures relay triggers via recordRelayAtCurrentFrame()
  * - Playback Mode:    Replays recorded frames by calculating elapsed time and firing relays
@@ -44,7 +44,7 @@
  * - Button Binding:   4 NVS slots map directly to 4 RF buttons (slot 0→button 1, etc.)
  *
  * SESSION vs PERSISTENT DATA:
- * - AnimationSession (currentAnimation):      Runtime state (buffer, keyFrames, mode, timing)
+ * - AnimationSession (currentAnimation):      Runtime state (frames, keyFrames, mode, timing)
  * - AnimationData (NVS):          Persistent struct (keyFrames, checksum, frames[600])
  *
  * AUTOMATIC RECORDING:
@@ -73,13 +73,14 @@ bool triggerActuator(ActuatorID actuatorID);
 /**
  * Clear the animation buffer and reset runtime state
  */
-inline void clearBuffer() {
-  memset(currentAnimation.buffer, 0, sizeof(currentAnimation.buffer));
-  currentAnimation.keyFrames = 0;
-  currentAnimation.totalFrames = 0;
-  currentAnimation.wallTime = 0;
-  currentAnimation.mode = ANIM_IDLE;
+inline void clearAnimationBuffer() {
   currentAnimation.sourceSlot = -1;
+  currentAnimation.mode = ANIM_IDLE;
+  currentAnimation.wallTime = 0;
+  currentAnimation.data.totalFrames = 0;
+  currentAnimation.data.keyFrames = 0;
+  currentAnimation.data.checksum = 0;
+  memset(currentAnimation.data.frames, 0, ANIM_MAX_FRAMES);
 }
 
 /**
@@ -87,20 +88,17 @@ inline void clearBuffer() {
  * Reuses shared crc16 function from Communication.h for consistency
  */
 inline uint16_t computeChecksum() {
-  return crc16(currentAnimation.buffer, ANIM_MAX_FRAMES);
+  return crc16(currentAnimation.data.frames, ANIM_MAX_FRAMES);
 }
 
 /**
  * Start a new recording session
- * Clears buffer, sets mode to RECORDING, captures wall time, marks as fresh recording
+ * Clears buffer, sets mode to RECORDING, captures wall time
  */
 inline void startRecording() {
-  clearBuffer();
+  clearAnimationBuffer();
   currentAnimation.mode = ANIM_RECORDING;
   currentAnimation.wallTime = millis();
-  currentAnimation.keyFrames = 0;
-  currentAnimation.totalFrames = 0;
-  currentAnimation.sourceSlot = -1; // Mark as fresh recording (not yet saved to any slot)
 }
 
 /**
@@ -123,8 +121,8 @@ inline void updateRecordingElapsedTime() {
   }
 
   // Update totalFrames to track timeline span (even if no keyFrames in this interval)
-  if (currentFrame >= currentAnimation.totalFrames) {
-    currentAnimation.totalFrames = currentFrame + 1;
+  if (currentFrame >= currentAnimation.data.totalFrames) {
+    currentAnimation.data.totalFrames = currentFrame + 1;
   }
 }
 
@@ -154,15 +152,20 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
     currentFrame = ANIM_MAX_FRAMES - 1;
   }
 
+  // Check if this frame is currently empty (not yet triggered)
+  uint8_t oldValue = currentAnimation.data.frames[currentFrame];
+  
   // Write actuator ID to buffer at this frame
-  currentAnimation.buffer[currentFrame] = actuatorID;
+  currentAnimation.data.frames[currentFrame] = actuatorID;
 
-  // Increment keyFrames (count of non-zero frames recorded)
-  currentAnimation.keyFrames++;
+  // Only increment keyFrames if this frame was previously empty (newly active frame)
+  if (oldValue == 0 && actuatorID != 0) {
+    currentAnimation.data.keyFrames++;
+  }
 
   // Update totalFrames to track the timeline span
-  if (currentFrame >= currentAnimation.totalFrames) {
-    currentAnimation.totalFrames = currentFrame + 1;
+  if (currentFrame >= currentAnimation.data.totalFrames) {
+    currentAnimation.data.totalFrames = currentFrame + 1;
   }
 }
 
@@ -179,7 +182,8 @@ inline uint16_t stopRecording() {
   updateRecordingElapsedTime();
 
   currentAnimation.mode = ANIM_IDLE;
-  return currentAnimation.totalFrames;
+  currentAnimation.wallTime = 0;
+  return currentAnimation.data.totalFrames;
 }
 
 /**
@@ -215,15 +219,12 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
     return false;  // Invalid animation slot
   }
 
-  if (currentAnimation.keyFrames == 0) {
-    return false;  // Nothing to save
+  if (currentAnimation.data.keyFrames == 0) {
+    return false; // No frames to save
   }
 
-  // Create AnimationData structure
-  AnimationData data;
-  data.keyFrames = currentAnimation.keyFrames;
-  data.totalFrames = currentAnimation.totalFrames;
-  memcpy(data.frames, currentAnimation.buffer, sizeof(data.frames));
+  // Create AnimationData structure from current session
+  AnimationData data = currentAnimation.data;
 
   // Compute checksum over entire 600-byte frame buffer
   data.checksum = computeChecksum();
@@ -236,7 +237,7 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
 
   // putBytes() serializes the AnimationData struct and writes it to NVS
   // Parameters: key name (ANIMATION_NAMES[animIndex]), pointer to data, size in bytes
-  // Returns: number of bytes written (should equal sizeof(AnimationData) = ~1212 bytes)
+  // Returns: number of bytes written (should equal sizeof(AnimationData))
   // Returns 0 if write failed (NVS full, corrupted, etc.)
   size_t written = preferences.putBytes(ANIMATION_NAMES[animIndex], &data, sizeof(data));
   preferences.end();
@@ -302,42 +303,36 @@ inline bool loadAnimationFromNVS(uint8_t animIndex) {
     // debugln(F("Animation checksum mismatch - data may be corrupted"));
   }
 
-  // Copy data into runtime buffer
-  memcpy(currentAnimation.buffer, data.frames, sizeof(data.frames));
-  currentAnimation.keyFrames = data.keyFrames;
-  currentAnimation.totalFrames = data.totalFrames;
-  currentAnimation.mode = ANIM_IDLE;  // Leave in IDLE, caller will set to PLAYBACK
-  currentAnimation.sourceSlot = animIndex;  // Mark which slot this came from
+  currentAnimation.sourceSlot = animIndex; // Mark which slot this came from
+  currentAnimation.mode = ANIM_IDLE;       // Leave in IDLE, caller will set to PLAYBACK
+  currentAnimation.data = data;            // Copy data into runtime buffer
 
   return true;
 }
 
 /**
  * Start playback of a recorded animation
- * Loads from NVS, sets mode to PLAYBACK, captures wall time, records source slot
+ * Loads from NVS, sets mode to PLAYBACK, captures wall time
  */
 inline bool startPlayback(uint8_t animIndex) {
   if (!loadAnimationFromNVS(animIndex)) {
     return false;
   }
 
-  currentAnimation.mode = ANIM_PLAYBACK;
-  currentAnimation.wallTime = millis();
-  currentAnimation.sourceSlot = animIndex;  // Explicitly mark which slot we're playing from
+  currentAnimation.mode = ANIM_PLAYBACK; // Set the state to playback to run the animation
+  currentAnimation.wallTime = millis();  // Capture the time that playback began
 
   return true;
 }
 
 /**
  * Stop current playback immediately
+ * Halts playback but preserves the loaded animation data in case it needs to play again.
+ * Does not clear the buffer—that only happens in clearAnimationBuffer() for fresh recordings.
  */
 inline void stopPlayback() {
-  currentAnimation.mode = ANIM_IDLE;
+  currentAnimation.mode = ANIM_IDLE; // Simply return to an idle state
   currentAnimation.wallTime = 0;
-  currentAnimation.keyFrames = 0;
-  currentAnimation.totalFrames = 0;
-  currentAnimation.sourceSlot = -1;
-  memset(currentAnimation.buffer, 0, sizeof(currentAnimation.buffer));
 }
 
 /**
@@ -355,26 +350,29 @@ inline void updatePlayback() {
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
 
   // Check if playback is complete (reached end of recorded timeline)
-  if (currentFrame >= currentAnimation.totalFrames) {
+  if (currentFrame >= currentAnimation.data.totalFrames) {
     stopPlayback();
     return;
   }
 
-  // Check if there's a relay to trigger at this frame
-  uint8_t relayID = currentAnimation.buffer[currentFrame];
+  // Check if the current frame value corresponds to a relay (1-4); 0 is a rest/no-op.
+  uint8_t relayID = currentAnimation.data.frames[currentFrame];
   if (relayID >= 1 && relayID <= 4) {
-    // Only trigger if this frame is different from the previous one
-    // (prevents repeated triggers for multi-cycle frames)
-    uint16_t prevFrame = (currentFrame > 0) ? currentFrame - 1 : 0xFFFF;
-    uint8_t prevRelayID = (currentFrame > 0) ? currentAnimation.buffer[prevFrame] : 0;
-
-    if (relayID != prevRelayID) {
-      // Trigger the relay via the system function
+    // CRITICAL: Use a static variable to track which frame was last triggered.
+    // WHY: updatePlayback() runs every ~10ms (AnimationTask loop), but each frame represents 100ms.
+    // Without static persistence, the same frame number would be "current" for ~10 consecutive calls.
+    // A local variable would reset on each call, causing triggerActuator() to fire 10x per frame.
+    // Static remembers across calls, so we only trigger once per unique frame.
+    // Initialize to 0xFFFF (65535), a sentinel value outside valid range (0-599), ensures first frame triggers.
+    static uint16_t lastTriggeredFrame = 0xFFFF;
+    
+    if (currentFrame != lastTriggeredFrame) {
+      // Trigger the relay and play its audio effect via the system function
       ActuatorID actuatorID = static_cast<ActuatorID>(relayID - 1);  // Convert 1-4 to 0-3
       triggerActuator(actuatorID);
-
-      // NOTE: Recording check happens in calling function (handleActuator) for web API
-      // During playback, we're just replaying recorded animation, so no additional recording needed
+      
+      // Remember this frame to prevent triggering it again on the next 10 loop cycles
+      lastTriggeredFrame = currentFrame;
     }
   }
 }

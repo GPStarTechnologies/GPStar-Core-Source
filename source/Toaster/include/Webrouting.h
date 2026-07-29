@@ -88,7 +88,6 @@ void registerWebRoutes() {
   addSimpleRoute("/animations/record/save/*", HTTP_PUT, handleRecordSave, "Save animation", "Saves recorded animation to NVS (id=[0-3])", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/play/*", HTTP_PUT, handlePlayAnimation, "Play animation", "Loads and plays a recorded animation (id=[0-3])", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/stop", HTTP_PUT, handleStopAnimation, "Stop animation", "Stops current animation playback", TAG_DEVICE_CONTROL);
-  addSimpleRoute("/animations/status", HTTP_GET, handleAnimationStatus, "Get animation status", "Returns current animation mode, frame count, and playback progress", TAG_DEVICE_CONTROL);
 
   // Volume Control
   addSimpleRoute("/volume/mute", HTTP_PUT, handleToggleMute, "Mute audio", "Mutes all audio output", TAG_VOLUME_CONTROL);

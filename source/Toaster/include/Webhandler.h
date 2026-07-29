@@ -110,13 +110,13 @@ float roundFloat(float value) {
  * HOW IT WORKS:
  * - Queries NVS for each of the 4 animation slots ("anim0", "anim1", "anim2", "anim3")
  * - For each slot, attempts to deserialize AnimationData using getBytes()
- * - Updates the in-memory animationSlots[] array with hasAnimation flag and keyFrames count
+ * - Updates the in-memory animationSlots[] array with hasAnimation flag and animationSeconds duration
  * - This cache is used by the UI to populate dropdowns and enable/disable the Play button
  * 
  * CACHE ARRAY (animationSlots[4]):
  * - animationSlots[i].id = slot number (0-3)
  * - animationSlots[i].hasAnimation = true if slot contains valid data
- * - animationSlots[i].keyFrames = number of relay triggers in animation (or 0 if empty)
+ * - animationSlots[i].animationSeconds = animation duration in seconds (0 if empty)
  * 
  * WHEN TO CALL:
  * - After saveRecordingToNVS() completes (so UI learns about new saved animation)
@@ -137,7 +137,7 @@ void refreshAnimationSlotCache() {
     for (uint8_t i = 0; i < 4; i++) {
       animationSlots[i].id = i;
       animationSlots[i].hasAnimation = false;
-      animationSlots[i].keyFrames = 0;
+      animationSlots[i].animationSeconds = 0.0f;
     }
     return;
   }
@@ -154,12 +154,13 @@ void refreshAnimationSlotCache() {
     size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
     
     // Validation: only mark slot as "hasAnimation" if read succeeded and data is valid
-    if (size == sizeof(data) && data.keyFrames > 0 && data.keyFrames <= ANIM_MAX_FRAMES) {
+    if (size == sizeof(data) && data.totalFrames > 0 && data.totalFrames <= ANIM_MAX_FRAMES) {
       animationSlots[i].hasAnimation = true;
-      animationSlots[i].keyFrames = data.keyFrames;
+      // Convert totalFrames to seconds: totalFrames * 100ms per frame / 1000ms per second
+      animationSlots[i].animationSeconds = (data.totalFrames * ANIM_TIME_UNIT_MS) / 1000.0f;
     } else {
       animationSlots[i].hasAnimation = false;
-      animationSlots[i].keyFrames = 0;
+      animationSlots[i].animationSeconds = 0.0f;
     }
   }
   
@@ -266,7 +267,30 @@ String getEquipmentStatus() {
     JsonObject slotObj = slotArray.add<JsonObject>();
     slotObj["id"] = animationSlots[i].id;
     slotObj["hasAnimation"] = animationSlots[i].hasAnimation;
-    slotObj["keyFrames"] = animationSlots[i].keyFrames;
+    slotObj["animationSeconds"] = roundFloat(animationSlots[i].animationSeconds);
+    
+    // Include the full frames array for debugging playback issues
+    if (animationSlots[i].hasAnimation) {
+      // Load the animation data from NVS to get the full frames array
+      AnimationData data;
+      Preferences preferences;
+      if (preferences.begin("animations", true)) {
+        size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
+        preferences.end();
+        
+        if (size == sizeof(data)) {
+          // Include metadata
+          slotObj["keyFrames"] = data.keyFrames;
+          slotObj["totalFrames"] = data.totalFrames;
+          
+          // Include frames array as integers (0 = idle, 1-4 = actuator ID)
+          JsonArray framesArray = slotObj["frames"].to<JsonArray>();
+          for (uint16_t f = 0; f < data.totalFrames; f++) {
+            framesArray.add(data.frames[f]);
+          }
+        }
+      }
+    }
   }
 
   // Serialize JSON object to string.
@@ -475,11 +499,11 @@ void sendDebugEvent(const char* message) {
  * - sourceSlot: Context indicator: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
  * - totalFrames: Total frame capacity (600)
  * - currentFrame: Current frame index (0-based) based on elapsed time
- * - capturedFrames: Highest frame index with relay activity (only non-zero if relays triggered)
+ * - keyFrames: Highest frame index with relay activity (only non-zero if relays triggered)
  * 
  * DERIVED values:
  * - elapsedSeconds: Human-readable elapsed time (currentFrame × 0.1s per frame)
- * - progress: Percentage completion for playback (currentFrame / capturedFrames × 100)
+ * - progress: Percentage completion for playback (currentFrame / keyFrames × 100)
  * - actuator: Which actuator (if any) is firing at current frame (0 = no action, 1-4 = relay ID)
  */
 String getAnimationFrame() {
@@ -490,7 +514,7 @@ String getAnimationFrame() {
   jsonFrame["mode"] = modeNames[currentAnimation.mode];
   jsonFrame["sourceSlot"] = currentAnimation.sourceSlot;
   jsonFrame["totalFrames"] = ANIM_MAX_FRAMES;  // Always 600
-  jsonFrame["capturedFrames"] = currentAnimation.keyFrames;  // Frames with relay activity
+  jsonFrame["keyFrames"] = currentAnimation.data.keyFrames;  // Frames with relay activity
   
   uint32_t elapsed = millis() - currentAnimation.wallTime;
   uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
@@ -500,24 +524,24 @@ String getAnimationFrame() {
   jsonFrame["elapsedSeconds"] = roundFloat((float)currentFrame * ANIM_TIME_UNIT_MS / 1000.0f);
   
   // Total duration of animation in seconds (totalFrames × frame duration / 1000)
-  jsonFrame["totalTime"] = roundFloat((float)currentAnimation.totalFrames * ANIM_TIME_UNIT_MS / 1000.0f);
+  jsonFrame["totalTime"] = roundFloat((float)currentAnimation.data.totalFrames * ANIM_TIME_UNIT_MS / 1000.0f);
   
   // Derive progress percentage (based on animation timeline span)
-  if(currentAnimation.totalFrames > 0) {
-    jsonFrame["progress"] = roundFloat((float)currentFrame / currentAnimation.totalFrames * 100.0f);
+  if(currentAnimation.data.totalFrames > 0) {
+    jsonFrame["progress"] = roundFloat((float)currentFrame / currentAnimation.data.totalFrames * 100.0f);
   }
   
   // Include which actuator (if any) is firing at current frame
   // Value: 0 = no action, 1-4 = actuator ID
-  uint8_t currentActuator = (currentFrame < currentAnimation.totalFrames) ? currentAnimation.buffer[currentFrame] : 0;
+  uint8_t currentActuator = (currentFrame < currentAnimation.data.totalFrames) ? currentAnimation.data.frames[currentFrame] : 0;
   jsonFrame["frameValue"] = currentActuator;
   
   // Find the last actuator that was recorded (search backwards from totalFrames-1)
   // This ensures we always display the most recent trigger, even if current frame is empty
   uint8_t lastRecordedActuator = 0;
-  for(int16_t i = (int16_t)currentAnimation.totalFrames - 1; i >= 0; i--) {
-    if(currentAnimation.buffer[i] > 0) {
-      lastRecordedActuator = currentAnimation.buffer[i];
+  for(int16_t i = (int16_t)currentAnimation.data.totalFrames - 1; i >= 0; i--) {
+    if(currentAnimation.data.frames[i] > 0) {
+      lastRecordedActuator = currentAnimation.data.frames[i];
       break;
     }
   }
@@ -535,7 +559,7 @@ void sendAnimationFrameData() {
   if(b_httpd_started) {
     // Send SSE events during active recording/playback, OR on transition to IDLE with data
     if((currentAnimation.mode == ANIM_RECORDING || currentAnimation.mode == ANIM_PLAYBACK) ||
-       (currentAnimation.mode == ANIM_IDLE && currentAnimation.keyFrames > 0)) {
+       (currentAnimation.mode == ANIM_IDLE && currentAnimation.data.keyFrames > 0)) {
       // Gather the latest animation frame data, serialize it to a JSON string,
       // and send it to all connected EventSource (SSE) clients as an "animation"
       // event name (using the current ms time as a unique event identifier).
@@ -1112,8 +1136,9 @@ void handleRecordStop(AsyncWebServerRequest *request) {
   }
 
   // Capture current keyFrames BEFORE calling stopRecording() (which freezes totalFrames)
-  uint16_t keyFrames = currentAnimation.keyFrames;
-  uint16_t totalFrames = stopRecording();  // Returns frozen totalFrames span
+  uint16_t keyFrames = currentAnimation.data.keyFrames;
+  uint16_t totalFrames = stopRecording(); // Returns frozen totalFrames span
+  sendAnimationFrameData(); // Send one final update once state is IDLE
 
   JsonDocument jsonResponse;
   jsonResponse["status"] = "success";
@@ -1193,7 +1218,7 @@ void handlePlayAnimation(AsyncWebServerRequest *request) {
           jsonResponse["status"] = "success";
           jsonResponse["message"] = "Playback started";
           jsonResponse["slot"] = animIndex;
-          jsonResponse["keyFrames"] = currentAnimation.keyFrames;
+          jsonResponse["keyFrames"] = currentAnimation.data.keyFrames;
 
           String response;
           serializeJson(jsonResponse, response);
@@ -1217,30 +1242,8 @@ void handleStopAnimation(AsyncWebServerRequest *request) {
   }
 
   stopPlayback();
+  sendAnimationFrameData(); // Send one final update once state is IDLE
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Playback stopped"));
-}
-
-void handleAnimationStatus(AsyncWebServerRequest *request) {
-  debugln(F("Web: Animation Status"));
-
-  const char* modeNames[] = {"IDLE", "RECORDING", "PLAYBACK"};
-
-  JsonDocument jsonResponse;
-  jsonResponse["mode"] = modeNames[currentAnimation.mode];
-  jsonResponse["keyFrames"] = currentAnimation.keyFrames;
-  jsonResponse["totalFrames"] = currentAnimation.totalFrames;
-
-  if (currentAnimation.mode == ANIM_PLAYBACK) {
-    uint32_t elapsed = millis() - currentAnimation.wallTime;
-    uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
-    jsonResponse["currentFrame"] = currentFrame;
-    jsonResponse["progress"] = (currentAnimation.totalFrames > 0) ?
-      (float)currentFrame / currentAnimation.totalFrames * 100.0 : 0.0;
-  }
-
-  String response;
-  serializeJson(jsonResponse, response);
-  request->send(HTTP_STATUS_200, MIME_JSON, response);
 }
 
 /**

@@ -86,7 +86,6 @@
       <div class="card" style="text-align: center">
         <br />
         <h2>Actuator Controls</h2>
-        <br />
         <button type="button" class="green" onclick="triggerAct1()" id="btnAct1">#1</button>
         &nbsp;&nbsp;
         <button type="button" class="green" onclick="triggerAct2()" id="btnAct2">#2</button>
@@ -98,14 +97,13 @@
         <br />
         <br />
         <br />
-        <h2>Animation Controls</h2>
-        <br />
-        <button type="button" class="orange" onclick="recordingStart()" id="recStart">Start</button>
+        <h2>Recording Controls</h2>
+        <button type="button" class="orange" onclick="recordingStart()" id="btnStartRec">Start</button>
         &nbsp;&nbsp;
-        <button type="button" class="blue" onclick="recordingStop()" id="recStop">Stop</button>
+        <button type="button" class="blue" onclick="recordingStop()" id="btnStopRec">Stop</button>
         <br />
         <br />
-        <div id="saveSlotSelector" style="display: none;">
+        <div id="saveSlotSelector">
           <label for="saveSlot">Save Slot:</label>
           <select id="saveSlot">
             <option value="0">Slot 0</option>
@@ -114,24 +112,25 @@
             <option value="3">Slot 3</option>
           </select>
           <br />
-          <button type="button" class="green" onclick="recordingSaveToSlot()" id="recSave">Save</button>
+          <button type="button" class="green" onclick="saveToSlot()" id="btnSave">Save</button>
           &nbsp;&nbsp;
-          <button type="button" class="orange" onclick="cancelSaveSlot()" id="recCancel">Cancel</button>
+          <button type="button" class="orange" onclick="cancelSaveSlot()" id="btnCancel">Cancel</button>
         </div>
-        <div id="playSlotSelector" style="display: none;">
-          <label for="playSlot">Play Animation:</label>
+        <div id="playSlotSelector">
+          <h2>Playback Control</h2>
+          <label for="playSlot">Animation:</label>
           <select id="playSlot">
-            <option value="0">Animation 0</option>
-            <option value="1">Animation 1</option>
-            <option value="2">Animation 2</option>
-            <option value="3">Animation 3</option>
+            <option value="0">#0</option>
+            <option value="1">#1</option>
+            <option value="2">#2</option>
+            <option value="3">#3</option>
           </select>
           <br />
-          <button type="button" class="green" onclick="playAnimationFromSlot()" id="recPlay">Play</button>
+          <button type="button" class="green" onclick="playFromSlot()" id="btnPlay">Play</button>
           &nbsp;&nbsp;
-          <button type="button" class="blue" onclick="cancelPlaySlot()" id="recPlayCancel">Cancel</button>
+          <button type="button" class="blue" onclick="stopPlayback()" id="btnStop">Stop</button>
         </div>
-        <div style="text-align: left">
+        <div style="padding-left:10px;text-align:left">
           <div id="animationProgressTab3"></div>
         </div>
       </div>

@@ -154,12 +154,10 @@ void AnimationTask(void *parameter) {
     // Use the built-in LED to indicate if any relays are active.
     digitalWrite(BUILT_IN_LED, b_relay_active ? HIGH : LOW);
 
-    // Update animation playback if currently playing
-    updatePlayback();
-
-    // Update recording state and send animation frame data to connected clients via server event.
-    sendAnimationFrameData();
-
+    updatePlayback(); // Update animation playback if currently playing
+    if(currentAnimation.mode != ANIM_IDLE) {
+      sendAnimationFrameData(); // Send recording/playback data back via server events during active operations
+    }
     updateAudio(); // Update the state of the available sound board.
     checkMusic(); // Perform music control as necessary.
 
