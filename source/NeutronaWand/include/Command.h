@@ -543,6 +543,18 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       }
     break;
 
+    case A_SET_INNER_CYCLOTRON_INVERT:
+      stopEffect(S_VOICE_INNER_CYCLOTRON_NOT_INVERTED);
+      stopEffect(S_VOICE_INNER_CYCLOTRON_INVERTED);
+
+      if(i_value == 0) {
+        playEffect(S_VOICE_INNER_CYCLOTRON_NOT_INVERTED);
+      }
+      else {
+        playEffect(S_VOICE_INNER_CYCLOTRON_INVERTED);
+      }
+    break;
+
     case A_CYCLOTRON_COUNTER_CLOCKWISE:
       // Play Cyclotron counter clockwise voice.
       stopEffect(S_VOICE_CYCLOTRON_CLOCKWISE);

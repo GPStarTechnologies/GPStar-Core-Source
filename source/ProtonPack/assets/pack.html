@@ -287,7 +287,7 @@
       <div class="setting">
         <b>Ring LED Count:</b>
         <select id="ledCycCakeCount" name="ledCycCakeCount">
-          <option selected value="36">36 (GPStar)</option>
+          <option selected value="36">36</option>
           <option value="35">35</option>
           <option value="26">26</option>
           <option value="24">24</option>
@@ -301,7 +301,16 @@
           <span class="toggle">
             <span class="switch"></span>
           </span>
-          <span class="label">Swap Red/Green LEDs (GRB):</span>
+          <span class="label">Swap Ring Red/Green LEDs (GRB):</span>
+        </label>
+      </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-text="yesno" data-label="left">
+          <input id="ledCycCakeInvert" name="ledCycCakeInvert" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">Invert Ring Animation:</span>
         </label>
       </div>
       <div class="setting">
@@ -544,6 +553,7 @@
         setValue("ledCycPanLum", settings.ledCycPanLum || 100);
         setHtml("panLumOut", getValue("ledCycPanLum"));
         setToggle("ledCycCakeGRB", settings.ledCycCakeGRB);
+        setToggle("ledCycCakeInvert", settings.ledCycCakeInvert);
         setValue("ledCycCavCount", settings.ledCycCavCount ?? 0);
         setHtml("ledCycCavCountOut", getValue("ledCycCavCount"));
         setValue("ledCycCavType", settings.ledCycCavType ?? 3);
@@ -670,6 +680,7 @@
           ledCycInnerPanel: getInt("ledCycInnerPanel") || 3,
           ledCycPanLum: getInt("ledCycPanLum") || 100,
           ledCycCakeGRB: getToggle("ledCycCakeGRB"),
+          ledCycCakeInvert: getToggle("ledCycCakeInvert"),
           ledCycCavCount: getInt("ledCycCavCount") ?? 0,
           ledCycCavType: getInt("ledCycCavType") ?? 3,
           ledCycCavInvert: getToggle("ledCycCavInvert"),

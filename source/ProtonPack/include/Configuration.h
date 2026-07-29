@@ -193,7 +193,7 @@ uint8_t i_powercell_delay_2021 = POWERCELL_DELAY_2021_15_LED;
 /*
  * Invert the Power Cell animation.
  * Hasbro 13-LED and Frutto 15-LED use a non-inverted pattern.
- * GPStar 15-LED use an inverted pattern.
+ * GPStar 15-LED uses an inverted pattern.
  * Default is true.
  */
 bool b_powercell_invert = true;
@@ -233,12 +233,27 @@ uint8_t i_inner_cyclotron_cake_num_leds = 36;
 enum LED_TYPES CAKE_LED_TYPE = RGB_LED; // Defaults to RGB
 
 /*
+ * Invert the Inner Cyclotron (cake) animation.
+ * All standard ring-type LEDs use a non-inverted pattern.
+ * Frutto coil-style 36-LED inner cyclotron uses an inverted pattern.
+ * Default is false.
+ */
+bool b_inner_cyclotron_inverted = false;
+
+/*
  * (OPTIONAL) Inner Cyclotron (cavity) effects
  * If you are not using any, then this can be left alone (Default: 0).
  * You can use up to 20 LEDs (eg. addressable fairy lights as recommended device)
  */
 uint8_t i_inner_cyclotron_cavity_num_leds = 0;
 enum LED_TYPES CAVITY_LED_TYPE = GBR_LED; // Defaults to GBR
+
+/*
+ * Invert the Inner Cyclotron (cavity) animation.
+ * Used in case the user installed their LED strip backwards.
+ * Default is false.
+ */
+bool b_inner_cavity_inverted = false;
 
 /*
  * Inner Cyclotron NeoPixel ring speed.

@@ -178,6 +178,7 @@ The following is an alphabetical listing of all `API_COMMAND` enums found in `Co
 | A_SET_DEMO_LIGHT_MODE                          |         |         | X       | X       |
 | A_SET_FIRING_MODE                              | X       |         |         | X       |
 | A_SET_INNER_CYCLOTRON_LED_COUNT                |         |         |         | X       |
+| A_SET_INNER_CYCLOTRON_INVERT                   |         |         | X       |         |
 | A_SET_MODE_BEEP_LOOP                           |         |         |         | X       |
 | A_SET_OVERHEATING                              |         |         |         | X       |
 | A_SET_OVERHEAT_LEVEL_1                         |         |         |         | X       |
@@ -232,6 +233,7 @@ The following is an alphabetical listing of all `API_COMMAND` enums found in `Co
 | A_SYNC_WAND                                    |         |         |         | X       |
 | A_SYSTEM_LOCKOUT                               | X       | X       | X       |         |
 | A_TEMPERATURE_PACK                             | X       |         |         |         |
+| A_TOGGLE_INNER_CYCLOTRON_DIRECTION             |         |         |         | X       |
 | A_TOGGLE_INNER_CYCLOTRON_PANEL                 |         |         |         | X       |
 | A_TOGGLE_MUTE                                  | X       | X       |         | X       |
 | A_TOGGLE_PACK_WIFI                             |         |         |         | X       |

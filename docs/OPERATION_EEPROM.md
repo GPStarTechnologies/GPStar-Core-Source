@@ -27,7 +27,7 @@ To access the EEPROM LED Menu System, hold down the `Intensify Button` and toggl
 | Option | Purpose | Intensify&nbsp;Button | Barrel&nbsp;Wing&nbsp;Button |
 |:------:|---------|------------------|--------------------|
 | 5️⃣ | Save or Clear the EEPROM settings | Clear all the LED settings in the Proton Pack and Neutrona Wand EEPROMs.<br/><br/>**The Proton Pack and Neutrona Wand will instead load the software-defined defaults the next time you power-cycle from the battery.** | Save the current settings to the Proton Pack and Neutrona Wand EEPROMs. |
-| 4️⃣ | Neutrona&nbsp;Wand&nbsp;Barrel&nbsp;LED&nbsp;Selection/ Spectral&nbsp;Custom&nbsp;(Barrel)&nbsp;Colour | Toggle between the Hasbro (5-LED) barrel, the Frutto Technology (49-LED) barrel, the GPStar Neutrona Wand (50-LED) barrel, the GPStar Neutrona Wand II (49-LED + IR) barrel, or the GPStar Neutrona Wand Barrel Mini (2-LED). | `(Barrel Wing Button + Top Dial)` Changes the colour hue of the **Neutrona Wand barrel** for the Spectral Custom mode. |
+| 4️⃣ | Neutrona&nbsp;Wand&nbsp;Barrel&nbsp;LED&nbsp;Selection&nbsp;/ Spectral&nbsp;Custom&nbsp;(Barrel)&nbsp;Colour | Toggle between the Hasbro (5-LED) barrel, the Frutto Technology (49-LED) barrel, the GPStar Neutrona Wand (50-LED) barrel, the GPStar Neutrona Wand II (49-LED + IR) barrel, or the GPStar Neutrona Wand Barrel Mini (2-LED). | `(Barrel Wing Button + Top Dial)` Changes the colour hue of the **Neutrona Wand barrel** for the Spectral Custom mode. |
 | 3️⃣ | Power&nbsp;Cell&nbsp;LED&nbsp;Count&nbsp;Toggle&nbsp;/ Spectral&nbsp;Custom&nbsp;(Power&nbsp;Cell)&nbsp;Colour | Toggle between 13 or 15 LEDs for your Power Cell. | `(Barrel Wing Button + Top Dial)` Changes the colour hue of the **Power Cell** for the Spectral Custom mode. |
 | 2️⃣ | Cyclotron&nbsp;LED&nbsp;Count&nbsp;Toggle&nbsp;/ Spectral&nbsp;Custom&nbsp;(Cyclotron)&nbsp;Colour | Toggle between 12, 20, 36 or 40 LEDs for your Cyclotron Lid. | `(Barrel Wing Button + Top Dial)` Changes the colour hue of the **Cyclotron** for the Spectral Custom mode. |
 | 1️⃣ | Inner&nbsp;Cyclotron&nbsp;LED&nbsp;Count&nbsp;Toggle&nbsp;/ Spectral&nbsp;Custom&nbsp;(Inner&nbsp;Cyclotron)&nbsp;Colour | Toggle Between 12, 23, 24, 26, 35, or 36 LEDs for your Inner Cyclotron. | `(Barrel Wing Button + Top Dial)` Changes the colour hue of the **Inner Cyclotron** for the Spectral Custom mode. |
@@ -42,7 +42,7 @@ To access the EEPROM LED Menu System, hold down the `Intensify Button` and toggl
 | 4️⃣ | Bargraph&nbsp;Segment&nbsp;Count&nbsp;Toggle&nbsp;/ RGB&nbsp;Vent&nbsp;Light&nbsp;Toggle | Toggle between 28 segments or 30 segments for the optional bargraph.<sup>1</sup> | Enable/Disable the optional addressable RGB LED vent/top light board.<br/>**Not toggleable on GPStar II wands** |
 | 3️⃣ | Power&nbsp;Cell&nbsp;Invert&nbsp;/ Auto&nbsp;Vent&nbsp;Light&nbsp;Intensity&nbsp;Toggle | Change the direction of the Power Cell animation. | Toggle whether the vent light on the Neutrona Wand will change brightness depending on power level and firing state or stay full brightness always. |
 | 2️⃣ | Inner&nbsp;Cyclotron&nbsp;LED&nbsp;Panel&nbsp;Toggle&nbsp;/ VG&nbsp;Colour&nbsp;Mode&nbsp;Toggles | Toggle the optional Inner Cyclotron LED Panel between disabled (individual LEDs on GPStar I), static colours (for prop-accurate coloured cliplite covers), and dynamic colours (for the LED panel with clear cliplite covers). | Cycle through VG colour modes.<sup>2</sup> |
-| 1️⃣ | Inner&nbsp;Cyclotron&nbsp;GRB&nbsp;Toggle/ Vent&nbsp;Light&nbsp;Stream&nbsp;Colour&nbsp;Toggle | Toggle the Inner Cyclotron between RGB or GRB LEDs. | Toggle whether the addressable RGB LED vent/top light (if installed) will display colours for the currently-active stream or remain white. |
+| 1️⃣ | Inner&nbsp;Cyclotron&nbsp;GRB&nbsp;Toggle&nbsp;/ Vent&nbsp;Light&nbsp;Stream&nbsp;Colour&nbsp;Toggle | Toggle the Inner Cyclotron between RGB or GRB LEDs. | Toggle whether the addressable RGB LED vent/top light (if installed) will display colours for the currently-active stream or remain white. |
 
 <sup>1</sup> This setting will only take effect if you have an optional bargraph plugged into the i2c data port when the wand is first started.
 
@@ -58,7 +58,7 @@ To access the EEPROM LED Menu System, hold down the `Intensify Button` and toggl
 | Option | Purpose | Intensify&nbsp;Button | Barrel&nbsp;Wing&nbsp;Button |
 |:------:|---------|------------------|--------------------|
 | 5️⃣ | GPStar&nbsp;Audio&nbsp;LED&nbsp;Toggle | Toggle whether the LED on the GPStar Audio board will be enabled or disabled on the Proton Pack. | Toggle whether the LED on the GPStar Audio board will be enabled or disabled on the Neutrona Wand. |
-| 4️⃣ | Cyclotron&nbsp;3&nbsp;LED&nbsp;Toggle | Toggle between 1 LED or 3 LEDs in each cyclotron lens in 1984/1989 year mode. | `unused` |
+| 4️⃣ | Cyclotron&nbsp;3&nbsp;LED&nbsp;Toggle&nbsp;/ Inner&nbsp;Cyclotron&nbsp;Invert | Toggle between 1 LED or 3 LEDs in each cyclotron lens in 1984/1989 year mode. | Toggle whether the inner cyclotron cake animation is inverted or not. |
 | 3️⃣ | `unused` | `unused` | `unused` |
 | 2️⃣ | `unused` | `unused` | `unused` |
 | 1️⃣ | `unused` | `unused` | `unused` |

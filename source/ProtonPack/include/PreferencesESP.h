@@ -58,6 +58,7 @@ struct objLEDEEPROM {
   uint8_t cyclotron_brightness;
   uint8_t inner_cyclotron_brightness;
   uint8_t inner_panel_brightness;
+  uint8_t inner_cyclotron_inverted;
   uint8_t cyclotron_cavity_count;
   uint8_t cyclotron_cavity_type;
   uint8_t cyclotron_cavity_inverted;
@@ -151,6 +152,7 @@ void saveLEDEEPROM() {
   gObjLEDEEPROM.cyclotron_brightness = i_cyclotron_brightness;
   gObjLEDEEPROM.inner_cyclotron_brightness = i_cyclotron_inner_brightness;
   gObjLEDEEPROM.inner_panel_brightness = i_cyclotron_panel_brightness;
+  gObjLEDEEPROM.inner_cyclotron_inverted = b_inner_cyclotron_inverted ? 2 : 1;
   gObjLEDEEPROM.cyclotron_cavity_count = i_inner_cyclotron_cavity_num_leds;
   gObjLEDEEPROM.cyclotron_cavity_type = i_inner_cyclotron_cavity_led_type;
   gObjLEDEEPROM.cyclotron_cavity_inverted = b_inner_cavity_inverted ? 2 : 1;
@@ -371,6 +373,10 @@ void readEEPROM() {
           break;
         }
       }
+    }
+
+    if(gObjLEDEEPROM.inner_cyclotron_inverted > 0 && gObjLEDEEPROM.inner_cyclotron_inverted < 3) {
+      b_inner_cyclotron_inverted = (gObjLEDEEPROM.inner_cyclotron_inverted > 1);
     }
 
     if(gObjLEDEEPROM.cyclotron_cavity_inverted > 0 && gObjLEDEEPROM.cyclotron_cavity_inverted < 3) {

@@ -257,6 +257,7 @@ String getPackConfig() {
     jsonBody["ledCycCakeSat"] = packConfig.ledCycCakeSat; // Spectral custom saturation 2-254
     jsonBody["ledCycCakeLum"] = packConfig.ledCycCakeLum; // Brightness 20-100
     jsonBody["ledCycCakeGRB"] = packConfig.ledCycCakeGRB; // Use GRB for cake LEDs true|false
+    jsonBody["ledCycCakeInvert"] = packConfig.ledCycCakeInvert; // true|false
     jsonBody["ledCycCavCount"] = packConfig.ledCycCavCount; // Cyclotron cavity LEDs (0-20)
     jsonBody["ledCycCavType"] = packConfig.ledCycCavType; // Cyclotron cavity LED Type
     jsonBody["ledCycCavInvert"] = packConfig.ledCycCavInvert; // true|false
@@ -1776,6 +1777,7 @@ AsyncCallbackJsonWebHandler *handleSavePackConfig = new AsyncCallbackJsonWebHand
 
       // Boolean fields - Inner Cyclotron toggles
       packConfig.ledCycCakeGRB = extractBoolFromJson(jsonBody, "ledCycCakeGRB", packConfig.ledCycCakeGRB);
+      packConfig.ledCycCakeInvert = extractBoolFromJson(jsonBody, "ledCycCakeInvert", packConfig.ledCycCakeInvert);
       packConfig.ledCycCavInvert = extractBoolFromJson(jsonBody, "ledCycCavInvert", packConfig.ledCycCavInvert);
 
       // Numeric fields - Power Cell options

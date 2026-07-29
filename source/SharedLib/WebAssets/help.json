@@ -100,6 +100,7 @@
     "ledCycCakeHue": "Sets the custom colour hue (2-360 degrees) for the inner cyclotron ring LEDs when in Spectral Custom stream mode.",
     "ledCycCakeSat": "Sets the colour saturation percentage (2-100%) for the inner cyclotron ring LEDs when in Spectral Custom stream mode.",
     "ledCycCakeLum": "Sets the brightness level (20-100%) for the inner cyclotron ring LEDs.",
+    "ledCycCakeInvert": "When enabled, reverses the direction of the inner cyclotron cake LED animation.",
     "ledCycCavCount": "Specifies the number of LEDs (0-20) installed in the cyclotron cavity for additional sparking effects. Set to 0 if not installed.",
     "ledCycCavType": "Specifies the colour order of the cyclotron cavity LEDs: RGB, GRB, or GBR depending on your LED string type.",
     "ledCycCavInvert": "When enabled, reverses the direction of the inner cyclotron cavity LED animation.",

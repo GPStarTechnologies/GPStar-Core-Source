@@ -231,6 +231,7 @@ void checkWandAction() {
         // Level 2 Intensify: Toggle between 28-segment and 30-segment bargraph LEDs.
         // Level 2 Barrel Wing Button: Enable/Disable the addressable RGB vent/top light board (non-ESP32 only).
         // Level 3 Intensify: Toggle between 1 or 3 LEDs for the Cyclotron (1984/1989 mode).
+        // Level 3 Barrel Wing Button: Toggle inverting of Inner Cyclotron cake LED direction (required for Frutto coil inner cyclotron).
         case 4:
           if(switch_intensify.pushed()) {
             switch(WAND_MENU_LEVEL) {
@@ -359,7 +360,7 @@ void checkWandAction() {
           else if(switch_mode.pushed()) {
             switch(WAND_MENU_LEVEL) {
               case MENU_LEVEL_3:
-                // Do nothing.
+                packSerialSend(A_TOGGLE_INNER_CYCLOTRON_DIRECTION);
               break;
 
               case MENU_LEVEL_2:

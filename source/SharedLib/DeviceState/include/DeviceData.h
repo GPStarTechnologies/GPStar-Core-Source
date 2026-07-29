@@ -64,6 +64,7 @@ struct __attribute__((packed)) PackPrefs {
   bool ledCycLidSimRing : 1;
   bool disableLidDetection : 1; // Ignore cyclotron lid switch state
   bool ledCycCakeGRB : 1;
+  bool ledCycCakeInvert : 1; // Inner Cyclotron cake animation inverted
   bool ledCycCavInvert : 1; // Cyclotron cavity animation inverted
   bool ledVGCyclotron : 1;
   bool ledInvertPowercell : 1;

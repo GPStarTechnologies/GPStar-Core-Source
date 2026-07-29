@@ -752,7 +752,7 @@ void innerCyclotronRingUpdate(uint16_t iRampDelay) {
       i_colour_scheme = C_ORANGE;
     }
 
-    if(b_clockwise) {
+    if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
       if(!b_cyclotron_lid_on) {
         if(CAKE_LED_TYPE == GRB_LED) {
           cyclotron_leds[i_led_cyclotron_ring] = getHueAsGRB(CYCLOTRON_INNER, i_colour_scheme, i_brightness);
@@ -4255,7 +4255,7 @@ void cyclotronControl() {
         }
 
         uint8_t i_brightness = getBrightness(i_brightness_percent);
-        if(b_clockwise) {
+        if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
           if(i_led_cyclotron_ring == i_ic_cake_start) {
             if(CAKE_LED_TYPE == GRB_LED) {
               cyclotron_leds[i_ic_cake_end] = getHueAsGRB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
@@ -5713,7 +5713,7 @@ void systemPOST() {
       break;
     }
 
-    if(b_clockwise) {
+    if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
       i_inner_cake_counter = ((255 - i_post_fade) / i_inner_cake_divisor) + i_ic_cake_start;
     }
     else {
@@ -5729,7 +5729,7 @@ void systemPOST() {
       }
     }
 
-    if(b_clockwise) {
+    if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
       if(i_inner_cake_counter - 1 >= i_ic_cake_start && i_inner_cake_counter - 1 <= i_ic_cake_end) {
         cyclotron_leds[i_inner_cake_counter - 1] = getHueAsRGB(CYCLOTRON_INNER, C_BLACK);
       }

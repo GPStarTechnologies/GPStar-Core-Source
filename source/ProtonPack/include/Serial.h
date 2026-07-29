@@ -227,15 +227,8 @@ void getPackPrefsObject() {
   packConfig.ledCycCakeHue = i_spectral_cyclotron_inner_custom_colour;
   packConfig.ledCycCakeSat = i_spectral_cyclotron_inner_custom_saturation;
   packConfig.ledCycCakeLum = i_cyclotron_inner_brightness;
-  switch(CAKE_LED_TYPE) {
-    case RGB_LED:
-    default:
-      packConfig.ledCycCakeGRB = 0;
-    break;
-    case GRB_LED:
-      packConfig.ledCycCakeGRB = 1;
-    break;
-  }
+  packConfig.ledCycCakeGRB = (CAKE_LED_TYPE == GRB_LED);
+  packConfig.ledCycCakeInvert = b_inner_cyclotron_inverted;
   packConfig.ledCycCavCount = i_inner_cyclotron_cavity_num_leds;
   switch(CAVITY_LED_TYPE) {
     case RGB_LED:
@@ -708,15 +701,10 @@ void handlePackPrefsUpdate() {
   i_spectral_cyclotron_inner_custom_colour = packConfig.ledCycCakeHue;
   i_spectral_cyclotron_inner_custom_saturation = packConfig.ledCycCakeSat;
   i_cyclotron_inner_brightness = packConfig.ledCycCakeLum;
+  b_inner_cyclotron_inverted = packConfig.ledCycCakeInvert;
   i_inner_cyclotron_cavity_num_leds = packConfig.ledCycCavCount;
   b_inner_cavity_inverted = packConfig.ledCycCavInvert;
-
-  if(packConfig.ledCycCakeGRB == 1) {
-    CAKE_LED_TYPE = GRB_LED;
-  }
-  else {
-    CAKE_LED_TYPE = RGB_LED;
-  }
+  CAKE_LED_TYPE = packConfig.ledCycCakeGRB ? GRB_LED : RGB_LED;
 
   switch(packConfig.ledCycCavType) {
     case 1:
@@ -2903,8 +2891,6 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       }
     break;
 
-
-
     case A_SPECTRAL_INNER_CYCLOTRON_CUSTOM_DECREASE:
       if(i_spectral_cyclotron_inner_custom_colour > 1 && i_spectral_cyclotron_inner_custom_saturation > 253) {
         i_spectral_cyclotron_inner_custom_colour--;
@@ -3777,13 +3763,12 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       }
     break;
 
-
     case A_TOGGLE_POWERCELL_DIRECTION:
+      stopEffect(S_VOICE_POWERCELL_NOT_INVERTED);
+      stopEffect(S_VOICE_POWERCELL_INVERTED);
+
       if(b_powercell_invert) {
         b_powercell_invert = false;
-
-        stopEffect(S_VOICE_POWERCELL_NOT_INVERTED);
-        stopEffect(S_VOICE_POWERCELL_INVERTED);
 
         playEffect(S_VOICE_POWERCELL_NOT_INVERTED);
         wandSerialSend(A_SET_POWERCELL_INVERT, 0);
@@ -3791,11 +3776,26 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       else {
         b_powercell_invert = true;
 
-        stopEffect(S_VOICE_POWERCELL_INVERTED);
-        stopEffect(S_VOICE_POWERCELL_NOT_INVERTED);
-
         playEffect(S_VOICE_POWERCELL_INVERTED);
         wandSerialSend(A_SET_POWERCELL_INVERT, 1);
+      }
+    break;
+
+    case A_TOGGLE_INNER_CYCLOTRON_DIRECTION:
+      stopEffect(S_VOICE_INNER_CYCLOTRON_NOT_INVERTED);
+      stopEffect(S_VOICE_INNER_CYCLOTRON_INVERTED);
+
+      if(b_inner_cyclotron_inverted) {
+        b_inner_cyclotron_inverted = false;
+
+        playEffect(S_VOICE_INNER_CYCLOTRON_NOT_INVERTED);
+        wandSerialSend(A_SET_INNER_CYCLOTRON_INVERT, 0);
+      }
+      else {
+        b_inner_cyclotron_inverted = true;
+
+        playEffect(S_VOICE_INNER_CYCLOTRON_INVERTED);
+        wandSerialSend(A_SET_INNER_CYCLOTRON_INVERT, 1);
       }
     break;
 
@@ -4307,18 +4307,6 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       }
       else {
         playEffect(S_VOICE_BARGRAPH_NOT_INVERTED);
-      }
-    break;
-
-    case A_SET_POWERCELL_INVERT:
-      // Powercell invert not-inverted/inverted state (d1: 0=NOT_INVERTED, 1=INVERTED)
-      stopEffect(S_VOICE_POWERCELL_NOT_INVERTED);
-      stopEffect(S_VOICE_POWERCELL_INVERTED);
-      if(i_value == 1) {
-        playEffect(S_VOICE_POWERCELL_INVERTED);
-      }
-      else {
-        playEffect(S_VOICE_POWERCELL_NOT_INVERTED);
       }
     break;
 
