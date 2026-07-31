@@ -87,6 +87,7 @@ const uint16_t i_websocketCleanup = 5000;
 
 // Forward function declarations.
 void registerWebRoutes(); // From Webrouting.h
+void refreshAnimationSlotCache(); // From Animation.h
 void sendDebug(const String& message); // From System.h
 bool triggerActuator(ActuatorID actuatorID); // From System.h
 
@@ -97,74 +98,6 @@ bool triggerActuator(ActuatorID actuatorID); // From System.h
 // Rounds a float to 2 decimal places.
 float roundFloat(float value) {
   return roundf(value * 100.0f) / 100.0f;
-}
-
-/**
- * Scan NVS and populate animation slot cache.
- * Called once on startup and whenever a recording is saved.
- * Checks for animation blob existence and reads keyFrames.
- */
-/**
- * refreshAnimationSlotCache() - Scan NVS and rebuild the animation availability cache
- * 
- * HOW IT WORKS:
- * - Queries NVS for each of the 4 animation slots ("anim0", "anim1", "anim2", "anim3")
- * - For each slot, attempts to deserialize AnimationData using getBytes()
- * - Updates the in-memory animationSlots[] array with hasAnimation flag and animationSeconds duration
- * - This cache is used by the UI to populate dropdowns and enable/disable the Play button
- * 
- * CACHE ARRAY (animationSlots[4]):
- * - animationSlots[i].id = slot number (0-3)
- * - animationSlots[i].hasAnimation = true if slot contains valid data
- * - animationSlots[i].animationSeconds = animation duration in seconds (0 if empty)
- * 
- * WHEN TO CALL:
- * - After saveRecordingToNVS() completes (so UI learns about new saved animation)
- * - On system startup (to populate UI with any previously saved animations)
- * - When user explicitly requests "refresh" action
- * 
- * OPERATION:
- * - Opens Preferences in read-only mode, iterates all 4 slots
- * - For each slot, getBytes() returns 0 if key doesn't exist (empty slot)
- * - For each slot, getBytes() returns size if key exists; validates keyFrames > 0
- * - After all slots checked, closes Preferences connection
- */
-void refreshAnimationSlotCache() {
-  Preferences preferences;
-  
-  if (!preferences.begin("animations", true)) {
-    // Unable to open namespace - mark all slots as empty
-    for (uint8_t i = 0; i < 4; i++) {
-      animationSlots[i].id = i;
-      animationSlots[i].hasAnimation = false;
-      animationSlots[i].animationSeconds = 0.0f;
-    }
-    return;
-  }
-
-  // Check each animation slot
-  for (uint8_t i = 0; i < 4; i++) {
-    animationSlots[i].id = i;
-    
-    // getBytes() deserializes the AnimationData struct from NVS for this slot
-    // Parameters: key name (ANIMATION_NAMES[i]), pointer to data buffer, max size
-    // Returns: number of bytes read (should equal sizeof(AnimationData) if slot has animation)
-    // Returns 0 if key doesn't exist (slot is empty)
-    AnimationData data;
-    size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
-    
-    // Validation: only mark slot as "hasAnimation" if read succeeded and data is valid
-    if (size == sizeof(data) && data.totalFrames > 0 && data.totalFrames <= ANIM_MAX_FRAMES) {
-      animationSlots[i].hasAnimation = true;
-      // Convert totalFrames to seconds: totalFrames * 100ms per frame / 1000ms per second
-      animationSlots[i].animationSeconds = (data.totalFrames * ANIM_TIME_UNIT_MS) / 1000.0f;
-    } else {
-      animationSlots[i].hasAnimation = false;
-      animationSlots[i].animationSeconds = 0.0f;
-    }
-  }
-  
-  preferences.end();
 }
 
 /**
@@ -181,10 +114,83 @@ String getDeviceConfig() {
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
+  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
+  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
+
+  // Refresh external WiFi info when/if connected and get the values.
+  if(wirelessMgr->getExtWifiNetworkInfo()) {
+    jsonBody["extAddr"] = wirelessMgr->getExtWifiAddress().toString();
+    jsonBody["extMask"] = wirelessMgr->getExtWifiSubnet().toString();
+  } else {
+    jsonBody["extAddr"] = "";
+    jsonBody["extMask"] = "";
+  }
 
   // Serialize JSON object to string.
   serializeJson(jsonBody, equipSettings);
   return equipSettings;
+}
+
+/**
+ * Prepare a JSON object with current animation frame and progress data.
+ * Sends real-time updates during recording and playback sessions.
+ * 
+ * FIELDS (sent to client):
+ * - state: Explicit 5-state value (0=IDLE_EMPTY, 1=RECORDING, 2=IDLE_PENDING_SAVE, 3=IDLE_LOADED, 4=PLAYBACK)
+ * - stateName: Human-readable state name
+ * - sourceSlot: -1=fresh recording, 0-3=loaded from slot
+ * - keyFrames: Count of relay trigger events recorded
+ * - currentFrame: Current frame index based on elapsed time
+ * - elapsedSeconds: Human-readable elapsed time
+ * - totalTime: Total animation duration in seconds
+ * - progress: Percentage completion
+ * - frameValue: Actuator firing at current frame (0=none, 1-4=relay ID)
+ * - lastActuator: Most recent actuator triggered (0=none, 1-4=relay ID)
+ */
+// Shared helper: Builds animation JSON object with current state and timing data
+// Used by both SSE events and status responses to ensure consistency
+void buildAnimationJson(JsonObject& animationObj) {
+  const char* stateNames[] = {"IDLE_EMPTY", "RECORDING", "IDLE_PENDING_SAVE", "IDLE_LOADED", "PLAYBACK"};
+  
+  // Send only the state name string, not the integer enum value
+  animationObj["state"] = stateNames[currentAnimation.state];
+  
+  animationObj["sourceSlot"] = currentAnimation.sourceSlot;
+  animationObj["keyFrames"] = currentAnimation.data.keyFrames;  // Frames with relay activity
+  animationObj["totalFrames"] = currentAnimation.data.totalFrames;
+  animationObj["totalTime"] = roundFloat((float)currentAnimation.data.totalFrames * ANIM_TIME_UNIT_MS / 1000.0f);
+  
+  // Only calculate timing and frame data during active operations (RECORDING or PLAYBACK)
+  // In idle states, these values are meaningless and should not be sent
+  if(currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK) {
+    uint32_t elapsed = millis() - currentAnimation.wallTime;
+    uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
+    animationObj["currentFrame"] = currentFrame;
+    
+    // Derive elapsed time in seconds (frames × frame duration / 1000 for ms to seconds)
+    animationObj["elapsedSeconds"] = roundFloat((float)currentFrame * ANIM_TIME_UNIT_MS / 1000.0f);
+    
+    // Derive progress percentage (based on animation timeline span)
+    if(currentAnimation.data.totalFrames > 0) {
+      animationObj["progress"] = roundFloat((float)currentFrame / currentAnimation.data.totalFrames * 100.0f);
+    }
+    
+    // Include which actuator (if any) is firing at current frame
+    // Value: 0 = no action, 1-4 = actuator ID
+    uint8_t currentActuator = (currentFrame < currentAnimation.data.totalFrames) ? currentAnimation.data.frames[currentFrame] : 0;
+    animationObj["frameValue"] = currentActuator;
+    
+    // Find the last actuator that was recorded (search backwards from totalFrames-1)
+    // This ensures we always display the most recent trigger, even if current frame is empty
+    uint8_t lastRecordedActuator = 0;
+    for(int16_t i = (int16_t)currentAnimation.data.totalFrames - 1; i >= 0; i--) {
+      if(currentAnimation.data.frames[i] > 0) {
+        lastRecordedActuator = currentAnimation.data.frames[i];
+        break;
+      }
+    }
+    animationObj["lastActuator"] = lastRecordedActuator;  // Will be 0 if no actuators recorded, 1-4 otherwise
+  }
 }
 
 String getEquipmentStatus() {
@@ -292,6 +298,13 @@ String getEquipmentStatus() {
       }
     }
   }
+
+  // Include current animation state with full data (sent directly in status response)
+  // This ensures animation state is available on initial page load before EventSource is ready.
+  // Uses shared helper to maintain consistency with SSE events.
+  JsonObject animationObj = jsonBody["animation"].to<JsonObject>();
+  buildAnimationJson(animationObj);
+  animationObj["totalFrames"] = currentAnimation.data.totalFrames;  // Status response includes frame count
 
   // Serialize JSON object to string.
   serializeJson(jsonBody, equipStatus);
@@ -401,9 +414,6 @@ void onOTAEnd(bool success) {
 }
 
 void startWebServer() {
-  // Initialize animation slot cache from NVS
-  refreshAnimationSlotCache();
-
   // Register all routes and handlers for the web server.
   registerWebRoutes();
 
@@ -420,6 +430,9 @@ void startWebServer() {
 
   // Configures all URI endpoints using registered routes.
   setupRouting(httpServer);
+
+  // Initialize animation slot cache from NVS
+  refreshAnimationSlotCache();
 
   // Configure the WebSocket endpoint.
   ws.onEvent(onWebSocketEventHandler);
@@ -490,62 +503,41 @@ void sendDebugEvent(const char* message) {
   events.send(message, "debug", millis());
 }
 
-/**
- * Prepare a JSON object with current animation frame and progress data.
- * Sends real-time updates during recording and playback sessions.
- * 
- * FIELDS:
- * - mode: Current animation state (IDLE, RECORDING, PLAYBACK)
- * - sourceSlot: Context indicator: -1=fresh recording, 0-3=loaded from slot, 0xFF=idle
- * - totalFrames: Total frame capacity (600)
- * - currentFrame: Current frame index (0-based) based on elapsed time
- * - keyFrames: Highest frame index with relay activity (only non-zero if relays triggered)
- * 
- * DERIVED values:
- * - elapsedSeconds: Human-readable elapsed time (currentFrame × 0.1s per frame)
- * - progress: Percentage completion for playback (currentFrame / keyFrames × 100)
- * - actuator: Which actuator (if any) is firing at current frame (0 = no action, 1-4 = relay ID)
- */
+void handleConnectivityCheck(AsyncWebServerRequest *request) {
+  // Handle OS-specific connectivity checks.
+  // Return exact responses that tell the OS "internet works, dismiss captive portal".
+  captivePortalRequests++;
+
+  String path = request->url();
+
+  // Android expects 204 No Content for /generate_204 and /gen_204
+  if (path.indexOf("/generate_204") >= 0 || path.indexOf("/gen_204") >= 0) {
+    debugln(F("Sending -> 204 No Content (Android connectivity check)"));
+    request->send(204);
+    return;
+  }
+
+  // iOS expects 200 with EXACT HTML format that Apple's server returns
+  // This signals "captive portal authenticated, dismiss the view"
+  if (path.indexOf("hotspot-detect") >= 0 || path.indexOf("success.html") >= 0) {
+    debugln(F("Sending -> Apple Success HTML (iOS connectivity check)"));
+    request->send(HTTP_STATUS_200, MIME_HTML,
+      F("<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>"));
+    return;
+  }
+
+  // Windows and other endpoints - return Microsoft's expected format
+  debugln(F("Sending -> Microsoft Success (Generic connectivity check)"));
+  request->send(HTTP_STATUS_200, MIME_PLAIN, F("Microsoft Connect Test"));
+}
+
 String getAnimationFrame() {
   String frameData;
   JsonDocument jsonFrame;
+  JsonObject animationObj = jsonFrame.to<JsonObject>();
   
-  const char* modeNames[] = {"IDLE", "RECORDING", "PLAYBACK"};
-  jsonFrame["mode"] = modeNames[currentAnimation.mode];
-  jsonFrame["sourceSlot"] = currentAnimation.sourceSlot;
-  jsonFrame["totalFrames"] = ANIM_MAX_FRAMES;  // Always 600
-  jsonFrame["keyFrames"] = currentAnimation.data.keyFrames;  // Frames with relay activity
-  
-  uint32_t elapsed = millis() - currentAnimation.wallTime;
-  uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
-  jsonFrame["currentFrame"] = currentFrame;
-  
-  // Derive elapsed time in seconds (frames × frame duration / 1000 for ms to seconds)
-  jsonFrame["elapsedSeconds"] = roundFloat((float)currentFrame * ANIM_TIME_UNIT_MS / 1000.0f);
-  
-  // Total duration of animation in seconds (totalFrames × frame duration / 1000)
-  jsonFrame["totalTime"] = roundFloat((float)currentAnimation.data.totalFrames * ANIM_TIME_UNIT_MS / 1000.0f);
-  
-  // Derive progress percentage (based on animation timeline span)
-  if(currentAnimation.data.totalFrames > 0) {
-    jsonFrame["progress"] = roundFloat((float)currentFrame / currentAnimation.data.totalFrames * 100.0f);
-  }
-  
-  // Include which actuator (if any) is firing at current frame
-  // Value: 0 = no action, 1-4 = actuator ID
-  uint8_t currentActuator = (currentFrame < currentAnimation.data.totalFrames) ? currentAnimation.data.frames[currentFrame] : 0;
-  jsonFrame["frameValue"] = currentActuator;
-  
-  // Find the last actuator that was recorded (search backwards from totalFrames-1)
-  // This ensures we always display the most recent trigger, even if current frame is empty
-  uint8_t lastRecordedActuator = 0;
-  for(int16_t i = (int16_t)currentAnimation.data.totalFrames - 1; i >= 0; i--) {
-    if(currentAnimation.data.frames[i] > 0) {
-      lastRecordedActuator = currentAnimation.data.frames[i];
-      break;
-    }
-  }
-  jsonFrame["lastActuator"] = lastRecordedActuator;  // Will be 0 if no actuators recorded, 1-4 otherwise
+  // Use shared helper to build animation JSON
+  buildAnimationJson(animationObj);
   
   // Serialize JSON object to string.
   serializeJson(jsonFrame, frameData);
@@ -557,9 +549,10 @@ void sendAnimationFrameData() {
   updateRecordingElapsedTime();
 
   if(b_httpd_started) {
-    // Send SSE events during active recording/playback, OR on transition to IDLE with data
-    if((currentAnimation.mode == ANIM_RECORDING || currentAnimation.mode == ANIM_PLAYBACK) ||
-       (currentAnimation.mode == ANIM_IDLE && currentAnimation.data.keyFrames > 0)) {
+    // Send SSE events during active states (RECORDING, PLAYBACK), or stable loaded state (IDLE_LOADED),
+    // or when transitioning to IDLE_PENDING_SAVE with data (allows UI to update from IDLE_PENDING_SAVE to IDLE_LOADED on explicit state changes)
+    if((currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK || currentAnimation.state == ANIM_IDLE_LOADED) ||
+       (currentAnimation.state == ANIM_IDLE_PENDING_SAVE && currentAnimation.data.keyFrames > 0)) {
       // Gather the latest animation frame data, serialize it to a JSON string,
       // and send it to all connected EventSource (SSE) clients as an "animation"
       // event name (using the current ms time as a unique event identifier).
@@ -633,8 +626,10 @@ void handleFavSvg(AsyncWebServerRequest *request) {
 }
 
 void handleContextHelp(AsyncWebServerRequest *request) {
-  // Serves the contextual help JSON file for web UI field descriptions.
+  // Used for serving the help.json file from the web server.
   debugln(F("Sending -> Help JSON"));
+
+  // Calculate file size from the embedded binary data and serve the file to the requesting client.
   size_t i_file_len = embeddedFileSize(_binary_assets_help_json_gz_start, _binary_assets_help_json_gz_end);
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, _binary_assets_help_json_gz_start, i_file_len);
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
@@ -788,41 +783,6 @@ void handleRestart(AsyncWebServerRequest *request) {
 }
 
 /**
- * Connectivity Check Handler
- * Purpose: Intercept OS connectivity checks to signal this is a captive portal without internet.
- * This prevents mobile devices (especially Android) from thinking they have internet access,
- * allowing them to fall back to cellular data for actual internet while staying connected to
- * the device's WiFi for local configuration.
- */
-void handleConnectivityCheck(AsyncWebServerRequest *request) {
-  // Handle OS-specific connectivity checks.
-  // Return exact responses that tell the OS "internet works, dismiss captive portal".
-  captivePortalRequests++;
-
-  String path = request->url();
-
-  // Android expects 204 No Content for /generate_204 and /gen_204
-  if (path.indexOf("/generate_204") >= 0 || path.indexOf("/gen_204") >= 0) {
-    debugln(F("Sending -> 204 No Content (Android connectivity check)"));
-    request->send(204);
-    return;
-  }
-
-  // iOS expects 200 with EXACT HTML format that Apple's server returns
-  // This signals "captive portal authenticated, dismiss the view"
-  if (path.indexOf("hotspot-detect") >= 0 || path.indexOf("success.html") >= 0) {
-    debugln(F("Sending -> Apple Success HTML (iOS connectivity check)"));
-    request->send(HTTP_STATUS_200, MIME_HTML,
-      F("<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>"));
-    return;
-  }
-
-  // Windows and other endpoints - return Microsoft's expected format
-  debugln(F("Sending -> Microsoft Success (Generic connectivity check)"));
-  request->send(HTTP_STATUS_200, MIME_PLAIN, F("Microsoft Connect Test"));
-}
-
-/**
  * Action Handlers - Perform specific actions via web requests
  */
 
@@ -846,7 +806,7 @@ void handleActuator(AsyncWebServerRequest *request) {
           triggerActuator(actuator);
 
           // If currently recording an animation, record this relay trigger at current frame
-          if(currentAnimation.mode == ANIM_RECORDING) {
+          if(currentAnimation.state == ANIM_RECORDING) {
             recordRelayAtCurrentFrame(actuatorNum);  // 1-4
           }
 
@@ -1130,15 +1090,15 @@ void handleRecordStart(AsyncWebServerRequest *request) {
 void handleRecordStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Animation Record Stop"));
 
-  if (currentAnimation.mode != ANIM_RECORDING) {
+  if (currentAnimation.state != ANIM_RECORDING) {
     request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Not currently recording"));
     return;
   }
 
   // Capture current keyFrames BEFORE calling stopRecording() (which freezes totalFrames)
   uint16_t keyFrames = currentAnimation.data.keyFrames;
-  uint16_t totalFrames = stopRecording(); // Returns frozen totalFrames span
-  sendAnimationFrameData(); // Send one final update once state is IDLE
+  uint16_t totalFrames = stopRecording(); // Returns frozen totalFrames span, transitions to IDLE_PENDING_SAVE
+  sendAnimationFrameData(); // Send one final update once state is IDLE_PENDING_SAVE
 
   JsonDocument jsonResponse;
   jsonResponse["status"] = "success";
@@ -1172,6 +1132,9 @@ void handleRecordSave(AsyncWebServerRequest *request) {
         if (saveRecordingToNVS(animIndex)) {
           // Update the animation slot cache from NVS
           refreshAnimationSlotCache();
+          
+          // Send state update to notify UI that recording was saved and transitioned to IDLE_LOADED
+          sendAnimationFrameData();
           
           // Notify all clients that slots have changed
           notifyWSClients();
@@ -1214,6 +1177,9 @@ void handlePlayAnimation(AsyncWebServerRequest *request) {
         }
 
         if (startPlayback(animIndex)) {
+          // Send state update to notify UI that playback started and state is now PLAYBACK
+          sendAnimationFrameData();
+          
           JsonDocument jsonResponse;
           jsonResponse["status"] = "success";
           jsonResponse["message"] = "Playback started";
@@ -1236,14 +1202,27 @@ void handlePlayAnimation(AsyncWebServerRequest *request) {
 void handleStopAnimation(AsyncWebServerRequest *request) {
   debugln(F("Web: Animation Stop"));
 
-  if (currentAnimation.mode != ANIM_PLAYBACK) {
+  if (currentAnimation.state != ANIM_PLAYBACK) {
     request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("No animation currently playing"));
     return;
   }
 
   stopPlayback();
-  sendAnimationFrameData(); // Send one final update once state is IDLE
-  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Playback stopped"));
+  sendAnimationFrameData(); // Send one final update once state is IDLE_LOADED
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+}
+
+void handleRecordDiscard(AsyncWebServerRequest *request) {
+  debugln(F("Web: Animation Record Discard"));
+
+  if (currentAnimation.state != ANIM_IDLE_PENDING_SAVE) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("No unsaved recording to discard"));
+    return;
+  }
+
+  discardRecording(); // Transitions from IDLE_PENDING_SAVE to IDLE_EMPTY
+  sendAnimationFrameData(); // Send update to notify UI of IDLE_EMPTY state
+  request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Recording discarded"));
 }
 
 /**

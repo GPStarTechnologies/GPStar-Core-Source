@@ -86,6 +86,7 @@ void registerWebRoutes() {
   addSimpleRoute("/animations/record/start", HTTP_PUT, handleRecordStart, "Start recording animation", "Begins recording a new animation sequence", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/record/stop", HTTP_PUT, handleRecordStop, "Stop recording", "Stops recording and returns frame count", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/record/save/*", HTTP_PUT, handleRecordSave, "Save animation", "Saves recorded animation to NVS (id=[0-3])", TAG_DEVICE_CONTROL);
+  addSimpleRoute("/animations/record/discard", HTTP_PUT, handleRecordDiscard, "Discard unsaved recording", "Discards unsaved recording data and returns to IDLE_EMPTY state", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/play/*", HTTP_PUT, handlePlayAnimation, "Play animation", "Loads and plays a recorded animation (id=[0-3])", TAG_DEVICE_CONTROL);
   addSimpleRoute("/animations/stop", HTTP_PUT, handleStopAnimation, "Stop animation", "Stops current animation playback", TAG_DEVICE_CONTROL);
 

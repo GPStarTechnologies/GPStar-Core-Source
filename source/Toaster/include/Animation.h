@@ -44,11 +44,11 @@
  * - Button Binding:   4 NVS slots map directly to 4 RF buttons (slot 0→button 1, etc.)
  *
  * SESSION vs PERSISTENT DATA:
- * - AnimationSession (currentAnimation):      Runtime state (frames, keyFrames, mode, timing)
+ * - AnimationSession (currentAnimation):      Runtime state (frames, keyFrames, state, timing)
  * - AnimationData (NVS):          Persistent struct (keyFrames, checksum, frames[600])
  *
  * AUTOMATIC RECORDING:
- * When currentAnimation.mode == ANIM_RECORDING, any call to recordRelayAtCurrentFrame(actuatorID)
+ * When currentAnimation.state == ANIM_RECORDING, any call to recordRelayAtCurrentFrame(actuatorID)
  * will write that actuator ID to the frame buffer at the calculated frame position.
  * This happens automatically when:
  *   - User presses RF button (calls recordRelayAtCurrentFrame in UserInputTask)
@@ -64,18 +64,83 @@
 
 #include <cstdint>
 #include <cstring>
-#include "Header.h"
 #include <Communication.h>
 
 // Forward declarations
 bool triggerActuator(ActuatorID actuatorID);
+void sendAnimationFrameData(); // From Webhandler.h
 
 /**
- * Clear the animation buffer and reset runtime state
+ * Animation State Machine
+ * Records and plays back sequences of relay actuations at 100ms intervals.
+ * 
+ * STATE FLOW:
+ *   IDLE_EMPTY (no data)
+ *     → startRecording() → RECORDING (active recording)
+ *     → stopRecording() → IDLE_PENDING_SAVE (data unsaved)
+ *     → saveRecordingToNVS() → IDLE_LOADED (ready to play or re-record)
+ *     → OR discardRecording() → IDLE_EMPTY
+ *   IDLE_LOADED (data persisted or just loaded)
+ *     → startPlayback() → PLAYBACK (active playback)
+ *     → OR startRecording() → RECORDING (overwrite mode, clears buffer)
+ *   PLAYBACK (active playback)
+ *     → stopPlayback() → IDLE_LOADED (animation data preserved)
+ *     → OR auto-complete → IDLE_LOADED (via stopPlayback() at end)
+ */
+
+enum AnimationState : uint8_t {
+  ANIM_IDLE_EMPTY = 0,              // No buffer data, no loaded animation
+  ANIM_RECORDING = 1,               // Recording in progress (stop button enabled)
+  ANIM_IDLE_PENDING_SAVE = 2,       // Recording stopped, data unsaved (save/discard buttons)
+  ANIM_IDLE_LOADED = 3,             // Animation loaded from NVS or just saved (play button enabled)
+  ANIM_PLAYBACK = 4                 // Playback in progress (stop button enabled)
+};
+
+// Animation Constants
+#define ANIM_MAX_FRAMES 600             // 1 minute @ 100ms = 600 frames
+const uint16_t ANIM_TIME_UNIT_MS = 100; // Frame duration in milliseconds
+const uint8_t ANIM_MAX_STORED = 4;      // One per RF button
+const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
+
+/**
+ * AnimationData - Persistent structure stored in NVS
+ * Contains the recorded animation frames and metadata.
+ */
+struct AnimationData {
+  uint16_t totalFrames;            // How many frames were recorded (0-ANIM_MAX_FRAMES)
+  uint16_t keyFrames;              // How many frames contain a non-zero value
+  uint16_t checksum;               // CRC16 of frames[] for optional validation against NVS
+  uint8_t frames[ANIM_MAX_FRAMES]; // The recorded frame data (0 = no action, 1-4 = relay ID)
+};
+
+/**
+ * AnimationSession - Runtime state used during recording/playback
+ * Encapsulates both the animation frame data and playback session metadata.
+ * Single source of truth: 'state' field determines all UI button enabled/disabled states.
+ */
+struct AnimationSession {
+  uint8_t state;      // Current AnimationState (single source of truth for UI)
+  int8_t sourceSlot;  // Metadata: -1=no slot, 0-3=loaded from slot (only meaningful in IDLE_LOADED)
+  uint32_t wallTime;  // Metadata: millis() timestamp when recording/playback began
+  AnimationData data; // Frame buffer and metadata (frames, keyFrames, totalFrames, checksum)
+};
+AnimationSession currentAnimation = {};
+
+// AnimationSlot[N] - Tracks which slots have recordings and their durations
+struct AnimationSlot {
+  uint8_t id;             // Slot index (0-3)
+  bool hasAnimation;      // Whether NVS data exists and is valid
+  float animationSeconds; // Animation duration in seconds (calculated from keyFrames * ANIM_TIME_UNIT_MS / 1000)
+};
+const uint8_t ANIMATION_SLOTS_COUNT = 4;
+AnimationSlot animationSlots[ANIMATION_SLOTS_COUNT] = {};
+
+/**
+ * Clear the animation buffer and reset runtime state to IDLE_EMPTY
  */
 inline void clearAnimationBuffer() {
+  currentAnimation.state = ANIM_IDLE_EMPTY;
   currentAnimation.sourceSlot = -1;
-  currentAnimation.mode = ANIM_IDLE;
   currentAnimation.wallTime = 0;
   currentAnimation.data.totalFrames = 0;
   currentAnimation.data.keyFrames = 0;
@@ -93,21 +158,21 @@ inline uint16_t computeChecksum() {
 
 /**
  * Start a new recording session
- * Clears buffer, sets mode to RECORDING, captures wall time
+ * Clears buffer, sets state to RECORDING, captures wall time
  */
 inline void startRecording() {
   clearAnimationBuffer();
-  currentAnimation.mode = ANIM_RECORDING;
+  currentAnimation.state = ANIM_RECORDING;
   currentAnimation.wallTime = millis();
 }
 
 /**
  * Update the recording timeline span based on current elapsed time
- * Called continuously during RECORDING mode to track actual duration
+ * Called continuously during RECORDING state to track actual duration
  * (not just when keyFrames are recorded)
  */
 inline void updateRecordingElapsedTime() {
-  if (currentAnimation.mode != ANIM_RECORDING) {
+  if (currentAnimation.state != ANIM_RECORDING) {
     return;
   }
 
@@ -132,8 +197,8 @@ inline void updateRecordingElapsedTime() {
  * Bounds checking prevents buffer overflow. Increments keyFrames count.
  */
 inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
-  if (currentAnimation.mode != ANIM_RECORDING) {
-    return; // Only record when in RECORDING mode
+  if (currentAnimation.state != ANIM_RECORDING) {
+    return; // Only record when in RECORDING state
   }
 
   if (actuatorID < 1 || actuatorID > 4) {
@@ -171,19 +236,33 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
 
 /**
  * Stop recording and return the total duration (totalFrames).
- * This just freezes the timeline and exits RECORDING mode
+ * Transitions to IDLE_PENDING_SAVE (data not yet persisted).
+ * Freezes timeline and waits for save/discard decision.
  */
 inline uint16_t stopRecording() {
-  if (currentAnimation.mode != ANIM_RECORDING) {
+  if (currentAnimation.state != ANIM_RECORDING) {
     return 0;
   }
 
   // Final update to capture any elapsed time since last update
   updateRecordingElapsedTime();
 
-  currentAnimation.mode = ANIM_IDLE;
+  currentAnimation.state = ANIM_IDLE_PENDING_SAVE;
   currentAnimation.wallTime = 0;
   return currentAnimation.data.totalFrames;
+}
+
+/**
+ * Discard the current unsaved recording
+ * Clears buffer and returns to IDLE_EMPTY state.
+ * Called when user chooses not to save after stopRecording().
+ */
+inline void discardRecording() {
+  if (currentAnimation.state != ANIM_IDLE_PENDING_SAVE) {
+    return; // Only discard from PENDING_SAVE state
+  }
+
+  clearAnimationBuffer(); // Returns to IDLE_EMPTY
 }
 
 /**
@@ -243,8 +322,10 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
   preferences.end();
 
   if (written == sizeof(data)) {
-    // Update sourceSlot to indicate this recording is now saved to this slot
+    // Transition to IDLE_LOADED state after successful save
+    // Animation data persists in buffer and is now backed by NVS
     currentAnimation.sourceSlot = animIndex;
+    currentAnimation.state = ANIM_IDLE_LOADED;
     return true;
   }
 
@@ -303,24 +384,24 @@ inline bool loadAnimationFromNVS(uint8_t animIndex) {
     // debugln(F("Animation checksum mismatch - data may be corrupted"));
   }
 
-  currentAnimation.sourceSlot = animIndex; // Mark which slot this came from
-  currentAnimation.mode = ANIM_IDLE;       // Leave in IDLE, caller will set to PLAYBACK
-  currentAnimation.data = data;            // Copy data into runtime buffer
+  currentAnimation.sourceSlot = animIndex;  // Mark which slot this came from
+  currentAnimation.state = ANIM_IDLE_LOADED; // Transition to loaded state
+  currentAnimation.data = data;             // Copy data into runtime buffer
 
   return true;
 }
 
 /**
  * Start playback of a recorded animation
- * Loads from NVS, sets mode to PLAYBACK, captures wall time
+ * Loads from NVS, sets state to PLAYBACK, captures wall time
  */
 inline bool startPlayback(uint8_t animIndex) {
   if (!loadAnimationFromNVS(animIndex)) {
     return false;
   }
 
-  currentAnimation.mode = ANIM_PLAYBACK; // Set the state to playback to run the animation
-  currentAnimation.wallTime = millis();  // Capture the time that playback began
+  currentAnimation.state = ANIM_PLAYBACK; // Transition to playback to run the animation
+  currentAnimation.wallTime = millis();   // Capture the time that playback began
 
   return true;
 }
@@ -328,20 +409,23 @@ inline bool startPlayback(uint8_t animIndex) {
 /**
  * Stop current playback immediately
  * Halts playback but preserves the loaded animation data in case it needs to play again.
+ * Transitions to IDLE_LOADED (data still loaded from NVS).
  * Does not clear the buffer—that only happens in clearAnimationBuffer() for fresh recordings.
+ * Sends event to notify client that playback has ended and system returned to IDLE_LOADED.
  */
 inline void stopPlayback() {
-  currentAnimation.mode = ANIM_IDLE; // Simply return to an idle state
-  currentAnimation.wallTime = 0;
+  currentAnimation.state = ANIM_IDLE_LOADED; // Return to loaded state (preserves data)
+  currentAnimation.wallTime = 0;             // Clear the timer to prevent further updates
+  sendAnimationFrameData();                  // Send one final update to notify client of state change
 }
 
 /**
  * Update playback state each cycle (called from AnimationTask ~10ms)
  * Checks elapsed time, triggers relays at appropriate frames, stops when complete
- * Only processes if mode is ANIM_PLAYBACK. Playback ends when currentFrame >= totalFrames.
+ * Only processes if state is ANIM_PLAYBACK. Playback ends when currentFrame >= totalFrames.
  */
 inline void updatePlayback() {
-  if (currentAnimation.mode != ANIM_PLAYBACK) {
+  if (currentAnimation.state != ANIM_PLAYBACK) {
     return;  // Only update if actually playing
   }
 
@@ -351,7 +435,7 @@ inline void updatePlayback() {
 
   // Check if playback is complete (reached end of recorded timeline)
   if (currentFrame >= currentAnimation.data.totalFrames) {
-    stopPlayback();
+    stopPlayback(); // Will handle state transition to IDLE and send event
     return;
   }
 
@@ -402,4 +486,67 @@ inline bool validateChecksum(uint8_t animIndex) {
   // Compute checksum using shared crc16 function
   uint16_t computed = crc16(data.frames, ANIM_MAX_FRAMES);
   return computed == data.checksum;
+}
+
+/**
+ * Scan NVS and rebuild the animation availability cache
+ * 
+ * HOW IT WORKS:
+ * - Queries NVS for each of the 4 animation slots ("anim0", "anim1", "anim2", "anim3")
+ * - For each slot, attempts to deserialize AnimationData using getBytes()
+ * - Updates the in-memory animationSlots[] array with hasAnimation flag and animationSeconds duration
+ * - This cache is used by the UI to populate dropdowns and enable/disable the Play button
+ * 
+ * CACHE ARRAY (animationSlots[4]):
+ * - animationSlots[i].id = slot number (0-3)
+ * - animationSlots[i].hasAnimation = true if slot contains valid data
+ * - animationSlots[i].animationSeconds = animation duration in seconds (0 if empty)
+ * 
+ * WHEN TO CALL:
+ * - After saveRecordingToNVS() completes (so UI learns about new saved animation)
+ * - On system startup (to populate UI with any previously saved animations)
+ * - When user explicitly requests "refresh" action
+ * 
+ * OPERATION:
+ * - Opens Preferences in read-only mode, iterates all 4 slots
+ * - For each slot, getBytes() returns 0 if key doesn't exist (empty slot)
+ * - For each slot, getBytes() returns size if key exists; validates keyFrames > 0
+ * - After all slots checked, closes Preferences connection
+ */
+void refreshAnimationSlotCache() {
+  Preferences preferences;
+  
+  if (!preferences.begin("animations", true)) {
+    // Unable to open namespace - mark all slots as empty
+    for (uint8_t i = 0; i < 4; i++) {
+      animationSlots[i].id = i;
+      animationSlots[i].hasAnimation = false;
+      animationSlots[i].animationSeconds = 0.0f;
+    }
+    return;
+  }
+
+  // Check each animation slot
+  for (uint8_t i = 0; i < 4; i++) {
+    animationSlots[i].id = i;
+    
+    // getBytes() deserializes the AnimationData struct from NVS for this slot
+    // Parameters: key name (ANIMATION_NAMES[i]), pointer to data buffer, max size
+    // Returns: number of bytes read (should equal sizeof(AnimationData) if slot has animation)
+    // Returns 0 if key doesn't exist (slot is empty)
+    AnimationData data;
+    size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
+    
+    // Validation: only mark slot as "hasAnimation" if read succeeded and data is valid
+    if (size == sizeof(data) && data.totalFrames > 0 && data.totalFrames <= ANIM_MAX_FRAMES) {
+      animationSlots[i].hasAnimation = true;
+      // Convert totalFrames to seconds: totalFrames * 100ms per frame / 1000ms per second
+      animationSlots[i].animationSeconds = (data.totalFrames * ANIM_TIME_UNIT_MS) / 1000.0f;
+    } else {
+      animationSlots[i].hasAnimation = false;
+      animationSlots[i].animationSeconds = 0.0f;
+    }
+  }
+  
+  preferences.end();
 }

@@ -663,8 +663,8 @@ void decreaseVolumeEEPROM() {
 }
 
 void increaseVolume() {
-  if(i_volume_master == i_volume_abs_max) {
-    // Cannot go any higher.
+  if(i_volume_master_percentage >= 100) {
+    // Cannot go any higher (at or past 100%).
   }
   else {
     if(i_volume_master_percentage + VOLUME_MULTIPLIER > 100) {
@@ -682,8 +682,8 @@ void increaseVolume() {
 }
 
 void decreaseVolume() {
-  if(i_volume_master == MINIMUM_VOLUME) {
-    // Cannot go any lower.
+  if(i_volume_master_percentage <= 0) {
+    // Cannot go any lower (at or below 0%).
   }
   else {
     if(i_volume_master_percentage - VOLUME_MULTIPLIER < 0) {

@@ -96,41 +96,37 @@
         <button type="button" class="green" onclick="triggerAct4()" id="btnAct4">#4</button>
         <br />
         <br />
-        <br />
         <h2>Recording Controls</h2>
         <button type="button" class="orange" onclick="recordingStart()" id="btnStartRec">Start</button>
         &nbsp;&nbsp;
         <button type="button" class="blue" onclick="recordingStop()" id="btnStopRec">Stop</button>
         <br />
+        <label for="saveSlot">Save Slot:</label>
+        <select id="saveSlot">
+          <option value="0">Slot 0</option>
+          <option value="1">Slot 1</option>
+          <option value="2">Slot 2</option>
+          <option value="3">Slot 3</option>
+        </select>
         <br />
-        <div id="saveSlotSelector">
-          <label for="saveSlot">Save Slot:</label>
-          <select id="saveSlot">
-            <option value="0">Slot 0</option>
-            <option value="1">Slot 1</option>
-            <option value="2">Slot 2</option>
-            <option value="3">Slot 3</option>
-          </select>
-          <br />
-          <button type="button" class="green" onclick="saveToSlot()" id="btnSave">Save</button>
-          &nbsp;&nbsp;
-          <button type="button" class="orange" onclick="cancelSaveSlot()" id="btnCancel">Cancel</button>
+        <button type="button" class="green" onclick="saveToSlot()" id="btnSave">Save</button>
+        &nbsp;&nbsp;
+        <button type="button" class="orange" onclick="discardRecording()" id="btnCancel">Cancel</button>
+        <br />
+        <h2>Playback Control</h2>
+        <label for="playSlot">Animation:</label>
+        <select id="playSlot">
+          <option value="0">Slot 0</option>
+          <option value="1">Slot 1</option>
+          <option value="2">Slot 2</option>
+          <option value="3">Slot 3</option>
+        </select>
+        <br />
+        <button type="button" class="green" onclick="playFromSlot()" id="btnPlay">Play</button>
+        &nbsp;&nbsp;
+        <button type="button" class="blue" onclick="stopPlayback()" id="btnStop">Stop</button>
         </div>
-        <div id="playSlotSelector">
-          <h2>Playback Control</h2>
-          <label for="playSlot">Animation:</label>
-          <select id="playSlot">
-            <option value="0">#0</option>
-            <option value="1">#1</option>
-            <option value="2">#2</option>
-            <option value="3">#3</option>
-          </select>
-          <br />
-          <button type="button" class="green" onclick="playFromSlot()" id="btnPlay">Play</button>
-          &nbsp;&nbsp;
-          <button type="button" class="blue" onclick="stopPlayback()" id="btnStop">Stop</button>
-        </div>
-        <div style="padding-left:10px;text-align:left">
+        <div class="card animationProgress">
           <div id="animationProgressTab3"></div>
         </div>
       </div>

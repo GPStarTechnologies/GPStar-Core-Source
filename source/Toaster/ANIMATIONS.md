@@ -38,10 +38,12 @@ Time:  0ms   100ms 200ms 300ms 400ms 500ms 600ms 700ms 800ms 900ms
 ## Runtime State
 
 ```cpp
-enum AnimationMode : uint8_t {
-  ANIM_IDLE = 0,
-  ANIM_RECORDING = 1,
-  ANIM_PLAYBACK = 2
+enum AnimationState : uint8_t {
+  ANIM_IDLE_EMPTY = 0,       // No buffer data, no loaded animation
+  ANIM_RECORDING = 1,        // Recording in progress
+  ANIM_IDLE_PENDING_SAVE = 2,// Recording stopped, data unsaved (user can save/discard)
+  ANIM_IDLE_LOADED = 3,      // Animation loaded from NVS, ready to play
+  ANIM_PLAYBACK = 4          // Playback in progress
 };
 
 // In-memory runtime state (used during recording/playback)
@@ -50,7 +52,7 @@ struct AnimationSession {
   uint16_t keyFrames;        // Count of frames containing non-zero values (trigger events)
   uint16_t totalFrames;      // Timeline span from 0 to last frame (0-ANIM_MAX_FRAMES)
   uint32_t wallTime;         // millis() timestamp when recording/playback began
-  uint8_t mode;              // Current mode (IDLE, RECORDING, PLAYBACK)
+  uint8_t state;             // Current state (5 explicit states, see AnimationState enum)
   int8_t sourceSlot;         // Source context: -1=fresh recording, 0-3=loaded from slot
 };
 
@@ -77,39 +79,61 @@ The `sourceSlot` field tracks where an animation came from for UI display purpos
 
 **State Transitions:**
 
-- `startRecording()` → sourceSlot = -1, keyFrames = 0, totalFrames = 0
+```
+IDLE_EMPTY ──startRecording()──→ RECORDING
+RECORDING ──stopRecording()──→ IDLE_PENDING_SAVE
+IDLE_PENDING_SAVE ──saveRecordingToNVS()──→ IDLE_LOADED
+IDLE_PENDING_SAVE ──discardRecording()──→ IDLE_EMPTY
+IDLE_LOADED ──startPlayback()──→ PLAYBACK
+IDLE_LOADED ──startRecording()──→ RECORDING (overwrites buffer)
+PLAYBACK ──stopPlayback()/auto-complete──→ IDLE_LOADED (preserves data)
+```
+
+- `startRecording()` → state = ANIM_RECORDING, sourceSlot = -1, keyFrames = 0, totalFrames = 0
 - `recordRelayAtCurrentFrame()` → keyFrames++, totalFrames updated as timeline extends
-- `stopRecording()` → mode = IDLE, totalFrames frozen at current span
-- `saveRecordingToNVS(slot)` → if keyFrames > 0 → save succeeds, sourceSlot = slot
-- `startPlayback(slot)` → load from NVS, sourceSlot = slot, wallTime = millis(), playback runs for totalFrames
-- `stopPlayback()` → sourceSlot = -1, all fields cleared
+- `stopRecording()` → state = ANIM_IDLE_PENDING_SAVE, totalFrames frozen at current span
+- `saveRecordingToNVS(slot)` → if keyFrames > 0 → state = ANIM_IDLE_LOADED, sourceSlot = slot
+- `discardRecording()` → state = ANIM_IDLE_EMPTY, buffer cleared
+- `startPlayback(slot)` → load from NVS, state = ANIM_PLAYBACK, sourceSlot = slot, wallTime = millis()
+- `stopPlayback()` → state = ANIM_IDLE_LOADED (preserves loaded animation data)
 
 ---
 
 ## State Machine
 
 ```
-┌──────────────────────────┐
-│        IDLE              │
-│  Awaiting command        │
-└─────┬────────────────────┘
-      │
-      ├──[Record Start]──→ RECORDING ──[Save]──→ NVS
-      │
-      └──[Playback Start]──→ PLAYBACK
-           (from NVS)
-
-┌──────────────────────────┐
-│     RECORDING            │
-│  User triggers relays    │
-│  via Web UI buttons      │
-└──────────────────────────┘
-
-┌──────────────────────────┐
-│     PLAYBACK             │
-│  Execute frames every    │
-│  100ms until complete    │
-└──────────────────────────┘
+                    ┌────────────────────────┐
+                    │   IDLE_EMPTY           │
+                    │ (No data anywhere)     │
+                    └───────┬────────────────┘
+                            │ startRecording()
+                            ↓
+                    ┌────────────────────────┐
+                    │    RECORDING           │
+                    │(User triggers relays)  │
+                    └───────┬────────────────┘
+                            │ stopRecording()
+                            ↓
+                    ┌────────────────────────┐
+                    │ IDLE_PENDING_SAVE      │
+                    │(Unsaved data in buffer)│
+                    └──────┬──────────────────┘
+                    ┌──────┴──────────────┐
+    saveRecording() │                     │ discardRecording()
+                    ↓                     ↓
+        ┌────────────────────────┐  IDLE_EMPTY
+        │   IDLE_LOADED          │
+        │(Animation ready/saved) │
+        └────────┬───────────────┘
+                 │ startPlayback()
+                 ↓
+        ┌────────────────────────┐
+        │     PLAYBACK           │
+        │(Execute frames @100ms) │
+        └────────┬───────────────┘
+                 │ stopPlayback() OR auto-complete
+                 ↓
+        IDLE_LOADED (data preserved)
 ```
 
 ---
@@ -125,11 +149,13 @@ struct AnimationData {
   uint8_t frames[600];      // The recorded frame data (0 = no action, 1-4 = relay ID)
 };
 
-// Runtime state (NOT persisted)
-enum AnimationMode : uint8_t {
-  ANIM_IDLE = 0,
-  ANIM_RECORDING = 1,
-  ANIM_PLAYBACK = 2
+// Runtime state (NOT persisted) - 5 explicit states
+enum AnimationState : uint8_t {
+  ANIM_IDLE_EMPTY = 0,       // No buffer data, no loaded animation
+  ANIM_RECORDING = 1,        // Recording in progress
+  ANIM_IDLE_PENDING_SAVE = 2,// Recording stopped, data unsaved
+  ANIM_IDLE_LOADED = 3,      // Animation loaded from NVS
+  ANIM_PLAYBACK = 4          // Playback in progress
 };
 
 struct AnimationSession {
@@ -231,13 +257,15 @@ AnimationData animData = {
 
 ## RF Button Behavior
 
-RF buttons are **playback control only**:
+RF buttons are **playback control only**. With 5-state model:
 
-| Press                          | Behavior                       |
-| ------------------------------ | ------------------------------ |
-| Button N (IDLE)                | Load & play animation N        |
-| Button N (same, PLAYBACK)      | Stop playback                  |
-| Button M (different, PLAYBACK) | Stop current, play animation M |
+| Current State                   | Button Press           | Behavior                           |
+| ------------------------------- | ---------------------- | ---------------------------------- |
+| IDLE_EMPTY, IDLE_PENDING_SAVE   | Any button N           | Load animation N from NVS, play    |
+| IDLE_LOADED                     | Any button N           | Load animation N from NVS, play    |
+| PLAYBACK (animation N)          | Button N (same)        | Stop playback (stay IDLE_LOADED)   |
+| PLAYBACK (animation N)          | Button M (different)   | Stop N, start M                    |
+| RECORDING                       | Any button             | Ignored (can't playback during recording) |
 
 ---
 
@@ -326,17 +354,23 @@ AnimationSession currentAnimation = {};  // Initialize to all zeros (IDLE mode)
 
 **AnimationTask (main.cpp, line ~122):**
 
+Calls two critical functions:
+1. `updatePlayback()` - Advances playback frame counter and triggers relays at proper times
+2. `sendAnimationFrameData()` - **Controlling point** for all animation state updates:
+   - Calls `updateRecordingElapsedTime()` internally for recording timeline tracking
+   - Sends SSE events during RECORDING, PLAYBACK, or IDLE_PENDING_SAVE states
+   - Ensures frontend receives consistent snapshots of animation state every ~10ms
+
 ```cpp
 void AnimationTask(void *parameter) {
   while(true) {
     // ... relay cleanup logic ...
 
-    // Update animation playback state if currently playing
-    updatePlayback();
-
-    // Update recording elapsed time AND send animation frame data to connected clients via SSE
-    // (sendAnimationFrameData calls updateRecordingElapsedTime() internally)
-    sendAnimationFrameData();
+    updatePlayback(); // Update animation playback if currently playing
+    // Send animation data during active recording/playback, or on transition to unsaved state
+    if(currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK || currentAnimation.state == ANIM_IDLE_PENDING_SAVE) {
+      sendAnimationFrameData(); // Send real-time frame data to connected clients via SSE
+    }
 
     updateAudio();
     checkMusic();
@@ -353,36 +387,42 @@ void AnimationTask(void *parameter) {
 
 **UserInputTask (main.cpp, RF Button Handler):**
 
+RF buttons are **playback control only**. The 5-state model simplifies button logic:
+- If NOT in PLAYBACK state: start animation
+- If IN PLAYBACK state: same button = stop, different button = switch
+
 ```cpp
 // Track which animation is currently playing
-static uint8_t currentPlayingAnim = 0xFF;  // 0xFF = no animation playing
+static int8_t currentPlayingAnim = -1;  // -1 = no animation playing
 
 // When RF button triggers (after debounce detection):
 if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
   uint8_t buttonIndex = i;  // 0-3 maps to anim 0-3
 
-  // Check current animation state
-  if (currentAnimation.mode == ANIM_IDLE) {
+  // Handle animation playback control based on current state
+  // RF buttons only trigger playback when not in active playback mode
+  if (currentAnimation.state != ANIM_PLAYBACK) {
     // Not playing - start this animation
-    if (currentAnimation.startPlayback(buttonIndex)) {
+    if (startPlayback(buttonIndex)) {
       currentPlayingAnim = buttonIndex;
+      notifyWSClients();
     }
-  } else if (currentAnimation.mode == ANIM_PLAYBACK) {
-    // Currently playing
+  } else if (currentAnimation.state == ANIM_PLAYBACK) {
+    // Currently playing - handle same or different button
     if (buttonIndex == currentPlayingAnim) {
       // Same button pressed - stop playback
-      currentAnimation.stopPlayback();
-      currentPlayingAnim = 0xFF;
+      stopPlayback();
+      currentPlayingAnim = -1;
+      notifyWSClients();
     } else {
       // Different button - stop current, play new
-      currentAnimation.stopPlayback();
-      if (currentAnimation.startPlayback(buttonIndex)) {
+      stopPlayback();
+      if (startPlayback(buttonIndex)) {
         currentPlayingAnim = buttonIndex;
+        notifyWSClients();
       }
     }
   }
-
-  notifyWSClients();
 }
 ```
 
@@ -403,7 +443,9 @@ GET    /api/status                            → Device status (includes animat
 
 ## Real-Time Data Stream (SSE Events)
 
-**Purpose:** Send animation frame updates to frontend in real-time during recording and playback.
+## Server-Sent Events (SSE) Animation Stream
+
+**Purpose:** Send animation frame updates to frontend in real-time during recording and playback. This is the **single source of truth** for frontend state synchronization.
 
 **Function: `String getAnimationFrame()`** (Webhandler.h)
 
@@ -474,6 +516,8 @@ Serializes current animation state as JSON object with these fields:
    - SSE events stop being sent (mode = IDLE with keyFrames = 0)
    - Frontend continues displaying last known state
    - Ready for next recording or playback start
+
+## Animation Slot Cache
 
 **Purpose:** Track which NVS animation slots have valid recordings so the UI can display available animations and disable empty slots in the play dropdown.
 

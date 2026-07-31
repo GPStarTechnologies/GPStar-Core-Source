@@ -155,8 +155,8 @@ void AnimationTask(void *parameter) {
     digitalWrite(BUILT_IN_LED, b_relay_active ? HIGH : LOW);
 
     updatePlayback(); // Update animation playback if currently playing
-    if(currentAnimation.mode != ANIM_IDLE) {
-      sendAnimationFrameData(); // Send recording/playback data back via server events during active operations
+    if(currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK || currentAnimation.state == ANIM_IDLE_PENDING_SAVE) {
+      sendAnimationFrameData(); // Send real-time frame data to connected clients via SSE during active recording/playback.
     }
     updateAudio(); // Update the state of the available sound board.
     checkMusic(); // Perform music control as necessary.
@@ -264,7 +264,8 @@ void UserInputTask(void *parameter) {
         uint8_t buttonIndex = i;  // 0-3 maps to animation slots 0-3
 
         // Handle animation playback control based on current state
-        if (currentAnimation.mode == ANIM_IDLE || currentAnimation.mode == ANIM_RECORDING) {
+        // RF buttons only trigger playback when not in active playback mode
+        if (currentAnimation.state != ANIM_PLAYBACK) {
           // Not playing - start this animation
           if (startPlayback(buttonIndex)) {
             currentPlayingAnim = buttonIndex;
@@ -277,7 +278,7 @@ void UserInputTask(void *parameter) {
 
             notifyWSClients();
           }
-        } else if (currentAnimation.mode == ANIM_PLAYBACK) {
+        } else if (currentAnimation.state == ANIM_PLAYBACK) {
           // Currently playing - handle same or different button
           if (buttonIndex == currentPlayingAnim) {
             // Same button pressed - stop playback
@@ -361,7 +362,7 @@ void WiFiManagementTask(void *parameter) {
       }
     }
 
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // 1000ms delay
+    vTaskDelay(50 / portTICK_PERIOD_MS); // 50ms delay
   }
 }
 

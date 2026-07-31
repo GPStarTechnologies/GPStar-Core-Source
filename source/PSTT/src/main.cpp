@@ -213,6 +213,7 @@ void loop() {
 
   // Run checks on web-related tasks.
   webLoops();
+
   // (Re-)Start WiFi if the web server is not running.
   if(!wirelessMgr->isWifiActive()) {
     restartWireless();

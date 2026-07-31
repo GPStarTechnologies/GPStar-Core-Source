@@ -20,11 +20,58 @@
 var websocket;
 var statusInterval;
 var animationSlots = []; // Cache of animation slot metadata from server
-var currentAnimationMode = "IDLE"; // Track animation mode to control UI visibility
+var hasAnyViableSlots = false; // Track if there are any slots with saved animations
+
+/**
+ * Animation State Machine - Single Source of Truth
+ * Values must match AnimationState enum in Animation.h:
+ *   ANIM_IDLE_EMPTY = 0         (no data anywhere)
+ *   ANIM_RECORDING = 1          (recording active)
+ *   ANIM_IDLE_PENDING_SAVE = 2  (recording stopped, unsaved)
+ *   ANIM_IDLE_LOADED = 3        (animation loaded from NVS)
+ *   ANIM_PLAYBACK = 4           (playback active)
+ */
+var currentAnimationState = "IDLE_EMPTY";
+
+/**
+ * Button State Mapping -  Maps each animation state to the buttons that should be enabled/disabled.
+ */
+const stateToButtons = {
+  IDLE_EMPTY: {
+    btnStartRec: true, btnStopRec: false,
+    saveSlot: false, btnSave: false, btnCancel: false,
+    playSlot: true, btnPlay: false, btnStop: false,
+    showProgress: false,
+  },
+  RECORDING: {
+    btnStartRec: false, btnStopRec: true,
+    saveSlot: false, btnSave: false, btnCancel: false,
+    playSlot: false, btnPlay: false, btnStop: false,
+    showProgress: true,
+  },
+  IDLE_PENDING_SAVE: {
+    btnStartRec: false, btnStopRec: false,
+    saveSlot: true, btnSave: true, btnCancel: true,
+    playSlot: true, btnPlay: false, btnStop: false,
+    showProgress: false,
+  },
+  IDLE_LOADED: {
+    btnStartRec: true, btnStopRec: false,
+    saveSlot: false, btnSave: false, btnCancel: false,
+    playSlot: true, btnPlay: true, btnStop: false,
+    showProgress: false,
+  },
+  PLAYBACK: {
+    btnStartRec: false, btnStopRec: false,
+    saveSlot: false, btnSave: false, btnCancel: false,
+    playSlot: false, btnPlay: false, btnStop: true,
+    showProgress: true,
+  },
+};
 
 function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
-  disableAnimationButtons(); // Set button states by default.
+  setControlDefaults(); // Hide animation UI on startup
   getDevicePrefs(); // Get all preferences.
   getNetworkInfo(); // Get networking info.
   initWebSocket(); // Open the WebSocket.
@@ -150,11 +197,49 @@ function getNetworkInfo() {
   xhttp.send();
 }
 
-function disableAnimationButtons() {
-  // Used to just disable all the animation-related buttons initially
-  // Use centralized helpers to manage disabled state consistently.
-  hideEl("saveSlotSelector");
-  hideEl("playSlotSelector");
+function setControlDefaults() {
+  // On page load, apply initial state (IDLE_EMPTY)
+  currentAnimationState = "IDLE_EMPTY";
+  applyButtonStates(currentAnimationState);
+}
+
+/**
+ * Apply button enabled/disabled states based on current animation state.
+ * This is the ONLY place button states are controlled for animation UI.
+ * Eliminates all scattered enable/disable calls and conditional logic.
+ */
+function applyButtonStates(state) {
+  const config = stateToButtons[state];
+  if (!config) {
+    console.warn("Unknown animation state: " + state);
+    return;
+  }
+
+  // Apply all button states atomically
+  Object.entries(config).forEach(([key, value]) => {
+    if (key === "showProgress") {
+      // Special handling for progress visibility
+      value ? showAnimationProgress() : hideAnimationProgress();
+    } else if (key === "playSlot" || key === "btnPlay") {
+      // Special handling for play controls - only enable if there are viable slots
+      // AND the state allows it
+      const shouldEnable = value && hasAnyViableSlots;
+      shouldEnable ? enableEl(key) : disableEl(key);
+    } else {
+      // Standard button enable/disable
+      value ? enableEl(key) : disableEl(key);
+    }
+  });
+}
+
+function showAnimationProgress() {
+  // Display animation progress indicators in both tabs
+  showEl("animationProgressTab1");
+  showEl("animationProgressTab3");
+}
+
+function hideAnimationProgress() {
+  // Hide animation progress indicators
   hideEl("animationProgressTab1");
   hideEl("animationProgressTab3");
 }
@@ -200,6 +285,11 @@ function updateDisplay(jObj) {
       updateSaveSlots();
       updatePlaySlots();
     }
+
+    // Handle animation state from status response (ensures UI updates on page load)
+    if (jObj.animation) {
+      updateAnimationDisplay(jObj.animation);
+    }
   }
 }
 
@@ -232,23 +322,16 @@ function selectMusic2() {
 function recordingStart() {
   // Send command to backend to start recording animation frames
   sendCommand("/animations/record/start");
-  
-  // Hide save and play UI elements during recording - user cannot save or play while recording
-  hideEl("saveSlotSelector");
-  hideEl("playSlotSelector");
-  
-  // Show animation progress indicators so user can see recording activity in real-time
-  showEl("animationProgressTab1");
-  showEl("animationProgressTab3");
 }
 
 function recordingStop() {
   // Send command to backend to stop recording animation frames
   sendCommand("/animations/record/stop");
-  
-  // Hide progress displays after recording stops - they will reappear if save UI is shown
-  hideEl("animationProgressTab1");
-  hideEl("animationProgressTab3");
+}
+
+function discardRecording() {
+  // Discard unsaved recording and return to IDLE_EMPTY state
+  sendCommand("/animations/record/discard");
 }
 
 function saveToSlot() {
@@ -265,24 +348,28 @@ function saveToSlot() {
   }
 
   sendCommand("/animations/record/save/" + slot);
-  hideEl("saveSlotSelector");
 }
 
 /** State Management **/
 
 function playFromSlot() {
   // Get the selected animation slot from the play dropdown
-  const slot = getEl("playSlot").value;
+  const slotIndex = parseInt(getEl("playSlot").value);
+  
+  // Verify selected slot contains animation data
+  const slotInfo = animationSlots.find((s) => s.id === slotIndex);
+  if (!slotInfo || !slotInfo.hasAnimation || !slotInfo.keyFrames) {
+    alert("Slot " + slotIndex + " does not contain a saved animation.");
+    return;
+  }
   
   // Send command to backend to play the selected animation
-  sendCommand("/animations/play/" + slot);
-  
-  // Hide the play selector UI - it will reappear once playback completes and system returns to IDLE
-  hideEl("playSlotSelector");
+  sendCommand("/animations/play/" + slotIndex);
 }
 
 function stopPlayback() {
   // Stop playback of the current animation
+  // Returns to IDLE_LOADED state (animation data preserved)
   sendCommand("/animations/stop");
 }
 
@@ -313,33 +400,23 @@ function updatePlaySlots() {
   const playSelect = getEl("playSlot");
   if (!playSelect) return;
 
-  // Track whether any valid (non-empty) animation slots exist
-  let hasValidSlots = false;
+  // Check if any slots have viable animations
+  hasAnyViableSlots = animationSlots.some((slot) => slot.hasAnimation && slot.keyFrames > 0);
 
+  // Update option labels and disable state
   for (let i = 0; i < animationSlots.length; i++) {
     const slot = animationSlots[i];
     const option = playSelect.options[i];
     if (option) {
       // Show animation duration in seconds and enable only if has animation
-      const label = slot.hasAnimation ? "#" + slot.id + " (" + slot.animationSeconds.toFixed(1) + "s)" : "Animation " + slot.id + " (empty)";
+      const label = slot.hasAnimation ? "Slot " + slot.id + " (" + slot.animationSeconds.toFixed(1) + "s)" : "Animation " + slot.id + " (empty)";
       option.text = label;
       option.disabled = !slot.hasAnimation;
-      
-      // If this slot has an animation, mark that we have valid playable content
-      if (slot.hasAnimation) {
-        hasValidSlots = true;
-      }
     }
   }
-
-  // Show or hide the play slot selector based on:
-  // 1. Whether valid animations exist AND
-  // 2. We are in IDLE mode (not recording or playing back)
-  if (hasValidSlots && currentAnimationMode === "IDLE") {
-    showEl("playSlotSelector");
-  } else {
-    hideEl("playSlotSelector");
-  }
+  
+  // Re-apply button states to account for new viable slots availability
+  applyButtonStates(currentAnimationState);
 }
 
 /** Animation Visualizations **/
@@ -390,7 +467,6 @@ if (!!window.EventSource) {
     },
     false
   );
-
 }
 
 // Delay the onLoad event until all necessary JS has been loaded
@@ -425,49 +501,44 @@ function buildAnimationProgressHTML(animData) {
 
   // Build HTML string with frame count, time elapsed, and last actuator triggered
   const html = 
-    "<p><b>Frames:</b> " + frameDisplay + "</p>" +
-    "<p><b>Time:</b> " + progressValue + "</p>" +
-    "<p><b>Last Actuator:</b> " + actuatorDisplay + "</p>";
+    "<p><span class=\"infoLabel\">Frames:</span> <span class=\"infoState\">" + frameDisplay + "</span></p>" +
+    "<p><span class=\"infoLabel\">Time:</span> <span class=\"infoState\">" + progressValue + "</span></p>" +
+    "<p><span class=\"infoLabel\">Last Actuator:</span> <span class=\"infoState\">" + actuatorDisplay + "</span></p>";
 
   return html;
 }
 
-// Tracks the previous animation mode to detect state transitions (e.g., RECORDING -> IDLE)
-// This allows us to show the save UI only when recording completes, not on every status update
-var lastAnimationMode = "IDLE";
-
 function updateAnimationDisplay(animData) {
-  // Update the current animation mode for UI state management
-  currentAnimationMode = animData.mode || "IDLE";
+  // Map server's explicit state name string directly
+  // Valid states: IDLE_EMPTY, RECORDING, IDLE_PENDING_SAVE, IDLE_LOADED, PLAYBACK
+  const validStates = ["IDLE_EMPTY", "RECORDING", "IDLE_PENDING_SAVE", "IDLE_LOADED", "PLAYBACK"];
   
-  // Handle IDLE mode: no active recording or playback
-  if (animData.mode === "IDLE") {
-    // Hide progress displays when animation is not running
-    hideEl("animationProgressTab1");
-    hideEl("animationProgressTab3");
-    
-    // Special handling when transitioning FROM recording TO idle (recording just completed)
-    if (lastAnimationMode === "RECORDING") {
-      if (animData.keyFrames > 0) {
-        // Recording completed successfully with captured frames - show save selector so user can save
-        showEl("saveSlotSelector");
-      } else {
-        // Recording completed but no frames captured - hide save UI (nothing to save)
-        hideEl("saveSlotSelector");
-      }
-    }
+  if (animData.state !== undefined && typeof animData.state === "string" && validStates.includes(animData.state)) {
+    currentAnimationState = animData.state;
   } else {
-    // RECORDING or PLAYBACK mode: show progress indicators in both tabs
-    showEl("animationProgressTab1");
-    showEl("animationProgressTab3");
+    // Safe default - if state is invalid or missing, treat as IDLE_EMPTY
+    currentAnimationState = "IDLE_EMPTY";
+  }
 
-    // Build progress HTML once and display in both tab locations
+  // Update slot options and recalculate viability FIRST (before applying button states)
+  // This ensures hasAnyViableSlots is populated for button state logic
+  // On first page load, animationSlots may be empty, but updatePlaySlots() will recalculate
+  // when WebSocket delivers the slot data
+  updatePlaySlots();
+  
+  // Apply all button states based on current state and newly calculated slot viability
+  applyButtonStates(currentAnimationState);
+  
+  // Update progress display ONLY during active operations (RECORDING or PLAYBACK)
+  // These states will have currentFrame, elapsedSeconds, progress fields populated
+  if ((currentAnimationState === "RECORDING" || currentAnimationState === "PLAYBACK") && 
+      animData.currentFrame !== undefined && animData.elapsedSeconds !== undefined) {
     const progressHTML = buildAnimationProgressHTML(animData);
     setHtml("animationProgressTab1", progressHTML);
     setHtml("animationProgressTab3", progressHTML);
+  } else {
+    // Hide progress during idle states
+    hideAnimationProgress();
   }
-  
-  // Store current mode for next update to detect state transitions
-  lastAnimationMode = animData.mode;
 }
 
