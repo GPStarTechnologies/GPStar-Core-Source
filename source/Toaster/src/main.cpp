@@ -155,7 +155,7 @@ void AnimationTask(void *parameter) {
     digitalWrite(BUILT_IN_LED, b_relay_active ? HIGH : LOW);
 
     updatePlayback(); // Update animation playback if currently playing
-    if(currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK || currentAnimation.state == ANIM_IDLE_PENDING_SAVE) {
+    if(currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK) {
       sendAnimationFrameData(); // Send real-time frame data to connected clients via SSE during active recording/playback.
     }
     updateAudio(); // Update the state of the available sound board.

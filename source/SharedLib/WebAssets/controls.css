@@ -87,6 +87,11 @@
   width: 320px;
 }
 
+.music-navigation.compact {
+  justify-content: center;
+  width: auto;
+}
+
 .music-navigation button {
   align-items: center;
   background-color: #008cba;

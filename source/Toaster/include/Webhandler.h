@@ -180,16 +180,25 @@ void buildAnimationJson(JsonObject& animationObj) {
     uint8_t currentActuator = (currentFrame < currentAnimation.data.totalFrames) ? currentAnimation.data.frames[currentFrame] : 0;
     animationObj["frameValue"] = currentActuator;
     
-    // Find the last actuator that was recorded (search backwards from totalFrames-1)
-    // This ensures we always display the most recent trigger, even if current frame is empty
+    // Find the last actuator that was triggered up to the current frame (search backwards from currentFrame)
+    // This shows the most recent trigger during playback, updating as we progress through the animation
     uint8_t lastRecordedActuator = 0;
-    for(int16_t i = (int16_t)currentAnimation.data.totalFrames - 1; i >= 0; i--) {
+    for(int16_t i = (int16_t)currentFrame; i >= 0; i--) {
       if(currentAnimation.data.frames[i] > 0) {
         lastRecordedActuator = currentAnimation.data.frames[i];
         break;
       }
     }
-    animationObj["lastActuator"] = lastRecordedActuator;  // Will be 0 if no actuators recorded, 1-4 otherwise
+    animationObj["lastActuator"] = lastRecordedActuator;  // Will be 0 if no actuators recorded before currentFrame, 1-4 otherwise
+    
+    // Build relay state array based on current frame actuator
+    // Each relay shows active=true only if it matches the currently firing actuator
+    JsonArray relaysArray = animationObj["relays"].to<JsonArray>();
+    for(uint8_t i = 0; i < 4; i++) {
+      JsonObject relayObj = relaysArray.add<JsonObject>();
+      relayObj["id"] = i + 1;  // Relay IDs are 1-4
+      relayObj["active"] = (currentActuator == (i + 1));  // True only if this relay is firing
+    }
   }
 }
 
@@ -545,19 +554,13 @@ String getAnimationFrame() {
 }
 
 void sendAnimationFrameData() {
-  // Update recording elapsed time at the controlling point (before building frame data)
+  // Update recording elapsed time at the controlling point (before building frame data).
   updateRecordingElapsedTime();
 
   if(b_httpd_started) {
-    // Send SSE events during active states (RECORDING, PLAYBACK), or stable loaded state (IDLE_LOADED),
-    // or when transitioning to IDLE_PENDING_SAVE with data (allows UI to update from IDLE_PENDING_SAVE to IDLE_LOADED on explicit state changes)
-    if((currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK || currentAnimation.state == ANIM_IDLE_LOADED) ||
-       (currentAnimation.state == ANIM_IDLE_PENDING_SAVE && currentAnimation.data.keyFrames > 0)) {
-      // Gather the latest animation frame data, serialize it to a JSON string,
-      // and send it to all connected EventSource (SSE) clients as an "animation"
-      // event name (using the current ms time as a unique event identifier).
-      events.send(getAnimationFrame().c_str(), "animation", millis());
-    }
+    // Send the latest animation state to all connected SSE clients.
+    // Calling programs should provide adequate filtering to prevent spamming events.
+    events.send(getAnimationFrame().c_str(), "animation", millis());
   }
 }
 

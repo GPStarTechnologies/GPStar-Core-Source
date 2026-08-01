@@ -1,6 +1,30 @@
 /* Equipment Labels and Overlays */
+.animationControl {
+  text-align: center;
+}
+
 .animationProgress {
   min-height: 100px;
-  padding-left: 10px;
-  text-align: left;
+  padding-left: 15px;
+}
+
+/* Make paragraphs inside animationProgress flex to keep label and value inline */
+.animationProgress p {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+}
+
+/* Make infoState spans flex to hold progress bar inline with percentage */
+.animationProgress .infoState {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 10px;
+}
+
+/* Animation Progress Bar */
+.animationProgressBar {
+  height: 26px;
+  width: 70%;
 }

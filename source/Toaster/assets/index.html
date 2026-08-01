@@ -20,26 +20,21 @@
     </div>
 
     <div id="tab1" class="tab">
-      <div id="equipTXT" class="card">
-        <p>
-          <span class="infoLabel">Actuator 1:</span>
-          <span class="infoState" id="relay1">&mdash;</span>
-        </p>
-        <p>
-          <span class="infoLabel">Actuator 2:</span>
-          <span class="infoState" id="relay2">&mdash;</span>
-        </p>
-        <p>
-          <span class="infoLabel">Actuator 3:</span>
-          <span class="infoState" id="relay3">&mdash;</span>
-        </p>
-        <p>
-          <span class="infoLabel">Actuator 4:</span>
-          <span class="infoState" id="relay4">&mdash;</span>
-        </p>
-        <hr />
-        <div id="animationProgressTab1"></div>
+      <div class="card animationControl">
+        <h2>Playback Control</h2>
+        <label for="playSlot">Animation:</label>
+        <select id="playSlot">
+          <option value="0">Slot 0</option>
+          <option value="1">Slot 1</option>
+          <option value="2">Slot 2</option>
+          <option value="3">Slot 3</option>
+        </select>
+        <br />
+        <button type="button" class="green" onclick="playFromSlot()" id="btnPlay">Play</button>
+        &nbsp;&nbsp;
+        <button type="button" class="blue" onclick="stopPlayback()" id="btnStop">Stop</button>
       </div>
+      <div class="card animationProgress"></div>
     </div>
 
     <div id="tab2" class="tab">
@@ -68,7 +63,7 @@
 
       <div class="card">
         <h3 class="centered">Music Controls</h3>
-        <div class="music-navigation">
+        <div class="music-navigation compact">
           <button type="button" id="btnMusicStartStop" onclick="musicStartStop()" title="Start/Stop">&#9634;&nbsp;&#9654;</button>
           <button type="button" id="btnMusicPauseResume" onclick="musicPauseResume()" title="Play/Pause">&#9646;&#9646;&nbsp;&#9654;</button>
         </div>
@@ -83,8 +78,7 @@
     </div>
 
     <div id="tab3" class="tab">
-      <div class="card" style="text-align: center">
-        <br />
+      <div class="card animationControl">
         <h2>Actuator Controls</h2>
         <button type="button" class="green" onclick="triggerAct1()" id="btnAct1">#1</button>
         &nbsp;&nbsp;
@@ -96,6 +90,8 @@
         <button type="button" class="green" onclick="triggerAct4()" id="btnAct4">#4</button>
         <br />
         <br />
+      </div>
+      <div class="card animationControl">
         <h2>Recording Controls</h2>
         <button type="button" class="orange" onclick="recordingStart()" id="btnStartRec">Start</button>
         &nbsp;&nbsp;
@@ -113,23 +109,9 @@
         &nbsp;&nbsp;
         <button type="button" class="orange" onclick="discardRecording()" id="btnCancel">Cancel</button>
         <br />
-        <h2>Playback Control</h2>
-        <label for="playSlot">Animation:</label>
-        <select id="playSlot">
-          <option value="0">Slot 0</option>
-          <option value="1">Slot 1</option>
-          <option value="2">Slot 2</option>
-          <option value="3">Slot 3</option>
-        </select>
         <br />
-        <button type="button" class="green" onclick="playFromSlot()" id="btnPlay">Play</button>
-        &nbsp;&nbsp;
-        <button type="button" class="blue" onclick="stopPlayback()" id="btnStop">Stop</button>
-        </div>
-        <div class="card animationProgress">
-          <div id="animationProgressTab3"></div>
-        </div>
       </div>
+      <div class="card animationProgress"></div>
     </div>
 
     <div id="tab4" class="tab">

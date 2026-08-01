@@ -40,7 +40,7 @@ const stateToButtons = {
   IDLE_EMPTY: {
     btnStartRec: true, btnStopRec: false,
     saveSlot: false, btnSave: false, btnCancel: false,
-    playSlot: true, btnPlay: false, btnStop: false,
+    playSlot: true, btnPlay: true, btnStop: false,
     showProgress: false,
   },
   RECORDING: {
@@ -218,8 +218,11 @@ function applyButtonStates(state) {
   // Apply all button states atomically
   Object.entries(config).forEach(([key, value]) => {
     if (key === "showProgress") {
-      // Special handling for progress visibility
-      value ? showAnimationProgress() : hideAnimationProgress();
+      // Special handling for progress visibility - show/hide all progress divs with class
+      const progressDivs = document.querySelectorAll(".animationProgress");
+      progressDivs.forEach(div => {
+        value ? div.style.display = "" : div.style.display = "none";
+      });
     } else if (key === "playSlot" || key === "btnPlay") {
       // Special handling for play controls - only enable if there are viable slots
       // AND the state allows it
@@ -230,18 +233,6 @@ function applyButtonStates(state) {
       value ? enableEl(key) : disableEl(key);
     }
   });
-}
-
-function showAnimationProgress() {
-  // Display animation progress indicators in both tabs
-  showEl("animationProgressTab1");
-  showEl("animationProgressTab3");
-}
-
-function hideAnimationProgress() {
-  // Hide animation progress indicators
-  hideEl("animationProgressTab1");
-  hideEl("animationProgressTab3");
 }
 
 function updateDisplay(jObj) {
@@ -267,15 +258,6 @@ function updateDisplay(jObj) {
         const btn = jObj.buttons[i];
         const stateText = btn.state ? "HIGH" : "LOW";
         setHtml("button" + btn.id, stateText);
-      }
-    }
-
-    // Update Actuator/Relay States
-    if (jObj.relays && Array.isArray(jObj.relays)) {
-      for (let i = 0; i < jObj.relays.length; i++) {
-        const relay = jObj.relays[i];
-        const statusText = relay.active ? "ACTIVE" : "INACTIVE";
-        setHtml("relay" + relay.id, statusText);
       }
     }
 
@@ -395,10 +377,14 @@ function updateSaveSlots() {
 
 function updatePlaySlots() {
   // Update play slot dropdown - only enable slots with recordings
-  if (!animationSlots || !Array.isArray(animationSlots)) return;
+  if (!animationSlots || !Array.isArray(animationSlots)) {
+    return;
+  }
 
   const playSelect = getEl("playSlot");
-  if (!playSelect) return;
+  if (!playSelect) {
+    return;
+  }
 
   // Check if any slots have viable animations
   hasAnyViableSlots = animationSlots.some((slot) => slot.hasAnimation && slot.keyFrames > 0);
@@ -409,7 +395,7 @@ function updatePlaySlots() {
     const option = playSelect.options[i];
     if (option) {
       // Show animation duration in seconds and enable only if has animation
-      const label = slot.hasAnimation ? "Slot " + slot.id + " (" + slot.animationSeconds.toFixed(1) + "s)" : "Animation " + slot.id + " (empty)";
+      const label = "Slot " + slot.id + (slot.hasAnimation ? " (" + slot.animationSeconds.toFixed(1) + "s)" : " (empty)");
       option.text = label;
       option.disabled = !slot.hasAnimation;
     }
@@ -474,36 +460,36 @@ window.addEventListener("load", onLoad);
 
 function buildAnimationProgressHTML(animData) {
   // Initialize display strings with default values for IDLE mode
-  let frameDisplay = "-";
-  let progressValue = "-";
-  let actuatorDisplay = "-";
+  let progressBar = "-";
+  let elapsedTime = "-";
+  let lastActuator = "-";
   
   // Only populate progress info when actively recording or playing back
-  if (animData.mode === "RECORDING" || animData.mode === "PLAYBACK") {
-    // Calculate frame progress: current frame number and percentage completion
+  if (animData.state === "RECORDING" || animData.state === "PLAYBACK") {
+    // Calculate frame progress: percentage completion with visual progress bar
     const current = animData.currentFrame || 0;
-    const total = animData.totalFrames || 0;  // Use totalFrames for timeline span display
+    const total = animData.totalFrames || 0;
     const percentage = total > 0 ? ((current / total) * 100).toFixed(1) : 0;
-    frameDisplay = current + " / " + total + " (" + percentage + "%)";
+    progressBar = percentage + "% <progress class=\"animationProgressBar\" value=\"" + percentage + "\" max=\"100\"></progress>";
     
     // Calculate elapsed time: current elapsed time vs total animation duration
     const elapsed = (animData.elapsedSeconds || 0).toFixed(1);
     const duration = (animData.totalTime || 0).toFixed(1);
-    progressValue = elapsed + " / " + duration + "s";
+    elapsedTime = elapsed + " / " + duration + "s";
     
     // Display which actuator was last triggered (backend provides lastActuator, fall back to frameValue if needed)
     if (animData.lastActuator && animData.lastActuator > 0 && animData.lastActuator <= 4) {
-      actuatorDisplay = "Actuator " + animData.lastActuator;
+      lastActuator = "Actuator " + animData.lastActuator;
     } else if (animData.frameValue && animData.frameValue > 0 && animData.frameValue <= 4) {
-      actuatorDisplay = "Actuator " + animData.frameValue;
+      lastActuator = "Actuator " + animData.frameValue;
     }
   }
 
-  // Build HTML string with frame count, time elapsed, and last actuator triggered
+  // Build HTML string with progress bar, time elapsed, and last actuator triggered
   const html = 
-    "<p><span class=\"infoLabel\">Frames:</span> <span class=\"infoState\">" + frameDisplay + "</span></p>" +
-    "<p><span class=\"infoLabel\">Time:</span> <span class=\"infoState\">" + progressValue + "</span></p>" +
-    "<p><span class=\"infoLabel\">Last Actuator:</span> <span class=\"infoState\">" + actuatorDisplay + "</span></p>";
+    "<p><span class=\"infoLabel\">Progress:</span> <span class=\"infoState\">" + progressBar + "</span></p>" +
+    "<p><span class=\"infoLabel\">Elapsed Time:</span> <span class=\"infoState\">" + elapsedTime + "</span></p>" +
+    "<p><span class=\"infoLabel\">Last Actuator:</span> <span class=\"infoState\">" + lastActuator + "</span></p>";
 
   return html;
 }
@@ -531,14 +517,19 @@ function updateAnimationDisplay(animData) {
   
   // Update progress display ONLY during active operations (RECORDING or PLAYBACK)
   // These states will have currentFrame, elapsedSeconds, progress fields populated
+  const progressDivs = document.querySelectorAll(".animationProgress");
   if ((currentAnimationState === "RECORDING" || currentAnimationState === "PLAYBACK") && 
-      animData.currentFrame !== undefined && animData.elapsedSeconds !== undefined) {
+       animData.currentFrame !== undefined && animData.elapsedSeconds !== undefined) {
     const progressHTML = buildAnimationProgressHTML(animData);
-    setHtml("animationProgressTab1", progressHTML);
-    setHtml("animationProgressTab3", progressHTML);
+    progressDivs.forEach(div => {
+      div.innerHTML = progressHTML;
+      div.style.display = "";
+    });
   } else {
     // Hide progress during idle states
-    hideAnimationProgress();
+    progressDivs.forEach(div => {
+      div.style.display = "none";
+    });
   }
 }
 
