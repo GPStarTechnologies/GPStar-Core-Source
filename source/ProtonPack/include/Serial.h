@@ -1700,6 +1700,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       else if(b_settings) {
         playEffect(S_CLICK);
         b_settings = false;
+        return;
       }
 
       // Reset cyclotron state and idle loop volume if switching out of Slime.

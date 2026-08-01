@@ -414,34 +414,34 @@ void restartFadeoutIdleSounds() {
 void fadeoutIdleSounds(bool fadeFast = false) {
   switch(gpstarPack.getSystemTheme()) {
     case SYSTEM_1984:
-      fadeoutEffect(S_GB1_1984_PACK_LOOP, fadeFast ? 1 : 5000);
+      fadeFast ? stopEffect(S_GB1_1984_PACK_LOOP) : fadeoutEffect(S_GB1_1984_PACK_LOOP, 5000);
     break;
     case SYSTEM_1989:
-      fadeoutEffect(S_GB2_PACK_LOOP, fadeFast ? 1 : 5000);
+      fadeFast ? stopEffect(S_GB2_PACK_LOOP) : fadeoutEffect(S_GB2_PACK_LOOP, 5000);
     break;
     case SYSTEM_AFTERLIFE:
     default:
-      fadeoutEffect(S_AFTERLIFE_PACK_IDLE_LOOP, fadeFast ? 1 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 1 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 1 : 5000);
-      fadeoutEffect(S_POWERCELL, fadeFast ? 1 : 5000);
+      fadeFast ? stopEffect(S_AFTERLIFE_PACK_IDLE_LOOP) : fadeoutEffect(S_AFTERLIFE_PACK_IDLE_LOOP, 5000);
+      fadeFast ? stopEffect(S_AFTERLIFE_WAND_IDLE_1) : fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, 5000);
+      fadeFast ? stopEffect(S_AFTERLIFE_WAND_IDLE_2) : fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, 5000);
+      fadeFast ? stopEffect(S_POWERCELL) : fadeoutEffect(S_POWERCELL, 5000);
       wandExtraSoundsBeepLoopStop(true);
       b_powercell_sound_loop = false;
     break;
     case SYSTEM_FROZEN_EMPIRE:
       if(isBrassPack()) {
         if(b_brass_startup_loop) {
-          fadeoutEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, fadeFast ? 1 : 5000);
+          fadeFast ? stopEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP) : fadeoutEffect(S_FROZEN_EMPIRE_BOOT_EFFECT_LOOP, 5000);
         }
         else {
-          fadeoutEffect(S_FROZEN_EMPIRE_BRASS_IDLE, fadeFast ? 1 : 5000);
+          fadeFast ? stopEffect(S_FROZEN_EMPIRE_BRASS_IDLE) : fadeoutEffect(S_FROZEN_EMPIRE_BRASS_IDLE, 5000);
         }
       }
 
-      fadeoutEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, fadeFast ? 1 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, fadeFast ? 1 : 5000);
-      fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, fadeFast ? 1 : 5000);
-      fadeoutEffect(S_POWERCELL, fadeFast ? 1 : 5000);
+      fadeFast ? stopEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP) : fadeoutEffect(S_FROZEN_EMPIRE_PACK_IDLE_LOOP, 5000);
+      fadeFast ? stopEffect(S_AFTERLIFE_WAND_IDLE_1) : fadeoutEffect(S_AFTERLIFE_WAND_IDLE_1, 5000);
+      fadeFast ? stopEffect(S_AFTERLIFE_WAND_IDLE_2) : fadeoutEffect(S_AFTERLIFE_WAND_IDLE_2, 5000);
+      fadeFast ? stopEffect(S_POWERCELL) : fadeoutEffect(S_POWERCELL, 5000);
       wandExtraSoundsBeepLoopStop(true);
       b_powercell_sound_loop = false;
     break;
@@ -457,13 +457,13 @@ void fadeoutIdleSounds(bool fadeFast = false) {
       // Do nothing.
     break;
     case SLIME:
-      fadeoutEffect(S_PACK_SLIME_TANK_LOOP, fadeFast ? 1 : 5000);
+      fadeFast ? stopEffect(S_PACK_SLIME_TANK_LOOP) : fadeoutEffect(S_PACK_SLIME_TANK_LOOP, 5000);
     break;
     case STASIS:
-      fadeoutEffect(S_STASIS_IDLE_LOOP, fadeFast ? 1 : 5000);
+      fadeFast ? stopEffect(S_STASIS_IDLE_LOOP) : fadeoutEffect(S_STASIS_IDLE_LOOP, 5000);
     break;
     case MESON:
-      fadeoutEffect(S_MESON_IDLE_LOOP, fadeFast ? 1 : 5000);
+      fadeFast ? stopEffect(S_MESON_IDLE_LOOP) : fadeoutEffect(S_MESON_IDLE_LOOP, 5000);
     break;
   }
 }
