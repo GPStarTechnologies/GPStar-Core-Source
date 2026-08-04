@@ -20,20 +20,118 @@
 
 // Library Header
 #include <Lighting.h>
+#include <cstring>  // For memset
 
-// Static member initialization for dynamic color state
-uint8_t Lighting::s_dynamicHue[MAX_DYNAMIC_COLOR_DEVICES] = {0};
-uint8_t Lighting::s_dynamicBright[MAX_DYNAMIC_COLOR_DEVICES] = {0};
-int16_t Lighting::s_dynamicNextBright[MAX_DYNAMIC_COLOR_DEVICES] = {-1, -1, -1, -1, -1, -1};
-uint8_t Lighting::s_dynamicCounter[MAX_DYNAMIC_COLOR_DEVICES] = {1, 1, 1, 1, 1, 1};
+// Constructor: Initialize Lighting instance for deviceCount devices
+Lighting::Lighting(uint8_t deviceCount) : numDevices(deviceCount) {
+  // Allocate state arrays for each device
+  dynamicCounter = new uint8_t[numDevices];
+  dynamicHue = new uint8_t[numDevices];
+  dynamicBright = new uint8_t[numDevices];
+  dynamicNextBright = new int16_t[numDevices];
+  customColorHSV = new LED_HSV[numDevices];
 
-// Reset all dynamic color state
+  // Initialize all arrays to default values
+  resetDynamicColors();
+}
+
+// Destructor: Clean up dynamically allocated arrays
+Lighting::~Lighting() {
+  delete[] dynamicCounter;
+  delete[] dynamicHue;
+  delete[] dynamicBright;
+  delete[] dynamicNextBright;
+  delete[] customColorHSV;
+}
+
+// Reset all dynamic color state to initial values
 void Lighting::resetDynamicColors() {
-  for(uint8_t i = 0; i < MAX_DYNAMIC_COLOR_DEVICES; i++) {
-    s_dynamicHue[i] = 0;
-    s_dynamicBright[i] = 0;
-    s_dynamicNextBright[i] = -1;
-    s_dynamicCounter[i] = 1;
+  for(uint8_t i = 0; i < numDevices; i++) {
+    dynamicCounter[i] = 1;
+    dynamicHue[i] = 0;
+    dynamicBright[i] = 0;
+    dynamicNextBright[i] = -1;
+    customColorHSV[i] = {0, 0, 0};  // Default custom color: black
+  }
+}
+
+// Helper method: Get static color definition (extracted from getColorHSV switch)
+LED_HSV Lighting::getStaticColorDefinition(SingleColor color) {
+  switch(color) {
+    case C_WHITE:
+      return {100, 0, 255};  // White = no saturation, full brightness
+    
+    case C_BLACK:
+      return {0, 0, 0};  // Black = all zeros
+    
+    case C_WARM_WHITE:
+      return {36, 183, 255};
+    
+    case C_PINK:
+      return {244, 255, 255};
+    
+    case C_PASTEL_PINK:
+      return {244, 128, 255};
+    
+    case C_RED:
+      return {0, 255, 255};
+    
+    case C_LIGHT_RED:
+      return {0, 192, 255};
+    
+    case C_RED2:
+      return {5, 255, 255};
+    
+    case C_RED3:
+      return {10, 255, 255};
+    
+    case C_RED4:
+      return {15, 255, 255};
+    
+    case C_RED5:
+      return {20, 255, 255};
+    
+    case C_ORANGE:
+      return {32, 255, 255};
+    
+    case C_BEIGE:
+      return {43, 128, 255};
+    
+    case C_YELLOW:
+      return {64, 255, 255};
+    
+    case C_CHARTREUSE:
+      return {80, 255, 255};
+    
+    case C_GREEN:
+      return {96, 255, 255};
+    
+    case C_DARK_GREEN:
+      return {96, 255, 128};
+    
+    case C_MINT:
+      return {112, 120, 255};
+    
+    case C_AQUA:
+      return {128, 255, 255};
+    
+    case C_LIGHT_BLUE:
+      return {145, 255, 255};
+    
+    case C_MID_BLUE:
+      return {160, 255, 255};
+    
+    case C_NAVY_BLUE:
+      return {170, 200, 112};
+    
+    case C_BLUE:
+      return {180, 255, 255};
+    
+    case C_PURPLE:
+      return {192, 255, 255};
+    
+    default:
+      return {100, 0, 255};  // Default to white
   }
 }
 
@@ -42,80 +140,32 @@ LED_HSV Lighting::getColorHSV(SingleColor color, uint8_t brightness, uint8_t sat
   // Returns LED_HSV with appropriate hue, saturation, and brightness.
   // Some colors override saturation or brightness with fixed values.
 
+  LED_HSV result = getStaticColorDefinition(color);
+  
+  // Apply requested brightness and saturation (unless they're fixed by the color definition)
+  if(color != C_BLACK) {  // Black always stays black (don't override brightness)
+    result.v = brightness;
+  }
+  
+  // Only override saturation for colors that don't have fixed saturation
   switch(color) {
     case C_WHITE:
-    default:
-      return {100, 0, brightness}; // White = no saturation
-
-    case C_BLACK:
-      return {0, 0, 0}; // Black = all zeros (overrides brightness)
-
-    case C_WARM_WHITE:
-      return {36, 183, brightness};
-
-    case C_PINK:
-      return {244, saturation, brightness};
-
     case C_PASTEL_PINK:
-      return {244, 128, brightness}; // Fixed saturation
-
-    case C_RED:
-      return {0, saturation, brightness};
-
     case C_LIGHT_RED:
-      return {0, 192, brightness}; // Fixed saturation
-
-    case C_RED2:
-      return {5, saturation, brightness};
-
-    case C_RED3:
-      return {10, saturation, brightness};
-
-    case C_RED4:
-      return {15, saturation, brightness};
-
-    case C_RED5:
-      return {20, saturation, brightness};
-
-    case C_ORANGE:
-      return {32, saturation, brightness};
-
     case C_BEIGE:
-      return {43, 128, brightness}; // Fixed saturation
-
-    case C_YELLOW:
-      return {64, saturation, brightness};
-
-    case C_CHARTREUSE:
-      return {80, saturation, brightness};
-
-    case C_GREEN:
-      return {96, saturation, brightness};
-
     case C_DARK_GREEN:
-      return {96, saturation, 128}; // Fixed brightness
-
     case C_MINT:
-      return {112, 120, brightness}; // Fixed saturation
-
-    case C_AQUA:
-      return {128, saturation, brightness};
-
-    case C_LIGHT_BLUE:
-      return {145, saturation, brightness};
-
-    case C_MID_BLUE:
-      return {160, saturation, brightness};
-
     case C_NAVY_BLUE:
-      return {170, 200, 112}; // Fixed saturation and brightness
-
-    case C_BLUE:
-      return {180, saturation, brightness};
-
-    case C_PURPLE:
-      return {192, saturation, brightness};
+      // These have fixed saturation - don't override
+      break;
+    
+    default:
+      // All other colors use requested saturation
+      result.s = saturation;
+      break;
   }
+  
+  return result;
 }
 
 // Convert brightness percentage (0-100) to byte value (0-255).
@@ -219,7 +269,7 @@ LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
 // Get HSV color values for dynamic/animated colors
 //
 // This function uses frame counting instead of real-time delays (avoiding timers).
-// Each call to this function = 1 frame. The s_dynamicCounter[] increments every call.
+// Each call to this function = 1 frame. The dynamicCounter[] increments every call.
 // When counter reaches the cycle value (counter % cycle == 0), the animation advances.
 // Frames will be dependent on the update speed used for "show" of the LEDs.
 //
@@ -237,11 +287,11 @@ LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
 // - cycle = 50 (C_REDGREEN, C_BLUEGREEN): Slow alternation
 //
 // Call this function every time you update a chain of LEDs.
-LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, DynamicColor color, uint8_t brightness, uint8_t saturation) {
-  // Ensure deviceSlot is within bounds
-  if(deviceSlot >= MAX_DYNAMIC_COLOR_DEVICES) {
-    deviceSlot = 0;
-  }
+LED_HSV Lighting::getDynamicColorHSV(DynamicColor color, uint8_t brightness, uint8_t saturation) {
+  // For single-device instances, always use slot 0
+  // For multi-device instances, this method only works for slot 0
+  // Multi-device instances should create separate Lighting objects per device or use modified method
+  uint8_t deviceSlot = 0;
 
   // Cycle rate for counter-based timing (frames between changes).
   uint8_t cycle = 2; // Initial value, each pattern sets its own cycle rate.
@@ -249,202 +299,222 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, DynamicColor color, uin
   switch(color) {
     case C_REDGREEN:
       // Alternate between red (0) and green (96)
-      if(s_dynamicHue[deviceSlot] != 0 && s_dynamicHue[deviceSlot] != 96) {
-        s_dynamicHue[deviceSlot] = 0; // Reset if out of range
+      if(dynamicHue[deviceSlot] != 0 && dynamicHue[deviceSlot] != 96) {
+        dynamicHue[deviceSlot] = 0; // Reset if out of range
       }
 
       cycle = 50;
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot] = (s_dynamicHue[deviceSlot] == 0) ? 96 : 0;
-        s_dynamicCounter[deviceSlot] = 1;
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 96 : 0;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 255, brightness};
+      return {dynamicHue[deviceSlot], 255, brightness};
     // END C_REDGREEN
 
     case C_ORANGEPURPLE:
       // Alternate between orange (15) and purple (210)
-      if(s_dynamicHue[deviceSlot] != 15 && s_dynamicHue[deviceSlot] != 210) {
-        s_dynamicHue[deviceSlot] = 15; // Reset if out of range
+      if(dynamicHue[deviceSlot] != 15 && dynamicHue[deviceSlot] != 210) {
+        dynamicHue[deviceSlot] = 15; // Reset if out of range
       }
 
       cycle = 7;
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot] = (s_dynamicHue[deviceSlot] == 15) ? 210 : 15;
-        s_dynamicCounter[deviceSlot] = 1;
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 15) ? 210 : 15;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 255, brightness};
+      return {dynamicHue[deviceSlot], 255, brightness};
     // END C_ORANGEPURPLE
 
     case C_BLUEGREEN:
       // Alternate between blue (145) and green (96)
-      if(s_dynamicHue[deviceSlot] != 145 && s_dynamicHue[deviceSlot] != 96) {
-        s_dynamicHue[deviceSlot] = 145; // Reset if out of range
+      if(dynamicHue[deviceSlot] != 145 && dynamicHue[deviceSlot] != 96) {
+        dynamicHue[deviceSlot] = 145; // Reset if out of range
       }
 
       cycle = 50;
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot] = (s_dynamicHue[deviceSlot] == 96) ? 145 : 96;
-        s_dynamicCounter[deviceSlot] = 1;
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 96) ? 145 : 96;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 255, brightness};
+      return {dynamicHue[deviceSlot], 255, brightness};
     // END C_BLUEGREEN
 
     case C_REDPURPLE:
       // Alternate between red (0) and purple (210)
-      if(s_dynamicHue[deviceSlot] != 0 && s_dynamicHue[deviceSlot] != 210) {
-        s_dynamicHue[deviceSlot] = 0; // Reset if out of range
+      if(dynamicHue[deviceSlot] != 0 && dynamicHue[deviceSlot] != 210) {
+        dynamicHue[deviceSlot] = 0; // Reset if out of range
       }
 
       cycle = 7;
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot] = (s_dynamicHue[deviceSlot] == 0) ? 210 : 0;
-        s_dynamicCounter[deviceSlot] = 1;
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 210 : 0;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 255, brightness};
+      return {dynamicHue[deviceSlot], 255, brightness};
     // END C_REDPURPLE
 
     case C_AMBER_PULSE:
       // Pulse between amber (24) and orange (32)
-      if(s_dynamicHue[deviceSlot] < 20 || s_dynamicHue[deviceSlot] > 32) {
-        s_dynamicHue[deviceSlot] = 24; // Reset if out of range
-        s_dynamicNextBright[deviceSlot] = 1; // Start incrementing
+      if(dynamicHue[deviceSlot] < 20 || dynamicHue[deviceSlot] > 32) {
+        dynamicHue[deviceSlot] = 24; // Reset if out of range
+        dynamicNextBright[deviceSlot] = 1; // Start incrementing
       }
 
       cycle = 5;
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot] += s_dynamicNextBright[deviceSlot];
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot] += dynamicNextBright[deviceSlot];
 
         // Reverse direction at boundaries
-        if(s_dynamicHue[deviceSlot] >= 32) {
-          s_dynamicNextBright[deviceSlot] = -1;
+        if(dynamicHue[deviceSlot] >= 32) {
+          dynamicNextBright[deviceSlot] = -1;
         }
-        else if(s_dynamicHue[deviceSlot] <= 20) {
-          s_dynamicNextBright[deviceSlot] = 1;
+        else if(dynamicHue[deviceSlot] <= 20) {
+          dynamicNextBright[deviceSlot] = 1;
         }
 
-        s_dynamicCounter[deviceSlot] = 1;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 255, brightness};
+      return {dynamicHue[deviceSlot], 255, brightness};
     // END C_AMBER_PULSE
 
     case C_ORANGE_FADE:
       // Fade brightness on orange hue (28)
-      if(s_dynamicBright[deviceSlot] == 0) {
-        s_dynamicBright[deviceSlot] = 50;
-        s_dynamicNextBright[deviceSlot] = 5; // Start incrementing
+      if(dynamicBright[deviceSlot] == 0) {
+        dynamicBright[deviceSlot] = 50;
+        dynamicNextBright[deviceSlot] = 5; // Start incrementing
       }
 
       cycle = 10;
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicBright[deviceSlot] += s_dynamicNextBright[deviceSlot];
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
 
         // Reverse direction at boundaries
-        if(s_dynamicBright[deviceSlot] >= 250) {
-          s_dynamicNextBright[deviceSlot] = -5;
+        if(dynamicBright[deviceSlot] >= 250) {
+          dynamicNextBright[deviceSlot] = -5;
         }
-        else if(s_dynamicBright[deviceSlot] <= 50) {
-          s_dynamicNextBright[deviceSlot] = 5;
+        else if(dynamicBright[deviceSlot] <= 50) {
+          dynamicNextBright[deviceSlot] = 5;
         }
 
-        s_dynamicCounter[deviceSlot] = 1;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {28, 255, s_dynamicBright[deviceSlot]};
+      return {28, 255, dynamicBright[deviceSlot]};
     // END C_ORANGE_FADE
 
     case C_RED_FADE:
       // Fade brightness on red hue (0)
-      if(s_dynamicBright[deviceSlot] == 0) {
-        s_dynamicBright[deviceSlot] = 50;
-        s_dynamicNextBright[deviceSlot] = 5; // Start incrementing
+      if(dynamicBright[deviceSlot] == 0) {
+        dynamicBright[deviceSlot] = 50;
+        dynamicNextBright[deviceSlot] = 5; // Start incrementing
       }
 
       cycle = 8;
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicBright[deviceSlot] += s_dynamicNextBright[deviceSlot];
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
 
         // Reverse direction at boundaries
-        if(s_dynamicBright[deviceSlot] >= 250) {
-          s_dynamicNextBright[deviceSlot] = -5;
+        if(dynamicBright[deviceSlot] >= 250) {
+          dynamicNextBright[deviceSlot] = -5;
         }
-        else if(s_dynamicBright[deviceSlot] <= 50) {
-          s_dynamicNextBright[deviceSlot] = 5;
+        else if(dynamicBright[deviceSlot] <= 50) {
+          dynamicNextBright[deviceSlot] = 5;
         }
 
-        s_dynamicCounter[deviceSlot] = 1;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {0, 255, s_dynamicBright[deviceSlot]};
+      return {0, 255, dynamicBright[deviceSlot]};
     // END C_RED_FADE
 
     case C_BLUE_FADE:
       // Fade hue from dark blue (160) to light blue (146)
       // Used by ProtonPack Power Cell (15-LED RGB strip)
-      if(s_dynamicHue[deviceSlot] < 146 || s_dynamicHue[deviceSlot] > 160) {
-        s_dynamicHue[deviceSlot] = 160; // Reset if out of range
+      if(dynamicHue[deviceSlot] < 146 || dynamicHue[deviceSlot] > 160) {
+        dynamicHue[deviceSlot] = 160; // Reset if out of range
       }
 
       cycle = 1; // Decrement hue every frame for smooth fade
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot]--;
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot]--;
         
         // Wrap around if we go below minimum
-        if(s_dynamicHue[deviceSlot] < 146) {
-          s_dynamicHue[deviceSlot] = 160;
+        if(dynamicHue[deviceSlot] < 146) {
+          dynamicHue[deviceSlot] = 160;
         }
         
-        s_dynamicCounter[deviceSlot] = 1;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 255, brightness};
+      return {dynamicHue[deviceSlot], 255, brightness};
     // END C_BLUE_FADE
 
     case C_PASTEL:
       // Cycle through all hues (0-255) at half saturation
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot] = (s_dynamicHue[deviceSlot] + 5) % 256;
-        s_dynamicCounter[deviceSlot] = 1;
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + 5) % 256;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 128, brightness};
+      return {dynamicHue[deviceSlot], 128, brightness};
     // END C_PASTEL
 
     case C_RAINBOW:
     default:
       // Cycle through all hues (0-255) at full saturation
-      s_dynamicCounter[deviceSlot]++;
+      dynamicCounter[deviceSlot]++;
 
-      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
-        s_dynamicHue[deviceSlot] = (s_dynamicHue[deviceSlot] + 5) % 256;
-        s_dynamicCounter[deviceSlot] = 1;
+      if(dynamicCounter[deviceSlot] % cycle == 0) {
+        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + 5) % 256;
+        dynamicCounter[deviceSlot] = 1;
       }
 
-      return {s_dynamicHue[deviceSlot], 255, brightness};
+      return {dynamicHue[deviceSlot], 255, brightness};
     // END C_RAINBOW
   }
+}
+
+// Set a custom static color HSV value for the device
+void Lighting::setCustomColorHSV(uint8_t deviceSlot, CustomColor color, const LED_HSV &hsv) {
+  // For single-device instances, always use slot 0
+  // Multi-device instances should override this behavior if needed
+  if(deviceSlot >= numDevices) {
+    deviceSlot = 0;
+  }
+  
+  customColorHSV[deviceSlot] = hsv;
+}
+
+// Get the currently stored custom color HSV value for the device
+LED_HSV Lighting::getCustomColorHSV(uint8_t deviceSlot) const {
+  if(deviceSlot >= numDevices) {
+    deviceSlot = 0;
+  }
+  
+  return customColorHSV[deviceSlot];
 }
 
 // ============================================================================

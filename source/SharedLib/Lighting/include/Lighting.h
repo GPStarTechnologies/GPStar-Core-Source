@@ -93,80 +93,156 @@ enum DynamicColor {
   C_RAINBOW
 };
 
-// Maximum number of independent devices that can have dynamic colors.
-// eg. ProtonPack has 6 devices (POWERCELL, CYCLOTRON_OUTER, CYCLOTRON_INNER, etc.)
-#define MAX_DYNAMIC_COLOR_DEVICES 6
+// CustomColor: Device-specific custom colors for individual projects.
+// These are extended colors that may only be used by one or a few devices,
+// but are exposed through the canonical Lighting library API.
+// Device projects keep their own HSV values for these enum constants.
+enum CustomColor {
+  C_CUSTOM,                       // Generic custom color (typically a barrel color)
+  C_CUSTOM_POWERCELL,             // Proton Pack only
+  C_CUSTOM_CYCLOTRON,             // Proton Pack only
+  C_CUSTOM_INNER_CYCLOTRON,       // Proton Pack only
+  C_HASLAB                        // Proton Pack only (HasLab variant)
+};
 
 /**
- * Lighting: Utility class for LED color operations.
+ * Lighting: Instance-based utility class for LED color operations.
+ *
+ * Each device creates its own Lighting instance to manage color state independently.
  *
  * This class provides:
  * - Standard color definitions used across all GPStar devices
  * - HSV color lookup for predefined static colors
- * - HSV color lookup for dynamic/animated colors with state tracking
+ * - HSV color lookup for dynamic/animated colors with per-device state tracking
  * - HSV to RGB color conversion (without FastLED dependency)
  * - Color channel reordering for different LED strip types
  * - Brightness percentage conversion
+ * - Custom static color mapping for device-specific colors (user-configured via NVS/Preferences/EEPROM)
+ *
+ * Color Types:
+ *   - SingleColor: 24 static named colors (C_RED, C_BLUE, etc.)
+ *   - DynamicColor: 10 animated patterns (C_RAINBOW, C_REDGREEN, etc.) - state tracked per device
+ *   - CustomColor: 5 device-specific colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.) - user-configured HSV values
  *
  * Example usage:
- *   // Static colors:
- *   LED_HSV red_hsv = Lighting::getColorHSV(C_RED, 255, 255);
- *   LED_RGB red_rgb = Lighting::hsv2rgb(red_hsv);
+ *   // Create Lighting instance to manage 6 devices
+ *   Lighting lighting(6);
  *
- *   // Dynamic colors (animated):
- *   LED_HSV rainbow = Lighting::getDynamicColorHSV(0, C_RAINBOW, 255);
- *   LED_RGB rgb = Lighting::hsv2rgb(rainbow);
+ *   // Static colors (no animation, no state):
+ *   LED_HSV red_hsv = lighting.getColorHSV(C_RED, 255, 255);
+ *   LED_RGB red_rgb = lighting.hsv2rgb(red_hsv);
+ *
+ *   // Dynamic/animated colors (with per-device state tracking):
+ *   LED_HSV rainbow = lighting.getDynamicColorHSV(0, C_RAINBOW, 255);
+ *   LED_RGB rgb = lighting.hsv2rgb(rainbow);
+ *
+ *   // Custom static colors (user-configured HSV values, no animation):
+ *   LED_HSV barrel_color = {192, 200, 255};  // From NVS/Preferences/EEPROM
+ *   lighting.setCustomColorHSV(0, C_CUSTOM, barrel_color);
+ *   LED_HSV custom = lighting.getCustomColorHSV(0);  // Retrieve later
  *
  *   // Apply color ordering for GRB strips:
- *   LED_RGB grb = Lighting::applyColorOrder(rgb, ORDER_GRB);
- *
- * Note: This class is entirely static - no instantiation needed.
+ *   LED_RGB grb = lighting.applyColorOrder(rgb, ORDER_GRB);
  */
 class Lighting {
   private:
-    // State tracking for dynamic colors (one per device slot)
-    static uint8_t s_dynamicHue[MAX_DYNAMIC_COLOR_DEVICES];
-    static uint8_t s_dynamicBright[MAX_DYNAMIC_COLOR_DEVICES];
-    static int16_t s_dynamicNextBright[MAX_DYNAMIC_COLOR_DEVICES];
-    static uint8_t s_dynamicCounter[MAX_DYNAMIC_COLOR_DEVICES];
+    // Instance variables for device count and state tracking
+    uint8_t numDevices;
+    uint8_t* dynamicCounter;      // Array[numDevices] - frame counter for animated colors
+    uint8_t* dynamicHue;          // Array[numDevices] - current hue for dynamic patterns
+    uint8_t* dynamicBright;       // Array[numDevices] - current brightness for fading effects
+    int16_t* dynamicNextBright;   // Array[numDevices] - target brightness for fade animations
+    LED_HSV* customColorHSV;      // Array[numDevices] - user-configured HSV values for custom static colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.)
+
+    // Helper method to get static color definitions
+    LED_HSV getStaticColorDefinition(SingleColor color);
 
   public:
-    // Reset all dynamic color state to initial values
-    static void resetDynamicColors();
+    /**
+     * Constructor: Initialize Lighting instance for a set number of devices.
+     * Parameters:
+     *   deviceCount: Number of independent devices this Lighting object manages (1-6 typical)
+     * Example: Lighting lighting(6);  // ProtonPack with 6 devices
+     */
+    Lighting(uint8_t deviceCount);
 
-    // Get HSV color values for standard (static) colors.
-    // Parameters:
-    //   color: SingleColor enum value
-    //   brightness: 0-255 (default: 255 = full brightness)
-    //   saturation: 0-255 (default: 255 = full saturation)
-    // Returns: LED_HSV with hue, saturation, and brightness
-    // Example: LED_HSV blue = Lighting::getColorHSV(C_BLUE, 200, 255);
-    static LED_HSV getColorHSV(SingleColor color, uint8_t brightness = 255, uint8_t saturation = 255);
+    /**
+     * Destructor: Clean up dynamically allocated state arrays.
+     */
+    ~Lighting();
 
-    // Get HSV color values for dynamic (animated) colors.
-    // Parameters:
-    //   deviceSlot: [0-5] - Which device (6 Total)
-    //   color: DynamicColor - Which pattern
-    //   brightness: [0-255] - Target brightness (may be overridden by fade effects)
-    //   saturation: [0-255] - Color saturation (default: 255)
-    // Returns: LED_HSV for the current animation frame
-    // Example: LED_HSV hsv = Lighting::getDynamicColorHSV(0, C_RAINBOW, 255);
-    static LED_HSV getDynamicColorHSV(uint8_t deviceSlot, DynamicColor color, uint8_t brightness = 255, uint8_t saturation = 255);
+    /**
+     * Reset all dynamic color state to initial values for all devices.
+     */
+    void resetDynamicColors();
 
-    // Convert HSV color to RGB using rainbow algorithm for smooth color transitions.
-    // Example: LED_RGB rgb = Lighting::hsv2rgb({128, 255, 200});
+    /**
+     * Get HSV color values for standard (static) colors.
+     * Parameters:
+     *   color: SingleColor enum value
+     *   brightness: 0-255 (default: 255 = full brightness)
+     *   saturation: 0-255 (default: 255 = full saturation)
+     * Returns: LED_HSV with hue, saturation, and brightness
+     * Example: LED_HSV blue = lighting.getColorHSV(C_BLUE, 200, 255);
+     */
+    LED_HSV getColorHSV(SingleColor color, uint8_t brightness = 255, uint8_t saturation = 255);
+
+    /**
+     * Get HSV color values for dynamic (animated) colors.
+     * Parameters:
+     *   color: DynamicColor - Which animation pattern
+     *   brightness: [0-255] - Target brightness (may be overridden by fade effects)
+     *   saturation: [0-255] - Color saturation (default: 255)
+     * Returns: LED_HSV for the current animation frame
+     * Note: Each Lighting instance manages animations independently.
+     * For multi-device setups, create separate Lighting instances per device or device group.
+     * Example: LED_HSV hsv = lighting.getDynamicColorHSV(C_RAINBOW, 255);
+     */
+    LED_HSV getDynamicColorHSV(DynamicColor color, uint8_t brightness = 255, uint8_t saturation = 255);
+
+    /**
+     * Set a custom static color HSV value for a device slot.
+     * Used for device-specific custom colors (C_CUSTOM, C_CUSTOM_POWERCELL, C_HASLAB, etc.)
+     * where the actual HSV values come from device preferences/NVS/EEPROM.
+     * These are NOT animated - they are static user-configured colors.
+     * Parameters:
+     *   deviceSlot: [0..numDevices-1] - Which device slot
+     *   color: CustomColor - Which custom color enum to map
+     *   hsv: LED_HSV - The static HSV value to use for this color on this device
+     * Example:
+     *   LED_HSV barrel_color = {32, 200, 255};  // From NVS preferences
+     *   lighting.setCustomColorHSV(0, C_CUSTOM, barrel_color);
+     */
+    void setCustomColorHSV(uint8_t deviceSlot, CustomColor color, const LED_HSV &hsv);
+
+    /**
+     * Get the currently stored custom static color HSV value for a device slot.
+     * Returns: LED_HSV value previously set by setCustomColorHSV()
+     */
+    LED_HSV getCustomColorHSV(uint8_t deviceSlot) const;
+
+    /**
+     * Convert HSV color to RGB using rainbow algorithm for smooth color transitions.
+     * Example: LED_RGB rgb = lighting.hsv2rgb({128, 255, 200});
+     */
     static LED_RGB hsv2rgb(const LED_HSV &hsv);
 
-    // Returns reordered RGB channels of a single color value (eg. RGB to GRB).
-    // Example: LED_RGB grb = Lighting::applyColorOrder(rgb, ORDER_GRB);
+    /**
+     * Returns reordered RGB channels of a single color value (eg. RGB to GRB).
+     * Example: LED_RGB grb = lighting.applyColorOrder(rgb, ORDER_GRB);
+     */
     static LED_RGB applyColorOrder(const LED_RGB &color, ColorOrder order);
 
-    // Convert brightness percentage (0-100) to byte value (0-255).
-    // Example: uint8_t val = Lighting::getBrightness(50); // Returns 127
+    /**
+     * Convert brightness percentage (0-100) to byte value (0-255).
+     * Example: uint8_t val = lighting.getBrightness(50); // Returns 127
+     */
     static uint8_t getBrightness(uint8_t percent);
 
-    // Scale RGB color by brightness factor (0-255).
-    // Example: LED_RGB dimmed = Lighting::scaleBrightness(rgb, 128); // 50% brightness
+    /**
+     * Scale RGB color by brightness factor (0-255).
+     * Example: LED_RGB dimmed = lighting.scaleBrightness(rgb, 128); // 50% brightness
+     */
     static LED_RGB scaleBrightness(const LED_RGB &color, uint8_t brightness);
 
     // Math Utilities for brightness/saturation scaling
