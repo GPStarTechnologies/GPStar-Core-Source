@@ -23,3 +23,9 @@ pio run --project-dir "$SHARED_DIR/MagCalibration" --target clean
 
 # Run unit tests
 pio test --project-dir "$SHARED_DIR/MagCalibration" -v
+
+# Clean build files
+pio run --project-dir "$SHARED_DIR/Lighting" --target clean
+
+# Run unit tests
+pio test --project-dir "$SHARED_DIR/Lighting" -v

@@ -53,7 +53,7 @@ enum colours {
   C_PURPLE,
   C_REDGREEN,
   C_ORANGEPURPLE,
-  C_BLUEFADE,
+  C_BLUE_FADE,
   C_PASTEL,
   C_RAINBOW,
   C_CUSTOM_POWERCELL,
@@ -448,7 +448,7 @@ CHSV getHue(uint8_t i_device, uint8_t i_colour, uint8_t i_brightness = 255, uint
       return CHSV(i_output_colour, 255, i_brightness);
     break;
 
-    case C_BLUEFADE:
+    case C_BLUE_FADE:
       // Reset if out of range: blue (160) to light blue (146).
       // This is based on use of the 15-LED RGB Power Cell.
       if(i_count[i_device] < 146 || i_count[i_device] > 160) {

@@ -86,6 +86,7 @@ enum DynamicColor {
   C_BLUEGREEN,
   C_REDPURPLE,
   C_AMBER_PULSE,
+  C_BLUE_FADE,
   C_ORANGE_FADE,
   C_RED_FADE,
   C_PASTEL,
@@ -167,4 +168,31 @@ class Lighting {
     // Scale RGB color by brightness factor (0-255).
     // Example: LED_RGB dimmed = Lighting::scaleBrightness(rgb, 128); // 50% brightness
     static LED_RGB scaleBrightness(const LED_RGB &color, uint8_t brightness);
+
+    // Math Utilities for brightness/saturation scaling
+    // These are platform-agnostic implementations from FastLED
+
+    /**
+     * Scale a byte value by another byte (0-255) with proper rounding.
+     * Based on FastLED 3.10.3 scale8() with FASTLED_SCALE8_FIXED=1 (default).
+     * Copyright (c) 2013 FastLED (MIT License)
+     * Formula: (value * (scale + 1)) >> 8
+     * Result is in range [0, 255].
+     * This rounding behavior ensures no LED values are lost during scaling.
+     * Example: nscale8(200, 255) → 200, nscale8(200, 128) → 100
+     */
+    static uint8_t nscale8(uint8_t value, uint8_t scale);
+
+    /**
+     * Scale a byte value with video-safe behavior (FastLED 3.10.3 scale8_video()).
+     * Based on FastLED 3.10.3 implementation.
+     * Copyright (c) 2013 FastLED (MIT License)
+     * Formula: ((value * scale) >> 8) + ((value && scale) ? 1 : 0)
+     * Result is in range [0, 255].
+     * Preserves zero values and ensures non-zero values don't drop completely to zero,
+     * preventing LED flicker/dropout during fade transitions.
+     * The +1 is added only when BOTH value and scale are non-zero.
+     * Example: scale8_video(200, 255) → 200, scale8_video(0, 255) → 0
+     */
+    static uint8_t scale8_video(uint8_t value, uint8_t scale);
 };

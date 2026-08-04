@@ -353,7 +353,7 @@ void updateBodyLEDs() {
     break;
 
     case SPECTRAL_CUSTOM:
-      i_scheme = C_SPECTRAL_CUSTOM;
+      i_scheme = C_CUSTOM;
     break;
 
     default:

@@ -396,6 +396,30 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, DynamicColor color, uin
       return {0, 255, s_dynamicBright[deviceSlot]};
     // END C_RED_FADE
 
+    case C_BLUE_FADE:
+      // Fade hue from dark blue (160) to light blue (146)
+      // Used by ProtonPack Power Cell (15-LED RGB strip)
+      if(s_dynamicHue[deviceSlot] < 146 || s_dynamicHue[deviceSlot] > 160) {
+        s_dynamicHue[deviceSlot] = 160; // Reset if out of range
+      }
+
+      cycle = 1; // Decrement hue every frame for smooth fade
+      s_dynamicCounter[deviceSlot]++;
+
+      if(s_dynamicCounter[deviceSlot] % cycle == 0) {
+        s_dynamicHue[deviceSlot]--;
+        
+        // Wrap around if we go below minimum
+        if(s_dynamicHue[deviceSlot] < 146) {
+          s_dynamicHue[deviceSlot] = 160;
+        }
+        
+        s_dynamicCounter[deviceSlot] = 1;
+      }
+
+      return {s_dynamicHue[deviceSlot], 255, brightness};
+    // END C_BLUE_FADE
+
     case C_PASTEL:
       // Cycle through all hues (0-255) at half saturation
       s_dynamicCounter[deviceSlot]++;
@@ -421,4 +445,40 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, DynamicColor color, uin
       return {s_dynamicHue[deviceSlot], 255, brightness};
     // END C_RAINBOW
   }
+}
+
+// ============================================================================
+// Math Utilities
+// ============================================================================
+
+// Scale a byte value by another byte (0-255) with proper rounding.
+// Based on FastLED 3.10.3's scale8() with FASTLED_SCALE8_FIXED=1 (default).
+// Copyright (c) 2013 FastLED (MIT License)
+// Formula: (value * (scale + 1)) >> 8
+// This rounding behavior ensures no LED values are lost during scaling.
+uint8_t Lighting::nscale8(uint8_t value, uint8_t scale) {
+  uint16_t result = (uint16_t)value * ((uint16_t)scale + 1);
+  return (uint8_t)(result >> 8);
+}
+
+// Scale a byte value with video-safe behavior (FastLED 3.10.3's scale8_video()).
+// Based on FastLED 3.10.3's scale8_video() implementation.
+// Copyright (c) 2013 FastLED (MIT License)
+// Preserves zero values and ensures non-zero values don't drop completely to zero.
+// Formula: ((value * scale) >> 8) + ((value && scale) ? 1 : 0)
+// This prevents LED flicker/dropout during fade transitions by adding 1 only when
+// both value and scale are non-zero, maintaining minimum brightness without
+// lighting up completely black pixels.
+uint8_t Lighting::scale8_video(uint8_t value, uint8_t scale) {
+  // Apply scale with bit-shift, then add 1 if both value and scale are non-zero
+  // This ensures LEDs don't fade completely to black during dimming transitions
+  uint8_t scaled = (uint16_t)value * (uint16_t)scale >> 8;
+  
+  // Add 1 if both value and scale are non-zero
+  // (This condition matches FastLED's video-safe behavior)
+  if(value && scale) {
+    scaled++;
+  }
+
+  return scaled;
 }
