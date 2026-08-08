@@ -51,6 +51,15 @@ void registerWebRoutes() {
   );
 
   addBodyRoute(
+    "/config/smoke/save",
+    handleSaveSmokeConfig,
+    "Save overheat configuration",
+    "Saves per-power-level overheat settings",
+    TAG_CONFIGURATION,
+    "JSON object containing overheat configuration fields"
+  );
+
+  addBodyRoute(
     "/password/update",
     passwordChangeHandler,
     "Update WiFi password",
@@ -80,6 +89,7 @@ void registerWebRoutes() {
   addSimpleRoute("/network", HTTP_GET, handleNetwork, "Network page", "Serves the network configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/password", HTTP_GET, handlePassword, "Password page", "Serves the password change page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/settings/device", HTTP_GET, handleDeviceSettings, "Device settings page", "Serves the device settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
+  addSimpleRoute("/settings/smoke", HTTP_GET, handleSmokeSettings, "Overheat settings page", "Serves the overheat settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/settings/wand", HTTP_GET, handleWandSettings, "Wand settings page", "Serves the wand settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/geometry.stl", HTTP_GET, handleGeometry, "Equipment STL model", "Serves the equipment model as an STL file", TAG_ASSETS, RESP_STL_FILE);
   addSimpleRoute("/three.js", HTTP_GET, handleThreeJS, "3D visualization library", "Serves the 3D visualization JavaScript library", TAG_ASSETS, RESP_JAVASCRIPT_FILE);
@@ -87,6 +97,7 @@ void registerWebRoutes() {
 
   // Configuration Endpoints
   addSimpleRoute("/config/device", HTTP_GET, handleGetDeviceConfig, "Get device config", "Returns current device configuration as JSON", TAG_CONFIGURATION, RESP_CONFIG_OBJECT);
+  addSimpleRoute("/config/smoke", HTTP_GET, handleGetSmokeConfig, "Get overheat config", "Returns current overheat configuration as JSON", TAG_CONFIGURATION, RESP_CONFIG_OBJECT);
   addSimpleRoute("/config/wand", HTTP_GET, handleGetWandConfig, "Get wand config", "Returns current wand configuration as JSON", TAG_CONFIGURATION, RESP_CONFIG_OBJECT);
 
   // EEPROM Operations

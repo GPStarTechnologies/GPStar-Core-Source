@@ -196,6 +196,24 @@ void getWandPrefsObject() {
   }
 }
 
+void getSmokePrefsObject() {
+  sendDebug(F("Getting Smoke Preferences"));
+
+  // Determines whether overheating is enabled for a power level.
+  smokeConfig.overheatLevel5 = b_overheat_level_5;
+  smokeConfig.overheatLevel4 = b_overheat_level_4;
+  smokeConfig.overheatLevel3 = b_overheat_level_3;
+  smokeConfig.overheatLevel2 = b_overheat_level_2;
+  smokeConfig.overheatLevel1 = b_overheat_level_1;
+
+  // Time (seconds) before an overheat event takes place by level.
+  smokeConfig.overheatDelay5 = (uint8_t)(i_ms_overheat_initiate_level_5 / 1000);
+  smokeConfig.overheatDelay4 = (uint8_t)(i_ms_overheat_initiate_level_4 / 1000);
+  smokeConfig.overheatDelay3 = (uint8_t)(i_ms_overheat_initiate_level_3 / 1000);
+  smokeConfig.overheatDelay2 = (uint8_t)(i_ms_overheat_initiate_level_2 / 1000);
+  smokeConfig.overheatDelay1 = (uint8_t)(i_ms_overheat_initiate_level_1 / 1000);
+}
+
 /*
  * Serial API Communication Handlers
  */
@@ -240,20 +258,7 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
     break;
 
     case A_SEND_PREFERENCES_SMOKE:
-      // Determines whether overheating is enabled for a power level.
-      smokeConfig.overheatLevel5 = b_overheat_level_5;
-      smokeConfig.overheatLevel4 = b_overheat_level_4;
-      smokeConfig.overheatLevel3 = b_overheat_level_3;
-      smokeConfig.overheatLevel2 = b_overheat_level_2;
-      smokeConfig.overheatLevel1 = b_overheat_level_1;
-
-      // Time (seconds) before an overheat event takes place by level.
-      smokeConfig.overheatDelay5 = (uint8_t)(i_ms_overheat_initiate_level_5 / 1000);
-      smokeConfig.overheatDelay4 = (uint8_t)(i_ms_overheat_initiate_level_4 / 1000);
-      smokeConfig.overheatDelay3 = (uint8_t)(i_ms_overheat_initiate_level_3 / 1000);
-      smokeConfig.overheatDelay2 = (uint8_t)(i_ms_overheat_initiate_level_2 / 1000);
-      smokeConfig.overheatDelay1 = (uint8_t)(i_ms_overheat_initiate_level_1 / 1000);
-
+      getSmokePrefsObject(); // Call common function (also used by local web UI)
       i_send_size = packComs.txObj(smokeConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
     break;

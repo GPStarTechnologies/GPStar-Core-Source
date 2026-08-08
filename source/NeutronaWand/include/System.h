@@ -10794,11 +10794,16 @@ void resetWhiteLEDBlinkRate() {
   }
 }
 
-// Rebuilds the overheat enable array.
+// Rebuilds the overheat enable arrays.
 void updateOverheatLevels() {
   b_overheat_level[0] = b_overheat_level_1;
   b_overheat_level[1] = b_overheat_level_2;
   b_overheat_level[2] = b_overheat_level_3;
   b_overheat_level[3] = b_overheat_level_4;
   b_overheat_level[4] = b_overheat_level_5;
+  i_ms_overheat_initiate[0] = i_ms_overheat_initiate_level_1;
+  i_ms_overheat_initiate[1] = i_ms_overheat_initiate_level_2;
+  i_ms_overheat_initiate[2] = i_ms_overheat_initiate_level_3;
+  i_ms_overheat_initiate[3] = i_ms_overheat_initiate_level_4;
+  i_ms_overheat_initiate[4] = i_ms_overheat_initiate_level_5;
 }

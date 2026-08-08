@@ -520,32 +520,22 @@ void readEEPROM() {
 
     if(gObjConfigEEPROM.overheatStartTimerLevel5 > 0 && gObjConfigEEPROM.overheatStartTimerLevel5 < 61) {
       i_ms_overheat_initiate_level_5 = gObjConfigEEPROM.overheatStartTimerLevel5 * 1000;
-
-      i_ms_overheat_initiate[4] = i_ms_overheat_initiate_level_5;
     }
 
     if(gObjConfigEEPROM.overheatStartTimerLevel4 > 0 && gObjConfigEEPROM.overheatStartTimerLevel4 < 61) {
       i_ms_overheat_initiate_level_4 = gObjConfigEEPROM.overheatStartTimerLevel4 * 1000;
-
-      i_ms_overheat_initiate[3] = i_ms_overheat_initiate_level_4;
     }
 
     if(gObjConfigEEPROM.overheatStartTimerLevel3 > 0 && gObjConfigEEPROM.overheatStartTimerLevel3 < 61) {
       i_ms_overheat_initiate_level_3 = gObjConfigEEPROM.overheatStartTimerLevel3 * 1000;
-
-      i_ms_overheat_initiate[2] = i_ms_overheat_initiate_level_3;
     }
 
     if(gObjConfigEEPROM.overheatStartTimerLevel2 > 0 && gObjConfigEEPROM.overheatStartTimerLevel2 < 61) {
       i_ms_overheat_initiate_level_2 = gObjConfigEEPROM.overheatStartTimerLevel2 * 1000;
-
-      i_ms_overheat_initiate[1] = i_ms_overheat_initiate_level_2;
     }
 
     if(gObjConfigEEPROM.overheatStartTimerLevel1 > 0 && gObjConfigEEPROM.overheatStartTimerLevel1 < 61) {
       i_ms_overheat_initiate_level_1 = gObjConfigEEPROM.overheatStartTimerLevel1 * 1000;
-
-      i_ms_overheat_initiate[0] = i_ms_overheat_initiate_level_1;
     }
 
     if(gObjConfigEEPROM.overheatLevel5 > 0 && gObjConfigEEPROM.overheatLevel5 < 3) {

@@ -267,32 +267,22 @@ void readEEPROM() {
 
     if(obj_config_eeprom.overheat_start_timer_level_5 > 0 && obj_config_eeprom.overheat_start_timer_level_5 < 61) {
       i_ms_overheat_initiate_level_5 = obj_config_eeprom.overheat_start_timer_level_5 * 1000;
-
-      i_ms_overheat_initiate[4] = i_ms_overheat_initiate_level_5;
     }
 
     if(obj_config_eeprom.overheat_start_timer_level_4 > 0 && obj_config_eeprom.overheat_start_timer_level_4 < 61) {
       i_ms_overheat_initiate_level_4 = obj_config_eeprom.overheat_start_timer_level_4 * 1000;
-
-      i_ms_overheat_initiate[3] = i_ms_overheat_initiate_level_4;
     }
 
     if(obj_config_eeprom.overheat_start_timer_level_3 > 0 && obj_config_eeprom.overheat_start_timer_level_3 < 61) {
       i_ms_overheat_initiate_level_3 = obj_config_eeprom.overheat_start_timer_level_3 * 1000;
-
-      i_ms_overheat_initiate[2] = i_ms_overheat_initiate_level_3;
     }
 
     if(obj_config_eeprom.overheat_start_timer_level_2 > 0 && obj_config_eeprom.overheat_start_timer_level_2 < 61) {
       i_ms_overheat_initiate_level_2 = obj_config_eeprom.overheat_start_timer_level_2 * 1000;
-
-      i_ms_overheat_initiate[1] = i_ms_overheat_initiate_level_2;
     }
 
     if(obj_config_eeprom.overheat_start_timer_level_1 > 0 && obj_config_eeprom.overheat_start_timer_level_1 < 61) {
       i_ms_overheat_initiate_level_1 = obj_config_eeprom.overheat_start_timer_level_1 * 1000;
-
-      i_ms_overheat_initiate[0] = i_ms_overheat_initiate_level_1;
     }
 
     if(obj_config_eeprom.overheat_level_5 > 0 && obj_config_eeprom.overheat_level_5 < 3) {

@@ -61,6 +61,9 @@ extern const uint8_t _binary_assets_network_html_gz_end[];
 // password.html
 extern const uint8_t _binary_assets_password_html_gz_start[];
 extern const uint8_t _binary_assets_password_html_gz_end[];
+// smoke.html
+extern const uint8_t _binary_assets_smoke_html_gz_start[];
+extern const uint8_t _binary_assets_smoke_html_gz_end[];
 // wand.html
 extern const uint8_t _binary_assets_wand_html_gz_start[];
 extern const uint8_t _binary_assets_wand_html_gz_end[];
@@ -283,6 +286,46 @@ String getDeviceConfig() {
   jsonBody["useStandalone"] = b_wand_standalone;
 
   jsonBody["irWhileFiring"] = b_ir_while_firing;
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, equipSettings);
+  return equipSettings;
+}
+
+String getSmokeConfig() {
+  // Prepare a JSON object with information we have gleaned from the system.
+  String equipSettings;
+  JsonDocument jsonBody;
+
+  try {
+    // Provide a flag to indicate prefs were received via serial coms.
+    jsonBody["prefsAvailable"] = true; // Always true for the immediate device.
+
+    // Return current powered state for pack and wand.
+    jsonBody["packPowered"] = (b_pack_on || b_pack_shutting_down || gpstarWand.isPackActiveModeOriginal());
+    jsonBody["wandPowered"] = (WAND_STATUS == MODE_ON);
+    jsonBody["wandConnected"] = (WAND_CONN_STATE == PACK_CONNECTED);
+
+    // Neutrona Wand
+
+    // Power Level 5
+    jsonBody["overheatLevel5"] = smokeConfig.overheatLevel5; // true|false
+    jsonBody["overheatDelay5"] = smokeConfig.overheatDelay5; // 2-60 Seconds
+    // Power Level 4
+    jsonBody["overheatLevel4"] = smokeConfig.overheatLevel4; // true|false
+    jsonBody["overheatDelay4"] = smokeConfig.overheatDelay4; // 2-60 Seconds
+    // Power Level 3
+    jsonBody["overheatLevel3"] = smokeConfig.overheatLevel3; // true|false
+    jsonBody["overheatDelay3"] = smokeConfig.overheatDelay3; // 2-60 Seconds
+    // Power Level 2
+    jsonBody["overheatLevel2"] = smokeConfig.overheatLevel2; // true|false
+    jsonBody["overheatDelay2"] = smokeConfig.overheatDelay2; // 2-60 Seconds
+    // Power Level 1
+    jsonBody["overheatLevel1"] = smokeConfig.overheatLevel1; // true|false
+    jsonBody["overheatDelay1"] = smokeConfig.overheatDelay1; // 2-60 Seconds
+  }
+  catch (...) {
+  }
 
   // Serialize JSON object to string.
   serializeJson(jsonBody, equipSettings);
@@ -989,6 +1032,16 @@ void handleSwagger(AsyncWebServerRequest *request) {
  * Peripheral Page Handlers - Delivers the preference pages for available peripherals
  */
 
+void handleSmokeSettings(AsyncWebServerRequest *request) {
+  // Used for the settings page from the web server.
+  debugln(F("Sending -> Smoke Settings HTML"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_smoke_html_gz_start, _binary_assets_smoke_html_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_HTML, _binary_assets_smoke_html_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response); // Serve page content.
+}
+
 void handleWandSettings(AsyncWebServerRequest *request) {
   // Used for the settings page from the web server.
   debugln(F("Sending -> Wand Settings HTML"));
@@ -1010,6 +1063,14 @@ void handleGetWandConfig(AsyncWebServerRequest *request) {
   // Return current wand settings as a stringified JSON object.
   getWandPrefsObject(); // Call common function (also used by Pack/Attenuator)
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getWandConfig());
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  request->send(response);
+}
+
+void handleGetSmokeConfig(AsyncWebServerRequest *request) {
+  // Return current smoke settings as a stringified JSON object.
+  getSmokePrefsObject(); // Call common function
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getSmokeConfig());
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }
@@ -1603,184 +1664,190 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     debugln(F("Body was not a JSON object"));
   }
 
-  try {
-    // First check if a new private WiFi network name has been chosen.
-    String newSSID = jsonBody["wifiName"].as<String>();
-    newSSID = sanitizeSSID(newSSID); // Jacques, clean him!
-    bool b_ssid_changed = false;
+  if(WAND_STATUS == MODE_OFF) {
+    try {
+      // First check if a new private WiFi network name has been chosen.
+      String newSSID = jsonBody["wifiName"].as<String>();
+      newSSID = sanitizeSSID(newSSID); // Jacques, clean him!
+      bool b_ssid_changed = false;
 
-    // Update the private network name ONLY if the new value differs from the current SSID.
-    if(newSSID != "" && newSSID != wirelessMgr->getLocalNetworkName()){
-      if(newSSID.length() >= 8 && newSSID.length() <= 32) {
-        // Create Preferences object to handle non-volatile storage (NVS).
-        Preferences preferences;
+      // Update the private network name ONLY if the new value differs from the current SSID.
+      if(newSSID != "" && newSSID != wirelessMgr->getLocalNetworkName()){
+        if(newSSID.length() >= 8 && newSSID.length() <= 32) {
+          // Create Preferences object to handle non-volatile storage (NVS).
+          Preferences preferences;
 
-        // Accesses namespace in read/write mode.
-        if(preferences.begin("credentials", false)) {
+          // Accesses namespace in read/write mode.
+          if(preferences.begin("credentials", false)) {
+            #if defined(DEBUG_SEND_TO_CONSOLE)
+              debugln(F("New Private SSID: "));
+              debugln(newSSID);
+            #endif
+            preferences.putString("ssid", newSSID); // Store SSID in case this was altered.
+            preferences.end();
+          }
+
+          b_ssid_changed = true; // This will cause a reboot of the device after saving.
+        }
+        else {
+          // Immediately return an error if the network name was invalid.
+          request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Error: Network name must be between 8 and 32 characters in length.")); // 400 Bad Request
+        }
+      }
+
+      // Orientation Option - Check that it meets the expected type before attempting to change the value.
+      bool b_orientation_changed = false;
+      INSTALL_ORIENTATIONS PREVIOUS_ORIENTATION = INSTALL_ORIENTATION;
+      if(jsonBody["orientation"].is<unsigned char>()) {
+        switch(jsonBody["orientation"].as<unsigned char>()) {
+          case 1:
+            INSTALL_ORIENTATION = COMPONENTS_UP_USB_FRONT;
+          break;
+          case 2:
+            INSTALL_ORIENTATION = COMPONENTS_UP_USB_REAR;
+          break;
+          case 3:
+            INSTALL_ORIENTATION = COMPONENTS_DOWN_USB_FRONT;
+          break;
+          case 4:
+            INSTALL_ORIENTATION = COMPONENTS_DOWN_USB_REAR;
+          break;
+          case 5:
+            INSTALL_ORIENTATION = COMPONENTS_LEFT_USB_FRONT;
+          break;
+          case 6:
+            INSTALL_ORIENTATION = COMPONENTS_LEFT_USB_REAR;
+          break;
+          case 7:
+            INSTALL_ORIENTATION = COMPONENTS_RIGHT_USB_FRONT;
+          break;
+          case 8:
+            INSTALL_ORIENTATION = COMPONENTS_RIGHT_USB_REAR;
+          break;
+          case 9:
+            INSTALL_ORIENTATION = COMPONENTS_FACTORY_DEFAULT;
+          break;
+          default:
+            // Do not change orientation if an invalid value was provided.
+          break;
+        }
+
+        if(INSTALL_ORIENTATION != PREVIOUS_ORIENTATION) {
+          // Reset the magnetic calibration values to defaults on orientation change.
+          magCalData = magCal.getDefaultCalibration();
+          b_orientation_changed = true;
+        } else {
+          // Set the current magnetic calibration values when orientation is unchanged.
+          magCalData.mag_hardiron[0] = jsonBody["hardIron1"].as<float>();
+          magCalData.mag_hardiron[1] = jsonBody["hardIron2"].as<float>();
+          magCalData.mag_hardiron[2] = jsonBody["hardIron3"].as<float>();
+          magCalData.mag_softiron[0] = jsonBody["softIron1"].as<float>();
+          magCalData.mag_softiron[1] = jsonBody["softIron2"].as<float>();
+          magCalData.mag_softiron[2] = jsonBody["softIron3"].as<float>();
+          magCalData.mag_softiron[3] = jsonBody["softIron4"].as<float>();
+          magCalData.mag_softiron[4] = jsonBody["softIron5"].as<float>();
+          magCalData.mag_softiron[5] = jsonBody["softIron6"].as<float>();
+          magCalData.mag_softiron[6] = jsonBody["softIron7"].as<float>();
+          magCalData.mag_softiron[7] = jsonBody["softIron8"].as<float>();
+          magCalData.mag_softiron[8] = jsonBody["softIron9"].as<float>();
+          magCalData.mag_field = jsonBody["magField"].as<float>();
+        }
+      }
+
+      // Check for Standalone Mode mode switch.
+      bool b_standalone_toggled = jsonBody["useStandalone"].as<bool>() | false;
+      bool b_restart_required = (!b_standalone_toggled && b_wand_standalone);
+      if(b_standalone_toggled && !b_wand_standalone) {
+        // Switch to Standalone Mode.
+        toggleStandaloneMode(true);
+      }
+
+      // Set our IR while firing flag appropriately.
+      b_ir_while_firing = jsonBody["irWhileFiring"].as<bool>() | false;
+
+      // Get the track listing from the text field.
+      String songList = jsonBody["songList"].as<String>();
+      bool b_list_err = false;
+
+      // Create Preferences object to handle non-volatile storage (NVS).
+      Preferences preferences;
+
+      // Accesses namespace in read/write mode.
+      if(preferences.begin("device", false)) {
+        // Store the standalone mode setting to preferences.
+        preferences.putBool("standalone", b_standalone_toggled);
+
+        // Store the IR while firing setting to preferences.
+        preferences.putBool("ir_while_firing", b_ir_while_firing);
+
+        // Store the orientation value to preferences if changed.
+        if(INSTALL_ORIENTATION != PREVIOUS_ORIENTATION) {
+          preferences.putUChar("orientation", INSTALL_ORIENTATION);
+        }
+
+        // Store the magnetic calibration struct (object) to preferences.
+        preferences.putBytes("mag_cal", &magCalData, sizeof(magCalData));
+
+        if(b_orientation_changed) {
+          resetMotionOffsets(calibratedOffsets); // Clear previous offsets set/collected.
+          resetAllMotionData(true); // Reset and re-calibrate with fresh, quick offsets.
+
+          // Reset the accelerometer offsets.
+          accelOffsets.x = 0;
+          accelOffsets.y = 0;
+          accelOffsets.z = 0;
+
+          // Reset the gyroscope offsets.
+          gyroOffsets.x = 0;
+          gyroOffsets.y = 0;
+          gyroOffsets.z = 0;
+
+          // Save the new empty offsets to preferences.
+          preferences.putBytes("accel_cal", &accelOffsets, sizeof(accelOffsets));
+          preferences.putBytes("gyro_cal", &gyroOffsets, sizeof(gyroOffsets));
+        }
+
+        // Store the song list to preferences.
+        if(songList.length() <= 2000) {
+          if(songList == "null") {
+            songList = "";
+          }
+
+          // Update song lists if contents are under 2000 bytes.
           #if defined(DEBUG_SEND_TO_CONSOLE)
-            debugln(F("New Private SSID: "));
-            debugln(newSSID);
+            debugln(F("Song List Bytes: "));
+            debugln(songList.length());
           #endif
-          preferences.putString("ssid", newSSID); // Store SSID in case this was altered.
-          preferences.end();
+          preferences.putString("track_list", songList);
+          s_track_listing = songList;
+        }
+        else {
+          // Max size for preferences is 4KB so we need to make reserve space for other items.
+          // Also, there is a 2KB limit for a single item which is what we're storing here.
+          b_list_err = true;
         }
 
-        b_ssid_changed = true; // This will cause a reboot of the device after saving.
+        preferences.end();
+      }
+
+      if(b_list_err) {
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated, but song list exceeds the 2,000 bytes maximum and was not saved."));
+      } else if(b_ssid_changed) {
+        request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required. Please use the new network name to connect to your device."));
+      } else if(b_restart_required) {
+        request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required to disable Standalone Mode."));
       }
       else {
-        // Immediately return an error if the network name was invalid.
-        request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Error: Network name must be between 8 and 32 characters in length.")); // 400 Bad Request
+        request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated."));
       }
     }
-
-    // Orientation Option - Check that it meets the expected type before attempting to change the value.
-    bool b_orientation_changed = false;
-    INSTALL_ORIENTATIONS PREVIOUS_ORIENTATION = INSTALL_ORIENTATION;
-    if(jsonBody["orientation"].is<unsigned char>()) {
-      switch(jsonBody["orientation"].as<unsigned char>()) {
-        case 1:
-          INSTALL_ORIENTATION = COMPONENTS_UP_USB_FRONT;
-        break;
-        case 2:
-          INSTALL_ORIENTATION = COMPONENTS_UP_USB_REAR;
-        break;
-        case 3:
-          INSTALL_ORIENTATION = COMPONENTS_DOWN_USB_FRONT;
-        break;
-        case 4:
-          INSTALL_ORIENTATION = COMPONENTS_DOWN_USB_REAR;
-        break;
-        case 5:
-          INSTALL_ORIENTATION = COMPONENTS_LEFT_USB_FRONT;
-        break;
-        case 6:
-          INSTALL_ORIENTATION = COMPONENTS_LEFT_USB_REAR;
-        break;
-        case 7:
-          INSTALL_ORIENTATION = COMPONENTS_RIGHT_USB_FRONT;
-        break;
-        case 8:
-          INSTALL_ORIENTATION = COMPONENTS_RIGHT_USB_REAR;
-        break;
-        case 9:
-          INSTALL_ORIENTATION = COMPONENTS_FACTORY_DEFAULT;
-        break;
-        default:
-          // Do not change orientation if an invalid value was provided.
-        break;
-      }
-
-      if(INSTALL_ORIENTATION != PREVIOUS_ORIENTATION) {
-        // Reset the magnetic calibration values to defaults on orientation change.
-        magCalData = magCal.getDefaultCalibration();
-        b_orientation_changed = true;
-      } else {
-        // Set the current magnetic calibration values when orientation is unchanged.
-        magCalData.mag_hardiron[0] = jsonBody["hardIron1"].as<float>();
-        magCalData.mag_hardiron[1] = jsonBody["hardIron2"].as<float>();
-        magCalData.mag_hardiron[2] = jsonBody["hardIron3"].as<float>();
-        magCalData.mag_softiron[0] = jsonBody["softIron1"].as<float>();
-        magCalData.mag_softiron[1] = jsonBody["softIron2"].as<float>();
-        magCalData.mag_softiron[2] = jsonBody["softIron3"].as<float>();
-        magCalData.mag_softiron[3] = jsonBody["softIron4"].as<float>();
-        magCalData.mag_softiron[4] = jsonBody["softIron5"].as<float>();
-        magCalData.mag_softiron[5] = jsonBody["softIron6"].as<float>();
-        magCalData.mag_softiron[6] = jsonBody["softIron7"].as<float>();
-        magCalData.mag_softiron[7] = jsonBody["softIron8"].as<float>();
-        magCalData.mag_softiron[8] = jsonBody["softIron9"].as<float>();
-        magCalData.mag_field = jsonBody["magField"].as<float>();
-      }
-    }
-
-    // Check for Standalone Mode mode switch.
-    bool b_standalone_toggled = jsonBody["useStandalone"].as<bool>() | false;
-    bool b_restart_required = (!b_standalone_toggled && b_wand_standalone);
-    if(b_standalone_toggled && !b_wand_standalone) {
-      // Switch to Standalone Mode.
-      toggleStandaloneMode(true);
-    }
-
-    // Set our IR while firing flag appropriately.
-    b_ir_while_firing = jsonBody["irWhileFiring"].as<bool>() | false;
-
-    // Get the track listing from the text field.
-    String songList = jsonBody["songList"].as<String>();
-    bool b_list_err = false;
-
-    // Create Preferences object to handle non-volatile storage (NVS).
-    Preferences preferences;
-
-    // Accesses namespace in read/write mode.
-    if(preferences.begin("device", false)) {
-      // Store the standalone mode setting to preferences.
-      preferences.putBool("standalone", b_standalone_toggled);
-
-      // Store the IR while firing setting to preferences.
-      preferences.putBool("ir_while_firing", b_ir_while_firing);
-
-      // Store the orientation value to preferences if changed.
-      if(INSTALL_ORIENTATION != PREVIOUS_ORIENTATION) {
-        preferences.putUChar("orientation", INSTALL_ORIENTATION);
-      }
-
-      // Store the magnetic calibration struct (object) to preferences.
-      preferences.putBytes("mag_cal", &magCalData, sizeof(magCalData));
-
-      if(b_orientation_changed) {
-        resetMotionOffsets(calibratedOffsets); // Clear previous offsets set/collected.
-        resetAllMotionData(true); // Reset and re-calibrate with fresh, quick offsets.
-
-        // Reset the accelerometer offsets.
-        accelOffsets.x = 0;
-        accelOffsets.y = 0;
-        accelOffsets.z = 0;
-
-        // Reset the gyroscope offsets.
-        gyroOffsets.x = 0;
-        gyroOffsets.y = 0;
-        gyroOffsets.z = 0;
-
-        // Save the new empty offsets to preferences.
-        preferences.putBytes("accel_cal", &accelOffsets, sizeof(accelOffsets));
-        preferences.putBytes("gyro_cal", &gyroOffsets, sizeof(gyroOffsets));
-      }
-
-      // Store the song list to preferences.
-      if(songList.length() <= 2000) {
-        if(songList == "null") {
-          songList = "";
-        }
-
-        // Update song lists if contents are under 2000 bytes.
-        #if defined(DEBUG_SEND_TO_CONSOLE)
-          debugln(F("Song List Bytes: "));
-          debugln(songList.length());
-        #endif
-        preferences.putString("track_list", songList);
-        s_track_listing = songList;
-      }
-      else {
-        // Max size for preferences is 4KB so we need to make reserve space for other items.
-        // Also, there is a 2KB limit for a single item which is what we're storing here.
-        b_list_err = true;
-      }
-
-      preferences.end();
-    }
-
-    if(b_list_err) {
-      request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated, but song list exceeds the 2,000 bytes maximum and was not saved."));
-    } else if(b_ssid_changed) {
-      request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required. Please use the new network name to connect to your device."));
-    } else if(b_restart_required) {
-      request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required to disable Standalone Mode."));
-    }
-    else {
-      request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated."));
+    catch (...) {
+      request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("An error was encountered while saving settings.")); // 500 Server Error
     }
   }
-  catch (...) {
-    request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("An error was encountered while saving settings.")); // 500 Server Error
+  else {
+    // Tell the user why the requested action failed.
+    request->send(HTTP_STATUS_409, MIME_JSON, returnJsonStatus("Wand is running, save action cancelled")); // 409 Conflict
   }
 }); // handleSaveDeviceConfig
 
@@ -1795,7 +1862,7 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
     return;
   }
 
-  if(WAND_STATUS == MODE_OFF) {
+  if(WAND_STATUS == MODE_OFF && !(WAND_CONN_STATE == PACK_CONNECTED && (b_pack_on || b_pack_shutting_down || gpstarWand.isPackActiveModeOriginal()))) {
     try {
       // Numeric fields - LED options
       wandConfig.ledWandCount = jsonBody["ledWandCount"].as<uint8_t>();
@@ -1858,9 +1925,64 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
   }
   else {
     // Tell the user why the requested action failed.
-    request->send(HTTP_STATUS_409, MIME_JSON, returnJsonStatus("Wand is running, save action cancelled")); // 409 Conflict
+    request->send(HTTP_STATUS_409, MIME_JSON, returnJsonStatus("Pack and/or Wand are running, save action cancelled")); // 409 Conflict
   }
 }); // handleSaveWandConfig
+
+// Handles the JSON body for the smoke settings save request.
+AsyncCallbackJsonWebHandler *handleSaveSmokeConfig = new AsyncCallbackJsonWebHandler("/config/smoke/save", [](AsyncWebServerRequest *request, JsonVariant &json) {
+  JsonDocument jsonBody;
+  if(json.is<JsonObject>()) {
+    jsonBody = json.as<JsonObject>();
+  }
+  else {
+    debugln(F("Body was not a JSON object"));
+  }
+
+  if(WAND_STATUS == MODE_OFF && !(WAND_CONN_STATE == PACK_CONNECTED && (b_pack_on || b_pack_shutting_down || gpstarWand.isPackActiveModeOriginal()))) {
+    try {
+      // Boolean fields - Overheat by level toggles
+      smokeConfig.overheatLevel5 = extractBoolFromJson(jsonBody, "overheatLevel5", smokeConfig.overheatLevel5);
+      smokeConfig.overheatLevel4 = extractBoolFromJson(jsonBody, "overheatLevel4", smokeConfig.overheatLevel4);
+      smokeConfig.overheatLevel3 = extractBoolFromJson(jsonBody, "overheatLevel3", smokeConfig.overheatLevel3);
+      smokeConfig.overheatLevel2 = extractBoolFromJson(jsonBody, "overheatLevel2", smokeConfig.overheatLevel2);
+      smokeConfig.overheatLevel1 = extractBoolFromJson(jsonBody, "overheatLevel1", smokeConfig.overheatLevel1);
+
+      // Numeric fields - Overheat delay values (seconds)
+      smokeConfig.overheatDelay5 = jsonBody["overheatDelay5"].as<uint8_t>();
+      smokeConfig.overheatDelay4 = jsonBody["overheatDelay4"].as<uint8_t>();
+      smokeConfig.overheatDelay3 = jsonBody["overheatDelay3"].as<uint8_t>();
+      smokeConfig.overheatDelay2 = jsonBody["overheatDelay2"].as<uint8_t>();
+      smokeConfig.overheatDelay1 = jsonBody["overheatDelay1"].as<uint8_t>();
+
+      // Writes new preferences back to runtime variables.
+      // This action does not save changes to the EEPROM!
+      b_overheat_level_5 = smokeConfig.overheatLevel5;
+      b_overheat_level_4 = smokeConfig.overheatLevel4;
+      b_overheat_level_3 = smokeConfig.overheatLevel3;
+      b_overheat_level_2 = smokeConfig.overheatLevel2;
+      b_overheat_level_1 = smokeConfig.overheatLevel1;
+
+      // Values are sent as seconds, must convert to milliseconds.
+      i_ms_overheat_initiate_level_5 = smokeConfig.overheatDelay5 * 1000;
+      i_ms_overheat_initiate_level_4 = smokeConfig.overheatDelay4 * 1000;
+      i_ms_overheat_initiate_level_3 = smokeConfig.overheatDelay3 * 1000;
+      i_ms_overheat_initiate_level_2 = smokeConfig.overheatDelay2 * 1000;
+      i_ms_overheat_initiate_level_1 = smokeConfig.overheatDelay1 * 1000;
+
+      // Update and reset wand components.
+      updateOverheatLevels();
+      request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, please test before saving to EEPROM."));
+    }
+    catch (...) {
+      request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("An error was encountered while saving settings.")); // 500 Server Error
+    }
+  }
+  else {
+    // Tell the user why the requested action failed.
+    request->send(HTTP_STATUS_409, MIME_JSON, returnJsonStatus("Pack and/or Wand are running, save action cancelled")); // 409 Conflict
+  }
+}); // handleSaveSmokeConfig
 
 // Handles the JSON body for the password change request.
 AsyncCallbackJsonWebHandler *passwordChangeHandler = new AsyncCallbackJsonWebHandler("/password/update", [](AsyncWebServerRequest *request, JsonVariant &json) {
