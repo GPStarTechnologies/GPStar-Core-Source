@@ -61,7 +61,7 @@ void printPartitions() {
 
 void ledsOff() {
   // Change all possible addressable LEDs to black.
-  fill_solid(device_leds, DEVICE_MAX_LEDS, CRGB::Black);
+  LocalLightingManager::getInstance().lightsOff();
 }
 
 void initializePalettes() {
@@ -199,11 +199,13 @@ void updateStreamPalette() {
 void animateLights() {
   static uint8_t i_palette_start_index = 0; // Starting index for palette distribution across LEDs.
 
+  CRGB* buffer = LocalLightingManager::getInstance().getLEDs();
+
   // Use FastLED's fill_palette function for automatic colour distribution and blending
   // Parameters: LED array, number of LEDs, starting palette index, delta between LEDs, palette, brightness, blending mode.
-  fill_palette(device_leds, i_num_leds, i_palette_start_index, 255 / i_num_leds, cp_StreamPalette, 255, LINEARBLEND);
+  fill_palette(buffer, i_num_leds, i_palette_start_index, 255 / i_num_leds, cp_StreamPalette, 255, LINEARBLEND);
 
-  // Handle LED ordering ordering as necessary.
+  // Handle LED ordering as necessary.
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
     default:
@@ -211,14 +213,14 @@ void animateLights() {
     break;
     case LED_GRB:
       for(uint16_t i = 0; i < i_num_leds; i++) {
-        CRGB b_temp_colour = device_leds[i];
-        device_leds[i] = CRGB(b_temp_colour.g, b_temp_colour.r, b_temp_colour.b);
+        CRGB b_temp_colour = buffer[i];
+        buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.r, b_temp_colour.b);
       }
     break;
     case LED_GBR:
       for(uint16_t i = 0; i < i_num_leds; i++) {
-        CRGB b_temp_colour = device_leds[i];
-        device_leds[i] = CRGB(b_temp_colour.g, b_temp_colour.b, b_temp_colour.r);
+        CRGB b_temp_colour = buffer[i];
+        buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.b, b_temp_colour.r);
       }
     break;
   }

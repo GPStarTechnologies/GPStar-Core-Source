@@ -24,51 +24,6 @@
  * https://www.waveshare.com/wiki/ESP32-S3-Zero
  */
 
-/*
- * Pin for Addressable LEDs
- * Assumes 50 LEDs per meter using default lighting: https://a.co/d/dlDyCkz
- */
-#define DEVICE_LED_PIN 4
-#define DEVICE_MAX_LEDS 500 // Set a hard max for allocating the array of LEDs
-uint16_t i_num_leds = 250; // Default is 50 LEDs per meter, with a length of 5 meters (eg. 250)
-CRGB device_leds[DEVICE_MAX_LEDS];
-
-/*
- * Define Color Options & Timers
- */
-CRGBPalette16 paletteWhite;
-CRGBPalette16 paletteProton;
-CRGBPalette16 paletteSlime;
-CRGBPalette16 paletteStasis;
-CRGBPalette16 paletteMeson;
-CRGBPalette16 paletteSpectral;
-CRGBPalette16 paletteHalloween;
-CRGBPalette16 paletteChristmas;
-CRGBPalette16 paletteBrass;
-CRGBPalette16 cp_StreamPalette; // Current colour palette in use.
-static const uint8_t i_palette_count = 9; // Total number of palettes available.
-static const uint16_t i_selftest_interval = 2000; // 2 seconds between palette changes.
-millisDelay ms_selftest_cycle; // Timer for self-test cycling using an interval.
-uint8_t i_selftest_palette = 0; // Current palette index for cycling in self-test.
-
-/*
- * Addressable LED Devices
- */
-enum device {
-  PRIMARY_LED
-};
-
-/*
- * LED colour order type for device
- * Defaults to RGB for the type recommended for the build: https://a.co/d/dlDyCkz
- */
-enum LED_COLOR_TYPES : uint8_t {
-  LED_RGB = 1,
-  LED_GRB = 2,
-  LED_GBR = 3
-};
-LED_COLOR_TYPES LED_COLOR_TYPE = LED_RGB;
-
 /**
  * WebSocketData - Holds all relevant fields received from the WebSocket JSON payload.
  */
