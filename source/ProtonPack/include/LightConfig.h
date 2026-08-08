@@ -37,9 +37,17 @@
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  * ProtonPack uses 2 separate LED pins for pack and cyclotron
  */
-#define DEVICE_LED_PIN 5 // Data pin for the Power Cell addressable LEDs (PACK_LED_PIN)
-#define DEVICE_MAX_LEDS 62 // Maximum combined LEDs for pack (15 + 40 + 7)
-#define DEVICE_MAX_BRIGHTNESS 128 // Use half-brightness to conserve power
+
+#ifdef ESP32
+  #define CYCLOTRON_LED_PIN 4 // Data pin for Cyclotron LED panel and LED ring in the cake (+cavity LEDs).
+  #define PACK_LED_PIN 5 // Data pin for the Power Cell and Outer Cyclotron (lid) addressable LEDs.
+  #define EXPANSION1_LED_PIN 41 // Data pin for addressable LEDs as future expansion.
+  #define EXPANSION2_LED_PIN 42 // Data pin for addressable LEDs as future expansion.
+#else
+  #define CYCLOTRON_LED_PIN 13 // Data pin for Cyclotron LED panel and LED ring in the cake (+cavity LEDs).
+  #define PACK_LED_PIN 53 // Data pin for the Power Cell and Outer Cyclotron addressable LEDs.
+#endif
+#define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
 /*
  * Delay for LED driver to update the addressable LEDs.

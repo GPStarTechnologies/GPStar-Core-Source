@@ -1,6 +1,6 @@
 /**
  *   GPStar Proton Pack - Ghostbusters Proton Pack & Neutrona Wand.
- *   Copyright (C) 2023-2026 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *   Copyright (C) 2023-2026 Michael Rajotte <contact@gpstartechnologies.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -30,8 +30,6 @@
   #define TEMP_SDA 21
 
   #define NFILTER_SMOKE_PIN 3 // Primary smoke machine output, usually in the N-Filter.
-  #define CYCLOTRON_LED_PIN 4 // Data pin for Cyclotron LED panel and LED ring in the cake (+cavity LEDs).
-  #define PACK_LED_PIN 5 // Data pin for the Power Cell and Outer Cyclotron (lid) addressable LEDs.
   #define NFILTER_FAN_PIN 6 // Fan for the primary smoke machine.
   #define ION_ARM_SWITCH_PIN 7 // Switch underneath the Ion Arm.
   #define PACK_STATUS_LED_PIN 8 // V1.5 GPStar Proton Pack onboard LED pin.
@@ -42,8 +40,6 @@
   #define VIBRATION_TOGGLE_PIN 17 // Master switch to turn all vibration features on or off.
   #define YEAR_TOGGLE_PIN 18 // Switch to toggle between system year modes on the fly.
   #define CYCLOTRON_LID_SWITCH_PIN 38 // Pin used for Cyclotron lid detection capability.
-  #define EXPANSION1_LED_PIN 41 // Data pin for addressable LEDs as future expansion.
-  #define EXPANSION2_LED_PIN 42 // Data pin for addressable LEDs as future expansion.
   #define VIBRATION_PIN 45 // Pin for the vibration motor.
   #define BOOSTER_TUBE_FAN_PIN 46 // Fan for the secondary smoke machine.
   #define BOOSTER_TUBE_SMOKE_PIN 48 // Secondary smoke machine output, usually in the booster tube.
@@ -58,7 +54,6 @@
   #define CYCLOTRON_SWITCH_LED_G2_PIN 9 // Decorative green LED 2.
   #define YEAR_TOGGLE_LED_PIN 10 // Year mode switch LED (Green).
   #define VIBRATION_TOGGLE_LED_PIN 11 // Vibration on/off switch LED (Yellow).
-  #define CYCLOTRON_LED_PIN 13 // Data pin for Cyclotron LED panel and LED ring in the cake (+cavity LEDs).
   #define RIBBON_CABLE_SWITCH_PIN 23 // Switch to detect if the ribbon cable has been removed.
   #define PACK_STATUS_LED_PIN 24 // V1.5 GPStar Proton Pack onboard LED pin.
   #define YEAR_TOGGLE_PIN 25 // Switch to toggle between system year modes on the fly.
@@ -74,7 +69,6 @@
   #define VIBRATION_PIN 45 // Pin for the vibration motor.
   #define NFILTER_LED_PIN 46 // (Optional) Use a white LED with a forward voltage of 3.0-3.2 and up to 20mA forward current.
   #define CYCLOTRON_LID_SWITCH_PIN_DIY 51 // Legacy pin used for some DIY pack builds.
-  #define PACK_LED_PIN 53 // Data pin for the Power Cell and Outer Cyclotron addressable LEDs.
 #endif
 
 /*

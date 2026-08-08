@@ -1,6 +1,6 @@
 /**
  *   GPStar Single-Shot Blaster
- *   Copyright (C) 2024-2026 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *   Copyright (C) 2024-2026 Michael Rajotte <contact@gpstartechnologies.com>
  *                    & Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -83,13 +83,17 @@ void updateCyclotron(uint8_t i_colour) {
     }
 
     // Toggle between the LEDs in the i_cyclotron_pair using the given colour.
+    auto& mgr = LocalLightingManager::getInstance();
+    CRGB* systemLeds = mgr.getLEDs(CHAIN_SYSTEM);
+    CRGB colorRGB = mgr.getColorRGB(CHAIN_SYSTEM, i_colour);
+    
     if(sb_toggle) {
-      system_leds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][0]] = getHueAsRGB(i_colour).nscale8(si_brightness_in);  // Fade in LED 1 in the pair
-      system_leds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][1]] = getHueAsRGB(i_colour).nscale8(si_brightness_out); // Fade out LED 2 in the pair
+      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][0]] = colorRGB.nscale8(si_brightness_in);  // Fade in LED 1 in the pair
+      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][1]] = colorRGB.nscale8(si_brightness_out); // Fade out LED 2 in the pair
     }
     else {
-      system_leds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][0]] = getHueAsRGB(i_colour).nscale8(si_brightness_out); // Fade out LED 1 in the pair
-      system_leds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][1]] = getHueAsRGB(i_colour).nscale8(si_brightness_in);  // Fade in LED 2 in the pair
+      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][0]] = colorRGB.nscale8(si_brightness_out); // Fade out LED 1 in the pair
+      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][1]] = colorRGB.nscale8(si_brightness_in);  // Fade in LED 2 in the pair
     }
 
     // Toggle state and reset brightness variables after fade-in is complete.

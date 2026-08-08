@@ -1,6 +1,7 @@
 /**
- *   GPStar Single Shot
- *   Copyright (C) 2023-2026 GPStar Technologies <contact@gpstartechnologies.com>
+ *   GPStar Single-Shot Blaster
+ *   Copyright (C) 2024-2026 Michael Rajotte <contact@gpstartechnologies.com
+ *                    & Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -36,9 +37,26 @@
  * Pin for Addressable LEDs
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
-#define DEVICE_LED_PIN 41 // Data pin for the barrel addressable LEDs (BARREL_LED_PIN)
-#define DEVICE_MAX_LEDS 52 // Maximum LEDs (50 barrel + 2 vent)
+#ifdef ESP32
+  #define SYSTEM_LED_PIN 41
+  #define SYSTEM_LED_COUNT 14
+  #define TOP_LED_PIN 42 // RGB Vent light only for ESP32.
+  #define VENT_LED_COUNT 2
+#else
+  #define SYSTEM_LED_PIN 10
+  #define SYSTEM_LED_COUNT 14
+  #define VENT_LED_COUNT 0
+#endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
+
+/*
+ * Addressable LED Chains
+ */
+// CHAIN IDENTIFIERS (required for LocalLightingManager to know which buffer you're accessing)
+enum LED_CHAIN {
+  CHAIN_SYSTEM = 0, // Barrel + Cyclotron
+  CHAIN_VENT = 1 // Top Vent (ESP32 Only)
+};
 
 /*
  * Delay for LED driver to update the addressable LEDs.
@@ -46,6 +64,22 @@
 #define LED_DRIVER_UPDATE_MS 3
 uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
 millisDelay ms_led_driver;
+
+#define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel
+#define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel
+CRGB system_leds[CYCLOTRON_LED_COUNT + BARREL_LED_COUNT];
+const uint8_t i_barrel_led = 6; // This will be the index of the light (#7), not the count
+const uint8_t i_num_barrel_leds = BARREL_LED_COUNT; // This will be the number of barrel LEDs
+const uint8_t i_num_cyclotron_leds = CYCLOTRON_LED_COUNT; // This will be the number of cyclotron LEDs
+const uint8_t i_cyclotron_led_start = i_num_barrel_leds; // The first element (index) for the cyclotron.
+
+/*
+ * RGB vent lights.
+ */
+#define VENT_LEDS_MAX 2 // The maximum number of LEDs for the vent lights. Main vent + top Cliplite.
+CRGB vent_leds[VENT_LEDS_MAX]; // FastLED object array for the RGB top/vent LEDs.
+const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
+bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
 
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
@@ -87,7 +121,8 @@ class LocalLightingManager {
 private:
   static LocalLightingManager* instance;
   Lighting lightingLib;
-  CRGB deviceLEDs[DEVICE_MAX_LEDS];
+  CRGB systemLEDs[SYSTEM_LED_COUNT];
+  CRGB ventLEDs[VENT_LED_COUNT];
 
   // Private constructor - called only once by getInstance()
   LocalLightingManager() : lightingLib(1) {
@@ -104,29 +139,34 @@ public:
   }
 
   // Initialize LED driver
-  // Sets up addressable LED communication and default brightness
+  // Sets up addressable LED communication and default brightness for both chains
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(deviceLEDs, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<NEOPIXEL, SYSTEM_LED_PIN>(systemLEDs, SYSTEM_LED_COUNT).setCorrection(TypicalLEDStrip);
+    #ifdef ESP32
+      FastLED.addLeds<NEOPIXEL, TOP_LED_PIN>(ventLEDs, VENT_LED_COUNT).setCorrection(TypicalLEDStrip);
+    #endif
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
     FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
   }
 
-  // Get color as RGB based on device and color enum
-  CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  // Get color as RGB based on LED chain and color enum
+  CRGB getColorRGB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
-  CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  // Get color as GRB based on LED chain and color enum
+  CRGB getColorGRB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
   }
 
-  CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  // Get color as GBR based on LED chain and color enum
+  CRGB getColorGBR(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
@@ -138,14 +178,25 @@ public:
     FastLED.show(); // Pass through to the LED driver library to update LED states.
   }
 
-  // Turn off all LEDs
-  void lightsOff() {
-    fill_solid(deviceLEDs, DEVICE_MAX_LEDS, CRGB::Black); // Set all to black (off).
+  // Turn off LEDs on specified chain
+  void lightsOff(LED_CHAIN chain = CHAIN_SYSTEM) {
+    if(chain == CHAIN_SYSTEM) {
+      fill_solid(systemLEDs, SYSTEM_LED_COUNT, CRGB::Black); // Set all to black (off).
+    }
+    else if(chain == CHAIN_VENT && VENT_LED_COUNT > 0) {
+      fill_solid(ventLEDs, VENT_LED_COUNT, CRGB::Black); // Set all to black (off).
+    }
   }
 
-  // Get a pointer to the LED array (for palette rendering and direct access)
-  CRGB* getLEDs() {
-    return deviceLEDs;
+  // Get a pointer to the LED array for specified chain (for palette rendering and direct access)
+  CRGB* getLEDs(LED_CHAIN chain = CHAIN_SYSTEM) {
+    if(chain == CHAIN_SYSTEM) {
+      return systemLEDs;
+    }
+    else if(chain == CHAIN_VENT) {
+      return ventLEDs;
+    }
+    return systemLEDs; // Default fallback
   }
 
   // Set brightness

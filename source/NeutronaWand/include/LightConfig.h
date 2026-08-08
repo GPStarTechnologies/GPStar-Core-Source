@@ -36,16 +36,51 @@
  * Pin for Addressable LEDs
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
-#define DEVICE_LED_PIN 41 // Data pin for the barrel addressable LEDs (BARREL_LED_PIN)
-#define DEVICE_MAX_LEDS 52 // Maximum LEDs (50 barrel + 2 vent)
+#ifdef ESP32
+  #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs in the barrel.
+  #define TOP_LED_PIN 42 // RGB Vent light only for ESP32.
+#else
+  #define BARREL_LED_PIN 10 // Data pin for the addressable LEDs in the barrel.
+  #define VENT_LED_PIN 13 // Vent light (either stock or RGB LED).
+#endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
 /*
- * Delay for LED driver to update the addressable LEDs.
+ * Delay for fastled to update the addressable LEDs.
+ * 0.0312 ms to update each LED, then a 0.05 ms resting period once all are updated.
+ * So 1.58 ms should be okay? Let's bump it up to 3 just in case.
  */
 #define LED_DRIVER_UPDATE_MS 3
 uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
 millisDelay ms_led_driver;
+
+/*
+ * RGB vent lights.
+ */
+#define VENT_LEDS_MAX 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
+CRGB vent_leds[VENT_LEDS_MAX]; // FastLED object array for the RGB top/vent LEDs.
+millisDelay ms_vent_light; // Timer to control update rate for RGB top/vent LEDs.
+const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
+bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
+
+/*
+ * Barrel LEDs
+ * The Hasbro Neutrona Wand has 5 LEDs. 0 = Base, 4 = tip. These are addressable with a single pin and are GRB colour order.
+ * Support for up to 50 LEDs from the GPStar Neutrona Barrel (body of 48 + 2 strobe tips which are RGB colour order).
+ */
+#define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar Neutrona Barrel is 48 + 2 Strobe Tips).
+CRGB barrel_leds[BARREL_LEDS_MAX];
+// Array of LEDs on the GPStar Neutrona Barrel. LEDs 36 and 37 are the very tips and will not be in this array.
+const uint8_t gpstar_barrel[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38};
+
+// Array of LEDs on the GPStar Neutrona Barrel II. LED 36 is the very tip which will not be in this array. There is also one less tip LED due to the inclusion of an IR LED.
+const uint8_t gpstar_barrel_ii[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37};
+
+// This is the GPStar Barrel LED min. It has only 2 LEDs.
+//const uint8_t gpstar_barrel_led_mini[2] PROGMEM = {0, 1};
+
+// Array of LEDs on the Frutto Technology Neutrona Barrel. LED 12 is the very tip which will not be in this array.
+const uint8_t frutto_barrel[48] PROGMEM = {0, 25, 24, 48, 1, 26, 23, 47, 2, 27, 22, 46, 3, 28, 21, 45, 4, 29, 20, 44, 5, 30, 19, 43, 6, 31, 18, 42, 7, 32, 17, 41, 8, 33, 16, 40, 9, 34, 15, 39, 10, 35, 14, 38, 11, 36, 13, 37};
 
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION

@@ -1,6 +1,6 @@
 /**
  *   GPStar Neutrona Wand - Ghostbusters Proton Pack & Neutrona Wand.
- *   Copyright (C) 2023-2026 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *   Copyright (C) 2023-2026 Michael Rajotte <contact@gpstartechnologies.com
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -53,7 +53,6 @@
 #include <CRC32.h>
 #include <digitalWriteFast.h>
 #include <millisDelay.h>
-#include <FastLED.h>
 #include <avdweb_Switch.h>
 #include <Ramp.h>
 #include <ht16k33.h>
@@ -101,10 +100,10 @@ extern SmokePrefs smokeConfig;
 extern WandSyncData wandSyncData;
 
 // Local Files
+#include "LightConfig.h"
 #include "Configuration.h"
 #include "MusicSounds.h"
 #include "Header.h"
-#include "Colours.h"
 #include "Audio.h"
 #ifdef ESP32
   #include "Motion.h"

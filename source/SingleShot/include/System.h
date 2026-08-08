@@ -1,6 +1,6 @@
 /**
  *   GPStar Single-Shot Blaster
- *   Copyright (C) 2024-2026 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *   Copyright (C) 2024-2026 Michael Rajotte <contact@gpstartechnologies.com
  *                    & Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -50,9 +50,10 @@ void barrelLightsOff() {
 
   i_pulse_step = 0;
 
-  // Turn off the barrel LED.
+  // Turn off the barrel LEDs.
+  CRGB* systemLeds = LocalLightingManager::getInstance().getLEDs(CHAIN_SYSTEM);
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
-    system_leds[i] = getHueAsRGB(C_BLACK);
+    systemLeds[i] = CRGB::Black;
   }
 
   // Turn off the device barrel tip LED.
@@ -75,8 +76,9 @@ void allLightsOff() {
   ventLightControl(0);
   ventTopLightControl(false);
 
-  // Clear all addressable LEDs by filling the array with black.
-  fill_solid(system_leds, CYCLOTRON_LED_COUNT + BARREL_LED_COUNT, CRGB::Black);
+  // Clear all addressable LEDs by filling the arrays with black.
+  LocalLightingManager::getInstance().lightsOff(CHAIN_SYSTEM);
+  LocalLightingManager::getInstance().lightsOff(CHAIN_VENT);
 
   if(!b_playing_music) {
     // If music is not playing, arm the power-on reminder LED system.
@@ -180,10 +182,10 @@ void systemPOST() {
 
   if(b_rgb_vent_light) {
     // These are driven from the TopWhite LED pin.
-    vent_leds[0] = getHueAsRGB(C_WARM_WHITE);
+    vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WARM_WHITE);
     FastLED[1].showLeds(255);
     delay(i_delay);
-    vent_leds[1] = getHueAsRGB(C_WHITE);
+    vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WHITE);
     FastLED[1].showLeds(255);
     delay(i_delay);
   }
@@ -203,20 +205,20 @@ void systemPOST() {
 
   // Sequentially turn on all LEDs in the barrel.
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
-    system_leds[i] = getHueAsRGB(C_BLUE);
+    system_leds[i] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_BLUE);
     FastLED[0].showLeds(255);
     delay(i_delay);
   }
 
   // Sequentially turn on all LEDs in the cyclotron.
   for(uint8_t i = 0; i < i_num_cyclotron_leds; i++) {
-    system_leds[i_cyclotron_led_start + i] = getHueAsRGB(C_RED);
+    system_leds[i_cyclotron_led_start + i] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_RED);
     FastLED[0].showLeds(255);
     delay(i_delay);
   }
 
   // Turn on the front barrel.
-  system_leds[i_barrel_led] = getHueAsRGB(C_WHITE);
+  system_leds[i_barrel_led] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WHITE);
   FastLED[0].showLeds(255);
 
   delay(i_delay * 8);
@@ -564,62 +566,63 @@ void firePulseEffect() {
   i_pulse_step % 2 == 0 ? led_Tip.turnOn() : led_Tip.turnOff();
 
   // Primary blast.
+  auto& mgr = LocalLightingManager::getInstance();
   switch(i_pulse_step) {
     case 0:
-      system_leds[i_barrel_led] = getHueAsRGB(C_RED);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED);
     break;
     case 1:
-      system_leds[i_barrel_led] = getHueAsRGB(C_RED3);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED3);
     break;
     case 2:
-      system_leds[i_barrel_led] = getHueAsRGB(C_RED5);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED5);
     break;
     case 3:
-      system_leds[i_barrel_led] = getHueAsRGB(C_WHITE);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
     break;
     case 4:
-      system_leds[i_barrel_led] = getHueAsRGB(C_BLACK);
+      system_leds[i_barrel_led] = CRGB::Black;
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = getHueAsRGB(C_WHITE);
+        system_leds[i] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
       }
     break;
     case 5:
-      system_leds[i_barrel_led] = getHueAsRGB(C_WHITE);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = getHueAsRGB(C_BLACK);
+        system_leds[i] = CRGB::Black;
       }
     break;
     case 6:
-      system_leds[i_barrel_led] = getHueAsRGB(C_BLACK);
+      system_leds[i_barrel_led] = CRGB::Black;
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = getHueAsRGB(C_WHITE);
+        system_leds[i] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
       }
     break;
     case 7:
-      system_leds[i_barrel_led] = getHueAsRGB(C_WHITE);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = getHueAsRGB(C_BLACK);
+        system_leds[i] = CRGB::Black;
       }
     break;
     case 8:
-      system_leds[i_barrel_led] = getHueAsRGB(C_RED4);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED4);
     break;
     case 9:
-      system_leds[i_barrel_led] = getHueAsRGB(C_RED2);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED2);
     break;
     case 10:
-      system_leds[i_barrel_led] = getHueAsRGB(C_RED);
+      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED);
     break;
     case 11:
-      system_leds[i_barrel_led] = getHueAsRGB(C_BLACK);
+      system_leds[i_barrel_led] = CRGB::Black;
     break;
     default:
       // This is an invalid state, so turn off all the LEDs.
-      system_leds[i_barrel_led] = getHueAsRGB(C_BLACK);
+      system_leds[i_barrel_led] = CRGB::Black;
       led_Tip.turnOff();
     break;
   }
@@ -670,7 +673,7 @@ void ventTopLightControl(bool b_on) {
 
     // Turn off if not off already.
     if(vent_leds[1]) {
-      vent_leds[1] = getHueAsRGB(C_BLACK);
+      vent_leds[1] = CRGB::Black;
       b_vent_lights_changed = true;
     }
   }
@@ -684,7 +687,7 @@ void ventTopLightControl(bool b_on) {
 
     // Turn on if not on already.
     if(!vent_leds[1]) {
-      vent_leds[1] = getHueAsRGB(C_WHITE);
+      vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WHITE);
       b_vent_lights_changed = true;
     }
   }
@@ -699,11 +702,12 @@ void ventLightControl(uint8_t i_intensity) {
     }
   #endif
 
+    CRGB* ventLeds = LocalLightingManager::getInstance().getLEDs(CHAIN_VENT);
     if(i_intensity < 20) {
-      vent_leds[0] = getHueAsRGB(C_BLACK);
+      ventLeds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
     }
     else {
-      vent_leds[0] = getHueAsRGB(C_WARM_WHITE, i_intensity);
+      ventLeds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
     }
 
     b_vent_lights_changed = true;

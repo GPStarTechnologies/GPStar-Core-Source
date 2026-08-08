@@ -20,7 +20,7 @@
 
 // Library Header
 #include <Lighting.h>
-#include <cstring>  // For memset
+#include <string.h>  // For memset (portable across Arduino platforms)
 
 // Constructor: Initialize Lighting instance for deviceCount devices
 Lighting::Lighting(uint8_t deviceCount) : numDevices(deviceCount) {

@@ -1,6 +1,6 @@
 /**
  *   GPStar Single-Shot Blaster
- *   Copyright (C) 2024-2026 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *   Copyright (C) 2024-2026 Michael Rajotte <contact@gpstartechnologies.com>
  *                    & Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -57,7 +57,6 @@
 // 3rd-Party Libraries
 #include <CRC32.h>
 #include <millisDelay.h>
-#include <FastLED.h>
 #include <avdweb_Switch.h>
 #include <ht16k33.h>
 #include <Wire.h>
@@ -108,11 +107,11 @@ Scheduler schedule;
 DeviceState gpstarBlaster;
 
 // Local Files
+#include "LightConfig.h"
 #include "Configuration.h"
 #include "MusicSounds.h"
 #include "Header.h"
 #include "Delay.h"
-#include "Colours.h"
 #include "Bargraph.h"
 #include "Cyclotron.h"
 #include "Audio.h"
@@ -166,15 +165,8 @@ Task inputsTask(14, TASK_FOREVER, &inputTaskCallback);
 #endif
 
 void setup() {
-  // System LEDs - Consists of the chain of cyclotron and barrel LEDs
-  FastLED.addLeds<NEOPIXEL, SYSTEM_LED_PIN>(system_leds, CYCLOTRON_LED_COUNT + BARREL_LED_COUNT).setCorrection(TypicalLEDStrip);
-  FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-
-  // RGB Vent Light.
-  FastLED.addLeds<NEOPIXEL, TOP_LED_PIN>(vent_leds, VENT_LEDS_MAX).setCorrection(TypicalLEDStrip);
-
-  // Update all addressable LEDs to prevent stale LED states.
-  FastLED.show();
+  // Initialize LED driver via LocalLightingManager singleton
+  LocalLightingManager::getInstance().initializeDriver();
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
@@ -348,16 +340,11 @@ void animateTaskCallback() {
   // Keep the cyclotron spinning as necessary.
   checkCyclotron();
 
-  // Update all addressable LEDs to reflect any changes.
-  FastLED[0].showLeds(255);
+  // Update all addressable LEDs (both chains) to reflect any changes.
+  LocalLightingManager::getInstance().show();
 
-  // Update the vent/top LEDs.
+  // Mark vent light update as complete
   if(b_vent_lights_changed) {
-    if(b_rgb_vent_light) {
-      // Only commit an update if the addressable LED panel is installed.
-      FastLED[1].showLeds(255);
-    }
-
     b_vent_lights_changed = false;
   }
 }

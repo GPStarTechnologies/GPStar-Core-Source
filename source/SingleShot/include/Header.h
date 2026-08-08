@@ -1,6 +1,6 @@
 /**
  *   GPStar Single-Shot Blaster
- *   Copyright (C) 2024-2026 Michael Rajotte <michael.rajotte@gpstartechnologies.com>
+ *   Copyright (C) 2024-2026 Michael Rajotte <contact@gpstartechnologies.com
  *                    & Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -42,29 +42,9 @@
   #define I2C_SCL 16
   #define IMU_SCL 47
   #define IMU_SDA 48
-
-  #define SYSTEM_LED_PIN 41
-  #define TOP_LED_PIN 42 // RGB Vent light only for ESP32.
 #else
-  #define SYSTEM_LED_PIN 10
   #define TOP_LED_PIN 12
 #endif
-
-#define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel
-#define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel
-CRGB system_leds[CYCLOTRON_LED_COUNT + BARREL_LED_COUNT];
-const uint8_t i_barrel_led = 6; // This will be the index of the light (#7), not the count
-const uint8_t i_num_barrel_leds = BARREL_LED_COUNT; // This will be the number of barrel LEDs
-const uint8_t i_num_cyclotron_leds = CYCLOTRON_LED_COUNT; // This will be the number of cyclotron LEDs
-const uint8_t i_cyclotron_led_start = i_num_barrel_leds; // The first element (index) for the cyclotron.
-
-/*
- * RGB vent lights.
- */
-#define VENT_LEDS_MAX 2 // The maximum number of LEDs for the vent lights. Main vent + top Cliplite.
-CRGB vent_leds[VENT_LEDS_MAX]; // FastLED object array for the RGB top/vent LEDs.
-const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
-bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
 
 /*
  * Non-addressable LEDs
