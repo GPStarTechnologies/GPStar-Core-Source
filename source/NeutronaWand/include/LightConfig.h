@@ -32,6 +32,9 @@
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
 
+#define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar Neutrona Barrel is 48 + 2 Strobe Tips).
+#define VENT_LEDS_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
+
 /*
  * Pin for Addressable LEDs
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
@@ -46,6 +49,15 @@
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
 /*
+ * Addressable LED Chains
+ */
+// CHAIN IDENTIFIERS (required for LocalLightingManager to know which buffer you're accessing)
+enum LED_CHAIN {
+  CHAIN_BARREL = 0,  // Barrel LEDs only
+  CHAIN_VENT = 1     // Vent lights (ESP32 Only)
+};
+
+/*
  * Delay for fastled to update the addressable LEDs.
  * 0.0312 ms to update each LED, then a 0.05 ms resting period once all are updated.
  * So 1.58 ms should be okay? Let's bump it up to 3 just in case.
@@ -57,8 +69,7 @@ millisDelay ms_led_driver;
 /*
  * RGB vent lights.
  */
-#define VENT_LEDS_MAX 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
-CRGB vent_leds[VENT_LEDS_MAX]; // FastLED object array for the RGB top/vent LEDs.
+CRGB vent_leds[VENT_LEDS_COUNT]; // FastLED object array for the RGB top/vent LEDs.
 millisDelay ms_vent_light; // Timer to control update rate for RGB top/vent LEDs.
 const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
 bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
@@ -68,7 +79,6 @@ bool b_vent_lights_changed = false; // Check for whether there was actually a ch
  * The Hasbro Neutrona Wand has 5 LEDs. 0 = Base, 4 = tip. These are addressable with a single pin and are GRB colour order.
  * Support for up to 50 LEDs from the GPStar Neutrona Barrel (body of 48 + 2 strobe tips which are RGB colour order).
  */
-#define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar Neutrona Barrel is 48 + 2 Strobe Tips).
 CRGB barrel_leds[BARREL_LEDS_MAX];
 // Array of LEDs on the GPStar Neutrona Barrel. LEDs 36 and 37 are the very tips and will not be in this array.
 const uint8_t gpstar_barrel[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38};
@@ -122,7 +132,7 @@ class LocalLightingManager {
 private:
   static LocalLightingManager* instance;
   Lighting lightingLib;
-  CRGB deviceLEDs[DEVICE_MAX_LEDS];
+  // Note: barrel_leds and vent_leds are already defined globally above
 
   // Private constructor - called only once by getInstance()
   LocalLightingManager() : lightingLib(1) {
@@ -139,29 +149,34 @@ public:
   }
 
   // Initialize LED driver
-  // Sets up addressable LED communication and default brightness
+  // Sets up addressable LED communication and default brightness for both chains
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(deviceLEDs, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<NEOPIXEL, BARREL_LED_PIN>(barrel_leds, BARREL_LEDS_MAX).setCorrection(TypicalLEDStrip);
+    #ifdef ESP32
+      FastLED.addLeds<NEOPIXEL, TOP_LED_PIN>(vent_leds, VENT_LEDS_COUNT).setCorrection(TypicalLEDStrip);
+    #endif
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
     FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
   }
 
-  // Get color as RGB based on device and color enum
-  CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  // Get color as RGB based on LED chain and color enum
+  CRGB getColorRGB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
-  CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  // Get color as GRB based on LED chain and color enum
+  CRGB getColorGRB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
   }
 
-  CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  // Get color as GBR based on LED chain and color enum
+  CRGB getColorGBR(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
@@ -173,14 +188,27 @@ public:
     FastLED.show(); // Pass through to the LED driver library to update LED states.
   }
 
-  // Turn off all LEDs
-  void lightsOff() {
-    fill_solid(deviceLEDs, DEVICE_MAX_LEDS, CRGB::Black); // Set all to black (off).
+  // Turn off LEDs on specified chain
+  void lightsOff(LED_CHAIN chain = CHAIN_BARREL) {
+    if(chain == CHAIN_BARREL) {
+      fill_solid(barrel_leds, BARREL_LEDS_MAX, CRGB::Black); // Set all to black (off).
+    }
+    else if(chain == CHAIN_VENT) {
+      #ifdef ESP32
+        fill_solid(vent_leds, VENT_LEDS_COUNT, CRGB::Black); // Set all to black (off).
+      #endif
+    }
   }
 
-  // Get a pointer to the LED array (for palette rendering and direct access)
-  CRGB* getLEDs() {
-    return deviceLEDs;
+  // Get a pointer to the LED array for specified chain (for palette rendering and direct access)
+  CRGB* getLEDs(LED_CHAIN chain = CHAIN_BARREL) {
+    if(chain == CHAIN_BARREL) {
+      return barrel_leds;
+    }
+    else if(chain == CHAIN_VENT) {
+      return vent_leds;
+    }
+    return barrel_leds; // Default fallback
   }
 
   // Set brightness
@@ -202,7 +230,3 @@ public:
  * This ensures only ONE LocalLightingManager exists for the entire program.
  */
 LocalLightingManager* LocalLightingManager::instance = nullptr;
-
-// ============================================================================
-// DEVICE-SPECIFIC CUSTOM COLORS (if any)
-// ============================================================================

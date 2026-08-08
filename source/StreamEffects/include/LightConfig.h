@@ -77,6 +77,9 @@ static const uint16_t i_selftest_interval = 2000; // 2 seconds between palette c
 millisDelay ms_selftest_cycle; // Timer for self-test cycling using an interval.
 uint8_t i_selftest_palette = 0; // Current palette index for cycling in self-test.
 
+extern uint8_t i_spectral_custom_colour;
+extern uint8_t i_spectral_custom_saturation;
+
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
 // ============================================================================
@@ -197,10 +200,3 @@ public:
  * This ensures only ONE LocalLightingManager exists for the entire program.
  */
 LocalLightingManager* LocalLightingManager::instance = nullptr;
-
-// ============================================================================
-// DEVICE-SPECIFIC CUSTOM COLORS (if any)
-// ============================================================================
-
-extern uint8_t i_spectral_custom_colour;
-extern uint8_t i_spectral_custom_saturation;

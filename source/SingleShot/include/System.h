@@ -182,11 +182,13 @@ void systemPOST() {
 
   if(b_rgb_vent_light) {
     // These are driven from the TopWhite LED pin.
-    vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WARM_WHITE);
-    FastLED[1].showLeds(255);
+    auto& mgr = LocalLightingManager::getInstance();
+    auto* vent_leds = mgr.getLEDs(CHAIN_VENT);
+    vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_WARM_WHITE);
+    mgr.show();
     delay(i_delay);
-    vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WHITE);
-    FastLED[1].showLeds(255);
+    vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_WHITE);
+    mgr.show();
     delay(i_delay);
   }
   #ifndef ESP32
@@ -203,23 +205,27 @@ void systemPOST() {
   led_Tip.turnOn();
   delay(i_delay);
 
+  // Get LED pointer for barrel operations
+  auto& mgr = LocalLightingManager::getInstance();
+  auto* system_leds = mgr.getLEDs(CHAIN_SYSTEM);
+
   // Sequentially turn on all LEDs in the barrel.
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
-    system_leds[i] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_BLUE);
-    FastLED[0].showLeds(255);
+    system_leds[i] = mgr.getColorRGB(CHAIN_SYSTEM, C_BLUE);
+    mgr.show();
     delay(i_delay);
   }
 
   // Sequentially turn on all LEDs in the cyclotron.
   for(uint8_t i = 0; i < i_num_cyclotron_leds; i++) {
-    system_leds[i_cyclotron_led_start + i] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_RED);
-    FastLED[0].showLeds(255);
+    system_leds[i_cyclotron_led_start + i] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED);
+    mgr.show();
     delay(i_delay);
   }
 
   // Turn on the front barrel.
-  system_leds[i_barrel_led] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WHITE);
-  FastLED[0].showLeds(255);
+  system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
+  mgr.show();
 
   delay(i_delay * 8);
 
@@ -567,6 +573,7 @@ void firePulseEffect() {
 
   // Primary blast.
   auto& mgr = LocalLightingManager::getInstance();
+  auto* system_leds = mgr.getLEDs(CHAIN_SYSTEM);
   switch(i_pulse_step) {
     case 0:
       system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED);
@@ -672,6 +679,7 @@ void ventTopLightControl(bool b_on) {
     #endif
 
     // Turn off if not off already.
+    auto* vent_leds = LocalLightingManager::getInstance().getLEDs(CHAIN_VENT);
     if(vent_leds[1]) {
       vent_leds[1] = CRGB::Black;
       b_vent_lights_changed = true;
@@ -686,8 +694,9 @@ void ventTopLightControl(bool b_on) {
     #endif
 
     // Turn on if not on already.
+    auto* vent_leds = LocalLightingManager::getInstance().getLEDs(CHAIN_VENT);
     if(!vent_leds[1]) {
-      vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_SYSTEM, C_WHITE);
+      vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
       b_vent_lights_changed = true;
     }
   }

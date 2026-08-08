@@ -19,6 +19,27 @@
 
 #pragma once
 
+/**
+ * getBarrelColor - Barrel-type aware color selection
+ * 
+ * Selects the correct color format (RGB or GRB) based on the barrel LED type.
+ * Hasbro barrels use GRB, all others use RGB.
+ */
+inline CRGB getBarrelColor(uint8_t colorEnum, uint8_t brightness = 255) {
+  auto& mgr = LocalLightingManager::getInstance();
+  
+  if(WAND_BARREL_LED == HASBRO_BARREL) {
+    return mgr.getColorGRB(CHAIN_BARREL, colorEnum, brightness);
+  }
+  else {
+    return mgr.getColorRGB(CHAIN_BARREL, colorEnum, brightness);
+  }
+}
+
+// ============================================================================
+// EXTERN DECLARATIONS & HELPER FUNCTIONS
+// ============================================================================
+
 // Extern declarations for global handlers
 #ifdef ESP32
 extern InfraredManager* irManager;
@@ -330,7 +351,7 @@ void wandTipOn() {
     case GPSTAR_BARREL_II:
     {
       // Initialize temporary colour variable to reduce code complexity.
-      colours c_temp = C_WHITE;
+      uint8_t c_temp = C_WHITE;
 
       if(getSystemYearMode() == SYSTEM_FROZEN_EMPIRE) {
         if(isBrassPack()) {
@@ -361,14 +382,14 @@ void wandTipOn() {
       }
 
       if(WAND_BARREL_LED == FRUTTO_BARREL) {
-        barrel_leds[12] = getHueColour(c_temp, WAND_BARREL_LED);
+        barrel_leds[12] = getBarrelColor(c_temp);
       }
       else if(WAND_BARREL_LED == GPSTAR_BARREL) {
-        barrel_leds[36] = getHueColour(c_temp, WAND_BARREL_LED);
-        barrel_leds[37] = getHueColour(c_temp, WAND_BARREL_LED);
+        barrel_leds[36] = getBarrelColor(c_temp);
+        barrel_leds[37] = getBarrelColor(c_temp);
       }
       else {
-        barrel_leds[36] = getHueColour(c_temp, WAND_BARREL_LED);
+        barrel_leds[36] = getBarrelColor(c_temp);
       }
     }
     break;
@@ -388,18 +409,18 @@ void wandTipOff() {
   switch(WAND_BARREL_LED) {
     case FRUTTO_BARREL:
       // Turn off the Frutto tip LED.
-      barrel_leds[12] = getHueColour(C_BLACK, WAND_BARREL_LED);
+      barrel_leds[12] = getBarrelColor(C_BLACK);
     break;
 
     case GPSTAR_BARREL:
       // Turn off the GPStar Barrel tip LEDs.
-      barrel_leds[36] = getHueColour(C_BLACK, WAND_BARREL_LED);
-      barrel_leds[37] = getHueColour(C_BLACK, WAND_BARREL_LED);
+      barrel_leds[36] = getBarrelColor(C_BLACK);
+      barrel_leds[37] = getBarrelColor(C_BLACK);
     break;
 
     case GPSTAR_BARREL_II:
       // Turn off the GPStar Barrel II tip LED.
-      barrel_leds[36] = getHueColour(C_BLACK, WAND_BARREL_LED);
+      barrel_leds[36] = getBarrelColor(C_BLACK);
     break;
 
     default:
@@ -3159,22 +3180,22 @@ void wandBarrelLightsOff() {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
         // Turn off the entire Frutto LED array.
-        barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getBarrelColor(C_BLACK);
       break;
 
       case GPSTAR_BARREL:
         // Turn off the entire GPStar Neutrona Barrel array.
-        barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getBarrelColor(C_BLACK);
       break;
 
       case GPSTAR_BARREL_II:
         // Turn off the entire GPStar Neutrona Barrel II array.
-        barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getBarrelColor(C_BLACK);
       break;
 
       default:
         // Turn off the entire Hasbro LED or GPStar Barrel LED Mini array.
-        barrel_leds[i] = getHueColour(C_BLACK, WAND_BARREL_LED);
+        barrel_leds[i] = getBarrelColor(C_BLACK);
       break;
     }
   }
@@ -6238,11 +6259,11 @@ void fireStreamEffect(CRGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_CHARTREUSE, WAND_BARREL_LED);
+                  barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_CHARTREUSE);
                   //barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 2])] = c_colour;
                 }
                 else {
-                  barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_WHITE, WAND_BARREL_LED);
+                  barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_WHITE);
                   //barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 2])] = c_colour;
                 }
               }
@@ -6250,24 +6271,24 @@ void fireStreamEffect(CRGB c_colour) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED5);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED);
                   break;
                 }
               }
@@ -6275,24 +6296,24 @@ void fireStreamEffect(CRGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED5);
                   break;
                 }
               }
@@ -6300,26 +6321,26 @@ void fireStreamEffect(CRGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_PASTEL_PINK, WAND_BARREL_LED);
+                barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_PASTEL_PINK);
               }
               else {
-                barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_DARK_GREEN, WAND_BARREL_LED);
+                barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_DARK_GREEN);
               }
             break;
 
             case STASIS:
-              barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_BLUE, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_BLUE);
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(C_CUSTOM);
             break;
           }
         }
@@ -6567,11 +6588,11 @@ void fireStreamEffect(CRGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_CHARTREUSE, WAND_BARREL_LED);
+                  barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_CHARTREUSE);
                   //barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 2])] = c_colour;
                 }
                 else {
-                  barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_WHITE, WAND_BARREL_LED);
+                  barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_WHITE);
                   //barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 2])] = c_colour;
                 }
               }
@@ -6579,24 +6600,24 @@ void fireStreamEffect(CRGB c_colour) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED5);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED);
                   break;
                 }
               }
@@ -6604,24 +6625,24 @@ void fireStreamEffect(CRGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_RED5);
                   break;
                 }
               }
@@ -6629,26 +6650,26 @@ void fireStreamEffect(CRGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_PASTEL_PINK, WAND_BARREL_LED);
+                barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_PASTEL_PINK);
               }
               else {
-                barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_DARK_GREEN, WAND_BARREL_LED);
+                barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_DARK_GREEN);
               }
             break;
 
             case STASIS:
-              barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_BLUE, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_BLUE);
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(C_CUSTOM);
             break;
           }
         }
@@ -6896,11 +6917,11 @@ void fireStreamEffect(CRGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_CHARTREUSE, WAND_BARREL_LED);
+                  barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_CHARTREUSE);
                   //barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 2])] = c_colour;
                 }
                 else {
-                  barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_WHITE, WAND_BARREL_LED);
+                  barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_WHITE);
                   //barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 2])] = c_colour;
                 }
               }
@@ -6908,24 +6929,24 @@ void fireStreamEffect(CRGB c_colour) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED5);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED);
                   break;
                 }
               }
@@ -6933,24 +6954,24 @@ void fireStreamEffect(CRGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_RED5);
                   break;
                 }
               }
@@ -6958,26 +6979,26 @@ void fireStreamEffect(CRGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_PASTEL_PINK, WAND_BARREL_LED);
+                barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_PASTEL_PINK);
               }
               else {
-                barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_DARK_GREEN, WAND_BARREL_LED);
+                barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_DARK_GREEN);
               }
             break;
 
             case STASIS:
-              barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_BLUE, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_BLUE);
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+              barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(C_CUSTOM);
             break;
           }
         }
@@ -7222,34 +7243,34 @@ void fireStreamEffect(CRGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  barrel_leds[i_barrel_light - 1] = getHueColour(C_CHARTREUSE, WAND_BARREL_LED);
+                  barrel_leds[i_barrel_light - 1] = getBarrelColor(C_CHARTREUSE);
                 }
                 else {
-                  barrel_leds[i_barrel_light - 1] = getHueColour(C_WHITE, WAND_BARREL_LED);
+                  barrel_leds[i_barrel_light - 1] = getBarrelColor(C_WHITE);
                 }
               }
               else if(getSystemYearMode() == SYSTEM_1989) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED5);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED);
                   break;
                 }
               }
@@ -7257,24 +7278,24 @@ void fireStreamEffect(CRGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED);
                   break;
 
                   case LEVEL_2:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED2, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED2);
                   break;
 
                   case LEVEL_3:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED3, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED3);
                   break;
 
                   case LEVEL_4:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED4, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED4);
                   break;
 
                   case LEVEL_5:
                   default:
-                    barrel_leds[i_barrel_light - 1] = getHueColour(C_RED5, WAND_BARREL_LED);
+                    barrel_leds[i_barrel_light - 1] = getBarrelColor(C_RED5);
                   break;
                 }
               }
@@ -7282,26 +7303,26 @@ void fireStreamEffect(CRGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                barrel_leds[i_barrel_light - 1] = getHueColour(C_PASTEL_PINK, WAND_BARREL_LED);
+                barrel_leds[i_barrel_light - 1] = getBarrelColor(C_PASTEL_PINK);
               }
               else {
-                barrel_leds[i_barrel_light - 1] = getHueColour(C_DARK_GREEN, WAND_BARREL_LED);
+                barrel_leds[i_barrel_light - 1] = getBarrelColor(C_DARK_GREEN);
               }
             break;
 
             case STASIS:
-              barrel_leds[i_barrel_light - 1] = getHueColour(C_BLUE, WAND_BARREL_LED);
+              barrel_leds[i_barrel_light - 1] = getBarrelColor(C_BLUE);
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              barrel_leds[i_barrel_light - 1] = getHueColour(C_BLACK, WAND_BARREL_LED);
+              barrel_leds[i_barrel_light - 1] = getBarrelColor(C_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              barrel_leds[i_barrel_light - 1] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+              barrel_leds[i_barrel_light - 1] = getBarrelColor(C_CUSTOM);
             break;
           }
         }
@@ -7384,7 +7405,7 @@ void fireStreamStart(CRGB c_colour) {
         barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light])] = c_colour;
 
         if(i_barrel_light + 2 < i_num_barrel_leds) {
-          barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light + 2])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light + 2])] = getBarrelColor(C_BLACK);
         }
       break;
 
@@ -7392,7 +7413,7 @@ void fireStreamStart(CRGB c_colour) {
         barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light])] = c_colour;
 
         if(i_barrel_light + 2 < i_num_barrel_leds) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light + 2])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light + 2])] = getBarrelColor(C_BLACK);
         }
       break;
 
@@ -7400,7 +7421,7 @@ void fireStreamStart(CRGB c_colour) {
         barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light])] = c_colour;
 
         if(i_barrel_light + 2 < i_num_barrel_leds) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 2])] = getHueColour(C_BLACK, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 2])] = getBarrelColor(C_BLACK);
         }
       break;
 
@@ -7845,8 +7866,8 @@ void modeFiring() {
   }
 
   // Initialize temporary colour variables to reduce code complexity.
-  colours c_temp_start = C_WHITE;
-  colours c_temp_effect = C_WHITE;
+  uint8_t c_temp_start = C_WHITE;
+  uint8_t c_temp_effect = C_WHITE;
 
   switch(gpstarWand.getStreamMode()) {
     case PROTON:
@@ -7972,10 +7993,10 @@ void modeFiring() {
 
   if(!gpstarWand.inStreamMode(MESON)) {
     // Meson does not use "stream start" to make its pulse effect.
-    fireStreamStart(getHueColour(c_temp_start, WAND_BARREL_LED));
+    fireStreamStart(getBarrelColor(c_temp_start));
   }
 
-  fireStreamEffect(getHueColour(c_temp_effect, WAND_BARREL_LED));
+  fireStreamEffect(getBarrelColor(c_temp_effect));
 
   // Bargraph loop / scroll.
   if(ms_bargraph_firing.justFinished()) {
@@ -8011,7 +8032,7 @@ void wandBarrelHeatDown() {
   }
 
   // Initialize temporary colour variable to reduce code complexity.
-  colours c_temp = C_WHITE;
+  uint8_t c_temp = C_WHITE;
 
   if(b_wand_mash_lockout || b_pack_alarm) {
     // Special spark effect handling for button mash lockout and ribbon cable removal.
@@ -8027,37 +8048,37 @@ void wandBarrelHeatDown() {
       switch(WAND_BARREL_LED) {
         case GPSTAR_BARREL:
         default:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led + 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led + 2] = getBarrelColor(c_temp, i_heatdown_counter);
         break;
 
         case GPSTAR_BARREL_II:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
         break;
 
         case FRUTTO_BARREL:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led + 24] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led + 25] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led + 24] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led + 25] = getBarrelColor(c_temp, i_heatdown_counter);
         break;
 
         case GPSTAR_BARREL_MINI:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
         break;
 
         case HASBRO_BARREL:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
         break;
       }
 
@@ -8131,37 +8152,37 @@ void wandBarrelHeatDown() {
     switch(WAND_BARREL_LED) {
       case GPSTAR_BARREL:
       default:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led + 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led + 2] = getBarrelColor(c_temp, i_heatdown_counter);
       break;
 
       case GPSTAR_BARREL_II:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
       break;
 
       case FRUTTO_BARREL:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led + 24] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led + 25] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led + 24] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led + 25] = getBarrelColor(c_temp, i_heatdown_counter);
       break;
 
       case GPSTAR_BARREL_MINI:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatdown_counter);
       break;
 
       case HASBRO_BARREL:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatdown_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatdown_counter);
       break;
     }
 
@@ -8199,7 +8220,7 @@ void wandBarrelHeatUp() {
   }
 
   // Initialize temporary colour variable to reduce code complexity.
-  colours c_temp = C_WHITE;
+  uint8_t c_temp = C_WHITE;
 
   if(b_wand_mash_lockout || b_pack_alarm) {
     // Special spark effect handling for button mash lockout and ribbon cable removal.
@@ -8218,37 +8239,37 @@ void wandBarrelHeatUp() {
       switch(WAND_BARREL_LED) {
         case GPSTAR_BARREL:
         default:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led + 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led + 2] = getBarrelColor(c_temp, i_heatup_counter);
         break;
 
         case GPSTAR_BARREL_II:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
         break;
 
         case FRUTTO_BARREL:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led + 24] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led + 25] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led + 24] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led + 25] = getBarrelColor(c_temp, i_heatup_counter);
         break;
 
         case GPSTAR_BARREL_MINI:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-          barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+          barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
         break;
 
         case HASBRO_BARREL:
-          barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+          barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
         break;
       }
 
@@ -8313,37 +8334,37 @@ void wandBarrelHeatUp() {
     switch(WAND_BARREL_LED) {
       case GPSTAR_BARREL:
       default:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led + 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led + 2] = getBarrelColor(c_temp, i_heatup_counter);
       break;
 
       case GPSTAR_BARREL_II:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led - 2] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led - 3] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led - 2] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led - 3] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
       break;
 
       case FRUTTO_BARREL:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led - 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led + 24] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led + 25] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led - 1] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led + 24] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led + 25] = getBarrelColor(c_temp, i_heatup_counter);
       break;
 
       case GPSTAR_BARREL_MINI:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
-        barrel_leds[i_barrel_led + 1] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
+        barrel_leds[i_barrel_led + 1] = getBarrelColor(c_temp, i_heatup_counter);
       break;
 
       case HASBRO_BARREL:
-        barrel_leds[i_barrel_led] = getHueColour(c_temp, WAND_BARREL_LED, i_heatup_counter);
+        barrel_leds[i_barrel_led] = getBarrelColor(c_temp, i_heatup_counter);
       break;
     }
 
@@ -8352,9 +8373,9 @@ void wandBarrelHeatUp() {
   }
 }
 
-void barrelLEDTranslation(uint8_t id, colours colour) {
+void barrelLEDTranslation(uint8_t id, uint8_t colour) {
   if(WAND_BARREL_LED == HASBRO_BARREL || WAND_BARREL_LED == GPSTAR_BARREL_MINI) {
-    barrel_leds[id] = getHueColour(colour, WAND_BARREL_LED);
+    barrel_leds[id] = getBarrelColor(colour);
     return;
   }
   else if(WAND_BARREL_LED == FRUTTO_BARREL) {
@@ -8362,35 +8383,35 @@ void barrelLEDTranslation(uint8_t id, colours colour) {
       case 0:
         // Translate to first three rows of LEDs.
         for(uint8_t i = 0; i < 12; i++) {
-          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 1:
         // Translate to rows 4 and 5 of the LED array.
         for(uint8_t i = 12; i < 20; i++) {
-          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 2:
         // Translate to rows 6 and 7 of the LED array.
         for(uint8_t i = 20; i < 28; i++) {
-          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 3:
         // Translate to rows 8 and 9 of the LED array.
         for(uint8_t i = 28; i < 36; i++) {
-          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 4:
         // Translate to the last three rows of LEDs.
         for(uint8_t i = 36; i < 48; i++) {
-          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
@@ -8404,35 +8425,35 @@ void barrelLEDTranslation(uint8_t id, colours colour) {
       case 0:
         // Translate to first three rows of LEDs.
         for(uint8_t i = 0; i < 12; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 1:
         // Translate to rows 4 and 5 of the LED array.
         for(uint8_t i = 12; i < 20; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 2:
         // Translate to rows 6 and 7 of the LED array.
         for(uint8_t i = 20; i < 28; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 3:
         // Translate to rows 8 and 9 of the LED array.
         for(uint8_t i = 28; i < 36; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
       case 4:
         // Translate to the last three rows of LEDs.
         for(uint8_t i = 36; i < 48; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getBarrelColor(colour);
         }
       break;
 
@@ -8446,35 +8467,35 @@ void barrelLEDTranslation(uint8_t id, colours colour) {
       case 0:
         // Translate to first three rows of LEDs.
         for(uint8_t i = 0; i < 12; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getBarrelColor(colour);
         }
       break;
 
       case 1:
         // Translate to rows 4 and 5 of the LED array.
         for(uint8_t i = 12; i < 20; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getBarrelColor(colour);
         }
       break;
 
       case 2:
         // Translate to rows 6 and 7 of the LED array.
         for(uint8_t i = 20; i < 28; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getBarrelColor(colour);
         }
       break;
 
       case 3:
         // Translate to rows 8 and 9 of the LED array.
         for(uint8_t i = 28; i < 36; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getBarrelColor(colour);
         }
       break;
 
       case 4:
         // Translate to the last three rows of LEDs.
         for(uint8_t i = 36; i < 48; i++) {
-          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getHueColour(colour, WAND_BARREL_LED);
+          barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getBarrelColor(colour);
         }
       break;
 
@@ -8536,10 +8557,10 @@ void firePulseEffect() {
 
     // Draw first pixel.
     if(getSystemYearMode() == SYSTEM_1989) {
-      fireStreamEffect(getHueColour(C_WHITE, WAND_BARREL_LED));
+      fireStreamEffect(getBarrelColor(C_WHITE));
     }
     else {
-      fireStreamEffect(getHueColour(C_GREEN, WAND_BARREL_LED));
+      fireStreamEffect(getBarrelColor(C_GREEN));
     }
 
     ms_firing_effect_end.start(0); // Immediately end animation.
@@ -8934,7 +8955,7 @@ void firePulseEffect() {
 
 void fireEffectEnd() {
   // Initialize temporary colour variable to reduce code complexity.
-  colours c_temp = C_WHITE;
+  uint8_t c_temp = C_WHITE;
 
   if(i_barrel_light < i_num_barrel_leds && ms_firing_stream_effects.isRunning()) {
     switch(gpstarWand.getStreamMode()) {
@@ -9037,7 +9058,7 @@ void fireEffectEnd() {
       break;
     }
 
-    fireStreamEffect(getHueColour(c_temp, WAND_BARREL_LED));
+    fireStreamEffect(getBarrelColor(c_temp));
 
     if(i_barrel_light < i_num_barrel_leds) {
       ms_firing_effect_end.repeat();
@@ -9232,22 +9253,22 @@ void fireEffectEnd() {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
         // Set the final LED back to whatever colour it is without the effect.
-        barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getHueColour(c_temp, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(frutto_barrel[i_barrel_light - 1])] = getBarrelColor(c_temp);
       break;
 
       case GPSTAR_BARREL:
         // Set the final LED back to whatever colour it is without the effect.
-        barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getHueColour(c_temp, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1])] = getBarrelColor(c_temp);
       break;
 
       case GPSTAR_BARREL_II:
         // Set the final LED back to whatever colour it is without the effect.
-        barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getHueColour(c_temp, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1])] = getBarrelColor(c_temp);
       break;
 
       default:
         // Set the final LED back to whatever colour it is without the effect.
-        barrel_leds[i_barrel_light - 1] = getHueColour(c_temp, WAND_BARREL_LED);
+        barrel_leds[i_barrel_light - 1] = getBarrelColor(c_temp);
       break;
     }
 
@@ -9419,17 +9440,17 @@ void wandBarrelSpectralCustomConfigOn() {
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
-        barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(frutto_barrel[i])] = getBarrelColor(C_CUSTOM);
       break;
       case GPSTAR_BARREL:
-        barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(gpstar_barrel[i])] = getBarrelColor(C_CUSTOM);
       break;
       case GPSTAR_BARREL_II:
-        barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+        barrel_leds[PROGMEM_READU8(gpstar_barrel_ii[i])] = getBarrelColor(C_CUSTOM);
       break;
       default:
         // In all other cases, no LUT is needed.
-        barrel_leds[i] = getHueColour(C_CUSTOM, WAND_BARREL_LED);
+        barrel_leds[i] = getBarrelColor(C_CUSTOM);
       break;
     }
   }
@@ -10604,7 +10625,7 @@ void ventTopLightControl(bool b_on) {
 
     // Turn off if not off already.
     if(vent_leds[1]) {
-      vent_leds[1] = getHueAsRGB(C_BLACK);
+      vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
       b_vent_lights_changed = true;
     }
   }
@@ -10621,37 +10642,37 @@ void ventTopLightControl(bool b_on) {
       if(b_vent_light_stream_colours) {
         switch(gpstarWand.getStreamMode()) {
           case SPECTRAL:
-            vent_leds[1] = getHueAsRGB(C_RAINBOW);
+            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_RAINBOW);
           break;
 
           case HOLIDAY_HALLOWEEN:
-            vent_leds[1] = getHueAsRGB(C_ORANGEPURPLE);
+            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_ORANGEPURPLE);
           break;
 
           case HOLIDAY_CHRISTMAS:
-            vent_leds[1] = getHueAsRGB(C_REDGREEN);
+            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_REDGREEN);
           break;
 
           case SPECTRAL_CUSTOM:
-            vent_leds[1] = getHueAsRGB(C_CUSTOM);
+            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_CUSTOM);
           break;
 
           default:
             if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-              vent_leds[1] = getHueAsRGB(C_WARM_WHITE);
+              vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE);
             }
             else {
-              vent_leds[1] = getHueAsRGB(C_WHITE);
+              vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
             }
           break;
         }
       }
       else {
         if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-          vent_leds[1] = getHueAsRGB(C_WARM_WHITE);
+          vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE);
         }
         else {
-          vent_leds[1] = getHueAsRGB(C_WHITE);
+          vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
         }
       }
 
@@ -10672,7 +10693,7 @@ void ventLightControl(uint8_t i_intensity) {
     if(i_intensity < 25) {
       // Turn off if not off already.
       if(vent_leds[0]) {
-        vent_leds[0] = getHueAsRGB(C_BLACK);
+        vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
         b_vent_lights_changed = true;
       }
     }
@@ -10680,59 +10701,59 @@ void ventLightControl(uint8_t i_intensity) {
       if(b_vent_light_stream_colours) {
         switch(gpstarWand.getStreamMode()) {
           case SETTINGS:
-            vent_leds[0] = getHueAsRGB(C_RED, 128);
+            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_RED, 128);
           break;
 
           case STASIS:
-            vent_leds[0] = getHueAsRGB(C_MID_BLUE, i_intensity);
+            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_MID_BLUE, i_intensity);
           break;
 
           case SLIME:
             if(getSystemYearMode() == SYSTEM_1989) {
-              vent_leds[0] = getHueAsRGB(C_PASTEL_PINK, i_intensity);
+              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_PASTEL_PINK, i_intensity);
             }
             else {
-              vent_leds[0] = getHueAsRGB(C_GREEN, i_intensity);
+              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_GREEN, i_intensity);
             }
           break;
 
           case MESON:
-            vent_leds[0] = getHueAsRGB(C_YELLOW, i_intensity);
+            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_YELLOW, i_intensity);
           break;
 
           case SPECTRAL:
-            vent_leds[0] = getHueAsRGB(C_RAINBOW, i_intensity);
+            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_RAINBOW, i_intensity);
           break;
 
           case HOLIDAY_HALLOWEEN:
-            vent_leds[0] = getHueAsRGB(C_ORANGEPURPLE, i_intensity);
+            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_ORANGEPURPLE, i_intensity);
           break;
 
           case HOLIDAY_CHRISTMAS:
-            vent_leds[0] = getHueAsRGB(C_REDGREEN, i_intensity);
+            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_REDGREEN, i_intensity);
           break;
 
           case SPECTRAL_CUSTOM:
-            vent_leds[0] = getHueAsRGB(C_CUSTOM, i_intensity);
+            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_CUSTOM, i_intensity);
           break;
 
           case PROTON:
           default:
             if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-              vent_leds[0] = getHueAsRGB(C_WHITE, i_intensity);
+              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE, i_intensity);
             }
             else {
-              vent_leds[0] = getHueAsRGB(C_WARM_WHITE, i_intensity);
+              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
             }
           break;
         }
       }
       else {
         if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-          vent_leds[0] = getHueAsRGB(C_WHITE, i_intensity);
+          vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE, i_intensity);
         }
         else {
-          vent_leds[0] = getHueAsRGB(C_WARM_WHITE, i_intensity);
+          vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
         }
       }
 

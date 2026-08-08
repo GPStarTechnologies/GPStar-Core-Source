@@ -59,6 +59,9 @@ enum LED_COLOR_TYPES : uint8_t {
 };
 LED_COLOR_TYPES LED_COLOR_TYPE = LED_GBR;
 
+extern uint8_t i_spectral_custom_colour;
+extern uint8_t i_spectral_custom_saturation;
+
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
 // ============================================================================
@@ -179,10 +182,3 @@ public:
  * This ensures only ONE LocalLightingManager exists for the entire program.
  */
 LocalLightingManager* LocalLightingManager::instance = nullptr;
-
-// ============================================================================
-// DEVICE-SPECIFIC CUSTOM COLORS (if any)
-// ============================================================================
-
-extern uint8_t i_spectral_custom_colour;
-extern uint8_t i_spectral_custom_saturation;

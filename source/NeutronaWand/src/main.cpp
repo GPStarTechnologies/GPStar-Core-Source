@@ -143,15 +143,8 @@ void setup() {
   //FastLED.setExclusiveDriver("RMT");
 #endif
 
-  // Barrel LEDs - NOTE: These are GRB not RGB so note that all CRGB objects will have R/G swapped.
-  FastLED.addLeds<NEOPIXEL, BARREL_LED_PIN>(barrel_leds, BARREL_LEDS_MAX).setCorrection(TypicalLEDStrip);
-  FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-
-  // RGB Vent Light.
-  FastLED.addLeds<NEOPIXEL, TOP_LED_PIN>(vent_leds, VENT_LEDS_MAX).setCorrection(TypicalLEDStrip);
-
-  // Update all addressable LEDs to prevent stale LED states.
-  FastLED.show();
+  // Initialize LED driver for barrel and vent lights
+  LocalLightingManager::getInstance().initializeDriver();
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
@@ -639,7 +632,7 @@ void mainLoop() {
 
   // Play the firing stream end animation.
   if(ms_firing_lights_end.justFinished()) {
-    fireStreamEnd(getHueColour(C_BLACK, WAND_BARREL_LED));
+    fireStreamEnd(getBarrelColor(C_BLACK));
   }
 
   if(ms_semi_automatic_firing.justFinished()) {

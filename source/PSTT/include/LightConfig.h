@@ -167,7 +167,3 @@ public:
  * This ensures only ONE LocalLightingManager exists for the entire program.
  */
 LocalLightingManager* LocalLightingManager::instance = nullptr;
-
-// ============================================================================
-// DEVICE-SPECIFIC CUSTOM COLORS (if any)
-// ============================================================================

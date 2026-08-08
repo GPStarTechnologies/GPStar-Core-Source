@@ -165,7 +165,8 @@ enum WAND_BARREL_LEDS : uint8_t {
   GPSTAR_BARREL,
   GPSTAR_BARREL_II,
   GPSTAR_BARREL_MINI
-} WAND_BARREL_LED = GPSTAR_BARREL;
+}; 
+enum WAND_BARREL_LEDS WAND_BARREL_LED = GPSTAR_BARREL;
 
 /*
  * Time in milliseconds for blinking the top white LED while the wand is on.

@@ -34,18 +34,25 @@
 // ============================================================================
 
 /*
+ * Counts for segments of special LED chains
+ * Note that these are in the expected physical order in the chain
+ */
+#define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel
+#define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel
+
+/*
  * Pin for Addressable LEDs
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
 #ifdef ESP32
   #define SYSTEM_LED_PIN 41
-  #define SYSTEM_LED_COUNT 14
+  #define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT)
   #define TOP_LED_PIN 42 // RGB Vent light only for ESP32.
-  #define VENT_LED_COUNT 2
+  #define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Cliplite.
 #else
   #define SYSTEM_LED_PIN 10
-  #define SYSTEM_LED_COUNT 14
-  #define VENT_LED_COUNT 0
+  #define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT)
+  #define VENT_LED_COUNT 0 // Not applicable for ATMega devices.
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
@@ -65,19 +72,17 @@ enum LED_CHAIN {
 uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
 millisDelay ms_led_driver;
 
-#define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel
-#define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel
-CRGB system_leds[CYCLOTRON_LED_COUNT + BARREL_LED_COUNT];
+/*
+ * Pre-calculated indices for segments of the system LED chain (Cyclotron + Barrel)
+ */
 const uint8_t i_barrel_led = 6; // This will be the index of the light (#7), not the count
 const uint8_t i_num_barrel_leds = BARREL_LED_COUNT; // This will be the number of barrel LEDs
 const uint8_t i_num_cyclotron_leds = CYCLOTRON_LED_COUNT; // This will be the number of cyclotron LEDs
 const uint8_t i_cyclotron_led_start = i_num_barrel_leds; // The first element (index) for the cyclotron.
 
 /*
- * RGB vent lights.
+ * RGB Vent Light Control (ESP32 Only)
  */
-#define VENT_LEDS_MAX 2 // The maximum number of LEDs for the vent lights. Main vent + top Cliplite.
-CRGB vent_leds[VENT_LEDS_MAX]; // FastLED object array for the RGB top/vent LEDs.
 const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
 bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
 
@@ -218,7 +223,3 @@ public:
  * This ensures only ONE LocalLightingManager exists for the entire program.
  */
 LocalLightingManager* LocalLightingManager::instance = nullptr;
-
-// ============================================================================
-// DEVICE-SPECIFIC CUSTOM COLORS (if any)
-// ============================================================================
