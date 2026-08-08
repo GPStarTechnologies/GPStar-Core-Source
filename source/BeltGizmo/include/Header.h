@@ -25,13 +25,9 @@
  */
 
 /*
- * Pin for Addressable LEDs
+ * Built-in LED (non-addressable)
  */
 #define BUILT_IN_LED 21 // GPIO21 for Waveshare ESP32-S3 Mini (RGB LED)
-#define DEVICE_LED_PIN 4
-#define DEVICE_MAX_LEDS 11 // 10 "nixie" tubes + 1 "E" bulb
-uint8_t i_num_leds = 8; // Default to 7 nixie tubes + 1 "E" bulb
-CRGB device_leds[DEVICE_MAX_LEDS];
 
 /*
  * Define Color Options & Timers
@@ -40,7 +36,6 @@ CRGB device_leds[DEVICE_MAX_LEDS];
 millisDelay ms_anim_change;
 const uint16_t i_animation_time = 400;
 const uint8_t i_animation_step = 4;
-uint16_t i_animation_duration = ANIMATION_DURATION_MS / i_num_leds;
 bool b_invert_animation = true; // false = Right to Left, true = Left to Right
 static const uint8_t i_colour_count = 4; // Total number of colour available.
 static const uint16_t i_selftest_interval = 2000; // 2 seconds between colour changes.
@@ -48,23 +43,10 @@ millisDelay ms_selftest_cycle; // Timer for self-test cycling using an interval.
 uint8_t i_selftest_colour = 0; // Current colour index for cycling in self-test.
 uint8_t i_stream_colour; // Current colour index for the stream type.
 
-/*
- * Addressable LED Devices
- */
-enum device {
-  PRIMARY_LED
-};
-
-/*
- * LED colour order type for device
- * Defaults to GBR for the type recommended for the build: https://a.co/d/ia74QSm
- */
-enum LED_COLOR_TYPES : uint8_t {
-  LED_RGB = 1,
-  LED_GRB = 2,
-  LED_GBR = 3
-};
-LED_COLOR_TYPES LED_COLOR_TYPE = LED_GBR;
+// Animation duration calculated based on i_num_leds from LightConfig.h
+// Will be initialized in setup() after LightConfig.h variables are available
+extern uint8_t i_num_leds;
+uint16_t i_animation_duration; // Initialized in setup()
 
 /**
  * WebSocketData - Holds all relevant fields received from the WebSocket JSON payload.

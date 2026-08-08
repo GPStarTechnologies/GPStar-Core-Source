@@ -20,10 +20,6 @@
 // Required for PlatformIO
 #include <Arduino.h>
 
-// Suppress warning about SPI hardware pins
-// Define this before including <FastLED.h>
-#define FASTLED_INTERNAL
-
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
 #define GPSTAR_DEBUG 0
@@ -47,7 +43,6 @@
 
 // 3rd-Party Libraries
 #include <millisDelay.h>
-#include <FastLED.h>
 #include <esp_system.h>
 #include <nvs_flash.h>
 
@@ -70,9 +65,9 @@ void sendDebug(const String& message) {
 DeviceState gpstarSystem;
 
 // Local Files
+#include "LightConfig.h"
 #include "Configuration.h"
 #include "Header.h"
-#include "Colours.h"
 #include "Wireless.h"
 #include "Webhandler.h"
 #include "Webrouting.h"
@@ -130,7 +125,7 @@ void AnimationTask(void *parameter) {
     animateLights();
 
     // Update the device LEDs and restart the timer.
-    FastLED.show();
+    LocalLightingManager::getInstance().show();
 
     vTaskDelay(16 / portTICK_PERIOD_MS); // 16ms delay
   }
@@ -262,37 +257,39 @@ void WiFiSetupTask(void *parameter) {
   }
 
   // Set a visual indicator that WiFi is being configured.
+  CRGB* leds = LocalLightingManager::getInstance().getLEDs();
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
-      device_leds[0] = getHueAsRGB(PRIMARY_LED, C_RED, 255);
+      leds[0] = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, C_RED, 255);
     break;
     case LED_GRB:
-      device_leds[0] = getHueAsGRB(PRIMARY_LED, C_RED, 255);
+      leds[0] = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, C_RED, 255);
     break;
     case LED_GBR:
     default:
-      device_leds[0] = getHueAsGBR(PRIMARY_LED, C_RED, 255);
+      leds[0] = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, C_RED, 255);
     break;
   }
-  FastLED.show();
+  LocalLightingManager::getInstance().show();
 
   // Begin by setting up WiFi as a prerequisite to all else.
   if(startWiFi()) {
     if(b_local_ap_started) {
       // Indicate we've established the private network.
+      leds = LocalLightingManager::getInstance().getLEDs();
       switch(LED_COLOR_TYPE) {
         case LED_RGB:
-          device_leds[0] = getHueAsRGB(PRIMARY_LED, C_BLUE, 255);
+          leds[0] = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, C_BLUE, 255);
         break;
         case LED_GRB:
-          device_leds[0] = getHueAsGRB(PRIMARY_LED, C_BLUE, 255);
+          leds[0] = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, C_BLUE, 255);
         break;
         case LED_GBR:
         default:
-          device_leds[0] = getHueAsGBR(PRIMARY_LED, C_BLUE, 255);
+          leds[0] = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, C_BLUE, 255);
         break;
       }
-      FastLED.show();
+      LocalLightingManager::getInstance().show();
     }
 
     // Start the local web server.
@@ -307,8 +304,8 @@ void WiFiSetupTask(void *parameter) {
   vTaskDelay(200 / portTICK_PERIOD_MS); // 200ms delay
 
   // Clear LED once we have the AP and web server started.
-  device_leds[0] = CRGB::Black;
-  FastLED.show();
+  LocalLightingManager::getInstance().lightsOff();
+  LocalLightingManager::getInstance().show();
 
   #if defined(DEBUG_TASK_TO_CONSOLE)
     // Get the stack high water mark for optimizing bytes allocated.
@@ -322,13 +319,8 @@ void WiFiSetupTask(void *parameter) {
 }
 
 void setup() {
-  // Device RGB LEDs for use when needed.
-  FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(device_leds, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-  FastLED.setBrightness(128); // Use a lower brightness (50%) to save power.
-
-  // Update all addressable LEDs to prevent stale LED states.
-  FastLED.show();
+  // Initialize LED driver via singleton manager.
+  LocalLightingManager::getInstance().initializeDriver();
 
   Serial.begin(115200); // Serial monitor via USB connection.
 
@@ -353,9 +345,12 @@ void setup() {
 
   btStop(); // Disable Bluetooth which is not needed for this hardware.
 
+  // Initialize animation duration based on LED count from LightConfig
+  i_animation_duration = ANIMATION_DURATION_MS / i_num_leds;
+
   // Make sure all LEDs are off and set the default palette for stream mode.
   ms_anim_change.start(i_animation_duration); // Default animation time.
-  ledsOff();
+  LocalLightingManager::getInstance().lightsOff();
   updateStreamColor();
 
   // Create Preferences object to handle non-volatile storage (NVS).

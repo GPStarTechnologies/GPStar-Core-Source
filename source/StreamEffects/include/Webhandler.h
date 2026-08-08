@@ -94,7 +94,6 @@ const uint16_t i_websocketCleanup = 5000;
 
 // Forward function declarations.
 void checkWebSocketClient();
-void ledsOff();
 void notifyWSClients();
 void updateStreamPalette();
 void sendDebug(const String& message);
@@ -814,7 +813,7 @@ void handleDisableSelfTest(AsyncWebServerRequest *request) {
     i_selftest_palette = 0; // Reset palette index.
     wsData.wandPower = 5; // Reset to maximum power.
     updateStreamPalette(); // Reset stream palette.
-    ledsOff(); // Turn off all LEDs.
+    LocalLightingManager::getInstance().lightsOff(); // Turn off all LEDs.
   }
 
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());

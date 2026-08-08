@@ -57,11 +57,6 @@ void printPartitions() {
   esp_partition_iterator_release(iterator);  // Release the iterator once done
 }
 
-void ledsOff() {
-  // Change all possible addressable LEDs to black.
-  fill_solid(device_leds, DEVICE_MAX_LEDS, CRGB::Black);
-}
-
 // Helper: compute fixed-point scaled position (Q16) from 16-bit phase.
 // Outputs:
 //  - index: integer LED index (0..i_num_leds-1)
@@ -134,20 +129,20 @@ void animateLights() {
 
   if(!ms_anim_change.justFinished()) return; // nothing to do this frame
 
-  ledsOff(); // Clear LEDs before updating animation.
+  LocalLightingManager::getInstance().lightsOff(); // Clear LEDs before updating animation.
 
   // Compute a full-bright CRGB once and scale per-LED with nscale8_video.
   CRGB baseColor;
   switch(LED_COLOR_TYPE) {
     case LED_GBR:
     default:
-      baseColor = getHueAsGBR(PRIMARY_LED, i_stream_colour, 255);
+      baseColor = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, i_stream_colour, 255);
     break;
     case LED_RGB:
-      baseColor = getHueAsRGB(PRIMARY_LED, i_stream_colour, 255);
+      baseColor = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, i_stream_colour, 255);
     break;
     case LED_GRB:
-      baseColor = getHueAsGRB(PRIMARY_LED, i_stream_colour, 255);
+      baseColor = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, i_stream_colour, 255);
     break;
   }
 
@@ -160,6 +155,7 @@ void animateLights() {
   uint8_t i_weightB = i_frac;       // Weight for i_index + 1
 
   // Apply weighted colours (nscale8_video expects 0..255)
+  CRGB* device_leds = LocalLightingManager::getInstance().getLEDs();
   CRGB cA = baseColor; cA.nscale8_video(i_weightA);
   device_leds[i_index] = cA;
 

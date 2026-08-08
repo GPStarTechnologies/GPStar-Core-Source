@@ -130,7 +130,7 @@ void AnimationTask(void *parameter) {
     else {
       // Not firing and not testing, update LED[0] to indicate status.
       if(b_ext_wifi_started) {
-        ledsOff();
+        LocalLightingManager::getInstance().lightsOff();
       }
       else {
         switch(LED_COLOR_TYPE) {

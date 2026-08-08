@@ -59,11 +59,6 @@ void printPartitions() {
   esp_partition_iterator_release(iterator);  // Release the iterator once done
 }
 
-void ledsOff() {
-  // Change all possible addressable LEDs to black.
-  LocalLightingManager::getInstance().lightsOff();
-}
-
 void initializePalettes() {
   paletteProton = CRGBPalette16(
     CRGB::Red, CRGB::Red, CRGB::Maroon, CRGB::Maroon,
