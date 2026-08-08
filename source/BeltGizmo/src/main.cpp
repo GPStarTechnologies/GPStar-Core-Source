@@ -125,7 +125,7 @@ void AnimationTask(void *parameter) {
     animateLights();
 
     // Update the device LEDs and restart the timer.
-    LocalLightingManager::getInstance().show();
+    LightingManager::getInstance().show();
 
     vTaskDelay(16 / portTICK_PERIOD_MS); // 16ms delay
   }
@@ -257,7 +257,7 @@ void WiFiSetupTask(void *parameter) {
   }
 
   // Set a visual indicator that WiFi is being configured.
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   CRGB* leds = mgr.getLEDs();
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
@@ -321,7 +321,7 @@ void WiFiSetupTask(void *parameter) {
 
 void setup() {
   // Initialize LED driver via singleton manager.
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   mgr.initializeDriver();
 
   Serial.begin(115200); // Serial monitor via USB connection.

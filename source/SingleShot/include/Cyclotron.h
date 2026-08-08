@@ -83,7 +83,7 @@ void updateCyclotron(uint8_t i_colour) {
     }
 
     // Toggle between the LEDs in the i_cyclotron_pair using the given colour.
-    auto& mgr = LocalLightingManager::getInstance();
+    auto& mgr = LightingManager::getInstance();
     CRGB* systemLeds = mgr.getLEDs(CHAIN_SYSTEM);
     CRGB colorRGB = mgr.getColorRGB(CHAIN_SYSTEM, i_colour);
     

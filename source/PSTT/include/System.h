@@ -53,20 +53,20 @@ void sendInfraredJSON(const char* eventType, const char* deviceType = "", const 
 }
 
 void setIndicatorColor(uint8_t i_colour) {
-  auto leds = LocalLightingManager::getInstance().getLEDs();
-  leds[DEVICE_MAX_LEDS - 1] = LocalLightingManager::getInstance().getColorRGB(0, i_colour);
+  auto leds = LightingManager::getInstance().getLEDs();
+  leds[DEVICE_MAX_LEDS - 1] = LightingManager::getInstance().getColorRGB(0, i_colour);
 }
 
 void setIndicatorLEDs(uint8_t i_colour, uint8_t i_leds_start, uint8_t i_leds_end) {
-  auto leds = LocalLightingManager::getInstance().getLEDs();
+  auto leds = LightingManager::getInstance().getLEDs();
   for(uint8_t i_tmp = i_leds_start; i_tmp < i_leds_end; i_tmp++) {
-    leds[i_tmp] = LocalLightingManager::getInstance().getColorRGB(0, i_colour);
+    leds[i_tmp] = LightingManager::getInstance().getColorRGB(0, i_colour);
   }
 }
 
 void setIndicatorLED(uint8_t i_colour, uint8_t i_led) {
-  auto leds = LocalLightingManager::getInstance().getLEDs();
-  leds[i_led] = LocalLightingManager::getInstance().getColorRGB(0, i_colour);
+  auto leds = LightingManager::getInstance().getLEDs();
+  leds[i_led] = LightingManager::getInstance().getColorRGB(0, i_colour);
 }
 
 // Target is ready.

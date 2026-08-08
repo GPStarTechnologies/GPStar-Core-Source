@@ -150,7 +150,7 @@ void setup() {
   digitalWriteFast(PSTT_STATUS_LED_PIN, HIGH);
 
   // Initialize the LED driver via the lighting manager abstraction layer.
-  LocalLightingManager::getInstance().initializeDriver();
+  LightingManager::getInstance().initializeDriver();
 
   // Initialise the led driver's state update timer.
   ms_led_driver.start(i_led_update_delay);
@@ -219,7 +219,7 @@ void loop() {
 
   // Update the addressable LEDs and restart the timer.
   if(ms_led_driver.justFinished()) {
-    LocalLightingManager::getInstance().show();
+    LightingManager::getInstance().show();
 
     ms_led_driver.start(i_led_update_delay);
   }

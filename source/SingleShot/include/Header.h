@@ -42,8 +42,6 @@
   #define I2C_SCL 16
   #define IMU_SCL 47
   #define IMU_SDA 48
-#else
-  #define TOP_LED_PIN 12
 #endif
 
 /*
@@ -53,7 +51,7 @@
 #ifdef ESP32
   #define SLO_BLO_LED_PIN 12 // SLO-BLO LED. (Red LED)
   #define CLIPPARD_LED_PIN 3 // LED underneath the Clippard valve. (Orange or White LED)
-  #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs in the barrel.
+  
   #define BARREL_HAT_LED_PIN 10 // Hat light at front of the blaster near the barrel tip. (Orange LED)
   #define TOP_HAT_LED_PIN 9 // Hat light at top of the blaster body near vent. (Orange or White LED)
   #define BARREL_TIP_LED_PIN 46 // White LED at tip of the blaster barrel. (White LED)
@@ -62,7 +60,6 @@
   #define SLO_BLO_LED_PIN 8 // SLO-BLO LED. (Red LED)
   #define CLIPPARD_LED_PIN 9 // LED underneath the Clippard valve. (Orange or White LED)
   #define TOP_LED_PIN 12 // Blinking white light beside the vent on top of the blaster.
-  #define VENT_LED_PIN 13 // Vent light (either stock or RGB LED).
   #define BARREL_HAT_LED_PIN 22 // Hat[1] light at front of the blaster near the barrel tip. (Orange LED)
   #define TOP_HAT_LED_PIN 23 // Hat[2] light at top of the blaster body near vent. (Orange or White LED)
   #define BARREL_TIP_LED_PIN 24 // White LED at tip of the blaster barrel. (White LED)

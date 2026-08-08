@@ -61,10 +61,10 @@ void printPartitions() {
 
 void initializePalettes() {
   paletteProton = CRGBPalette16(
-    CRGB::Red, CRGB::Red, CRGB::Maroon, CRGB::Maroon,
-    CRGB::Orange, CRGB::Red, CRGB::Red, CRGB::Black,
-    CRGB::Red, CRGB::Red, CRGB::Maroon, CRGB::Maroon,
-    CRGB::Orange, CRGB::Red, CRGB::Red, CRGB::Black
+    CRGB::Cyan, CRGB::Red, CRGB::Red, CRGB::Orange,
+    CRGB::Orange, CRGB::Maroon, CRGB::Maroon, CRGB::Black,
+    CRGB::Cyan, CRGB::Red, CRGB::Red, CRGB::Orange,
+    CRGB::Orange, CRGB::Maroon, CRGB::Maroon, CRGB::Black
   );
 
   paletteSlime = CRGBPalette16(
@@ -110,9 +110,9 @@ void initializePalettes() {
   );
 
   paletteBrass = CRGBPalette16(
-    CRGB::Chartreuse , CRGB::Chartreuse , CRGB::Chartreuse , CRGB::Chartreuse ,
+    CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse ,
     CRGB::Orange, CRGB::Orange, CRGB::Black, CRGB::Black,
-    CRGB::Chartreuse , CRGB::Chartreuse , CRGB::Chartreuse , CRGB::Chartreuse ,
+    CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse ,
     CRGB::Orange, CRGB::Orange, CRGB::Black, CRGB::Black
   );
 
@@ -194,7 +194,7 @@ void updateStreamPalette() {
 void animateLights() {
   static uint8_t i_palette_start_index = 0; // Starting index for palette distribution across LEDs.
 
-  CRGB* buffer = LocalLightingManager::getInstance().getLEDs();
+  CRGB* buffer = LightingManager::getInstance().getLEDs();
 
   // Use FastLED's fill_palette function for automatic colour distribution and blending
   // Parameters: LED array, number of LEDs, starting palette index, delta between LEDs, palette, brightness, blending mode.

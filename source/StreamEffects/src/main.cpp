@@ -122,7 +122,7 @@ void AnimationTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
-    auto& mgr = LocalLightingManager::getInstance();
+    auto& mgr = LightingManager::getInstance();
 
     // Update light animation based on websocket data (or self-test mode).
     if(b_firing || gpstarSystem.inStreamMode(SELFTEST)) {
@@ -283,7 +283,7 @@ void WiFiSetupTask(void *parameter) {
   }
 
   // Set a visual indicator that WiFi is being configured.
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
     default:
@@ -345,7 +345,7 @@ void WiFiSetupTask(void *parameter) {
 
 void setup() {
   // Initialize the LED driver first
-  LocalLightingManager::getInstance().initializeDriver();
+  LightingManager::getInstance().initializeDriver();
 
   Serial.begin(115200); // Serial monitor via USB connection.
 
@@ -370,7 +370,7 @@ void setup() {
   btStop(); // Disable Bluetooth which is not needed for this hardware.
 
   // Make sure all LEDs are off and set the default palette for stream mode.
-  LocalLightingManager::getInstance().lightsOff();
+  LightingManager::getInstance().lightsOff();
   updateStreamPalette();
 
   // Create Preferences object to handle non-volatile storage (NVS).

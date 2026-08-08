@@ -171,7 +171,7 @@ bool changeStreamMode(ENCODER_STATES direction) {
  */
 void deviceBodyLightsOff() {
   // Turn off the body LEDs by setting to black.
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   auto leds = mgr.getLEDs();
   uint8_t led_upper = mgr.getMappedIndex(1);
   uint8_t led_lower = mgr.getMappedIndex(2);
@@ -256,7 +256,7 @@ void updateTopStatusLED() {
   }
 
   // Update the top LED based on certain system statuses.
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   auto leds = mgr.getLEDs();
   uint8_t led_top = mgr.getMappedIndex(0);
   
@@ -320,7 +320,7 @@ void updateTopStatusLED() {
 void updateBodyLEDs() {
   // Set upper LED based on alarm or overheating state, when connected.
   // Otherwise, use the standard pattern/colour for illumination.
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   auto leds = mgr.getLEDs();
   uint8_t led_upper = mgr.getMappedIndex(1);
   

@@ -125,7 +125,7 @@ void updateStreamColor() {
 
 // Animate the LEDs in a wave-like pattern using a single colour.
 void animateLights() {
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   static uint16_t i_led_phase = 0; // 16-bit phase accumulator (high byte = 0..255 visible phase)
 
   if(!ms_anim_change.justFinished()) return; // nothing to do this frame

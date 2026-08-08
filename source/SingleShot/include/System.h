@@ -51,7 +51,7 @@ void barrelLightsOff() {
   i_pulse_step = 0;
 
   // Turn off the barrel LEDs.
-  CRGB* systemLeds = LocalLightingManager::getInstance().getLEDs(CHAIN_SYSTEM);
+  CRGB* systemLeds = LightingManager::getInstance().getLEDs(CHAIN_SYSTEM);
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
     systemLeds[i] = CRGB::Black;
   }
@@ -77,8 +77,8 @@ void allLightsOff() {
   ventTopLightControl(false);
 
   // Clear all addressable LEDs by filling the arrays with black.
-  LocalLightingManager::getInstance().lightsOff(CHAIN_SYSTEM);
-  LocalLightingManager::getInstance().lightsOff(CHAIN_VENT);
+  LightingManager::getInstance().lightsOff(CHAIN_SYSTEM);
+  LightingManager::getInstance().lightsOff(CHAIN_VENT);
 
   if(!b_playing_music) {
     // If music is not playing, arm the power-on reminder LED system.
@@ -182,7 +182,7 @@ void systemPOST() {
 
   if(b_rgb_vent_light) {
     // These are driven from the TopWhite LED pin.
-    auto& mgr = LocalLightingManager::getInstance();
+    auto& mgr = LightingManager::getInstance();
     auto* vent_leds = mgr.getLEDs(CHAIN_VENT);
     vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_WARM_WHITE);
     mgr.show();
@@ -206,7 +206,7 @@ void systemPOST() {
   delay(i_delay);
 
   // Get LED pointer for barrel operations
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   auto* system_leds = mgr.getLEDs(CHAIN_SYSTEM);
 
   // Sequentially turn on all LEDs in the barrel.
@@ -572,7 +572,7 @@ void firePulseEffect() {
   i_pulse_step % 2 == 0 ? led_Tip.turnOn() : led_Tip.turnOff();
 
   // Primary blast.
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   auto* system_leds = mgr.getLEDs(CHAIN_SYSTEM);
   switch(i_pulse_step) {
     case 0:
@@ -679,7 +679,7 @@ void ventTopLightControl(bool b_on) {
     #endif
 
     // Turn off if not off already.
-    auto* vent_leds = LocalLightingManager::getInstance().getLEDs(CHAIN_VENT);
+    auto* vent_leds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
     if(vent_leds[1]) {
       vent_leds[1] = CRGB::Black;
       b_vent_lights_changed = true;
@@ -694,9 +694,9 @@ void ventTopLightControl(bool b_on) {
     #endif
 
     // Turn on if not on already.
-    auto* vent_leds = LocalLightingManager::getInstance().getLEDs(CHAIN_VENT);
+    auto* vent_leds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
     if(!vent_leds[1]) {
-      vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
+      vent_leds[1] = LightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
       b_vent_lights_changed = true;
     }
   }
@@ -711,12 +711,12 @@ void ventLightControl(uint8_t i_intensity) {
     }
   #endif
 
-    CRGB* ventLeds = LocalLightingManager::getInstance().getLEDs(CHAIN_VENT);
+    CRGB* ventLeds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
     if(i_intensity < 20) {
-      ventLeds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
+      ventLeds[0] = LightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
     }
     else {
-      ventLeds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
+      ventLeds[0] = LightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
     }
 
     b_vent_lights_changed = true;

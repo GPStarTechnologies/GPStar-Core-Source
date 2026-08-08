@@ -143,7 +143,7 @@ void AnimationTask(void *parameter) {
     // Update LED mapping if the user's LED invert preference has changed.
     // The manager only applies changes to the LED mapping only when the
     // state differs from last call, avoiding redundant modifications.
-    LocalLightingManager::getInstance().updateLEDMapping(b_invert_leds);
+    LightingManager::getInstance().updateLEDMapping(b_invert_leds);
 
     // Update LEDs using appropriate colour scheme and environment vars.
     if(b_enable_device_leds && b_pack_on) {
@@ -166,7 +166,7 @@ void AnimationTask(void *parameter) {
     }
 
     // Update the device LEDs and restart the timer.
-    LocalLightingManager::getInstance().show();
+    LightingManager::getInstance().show();
 
     vTaskDelay(8 / portTICK_PERIOD_MS); // 8ms delay
   }
@@ -445,7 +445,7 @@ void WiFiSetupTask(void *parameter) {
 
 void setup() {
   // Initialize the LED driver via the lighting manager abstraction layer.
-  LocalLightingManager::getInstance().initializeDriver();
+  LightingManager::getInstance().initializeDriver();
 
   Serial.begin(115200); // Serial monitor via USB connection.
 

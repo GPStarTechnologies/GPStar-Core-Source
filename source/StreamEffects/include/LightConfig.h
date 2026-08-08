@@ -85,7 +85,7 @@ extern uint8_t i_spectral_custom_saturation;
 // ============================================================================
 
 /**
- * LocalLightingManager - Abstraction Layer for LED Driver Operations
+ * LightingManager - Abstraction Layer for LED Driver Operations
  *
  * PURPOSE:
  * This class provides a driver-agnostic interface for all LED operations.
@@ -94,9 +94,9 @@ extern uint8_t i_spectral_custom_saturation;
  * swap the underlying LED driver without touching application logic.
  *
  * PATTERN:
- * LocalLightingManager uses the SINGLETON pattern. There is only ONE
+ * LightingManager uses the SINGLETON pattern. There is only ONE
  * instance of this class for the entire program. Access it via:
- *   LocalLightingManager::getInstance()
+ *   LightingManager::getInstance()
  *
  * WHY SINGLETON:
  * LED hardware is a system-wide resource. Having one centralized manager
@@ -116,22 +116,22 @@ extern uint8_t i_spectral_custom_saturation;
  * support a different LED library, we only modify this class, not the
  * caller code. This keeps the rest of the application clean and portable.
  */
-class LocalLightingManager {
+class LightingManager {
 private:
-  static LocalLightingManager* instance;
+  static LightingManager* instance;
   Lighting lightingLib;
   CRGB deviceLEDs[DEVICE_MAX_LEDS];
 
   // Private constructor - called only once by getInstance()
-  LocalLightingManager() : lightingLib(1) {
+  LightingManager() : lightingLib(1) {
     // Initialize with 1 device (has PRIMARY_LED only)
   }
 
 public:
   // Singleton instance
-  static LocalLightingManager& getInstance() {
+  static LightingManager& getInstance() {
     if(instance == nullptr) {
-      instance = new LocalLightingManager();
+      instance = new LightingManager();
     }
     return *instance;
   }
@@ -193,10 +193,10 @@ public:
  * This line MUST exist outside the class definition for any static member.
  * It allocates memory for the single instance pointer and initializes it to nullptr.
  *
- * The actual LocalLightingManager object is NOT created here—it's created lazily on
+ * The actual LightingManager object is NOT created here—it's created lazily on
  * the FIRST call to getInstance(), which checks if instance is nullptr, creates it if
  * needed, then returns a reference to it. Subsequent calls return the same instance.
  *
- * This ensures only ONE LocalLightingManager exists for the entire program.
+ * This ensures only ONE LightingManager exists for the entire program.
  */
-LocalLightingManager* LocalLightingManager::instance = nullptr;
+LightingManager* LightingManager::instance = nullptr;

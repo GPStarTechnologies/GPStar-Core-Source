@@ -165,8 +165,8 @@ Task inputsTask(14, TASK_FOREVER, &inputTaskCallback);
 #endif
 
 void setup() {
-  // Initialize LED driver via LocalLightingManager singleton
-  LocalLightingManager::getInstance().initializeDriver();
+  // Initialize LED driver via LightingManager singleton
+  LightingManager::getInstance().initializeDriver();
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
@@ -341,7 +341,7 @@ void animateTaskCallback() {
   checkCyclotron();
 
   // Update all addressable LEDs (both chains) to reflect any changes.
-  LocalLightingManager::getInstance().show();
+  LightingManager::getInstance().show();
 
   // Mark vent light update as complete
   if(b_vent_lights_changed) {

@@ -26,7 +26,7 @@
  * Hasbro barrels use GRB, all others use RGB.
  */
 inline CRGB getBarrelColor(uint8_t colorEnum, uint8_t brightness = 255) {
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
   
   if(WAND_BARREL_LED == HASBRO_BARREL) {
     return mgr.getColorGRB(CHAIN_BARREL, colorEnum, brightness);
@@ -10615,7 +10615,7 @@ void checkPowerOnReminder() {
 }
 
 void ventTopLightControl(bool b_on) {
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
 
   if(!b_on) {
   #ifndef ESP32
@@ -10684,7 +10684,7 @@ void ventTopLightControl(bool b_on) {
 }
 
 void ventLightControl(uint8_t i_intensity) {
-  auto& mgr = LocalLightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance();
 
   if(b_rgb_vent_light) {
   #ifndef ESP32

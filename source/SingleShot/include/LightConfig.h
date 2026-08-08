@@ -51,6 +51,7 @@ enum LED_CHAIN {
  */
 #define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel
 #define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel
+#define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
 
 /*
  * Pin for Addressable LEDs
@@ -60,11 +61,12 @@ enum LED_CHAIN {
   #define SYSTEM_LED_PIN 41
   #define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT)
   #define TOP_LED_PIN 42 // RGB Vent light only for ESP32.
-  #define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Cliplite.
+  #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #else
   #define SYSTEM_LED_PIN 10
   #define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT)
-  #define VENT_LED_COUNT 0 // Not applicable for ATMega devices.
+  #define VENT_LED_PIN 13 // Vent light (either stock or RGB LED).
+  #define RGB_VENT_PIN VENT_LED_PIN // Common name between hardware.
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
@@ -94,7 +96,7 @@ bool b_vent_lights_changed = false; // Check for whether there was actually a ch
 // ============================================================================
 
 /**
- * LocalLightingManager - Abstraction Layer for LED Driver Operations
+ * LightingManager - Abstraction Layer for LED Driver Operations
  *
  * PURPOSE:
  * This class provides a driver-agnostic interface for all LED operations.
@@ -103,9 +105,9 @@ bool b_vent_lights_changed = false; // Check for whether there was actually a ch
  * swap the underlying LED driver without touching application logic.
  *
  * PATTERN:
- * LocalLightingManager uses the SINGLETON pattern. There is only ONE
+ * LightingManager uses the SINGLETON pattern. There is only ONE
  * instance of this class for the entire program. Access it via:
- *   LocalLightingManager::getInstance()
+ *   LightingManager::getInstance()
  *
  * WHY SINGLETON:
  * LED hardware is a system-wide resource. Having one centralized manager
@@ -125,23 +127,23 @@ bool b_vent_lights_changed = false; // Check for whether there was actually a ch
  * support a different LED library, we only modify this class, not the
  * caller code. This keeps the rest of the application clean and portable.
  */
-class LocalLightingManager {
+class LightingManager {
 private:
-  static LocalLightingManager* instance;
+  static LightingManager* instance;
   Lighting lightingLib;
   CRGB systemLEDs[SYSTEM_LED_COUNT];
   CRGB ventLEDs[VENT_LED_COUNT];
 
   // Private constructor - called only once by getInstance()
-  LocalLightingManager() : lightingLib(1) {
+  LightingManager() : lightingLib(1) {
     // Initialize with 1 device (PRIMARY_LED)
   }
 
 public:
   // Singleton instance
-  static LocalLightingManager& getInstance() {
+  static LightingManager& getInstance() {
     if(instance == nullptr) {
-      instance = new LocalLightingManager();
+      instance = new LightingManager();
     }
     return *instance;
   }
@@ -150,9 +152,7 @@ public:
   // Sets up addressable LED communication and default brightness for both chains
   void initializeDriver() {
     FastLED.addLeds<NEOPIXEL, SYSTEM_LED_PIN>(systemLEDs, SYSTEM_LED_COUNT).setCorrection(TypicalLEDStrip);
-    #ifdef ESP32
-      FastLED.addLeds<NEOPIXEL, TOP_LED_PIN>(ventLEDs, VENT_LED_COUNT).setCorrection(TypicalLEDStrip);
-    #endif
+    FastLED.addLeds<NEOPIXEL, RGB_VENT_PIN>(ventLEDs, VENT_LED_COUNT).setCorrection(TypicalLEDStrip);
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
     FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
@@ -227,10 +227,10 @@ public:
  * This line MUST exist outside the class definition for any static member.
  * It allocates memory for the single instance pointer and initializes it to nullptr.
  *
- * The actual LocalLightingManager object is NOT created here—it's created lazily on
+ * The actual LightingManager object is NOT created here—it's created lazily on
  * the FIRST call to getInstance(), which checks if instance is nullptr, creates it if
  * needed, then returns a reference to it. Subsequent calls return the same instance.
  *
- * This ensures only ONE LocalLightingManager exists for the entire program.
+ * This ensures only ONE LightingManager exists for the entire program.
  */
-LocalLightingManager* LocalLightingManager::instance = nullptr;
+LightingManager* LightingManager::instance = nullptr;

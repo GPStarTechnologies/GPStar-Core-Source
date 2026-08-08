@@ -431,7 +431,7 @@ void checkDeviceAction() {
       // Top white light.
       if(ms_white_light.justFinished()) {
         ms_white_light.repeat();
-        auto* vent_leds = LocalLightingManager::getInstance().getLEDs(CHAIN_VENT);
+        auto* vent_leds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
         if(vent_leds[1]) {
           ventTopLightControl(false);
         }

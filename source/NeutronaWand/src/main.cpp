@@ -144,7 +144,7 @@ void setup() {
 #endif
 
   // Initialize LED driver for barrel and vent lights
-  LocalLightingManager::getInstance().initializeDriver();
+  LightingManager::getInstance().initializeDriver();
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.

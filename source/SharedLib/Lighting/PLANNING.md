@@ -70,9 +70,9 @@ enum device : uint8_t { PRIMARY_LED = 0 };
 enum LED_COLOR_TYPES : uint8_t { LED_RGB = 1, LED_GRB = 2, LED_GBR = 3 };
 LED_COLOR_TYPES LED_COLOR_TYPE = LED_RGB;
 
-// LocalLightingManager singleton (copy template from StreamEffects)
-class LocalLightingManager { ... };
-LocalLightingManager* LocalLightingManager::instance = nullptr;
+// LightingManager singleton (copy template from StreamEffects)
+class LightingManager { ... };
+LightingManager* LightingManager::instance = nullptr;
 
 // Custom colors (if needed: extern declarations)
 extern uint8_t i_spectral_custom_colour;
@@ -101,15 +101,15 @@ Copy StreamEffects template and adjust per project:
 
 ### 2. Update `src/main.cpp`
 - Add `#include "LightConfig.h"` before other local includes
-- In `setup()`: Call `LocalLightingManager::getInstance().initializeDriver();`
+- In `setup()`: Call `LightingManager::getInstance().initializeDriver();`
 - Replace `FastLED.addLeds()` with manager call
-- Replace all `FastLED.show()` calls with `LocalLightingManager::getInstance().show()`
+- Replace all `FastLED.show()` calls with `LightingManager::getInstance().show()`
 - Replace LED color assignments with manager methods
 
 ### 3. Update animation file (System.h or equivalent)
 - Move palette definitions to LightConfig.h
-- Replace `device_leds` array references with `LocalLightingManager::getInstance().getLEDs()`
-- Replace `fill_solid(device_leds, ...)` with `LocalLightingManager::getInstance().lightsOff()`
+- Replace `device_leds` array references with `LightingManager::getInstance().getLEDs()`
+- Replace `fill_solid(device_leds, ...)` with `LightingManager::getInstance().lightsOff()`
 - Remove the `ledsOff()` function and instead call manager directly where needed
 
 ### 4. Update `include/Header.h`
@@ -142,9 +142,9 @@ Remove file entirely. Verify no includes remain.
 - SingleShot: 1 device
 - Attenuator: 3 devices
 
-### LocalLightingManager Consistency Pattern
+### LightingManager Consistency Pattern
 
-**KEY PRINCIPLE**: Keep the LocalLightingManager class **as identical as possible across all projects**.
+**KEY PRINCIPLE**: Keep the LightingManager class **as identical as possible across all projects**.
 
 - **Same method names**: `getInstance()`, `initializeDriver()`, `show()`, `lightsOff()`, `getLEDs()`, `getColorRGB()`, `getColorGRB()`, `getColorGBR()`, `setBrightness()`
 - **Same variable names**: `deviceLEDs`, `instance`, `lightingLib`

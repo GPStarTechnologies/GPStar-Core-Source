@@ -813,7 +813,7 @@ void handleDisableSelfTest(AsyncWebServerRequest *request) {
     i_selftest_palette = 0; // Reset palette index.
     wsData.wandPower = 5; // Reset to maximum power.
     updateStreamPalette(); // Reset stream palette.
-    LocalLightingManager::getInstance().lightsOff(); // Turn off all LEDs.
+    LightingManager::getInstance().lightsOff(); // Turn off all LEDs.
   }
 
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
