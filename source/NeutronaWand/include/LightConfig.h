@@ -29,6 +29,18 @@
 #include <Lighting.h>
 
 // ============================================================================
+// LED CHAIN IDENTIFIERS
+// ============================================================================
+
+/*
+ * Addressable LED Chains
+ */
+enum LED_CHAIN {
+  CHAIN_BARREL = 0, // Barrel LEDs Only
+  CHAIN_VENT = 1 // Vent Lights
+};
+
+// ============================================================================
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
 
@@ -47,15 +59,6 @@
   #define VENT_LED_PIN 13 // Vent light (either stock or RGB LED).
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
-
-/*
- * Addressable LED Chains
- */
-// CHAIN IDENTIFIERS (required for LocalLightingManager to know which buffer you're accessing)
-enum LED_CHAIN {
-  CHAIN_BARREL = 0,  // Barrel LEDs only
-  CHAIN_VENT = 1     // Vent lights (ESP32 Only)
-};
 
 /*
  * Delay for fastled to update the addressable LEDs.
@@ -190,25 +193,31 @@ public:
 
   // Turn off LEDs on specified chain
   void lightsOff(LED_CHAIN chain = CHAIN_BARREL) {
-    if(chain == CHAIN_BARREL) {
-      fill_solid(barrel_leds, BARREL_LEDS_MAX, CRGB::Black); // Set all to black (off).
-    }
-    else if(chain == CHAIN_VENT) {
-      #ifdef ESP32
-        fill_solid(vent_leds, VENT_LEDS_COUNT, CRGB::Black); // Set all to black (off).
-      #endif
+    switch(chain) {
+      case CHAIN_BARREL:
+        fill_solid(barrel_leds, BARREL_LEDS_MAX, CRGB::Black); // Set all to black (off).
+      break;
+
+      case CHAIN_VENT:
+        #ifdef ESP32
+          fill_solid(vent_leds, VENT_LEDS_COUNT, CRGB::Black); // Set all to black (off).
+        #endif
+      break;
     }
   }
 
   // Get a pointer to the LED array for specified chain (for palette rendering and direct access)
   CRGB* getLEDs(LED_CHAIN chain = CHAIN_BARREL) {
-    if(chain == CHAIN_BARREL) {
-      return barrel_leds;
+    switch(chain) {
+      case CHAIN_VENT:
+        return vent_leds;
+      break;
+
+      case CHAIN_BARREL:
+      default:
+        return barrel_leds;
+      break;
     }
-    else if(chain == CHAIN_VENT) {
-      return vent_leds;
-    }
-    return barrel_leds; // Default fallback
   }
 
   // Set brightness

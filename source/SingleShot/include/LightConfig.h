@@ -30,6 +30,18 @@
 #include <Lighting.h>
 
 // ============================================================================
+// LED CHAIN IDENTIFIERS
+// ============================================================================
+
+/*
+ * Addressable LED Chains
+ */
+enum LED_CHAIN {
+  CHAIN_SYSTEM = 0, // Barrel + Cyclotron
+  CHAIN_VENT = 1 // Vent Lights
+};
+
+// ============================================================================
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
 
@@ -55,15 +67,6 @@
   #define VENT_LED_COUNT 0 // Not applicable for ATMega devices.
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
-
-/*
- * Addressable LED Chains
- */
-// CHAIN IDENTIFIERS (required for LocalLightingManager to know which buffer you're accessing)
-enum LED_CHAIN {
-  CHAIN_SYSTEM = 0, // Barrel + Cyclotron
-  CHAIN_VENT = 1 // Top Vent (ESP32 Only)
-};
 
 /*
  * Delay for LED driver to update the addressable LEDs.
@@ -185,23 +188,31 @@ public:
 
   // Turn off LEDs on specified chain
   void lightsOff(LED_CHAIN chain = CHAIN_SYSTEM) {
-    if(chain == CHAIN_SYSTEM) {
-      fill_solid(systemLEDs, SYSTEM_LED_COUNT, CRGB::Black); // Set all to black (off).
-    }
-    else if(chain == CHAIN_VENT && VENT_LED_COUNT > 0) {
-      fill_solid(ventLEDs, VENT_LED_COUNT, CRGB::Black); // Set all to black (off).
+    switch(chain) {
+      case CHAIN_SYSTEM:
+        fill_solid(systemLEDs, SYSTEM_LED_COUNT, CRGB::Black); // Set all to black (off).
+      break;
+
+      case CHAIN_VENT:
+        if(VENT_LED_COUNT > 0) {
+          fill_solid(ventLEDs, VENT_LED_COUNT, CRGB::Black); // Set all to black (off).
+        }
+      break;
     }
   }
 
   // Get a pointer to the LED array for specified chain (for palette rendering and direct access)
   CRGB* getLEDs(LED_CHAIN chain = CHAIN_SYSTEM) {
-    if(chain == CHAIN_SYSTEM) {
-      return systemLEDs;
+    switch(chain) {
+      case CHAIN_VENT:
+        return ventLEDs;
+      break;
+
+      case CHAIN_SYSTEM:
+      default:
+        return systemLEDs;
+      break;
     }
-    else if(chain == CHAIN_VENT) {
-      return ventLEDs;
-    }
-    return systemLEDs; // Default fallback
   }
 
   // Set brightness

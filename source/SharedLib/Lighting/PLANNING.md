@@ -14,10 +14,14 @@
 
 **Milestone 1A: Lighting Library** ✅ COMPLETE
 
-**Milestone 1B: Project Migrations** — 2 of 7 complete
+**Milestone 1B: Project Migrations** ✅ COMPLETE — 7 of 7 complete
 - ✅ StreamEffects (template reference)
-- ✅ BeltGizmo (completed)
-- ⏳ ProtonPack, NeutronaWand, PSTT, SingleShot, Attenuator
+- ✅ Attenuator
+- ✅ BeltGizmo
+- ✅ PSTT
+- ✅ SingleShot
+- ✅ NeutronaWand
+- ✅ ProtonPack (Phase 5, dual-chain + expansion support)
 
 ---
 

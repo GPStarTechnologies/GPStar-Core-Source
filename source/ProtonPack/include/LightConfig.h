@@ -28,6 +28,30 @@
 // Include the generalized Lighting library
 #include <Lighting.h>
 
+// Forward declarations for variables from Configuration.h
+extern uint8_t i_powercell_num_leds;
+extern uint8_t i_cyclotron_num_leds;
+
+// ============================================================================
+// LED CHAIN IDENTIFIERS
+// ============================================================================
+
+/*
+ * Addressable LED Chains
+ * 
+ * ProtonPack has up to 4 independent LED chains:
+ * - CHAIN_PACK: Power Cell + Cyclotron Outer (lid) + N-Filter Jewel (PACK_LED_PIN)
+ * - CHAIN_CYCLOTRON: Inner Panel + Cake + Cavity (CYCLOTRON_LED_PIN)
+ * - CHAIN_EXP1: Expansion port 1 (EXPANSION1_LED_PIN, ESP32 only)
+ * - CHAIN_EXP2: Expansion port 2 (EXPANSION2_LED_PIN, ESP32 only)
+ */
+enum LED_CHAIN {
+  CHAIN_PACK = 0,           // Power Cell + Outer Cyclotron + N-Filter on PACK_LED_PIN
+  CHAIN_CYCLOTRON = 1,      // Inner Panel + Cake + Cavity on CYCLOTRON_LED_PIN
+  CHAIN_EXP1 = 2,           // Expansion port 1 on EXPANSION1_LED_PIN (ESP32 only)
+  CHAIN_EXP2 = 3            // Expansion port 2 on EXPANSION2_LED_PIN (ESP32 only)
+};
+
 // ============================================================================
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
@@ -225,7 +249,6 @@ class LocalLightingManager {
 private:
   static LocalLightingManager* instance;
   Lighting lightingLib;
-  CRGB deviceLEDs[DEVICE_MAX_LEDS];
 
   // Private constructor - called only once by getInstance()
   LocalLightingManager() : lightingLib(6) {
@@ -241,10 +264,19 @@ public:
     return *instance;
   }
 
-  // Initialize LED driver
+  // Initialize LED driver for dual chains
   // Sets up addressable LED communication and default brightness
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(deviceLEDs, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
+    // PACK chain: Power Cell + Outer Cyclotron + N-Filter Jewel
+    FastLED.addLeds<NEOPIXEL, PACK_LED_PIN>(pack_leds, i_pack_num_leds).setCorrection(TypicalLEDStrip);
+    
+    // CYCLOTRON chain: Inner Panel + Cake + Cavity
+    #ifdef ESP32
+      FastLED.addLeds<NEOPIXEL, CYCLOTRON_LED_PIN>(cyclotron_leds, i_max_inner_cyclotron_leds).setCorrection(TypicalLEDStrip);
+    #else
+      FastLED.addLeds<NEOPIXEL, CYCLOTRON_LED_PIN>(cyclotron_leds, i_max_inner_cyclotron_leds).setCorrection(TypicalLEDStrip);
+    #endif
+    
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
     FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
@@ -276,14 +308,42 @@ public:
     FastLED.show(); // Pass through to the LED driver library to update LED states.
   }
 
-  // Turn off all LEDs
-  void lightsOff() {
-    fill_solid(deviceLEDs, DEVICE_MAX_LEDS, CRGB::Black); // Set all to black (off).
+  // Turn off all LEDs on specified chain
+  void lightsOff(LED_CHAIN chain = CHAIN_PACK) {
+    switch(chain) {
+      case CHAIN_PACK:
+        fill_solid(pack_leds, i_pack_num_leds, CRGB::Black);
+      break;
+
+      case CHAIN_CYCLOTRON:
+        fill_solid(cyclotron_leds, i_max_inner_cyclotron_leds, CRGB::Black);
+      break;
+
+      case CHAIN_EXP1:
+      case CHAIN_EXP2:
+        // Expansion chains not yet configured; add support when buffers are defined
+      break;
+    }
   }
 
-  // Get a pointer to the LED array (for palette rendering and direct access)
-  CRGB* getLEDs() {
-    return deviceLEDs;
+  // Get a pointer to the LED array for specified chain
+  CRGB* getLEDs(LED_CHAIN chain = CHAIN_PACK) {
+    switch(chain) {
+      case CHAIN_CYCLOTRON:
+        return cyclotron_leds;
+      break;
+
+      case CHAIN_EXP1:
+      case CHAIN_EXP2:
+        // Expansion chains not yet configured; return nullptr for now
+        return nullptr;
+      break;
+
+      case CHAIN_PACK:
+      default:
+        return pack_leds;
+      break;
+    }
   }
 
   // Set brightness

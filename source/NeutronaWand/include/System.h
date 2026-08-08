@@ -10615,6 +10615,8 @@ void checkPowerOnReminder() {
 }
 
 void ventTopLightControl(bool b_on) {
+  auto& mgr = LocalLightingManager::getInstance();
+
   if(!b_on) {
   #ifndef ESP32
     if(!b_rgb_vent_light) {
@@ -10625,7 +10627,7 @@ void ventTopLightControl(bool b_on) {
 
     // Turn off if not off already.
     if(vent_leds[1]) {
-      vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
+      vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_BLACK);
       b_vent_lights_changed = true;
     }
   }
@@ -10642,37 +10644,37 @@ void ventTopLightControl(bool b_on) {
       if(b_vent_light_stream_colours) {
         switch(gpstarWand.getStreamMode()) {
           case SPECTRAL:
-            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_RAINBOW);
+            vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_RAINBOW);
           break;
 
           case HOLIDAY_HALLOWEEN:
-            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_ORANGEPURPLE);
+            vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_ORANGEPURPLE);
           break;
 
           case HOLIDAY_CHRISTMAS:
-            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_REDGREEN);
+            vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_REDGREEN);
           break;
 
           case SPECTRAL_CUSTOM:
-            vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_CUSTOM);
+            vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_CUSTOM);
           break;
 
           default:
             if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-              vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE);
+              vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_WARM_WHITE);
             }
             else {
-              vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
+              vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_WHITE);
             }
           break;
         }
       }
       else {
         if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-          vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE);
+          vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_WARM_WHITE);
         }
         else {
-          vent_leds[1] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
+          vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_WHITE);
         }
       }
 
@@ -10682,6 +10684,8 @@ void ventTopLightControl(bool b_on) {
 }
 
 void ventLightControl(uint8_t i_intensity) {
+  auto& mgr = LocalLightingManager::getInstance();
+
   if(b_rgb_vent_light) {
   #ifndef ESP32
     // Put in a check just to be sure the non-addressable pin stays off.
@@ -10693,7 +10697,7 @@ void ventLightControl(uint8_t i_intensity) {
     if(i_intensity < 25) {
       // Turn off if not off already.
       if(vent_leds[0]) {
-        vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
+        vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_BLACK);
         b_vent_lights_changed = true;
       }
     }
@@ -10701,59 +10705,59 @@ void ventLightControl(uint8_t i_intensity) {
       if(b_vent_light_stream_colours) {
         switch(gpstarWand.getStreamMode()) {
           case SETTINGS:
-            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_RED, 128);
+            vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_RED, 128);
           break;
 
           case STASIS:
-            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_MID_BLUE, i_intensity);
+            vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_MID_BLUE, i_intensity);
           break;
 
           case SLIME:
             if(getSystemYearMode() == SYSTEM_1989) {
-              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_PASTEL_PINK, i_intensity);
+              vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_PASTEL_PINK, i_intensity);
             }
             else {
-              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_GREEN, i_intensity);
+              vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_GREEN, i_intensity);
             }
           break;
 
           case MESON:
-            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_YELLOW, i_intensity);
+            vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_YELLOW, i_intensity);
           break;
 
           case SPECTRAL:
-            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_RAINBOW, i_intensity);
+            vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_RAINBOW, i_intensity);
           break;
 
           case HOLIDAY_HALLOWEEN:
-            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_ORANGEPURPLE, i_intensity);
+            vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_ORANGEPURPLE, i_intensity);
           break;
 
           case HOLIDAY_CHRISTMAS:
-            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_REDGREEN, i_intensity);
+            vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_REDGREEN, i_intensity);
           break;
 
           case SPECTRAL_CUSTOM:
-            vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_CUSTOM, i_intensity);
+            vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_CUSTOM, i_intensity);
           break;
 
           case PROTON:
           default:
             if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE, i_intensity);
+              vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_WHITE, i_intensity);
             }
             else {
-              vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
+              vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
             }
           break;
         }
       }
       else {
         if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-          vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE, i_intensity);
+          vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_WHITE, i_intensity);
         }
         else {
-          vent_leds[0] = LocalLightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
+          vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
         }
       }
 
