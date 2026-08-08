@@ -1,6 +1,6 @@
 /**
- *   GPStar Stream Effects - Ghostbusters Props, Mods, and Kits.
- *   Copyright (C) 2024-2026 Dustin Grau <dustin.grau@gmail.com>
+ *   GPStar Proton Stream Target Trainer
+ *   Copyright (C) 2023-2026 GPStar Technologies <contact@gpstartechnologies.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -34,48 +34,18 @@
 
 /*
  * Pin for Addressable LEDs
- * Assumes 50 LEDs per meter using default lighting: https://a.co/d/dlDyCkz
+ * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
-#define DEVICE_LED_PIN 4
-#define DEVICE_MAX_LEDS 500 // Set a hard max for allocating the array of LEDs
+#define DEVICE_LED_PIN 41 // Data pin for the addressable LEDs.
+#define DEVICE_MAX_LEDS 14 // The maximum number of jewel LEDs.
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for the optimal effect
-uint16_t i_num_leds = 250; // Default is 50 LEDs per meter, with a length of 5 meters (eg. 250)
 
 /*
- * Addressable LED Devices
+ * Delay for fastled to update the addressable LEDs.
  */
-enum device : uint8_t {
-  PRIMARY_LED = 0
-};
-
-/*
- * LED colour order type for device
- * Defaults to RGB for the type recommended for the build: https://a.co/d/dlDyCkz
- */
-enum LED_COLOR_TYPES : uint8_t {
-  LED_RGB = 1,
-  LED_GRB = 2,
-  LED_GBR = 3
-};
-LED_COLOR_TYPES LED_COLOR_TYPE = LED_RGB;
-
-/*
- * Define Color Options & Timers
- */
-CRGBPalette16 paletteWhite;
-CRGBPalette16 paletteProton;
-CRGBPalette16 paletteSlime;
-CRGBPalette16 paletteStasis;
-CRGBPalette16 paletteMeson;
-CRGBPalette16 paletteSpectral;
-CRGBPalette16 paletteHalloween;
-CRGBPalette16 paletteChristmas;
-CRGBPalette16 paletteBrass;
-CRGBPalette16 cp_StreamPalette; // Current colour palette in use.
-static const uint8_t i_palette_count = 9; // Total number of palettes available.
-static const uint16_t i_selftest_interval = 2000; // 2 seconds between palette changes.
-millisDelay ms_selftest_cycle; // Timer for self-test cycling using an interval.
-uint8_t i_selftest_palette = 0; // Current palette index for cycling in self-test.
+#define LED_DRIVER_UPDATE_MS 3
+uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
+millisDelay ms_led_driver;
 
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
@@ -201,6 +171,3 @@ LocalLightingManager* LocalLightingManager::instance = nullptr;
 // ============================================================================
 // DEVICE-SPECIFIC CUSTOM COLORS (if any)
 // ============================================================================
-
-extern uint8_t i_spectral_custom_colour;
-extern uint8_t i_spectral_custom_saturation;

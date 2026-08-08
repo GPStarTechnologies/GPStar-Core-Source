@@ -361,7 +361,7 @@ void setup() {
   ms_slo_blo_blink.start(i_slo_blo_blink_delay);
 
   // Initialize the fastLED state update timer.
-  ms_fast_led.start(i_fast_led_delay);
+  ms_led_driver.start(i_led_update_delay);
 
   // Initialize the timer for initial handshake.
   ms_packsync.start(0);
@@ -697,7 +697,7 @@ void loop() {
   }
 
   // Update the addressable LEDs and restart the timer.
-  if(ms_fast_led.justFinished()) {
+  if(ms_led_driver.justFinished()) {
     FastLED[0].showLeds(255);
 
     if(b_vent_lights_changed) {
@@ -716,7 +716,7 @@ void loop() {
       b_vent_lights_changed = false;
     }
 
-    ms_fast_led.start(i_fast_led_delay);
+    ms_led_driver.start(i_led_update_delay);
   }
 
 #ifdef ESP32

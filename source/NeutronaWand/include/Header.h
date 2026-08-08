@@ -194,9 +194,9 @@ enum WAND_BARREL_LEDS : uint8_t {
  * 0.0312 ms to update each LED, then a 0.05 ms resting period once all are updated.
  * So 1.58 ms should be okay? Let's bump it up to 3 just in case.
  */
-#define FAST_LED_UPDATE_MS 3
-uint8_t i_fast_led_delay = FAST_LED_UPDATE_MS;
-millisDelay ms_fast_led;
+#define LED_DRIVER_UPDATE_MS 3
+uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
+millisDelay ms_led_driver;
 
 /*
  * RGB vent lights.

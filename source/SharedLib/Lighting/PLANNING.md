@@ -137,3 +137,19 @@ Remove file entirely. Verify no includes remain.
 - BeltGizmo: 1 device
 - SingleShot: 1 device
 - Attenuator: 3 devices
+
+### LocalLightingManager Consistency Pattern
+
+**KEY PRINCIPLE**: Keep the LocalLightingManager class **as identical as possible across all projects**.
+
+- **Same method names**: `getInstance()`, `initializeDriver()`, `show()`, `lightsOff()`, `getLEDs()`, `getColorRGB()`, `getColorGRB()`, `getColorGBR()`, `setBrightness()`
+- **Same variable names**: `deviceLEDs`, `instance`, `lightingLib`
+- **Same class structure**: Private constructor with Lighting library initialization, singleton pattern
+
+**Values that vary by project**:
+- `DEVICE_LED_PIN`: Hardware pin (project-specific)
+- `DEVICE_MAX_LEDS`: LED count (project-specific)
+- `DEVICE_MAX_BRIGHTNESS`: Brightness level (128 for power conservation, 255 for full brightness)
+- Lighting library constructor argument: Device count (1-6 depending on project)
+
+**Benefit**: This standardization ensures all projects follow identical LED abstraction patterns, making refactoring, maintenance, and future driver swaps trivial. If LED driver needs to change, modify only the manager class methods—all projects automatically inherit the update.

@@ -3506,7 +3506,7 @@ void modeActivate() {
 
 void modePulseStart() {
   // Handles all "pulsed" fire modes.
-  i_fast_led_delay = FAST_LED_UPDATE_MS;
+  i_led_update_delay = LED_DRIVER_UPDATE_MS;
   barrelLightsOff();
 
   switch(gpstarWand.getStreamMode()) {
@@ -6116,7 +6116,7 @@ void bargraphRampFiring() {
 }
 
 void modeFireStart() {
-  i_fast_led_delay = FAST_LED_UPDATE_MS;
+  i_led_update_delay = LED_DRIVER_UPDATE_MS;
 
   modeFireStartSounds();
 
@@ -6435,28 +6435,28 @@ void fireStreamEffect(CRGB c_colour) {
             case MESON:
               switch(gpstarWand.getPowerLevel()) {
                 case LEVEL_1:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS; // 3ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS; // 3ms
                   ms_firing_stream_effects.start((i_firing_stream / 25)); // 4ms
                 break;
 
                 case LEVEL_2:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS; // 3ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS; // 3ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_3:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 1; // 4ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 1; // 4ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_4:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 3; // 6ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 3; // 6ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_5:
                 default:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 4; // 7ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 4; // 7ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 2); // 2ms
                 break;
               }
@@ -6764,28 +6764,28 @@ void fireStreamEffect(CRGB c_colour) {
             case MESON:
               switch(gpstarWand.getPowerLevel()) {
                 case LEVEL_1:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS; // 3ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS; // 3ms
                   ms_firing_stream_effects.start((i_firing_stream / 25)); // 4ms
                 break;
 
                 case LEVEL_2:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS; // 3ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS; // 3ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_3:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 1; // 4ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 1; // 4ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_4:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 3; // 6ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 3; // 6ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_5:
                 default:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 4; // 7ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 4; // 7ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 2); // 2ms
                 break;
               }
@@ -7093,28 +7093,28 @@ void fireStreamEffect(CRGB c_colour) {
             case MESON:
               switch(gpstarWand.getPowerLevel()) {
                 case LEVEL_1:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS; // 3ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS; // 3ms
                   ms_firing_stream_effects.start((i_firing_stream / 25)); // 4ms
                 break;
 
                 case LEVEL_2:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS; // 3ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS; // 3ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_3:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 1; // 4ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 1; // 4ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_4:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 3; // 6ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 3; // 6ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 1); // 3ms
                 break;
 
                 case LEVEL_5:
                 default:
-                  i_fast_led_delay = FAST_LED_UPDATE_MS + 4; // 7ms
+                  i_led_update_delay = LED_DRIVER_UPDATE_MS + 4; // 7ms
                   ms_firing_stream_effects.start((i_firing_stream / 25) - 2); // 2ms
                 break;
               }
@@ -9305,7 +9305,7 @@ void fireStreamEnd(CRGB c_colour) {
 
       ms_firing_lights_end.stop();
 
-      i_fast_led_delay = FAST_LED_UPDATE_MS;
+      i_led_update_delay = LED_DRIVER_UPDATE_MS;
     }
   }
 }

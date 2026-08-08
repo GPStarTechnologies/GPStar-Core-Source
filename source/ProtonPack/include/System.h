@@ -3206,7 +3206,7 @@ void cyclotron84LightOff(uint8_t cLed) {
 }
 
 void cyclotron1984(uint16_t iRampDelay) {
-  i_fast_led_delay = FAST_LED_UPDATE_MS;
+  i_led_update_delay = LED_DRIVER_UPDATE_MS;
 
   // Guard against divide-by-zero just in case.
   sanitizeCyclotronMultipliers();
@@ -3289,7 +3289,7 @@ void cyclotron2021(uint16_t iRampDelay) {
     uint8_t i_cyclotron_matrix_led = cyclotronLookupTable(i_curr_cyclotron_position);
 
     if(b_ramp_up) {
-      i_fast_led_delay = FAST_LED_UPDATE_MS;
+      i_led_update_delay = LED_DRIVER_UPDATE_MS;
 
       if(r_outer_cyclotron_ramp.isFinished()) {
         b_ramp_up = false;
@@ -3316,7 +3316,7 @@ void cyclotron2021(uint16_t iRampDelay) {
       }
     }
     else if(b_ramp_down) {
-      i_fast_led_delay = FAST_LED_UPDATE_MS;
+      i_led_update_delay = LED_DRIVER_UPDATE_MS;
 
       if(r_outer_cyclotron_ramp.isFinished()) {
         b_ramp_down = false;
@@ -3356,24 +3356,24 @@ void cyclotron2021(uint16_t iRampDelay) {
             }
 
             if(b_cyclotron_lid_on) {
-              i_fast_led_delay = FAST_LED_UPDATE_MS + i_cyclotron_multiplier;
+              i_led_update_delay = LED_DRIVER_UPDATE_MS + i_cyclotron_multiplier;
             }
             else {
-              i_fast_led_delay = FAST_LED_UPDATE_MS;
+              i_led_update_delay = LED_DRIVER_UPDATE_MS;
             }
           }
           else {
-            i_fast_led_delay = FAST_LED_UPDATE_MS;
+            i_led_update_delay = LED_DRIVER_UPDATE_MS;
           }
 
-          if(i_fast_led_delay > 10) {
-            i_fast_led_delay = 10;
+          if(i_led_update_delay > 10) {
+            i_led_update_delay = 10;
           }
         break;
 
         case FRUTTO_CYCLOTRON_LED_COUNT:
         case HASLAB_CYCLOTRON_LED_COUNT:
-          i_fast_led_delay = FAST_LED_UPDATE_MS;
+          i_led_update_delay = LED_DRIVER_UPDATE_MS;
 
           if(i_cyclotron_multiplier > 1) {
             if(t_iRampDelay - i_cyclotron_multiplier > 0) {
@@ -5756,7 +5756,7 @@ void systemPOST() {
 
       b_pack_post_finish = true;
       updateLEDs();
-      delay(FAST_LED_UPDATE_MS); // Delay to give the LEDs a chance to finish updating.
+      delay(LED_DRIVER_UPDATE_MS); // Delay to give the LEDs a chance to finish updating.
     }
     else {
       ms_delay_post_3.start(5);

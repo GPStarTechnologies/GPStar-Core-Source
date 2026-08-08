@@ -334,7 +334,7 @@ void setup() {
   packOffReset();
 
   // Start some timers
-  ms_fast_led.start(i_fast_led_delay);
+  ms_led_driver.start(i_led_update_delay);
   ms_check_music.start(i_music_check_delay);
   ms_attenuator_check.start(i_attenuator_disconnect_delay);
   ms_cyclotron_switch_plate_leds.start(i_cyclotron_switch_plate_leds_delay);
@@ -362,11 +362,11 @@ void setup() {
 
 void updateLEDs() {
   // Update all LED's when the FastLED timer has finished.
-  if(ms_fast_led.justFinished()) {
+  if(ms_led_driver.justFinished()) {
     FastLED.show();
 
     // Restart the FastLED timer.
-    ms_fast_led.start(i_fast_led_delay);
+    ms_led_driver.start(i_led_update_delay);
 
     if(b_powercell_updating) {
       b_powercell_updating = false;

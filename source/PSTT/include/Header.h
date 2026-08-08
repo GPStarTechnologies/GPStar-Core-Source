@@ -23,9 +23,8 @@
  * Hardware Pins
  */
 #define PSTT_SERVO_PIN 47
-#define PSTT_STATUS_LED_PIN 38
 #define PSTT_BUTTON 11
-#define PSTT_JEWEL_LED_PIN 41 // Data pin for the addressable LEDs.
+#define PSTT_STATUS_LED_PIN 38 // Data pin for the on-board status indicator LEDs.
 
 /*
  * Servo Motor
@@ -37,19 +36,6 @@ millisDelay ms_servo_timer;
  * Reset Button
  */
 ezButton switch_pstt(PSTT_BUTTON); // Button for the PSTT. Used to manually change the servo position.
-
-/*
- * Jewel indicator LEDs.
- */
-#define JEWEL_LED_MAX 14 // The maximum number of indicator LEDs.
-CRGB pstt_jewel_leds[JEWEL_LED_MAX];
-
-/*
- * Delay for fastled to update the addressable LEDs.
- */
-#define FAST_LED_UPDATE_MS 3
-uint8_t i_fast_led_delay = FAST_LED_UPDATE_MS;
-millisDelay ms_fast_led;
 
 enum PSTT_TARGET_STATUS : uint8_t {
   PSTT_READY = 1,
@@ -80,9 +66,9 @@ const uint16_t i_pstt_health_regen_delay = 1000;
 /*
  * Target Blink Rate
  */
-millisDelay ms_pstt_blink_rate;
 #define PSTT_BLINK_RATE_DEFAULT_DELAY 400
 uint16_t i_pstt_blink_rate_delay = PSTT_BLINK_RATE_DEFAULT_DELAY;
+millisDelay ms_pstt_blink_rate;
 bool b_colourChange = true;
 
 /*

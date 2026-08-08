@@ -38,6 +38,7 @@
  */
 #define DEVICE_LED_PIN 4
 #define DEVICE_MAX_LEDS 11 // 10 "nixie" tubes + 1 "E" bulb
+#define DEVICE_MAX_BRIGHTNESS 128 // Use half-brightness to conserve power
 uint8_t i_num_leds = 8; // Default to 7 nixie tubes + 1 "E" bulb
 
 /*
@@ -102,7 +103,7 @@ private:
 
   // Private constructor - called only once by getInstance()
   LocalLightingManager() : lightingLib(1) {
-    // Initialize with 1 device (BeltGizmo has PRIMARY_LED only)
+    // Initialize with 1 device (has PRIMARY_LED only)
   }
 
 public:
@@ -119,7 +120,7 @@ public:
   void initializeDriver() {
     FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(deviceLEDs, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-    FastLED.setBrightness(128); // Use a lower brightness (50%) to save power.
+    FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
   }
 

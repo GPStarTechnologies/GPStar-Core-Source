@@ -53,17 +53,20 @@ void sendInfraredJSON(const char* eventType, const char* deviceType = "", const 
 }
 
 void setIndicatorColor(uint8_t i_colour) {
-  pstt_jewel_leds[JEWEL_LED_MAX - 1] = getHueColour(i_colour);
+  auto leds = LocalLightingManager::getInstance().getLEDs();
+  leds[DEVICE_MAX_LEDS - 1] = LocalLightingManager::getInstance().getColorRGB(0, i_colour);
 }
 
 void setIndicatorLEDs(uint8_t i_colour, uint8_t i_leds_start, uint8_t i_leds_end) {
+  auto leds = LocalLightingManager::getInstance().getLEDs();
   for(uint8_t i_tmp = i_leds_start; i_tmp < i_leds_end; i_tmp++) {
-    pstt_jewel_leds[i_tmp] = getHueColour(i_colour);
+    leds[i_tmp] = LocalLightingManager::getInstance().getColorRGB(0, i_colour);
   }
 }
 
 void setIndicatorLED(uint8_t i_colour, uint8_t i_led) {
-  pstt_jewel_leds[i_led] = getHueColour(i_colour);
+  auto leds = LocalLightingManager::getInstance().getLEDs();
+  leds[i_led] = LocalLightingManager::getInstance().getColorRGB(0, i_colour);
 }
 
 // Target is ready.
@@ -75,7 +78,7 @@ void setTargetAsReady() {
   pstt_current_health = targetConfig.maxHealth;
 
   psttServoControl(180);
-  setIndicatorLEDs(C_GREEN, (JEWEL_LED_MAX / 2) - (JEWEL_LED_MAX / 2), JEWEL_LED_MAX);
+  setIndicatorLEDs(C_GREEN, (DEVICE_MAX_LEDS / 2) - (DEVICE_MAX_LEDS / 2), DEVICE_MAX_LEDS);
   setIndicatorColor(C_GREEN);
 
   ms_pstt_blink_rate.start(i_pstt_blink_rate_delay);
@@ -145,7 +148,7 @@ void checkTargetHealth() {
 void updateHealthIndicators() {
   switch(PSTT_STATUS) {
     case PSTT_DISABLED:
-      setIndicatorLEDs(C_RED, (JEWEL_LED_MAX / 2) - (JEWEL_LED_MAX / 2), JEWEL_LED_MAX);
+      setIndicatorLEDs(C_RED, (DEVICE_MAX_LEDS / 2) - (DEVICE_MAX_LEDS / 2), DEVICE_MAX_LEDS);
       setIndicatorColor(C_RED);
     break;
 
@@ -163,17 +166,17 @@ void updateHealthIndicators() {
 
         if(pstt_current_health < targetConfig.maxHealth) {
           if(pstt_current_health <= targetConfig.extremeLowHealth) {
-            setIndicatorLEDs(b_colourChange ? C_RED : C_BLACK, (JEWEL_LED_MAX / 2) - (JEWEL_LED_MAX / 2), JEWEL_LED_MAX / 2); // All 7 of the jewel LEDs.
+            setIndicatorLEDs(b_colourChange ? C_RED : C_BLACK, (DEVICE_MAX_LEDS / 2) - (DEVICE_MAX_LEDS / 2), DEVICE_MAX_LEDS / 2); // All 7 of the jewel LEDs.
           }
           else if(pstt_current_health <= targetConfig.lowHealth) {
-            setIndicatorLEDs(b_colourChange ? C_YELLOW : C_BLACK, (JEWEL_LED_MAX / 2) - (JEWEL_LED_MAX / 2), JEWEL_LED_MAX / 2); // All 7 of the jewel LEDs.
+            setIndicatorLEDs(b_colourChange ? C_YELLOW : C_BLACK, (DEVICE_MAX_LEDS / 2) - (DEVICE_MAX_LEDS / 2), DEVICE_MAX_LEDS / 2); // All 7 of the jewel LEDs.
           }
           else {
-            setIndicatorLEDs(b_colourChange ? C_GREEN : C_BLACK, (JEWEL_LED_MAX / 2) - (JEWEL_LED_MAX / 2), JEWEL_LED_MAX / 2); // All 7 of the jewel LEDs.
+            setIndicatorLEDs(b_colourChange ? C_GREEN : C_BLACK, (DEVICE_MAX_LEDS / 2) - (DEVICE_MAX_LEDS / 2), DEVICE_MAX_LEDS / 2); // All 7 of the jewel LEDs.
           }
         }
         else {
-          setIndicatorLEDs(C_GREEN, (JEWEL_LED_MAX / 2) - (JEWEL_LED_MAX / 2), JEWEL_LED_MAX / 2); // All 7 of the jewel LEDs.
+          setIndicatorLEDs(C_GREEN, (DEVICE_MAX_LEDS / 2) - (DEVICE_MAX_LEDS / 2), DEVICE_MAX_LEDS / 2); // All 7 of the jewel LEDs.
         }
       }
 

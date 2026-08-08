@@ -46,7 +46,6 @@
 #include <digitalWriteFast.h>
 #include <millisDelay.h>
 #include <ESP32Servo.h>
-#include <FastLED.h>
 #include <ezButton.h>
 
 // Forward declaration for use in all includes.
@@ -70,9 +69,9 @@ WirelessManager* wirelessMgr = nullptr;
 InfraredManager* irManager = nullptr;
 
 // Local Files
+#include "LightConfig.h"
 #include "Configuration.h"
 #include "Header.h"
-#include "Colours.h"
 #include "PreferencesESP.h"
 #include "GPStarServo.h"
 #include "Wireless.h"
@@ -150,14 +149,11 @@ void setup() {
   pinModeFast(PSTT_STATUS_LED_PIN, OUTPUT);
   digitalWriteFast(PSTT_STATUS_LED_PIN, HIGH);
 
-  FastLED.addLeds<NEOPIXEL, PSTT_JEWEL_LED_PIN>(pstt_jewel_leds, JEWEL_LED_MAX).setCorrection(TypicalLEDStrip);
-  FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
+  // Initialize the LED driver via the lighting manager abstraction layer.
+  LocalLightingManager::getInstance().initializeDriver();
 
-  // Update all addressable LEDs to prevent stale LED states.
-  FastLED.show();
-
-  // Initialise the fastLED state update timer.
-  ms_fast_led.start(i_fast_led_delay);
+  // Initialise the led driver's state update timer.
+  ms_led_driver.start(i_led_update_delay);
 
   // Set target to ready state automatically on boot.
   setTargetAsReady();
@@ -222,9 +218,9 @@ void loop() {
   mainLoop(); // Continue on to the main loop.
 
   // Update the addressable LEDs and restart the timer.
-  if(ms_fast_led.justFinished()) {
-    FastLED.show();
+  if(ms_led_driver.justFinished()) {
+    LocalLightingManager::getInstance().show();
 
-    ms_fast_led.start(i_fast_led_delay);
+    ms_led_driver.start(i_led_update_delay);
   }
 }

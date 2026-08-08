@@ -209,9 +209,9 @@ CRGB cyclotron_leds[INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX
  * This works by "skipping frames" in the animation, which can be done up until about 15 ms.
  * After 15ms it will become painfully obvious to most people that the animation is not smooth.
  */
-#define FAST_LED_UPDATE_MS 5
-uint8_t i_fast_led_delay = FAST_LED_UPDATE_MS;
-millisDelay ms_fast_led;
+#define LED_DRIVER_UPDATE_MS 5
+uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
+millisDelay ms_led_driver;
 
 /*
  * Power Cell LEDs control.
