@@ -171,11 +171,16 @@ bool changeStreamMode(ENCODER_STATES direction) {
  */
 void deviceBodyLightsOff() {
   // Turn off the body LEDs by setting to black.
-  if(device_leds[i_device_led[1]] != CRGB::Black) {
-    device_leds[i_device_led[1]] = getHueAsRGB(i_device_led[1], C_BLACK);
+  auto& mgr = LocalLightingManager::getInstance();
+  auto leds = mgr.getLEDs();
+  uint8_t led_upper = mgr.getMappedIndex(1);
+  uint8_t led_lower = mgr.getMappedIndex(2);
+  
+  if(leds[led_upper] != CRGB::Black) {
+    leds[led_upper] = CRGB::Black;
   }
-  if(device_leds[i_device_led[2]] != CRGB::Black) {
-    device_leds[i_device_led[2]] = getHueAsRGB(i_device_led[2], C_BLACK);
+  if(leds[led_lower] != CRGB::Black) {
+    leds[led_lower] = CRGB::Black;
   }
 }
 
@@ -251,12 +256,18 @@ void updateTopStatusLED() {
   }
 
   // Update the top LED based on certain system statuses.
+  auto& mgr = LocalLightingManager::getInstance();
+  auto leds = mgr.getLEDs();
+  uint8_t led_top = mgr.getMappedIndex(0);
+  
   switch(MENU_LEVEL) {
     case MENU_1:
       // Keep indicator solid when in this menu level (indicates default/stable).
       ms_top_blink.stop(); // Stop the blink timer which won't be used at this menu level.
       b_top_led_alt = false; // Denotes LED is not in an off (blinking) state, but solid.
-      device_leds[i_device_led[0]] = getHueAsRGB(i_device_led[0], i_top_led_colour, i_top_led_brightness, b_grb_leds);
+      leds[led_top] = (b_grb_leds) ? 
+        mgr.getColorGRB(0, i_top_led_colour, i_top_led_brightness) :
+        mgr.getColorRGB(0, i_top_led_colour, i_top_led_brightness);
     break;
 
     case MENU_2:
@@ -268,11 +279,15 @@ void updateTopStatusLED() {
 
       if(b_top_led_alt) {
         // For an alternate state use yellow to indicate this menu mode.
-        device_leds[i_device_led[0]] = getHueAsRGB(i_device_led[0], C_YELLOW, i_top_led_brightness, b_grb_leds);
+        leds[led_top] = (b_grb_leds) ? 
+          mgr.getColorGRB(0, C_YELLOW, i_top_led_brightness) :
+          mgr.getColorRGB(0, C_YELLOW, i_top_led_brightness);
       }
       else {
         // Return to normal brightness for the current top LED colour.
-        device_leds[i_device_led[0]] = getHueAsRGB(i_device_led[0], i_top_led_colour, i_top_led_brightness, b_grb_leds);
+        leds[led_top] = (b_grb_leds) ? 
+          mgr.getColorGRB(0, i_top_led_colour, i_top_led_brightness) :
+          mgr.getColorRGB(0, i_top_led_colour, i_top_led_brightness);
       }
     break;
 
@@ -285,11 +300,15 @@ void updateTopStatusLED() {
 
       if(b_top_led_alt) {
         // For an alternate state use white to indicate this menu mode.
-        device_leds[i_device_led[0]] = getHueAsRGB(i_device_led[0], C_WHITE, i_top_led_brightness, b_grb_leds);
+        leds[led_top] = (b_grb_leds) ? 
+          mgr.getColorGRB(0, C_WHITE, i_top_led_brightness) :
+          mgr.getColorRGB(0, C_WHITE, i_top_led_brightness);
       }
       else {
         // Return to the normal, current top LED colour.
-        device_leds[i_device_led[0]] = getHueAsRGB(i_device_led[0], i_top_led_colour, i_top_led_brightness, b_grb_leds);
+        leds[led_top] = (b_grb_leds) ? 
+          mgr.getColorGRB(0, i_top_led_colour, i_top_led_brightness) :
+          mgr.getColorRGB(0, i_top_led_colour, i_top_led_brightness);
       }
     break;
   }
@@ -301,17 +320,27 @@ void updateTopStatusLED() {
 void updateBodyLEDs() {
   // Set upper LED based on alarm or overheating state, when connected.
   // Otherwise, use the standard pattern/colour for illumination.
+  auto& mgr = LocalLightingManager::getInstance();
+  auto leds = mgr.getLEDs();
+  uint8_t led_upper = mgr.getMappedIndex(1);
+  
   if(b_pack_alarm || b_overheating) {
-    device_leds[i_device_led[1]] = getHueAsRGB(i_device_led[1], C_RED_FADE, 255, b_grb_leds);
+    leds[led_upper] = (b_grb_leds) ? 
+      mgr.getColorGRB(1, C_RED_FADE, 255) :
+      mgr.getColorRGB(1, C_RED_FADE, 255);
   }
   else {
     switch(RAD_LENS_IDLE) {
       case ORANGE_FADE:
-        device_leds[i_device_led[1]] = getHueAsRGB(i_device_led[1], C_ORANGE_FADE, 255, b_grb_leds);
+        leds[led_upper] = (b_grb_leds) ? 
+          mgr.getColorGRB(1, C_ORANGE_FADE, 255) :
+          mgr.getColorRGB(1, C_ORANGE_FADE, 255);
       break;
       case AMBER_PULSE:
       default:
-        device_leds[i_device_led[1]] = getHueAsRGB(i_device_led[1], C_AMBER_PULSE, 255, b_grb_leds);
+        leds[led_upper] = (b_grb_leds) ? 
+          mgr.getColorGRB(1, C_AMBER_PULSE, 255) :
+          mgr.getColorRGB(1, C_AMBER_PULSE, 255);
       break;
     }
   }
@@ -362,14 +391,17 @@ void updateBodyLEDs() {
   }
 
   // Update the lower LED based on the scheme determined above.
+  uint8_t led_lower = mgr.getMappedIndex(2);
   if(b_blink_blank) {
     // Turn off when in mid-blink state.
-    if(device_leds[i_device_led[2]] != CRGB::Black) {
-      device_leds[i_device_led[2]] = getHueAsRGB(i_device_led[2], C_BLACK);
+    if(leds[led_lower] != CRGB::Black) {
+      leds[led_lower] = CRGB::Black;
     }
   }
   else {
-    device_leds[i_device_led[2]] = getHueAsRGB(i_device_led[2], i_scheme, 255, b_grb_leds);
+    leds[led_lower] = (b_grb_leds) ? 
+      mgr.getColorGRB(2, i_scheme, 255) :
+      mgr.getColorRGB(2, i_scheme, 255);
   }
 }
 

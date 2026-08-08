@@ -125,24 +125,25 @@ void updateStreamColor() {
 
 // Animate the LEDs in a wave-like pattern using a single colour.
 void animateLights() {
+  auto& mgr = LocalLightingManager::getInstance();
   static uint16_t i_led_phase = 0; // 16-bit phase accumulator (high byte = 0..255 visible phase)
 
   if(!ms_anim_change.justFinished()) return; // nothing to do this frame
 
-  LocalLightingManager::getInstance().lightsOff(); // Clear LEDs before updating animation.
+  mgr.lightsOff(); // Clear LEDs before updating animation.
 
   // Compute a full-bright CRGB once and scale per-LED with nscale8_video.
   CRGB baseColor;
   switch(LED_COLOR_TYPE) {
     case LED_GBR:
     default:
-      baseColor = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, i_stream_colour, 255);
+      baseColor = mgr.getColorGBR(PRIMARY_LED, i_stream_colour, 255);
     break;
     case LED_RGB:
-      baseColor = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, i_stream_colour, 255);
+      baseColor = mgr.getColorRGB(PRIMARY_LED, i_stream_colour, 255);
     break;
     case LED_GRB:
-      baseColor = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, i_stream_colour, 255);
+      baseColor = mgr.getColorGRB(PRIMARY_LED, i_stream_colour, 255);
     break;
   }
 
@@ -155,7 +156,7 @@ void animateLights() {
   uint8_t i_weightB = i_frac;       // Weight for i_index + 1
 
   // Apply weighted colours (nscale8_video expects 0..255)
-  CRGB* device_leds = LocalLightingManager::getInstance().getLEDs();
+  CRGB* device_leds = mgr.getLEDs();
   CRGB cA = baseColor; cA.nscale8_video(i_weightA);
   device_leds[i_index] = cA;
 

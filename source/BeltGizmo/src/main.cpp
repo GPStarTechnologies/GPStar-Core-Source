@@ -257,39 +257,40 @@ void WiFiSetupTask(void *parameter) {
   }
 
   // Set a visual indicator that WiFi is being configured.
-  CRGB* leds = LocalLightingManager::getInstance().getLEDs();
+  auto& mgr = LocalLightingManager::getInstance();
+  CRGB* leds = mgr.getLEDs();
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
-      leds[0] = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, C_RED, 255);
+      leds[0] = mgr.getColorRGB(PRIMARY_LED, C_RED, 255);
     break;
     case LED_GRB:
-      leds[0] = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, C_RED, 255);
+      leds[0] = mgr.getColorGRB(PRIMARY_LED, C_RED, 255);
     break;
     case LED_GBR:
     default:
-      leds[0] = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, C_RED, 255);
+      leds[0] = mgr.getColorGBR(PRIMARY_LED, C_RED, 255);
     break;
   }
-  LocalLightingManager::getInstance().show();
+  mgr.show();
 
   // Begin by setting up WiFi as a prerequisite to all else.
   if(startWiFi()) {
     if(b_local_ap_started) {
       // Indicate we've established the private network.
-      leds = LocalLightingManager::getInstance().getLEDs();
+      leds = mgr.getLEDs();
       switch(LED_COLOR_TYPE) {
         case LED_RGB:
-          leds[0] = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, C_BLUE, 255);
+          leds[0] = mgr.getColorRGB(PRIMARY_LED, C_BLUE, 255);
         break;
         case LED_GRB:
-          leds[0] = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, C_BLUE, 255);
+          leds[0] = mgr.getColorGRB(PRIMARY_LED, C_BLUE, 255);
         break;
         case LED_GBR:
         default:
-          leds[0] = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, C_BLUE, 255);
+          leds[0] = mgr.getColorGBR(PRIMARY_LED, C_BLUE, 255);
         break;
       }
-      LocalLightingManager::getInstance().show();
+      mgr.show();
     }
 
     // Start the local web server.
@@ -304,8 +305,8 @@ void WiFiSetupTask(void *parameter) {
   vTaskDelay(200 / portTICK_PERIOD_MS); // 200ms delay
 
   // Clear LED once we have the AP and web server started.
-  LocalLightingManager::getInstance().lightsOff();
-  LocalLightingManager::getInstance().show();
+  mgr.lightsOff();
+  mgr.show();
 
   #if defined(DEBUG_TASK_TO_CONSOLE)
     // Get the stack high water mark for optimizing bytes allocated.
@@ -320,7 +321,8 @@ void WiFiSetupTask(void *parameter) {
 
 void setup() {
   // Initialize LED driver via singleton manager.
-  LocalLightingManager::getInstance().initializeDriver();
+  auto& mgr = LocalLightingManager::getInstance();
+  mgr.initializeDriver();
 
   Serial.begin(115200); // Serial monitor via USB connection.
 
@@ -350,7 +352,7 @@ void setup() {
 
   // Make sure all LEDs are off and set the default palette for stream mode.
   ms_anim_change.start(i_animation_duration); // Default animation time.
-  LocalLightingManager::getInstance().lightsOff();
+  mgr.lightsOff();
   updateStreamColor();
 
   // Create Preferences object to handle non-volatile storage (NVS).

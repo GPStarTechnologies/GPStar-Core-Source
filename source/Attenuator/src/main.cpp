@@ -21,10 +21,6 @@
 // Required for PlatformIO
 #include <Arduino.h>
 
-// Suppress warning about SPI hardware pins
-// Define this before including <FastLED.h>
-#define FASTLED_INTERNAL
-
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
 #define GPSTAR_DEBUG 0
@@ -48,7 +44,6 @@
 
 // 3rd-Party Libraries
 #include <millisDelay.h>
-#include <FastLED.h>
 #include <ezButton.h>
 #include <ht16k33.h>
 #include <Wire.h>
@@ -86,10 +81,10 @@ extern SmokePrefs smokeConfig;
 extern AttenuatorSyncData attenuatorSyncData;
 
 // Local Files
+#include "LightConfig.h"
 #include "Configuration.h"
 #include "Header.h"
 #include "Bargraph.h"
-#include "Colours.h"
 #include "Serial.h"
 #include "Wireless.h"
 #include "Webhandler.h"
@@ -145,19 +140,10 @@ void AnimationTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
-    // Call this on each loop in case the user changed their preference.
-    if(b_invert_leds) {
-      // Flip the identification of the LEDs.
-      i_device_led[0] = 2; // Top
-      i_device_led[1] = 1; // Upper
-      i_device_led[2] = 0; // Lower
-    }
-    else {
-      // Use the expected order for the LEDs.
-      i_device_led[0] = 0; // Top
-      i_device_led[1] = 1; // Upper
-      i_device_led[2] = 2; // Lower
-    }
+    // Update LED mapping if the user's LED invert preference has changed.
+    // The manager only applies changes to the LED mapping only when the
+    // state differs from last call, avoiding redundant modifications.
+    LocalLightingManager::getInstance().updateLEDMapping(b_invert_leds);
 
     // Update LEDs using appropriate colour scheme and environment vars.
     if(b_enable_device_leds && b_pack_on) {
@@ -180,7 +166,7 @@ void AnimationTask(void *parameter) {
     }
 
     // Update the device LEDs and restart the timer.
-    FastLED.show();
+    LocalLightingManager::getInstance().show();
 
     vTaskDelay(8 / portTICK_PERIOD_MS); // 8ms delay
   }
@@ -458,12 +444,8 @@ void WiFiSetupTask(void *parameter) {
 }
 
 void setup() {
-  // RGB LEDs for effects (upper/lower) and user status (top).
-  FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(device_leds, DEVICE_NUM_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-
-  // Update all addressable LEDs to prevent stale LED states.
-  FastLED.show();
+  // Initialize the LED driver via the lighting manager abstraction layer.
+  LocalLightingManager::getInstance().initializeDriver();
 
   Serial.begin(115200); // Serial monitor via USB connection.
 

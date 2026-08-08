@@ -21,31 +21,9 @@
 #pragma once
 
 /*
- * Pin for Addressable LEDs
+ * Pin for Built-in LED
  */
 #define BUILT_IN_LED 2
-#define DEVICE_LED_PIN 23
-#define DEVICE_NUM_LEDS 3 // States there are 3 LEDs: Top, Upper, and Lower
-CRGB device_leds[DEVICE_NUM_LEDS];
-
-/*
- * LED Device Ordering - Top, Upper, and Lower
- * Creates a simple byte array of N elements for the ID of each of the 3 LEDs.
- * Due to space constraints, users may have had to install the LEDs in reverse.
- * Therefore, the order of this list may change depending on user preference.
- * This feature will only be available for the ESP32-based controller.
- */
-uint8_t i_device_led[DEVICE_NUM_LEDS] = {0, 1, 2}; // Default Order
-
-/*
- * LED Animation Options
- */
-enum LED_ANIMATION : uint8_t {
-  AMBER_PULSE = 0,
-  ORANGE_FADE = 1,
-  RED_FADE = 2
-};
-enum LED_ANIMATION RAD_LENS_IDLE = AMBER_PULSE;
 
 /*
  * Flag to indicate serial comms have been established after bootup.
@@ -61,6 +39,16 @@ enum DISPLAY_TYPES : uint8_t {
   STATUS_BOTH = 2
 };
 enum DISPLAY_TYPES DISPLAY_TYPE = STATUS_GRAPHIC;
+
+/*
+ * LED Animation Options
+ */
+enum LED_ANIMATION : uint8_t {
+  AMBER_PULSE = 0,
+  ORANGE_FADE = 1,
+  RED_FADE = 2
+};
+enum LED_ANIMATION RAD_LENS_IDLE = AMBER_PULSE;
 
 /*
  * Manage the colour and blink pattern for the top LED.

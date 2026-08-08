@@ -89,9 +89,34 @@ private:
   Lighting lightingLib;
   CRGB deviceLEDs[DEVICE_MAX_LEDS];
 
+  /*
+  * LED Device Ordering - Top, Upper, and Lower
+  * Creates a simple byte array of N elements for the ID of each of the 3 LEDs.
+  * Due to space constraints, users may have had to install the LEDs in reverse.
+  * Therefore, the order of this list may change depending on user preference.
+  * This feature will only be available for the ESP32-based controller.
+  */
+  uint8_t mappedLEDs[DEVICE_MAX_LEDS] = {0, 1, 2}; // Default Order
+  bool lastInvertState = false; // Track last invert state to detect changes
+
   // Private constructor - called only once by getInstance()
   LocalLightingManager() : lightingLib(3) {
     // Initialize with 3 devices (TOP_LED, UPPER_LED, LOWER_LED)
+  }
+
+  // Private: Apply the mapping based on invert flag
+  void applyMapping(bool invert) {
+    if(invert) {
+      // Flip the identification of the LEDs
+      mappedLEDs[0] = 2; // Top
+      mappedLEDs[1] = 1; // Upper
+      mappedLEDs[2] = 0; // Lower
+    } else {
+      // Use the expected order for the LEDs
+      mappedLEDs[0] = 0; // Top
+      mappedLEDs[1] = 1; // Upper
+      mappedLEDs[2] = 2; // Lower
+    }
   }
 
 public:
@@ -110,6 +135,21 @@ public:
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
     FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
+  }
+
+  // Update LED mapping based on invert preference
+  // Only applies changes if the invert state differs from last call
+  // This eliminates redundant recalculation in tight loops
+  void updateLEDMapping(bool invert) {
+    if(invert != lastInvertState) {
+      applyMapping(invert);
+      lastInvertState = invert;
+    }
+  }
+  
+  // Get the physical index for a logical device ID
+  uint8_t getMappedIndex(uint8_t logicalDeviceId) {
+    return mappedLEDs[logicalDeviceId];
   }
 
   // Get color as RGB based on device and color enum

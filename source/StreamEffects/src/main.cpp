@@ -122,6 +122,8 @@ void AnimationTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
+    auto& mgr = LocalLightingManager::getInstance();
+
     // Update light animation based on websocket data (or self-test mode).
     if(b_firing || gpstarSystem.inStreamMode(SELFTEST)) {
       updateStreamPalette();
@@ -130,26 +132,26 @@ void AnimationTask(void *parameter) {
     else {
       // Not firing and not testing, update LED[0] to indicate status.
       if(b_ext_wifi_started) {
-        LocalLightingManager::getInstance().lightsOff();
+        mgr.lightsOff();
       }
       else {
         switch(LED_COLOR_TYPE) {
           case LED_RGB:
           default:
-            LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, C_PURPLE, 255);
+            mgr.getLEDs()[0] = mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255);
           break;
           case LED_GRB:
-            LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, C_PURPLE, 255);
+            mgr.getLEDs()[0] = mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255);
           break;
           case LED_GBR:
-            LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, C_PURPLE, 255);
+            mgr.getLEDs()[0] = mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255);
           break;
         }
       }
     }
 
     // Update the device LEDs and restart the timer.
-    LocalLightingManager::getInstance().show();
+    mgr.show();
 
     vTaskDelay(8 / portTICK_PERIOD_MS); // 8ms delay
   }
@@ -281,19 +283,20 @@ void WiFiSetupTask(void *parameter) {
   }
 
   // Set a visual indicator that WiFi is being configured.
+  auto& mgr = LocalLightingManager::getInstance();
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
     default:
-      LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, C_RED, 255);
+      mgr.getLEDs()[0] = mgr.getColorRGB(PRIMARY_LED, C_RED, 255);
     break;
     case LED_GRB:
-      LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, C_RED, 255);
+      mgr.getLEDs()[0] = mgr.getColorGRB(PRIMARY_LED, C_RED, 255);
     break;
     case LED_GBR:
-      LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, C_RED, 255);
+      mgr.getLEDs()[0] = mgr.getColorGBR(PRIMARY_LED, C_RED, 255);
     break;
   }
-  LocalLightingManager::getInstance().show();
+  mgr.show();
 
   // Begin by setting up WiFi as a prerequisite to all else.
   if(startWiFi()) {
@@ -302,16 +305,16 @@ void WiFiSetupTask(void *parameter) {
       switch(LED_COLOR_TYPE) {
         case LED_RGB:
         default:
-          LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorRGB(PRIMARY_LED, C_BLUE, 255);
+          mgr.getLEDs()[0] = mgr.getColorRGB(PRIMARY_LED, C_BLUE, 255);
         break;
         case LED_GRB:
-          LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorGRB(PRIMARY_LED, C_BLUE, 255);
+          mgr.getLEDs()[0] = mgr.getColorGRB(PRIMARY_LED, C_BLUE, 255);
         break;
         case LED_GBR:
-          LocalLightingManager::getInstance().getLEDs()[0] = LocalLightingManager::getInstance().getColorGBR(PRIMARY_LED, C_BLUE, 255);
+          mgr.getLEDs()[0] = mgr.getColorGBR(PRIMARY_LED, C_BLUE, 255);
         break;
       }
-      LocalLightingManager::getInstance().show();
+      mgr.show();
     }
 
     // Start the local web server.
@@ -326,8 +329,8 @@ void WiFiSetupTask(void *parameter) {
   vTaskDelay(200 / portTICK_PERIOD_MS); // 200ms delay
 
   // Clear LED once we have the AP and web server started.
-  LocalLightingManager::getInstance().getLEDs()[0] = CRGB::Black;
-  LocalLightingManager::getInstance().show();
+  mgr.getLEDs()[0] = CRGB::Black;
+  mgr.show();
 
   #if defined(DEBUG_TASK_TO_CONSOLE)
     // Get the stack high water mark for optimizing bytes allocated.
