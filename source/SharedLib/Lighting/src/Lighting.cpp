@@ -437,7 +437,11 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
       }
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot] += dynamicNextBright[deviceSlot];
+        // Sanity check: use int16_t to prevent overflow, then clamp to valid range
+        int16_t newHue = (int16_t)dynamicHue[deviceSlot] + dynamicNextBright[deviceSlot];
+        if(newHue > 255) newHue = 255;  // Prevent overflow
+        if(newHue < 0) newHue = 0;      // Prevent underflow
+        dynamicHue[deviceSlot] = (uint8_t)newHue;
 
         // Reverse direction at boundaries
         if(dynamicHue[deviceSlot] >= 32) {
@@ -464,7 +468,11 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
       }
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
+        // Sanity check: use int16_t to prevent overflow, then clamp to valid range
+        int16_t newBright = (int16_t)dynamicBright[deviceSlot] + dynamicNextBright[deviceSlot];
+        if(newBright > 255) newBright = 255;  // Prevent overflow
+        if(newBright < 0) newBright = 0;      // Prevent underflow
+        dynamicBright[deviceSlot] = (uint8_t)newBright;
 
         // Reverse direction at boundaries
         if(dynamicBright[deviceSlot] >= 250) {
@@ -491,7 +499,11 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
       }
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
+        // Sanity check: use int16_t to prevent overflow, then clamp to valid range
+        int16_t newBright = (int16_t)dynamicBright[deviceSlot] + dynamicNextBright[deviceSlot];
+        if(newBright > 255) newBright = 255;  // Prevent overflow
+        if(newBright < 0) newBright = 0;      // Prevent underflow
+        dynamicBright[deviceSlot] = (uint8_t)newBright;
 
         // Reverse direction at boundaries
         if(dynamicBright[deviceSlot] >= 250) {
@@ -518,7 +530,11 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
       }
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot]--;
+        // Sanity check: use int16_t to prevent underflow, then clamp to valid range
+        int16_t newHue = (int16_t)dynamicHue[deviceSlot] - 1;
+        if(newHue > 255) newHue = 255;  // Prevent overflow
+        if(newHue < 0) newHue = 0;      // Prevent underflow
+        dynamicHue[deviceSlot] = (uint8_t)newHue;
         
         // Wrap around if we go below minimum
         if(dynamicHue[deviceSlot] < 146) {

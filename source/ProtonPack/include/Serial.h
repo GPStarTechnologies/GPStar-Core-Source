@@ -669,6 +669,10 @@ void handlePackPrefsUpdate() {
   b_clockwise = packConfig.cyclotronDirection;
   b_cyclotron_single_led = packConfig.ledCycLidCenter;
 
+  // Transfer cyclotron custom color to the Lighting library
+  LED_HSV cyclotronCustom = {i_spectral_cyclotron_custom_colour, i_spectral_cyclotron_custom_saturation, 255};
+  LightingManager::getInstance().setCustomColorHSV(0, C_CUSTOM_CYCLOTRON, cyclotronCustom);
+
   b_fade_cyclotron_led = packConfig.ledCycLidFade;
   b_cyclotron_colour_toggle = packConfig.ledVGCyclotron;
   b_cyclotron_simulate_ring = packConfig.ledCycLidSimRing;
@@ -706,6 +710,10 @@ void handlePackPrefsUpdate() {
   b_inner_cavity_inverted = packConfig.ledCycCavInvert;
   CAKE_LED_TYPE = packConfig.ledCycCakeGRB ? GRB_LED : RGB_LED;
 
+  // Transfer inner cyclotron custom color to the Lighting library
+  LED_HSV cyclotronInnerCustom = {i_spectral_cyclotron_inner_custom_colour, i_spectral_cyclotron_inner_custom_saturation, 255};
+  LightingManager::getInstance().setCustomColorHSV(0, C_CUSTOM_INNER_CYCLOTRON, cyclotronInnerCustom);
+
   switch(packConfig.ledCycCavType) {
     case 1:
     default:
@@ -727,6 +735,10 @@ void handlePackPrefsUpdate() {
   i_spectral_powercell_custom_saturation = packConfig.ledPowercellSat;
   i_powercell_brightness = packConfig.ledPowercellLum;
   b_powercell_colour_toggle = packConfig.ledVGPowercell;
+
+  // Transfer powercell custom color to the Lighting library
+  LED_HSV powercellCustom = {i_spectral_powercell_custom_colour, i_spectral_powercell_custom_saturation, 255};
+  LightingManager::getInstance().setCustomColorHSV(0, C_CUSTOM_POWERCELL, powercellCustom);
 
   // GPStar Audio LED Status
   b_gpstar_audio_led_enabled = packConfig.gpstarAudioLed;

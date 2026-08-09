@@ -200,6 +200,11 @@ public:
   void setBrightness(uint8_t brightness) {
     FastLED.setBrightness(brightness);
   }
+
+  // Set custom color HSV values in the Lighting library
+  void setCustomColorHSV(CustomColor color, const LED_HSV &hsv) {
+    lightingLib.setCustomColorHSV(0, color, hsv);
+  }
 };
 
 /**

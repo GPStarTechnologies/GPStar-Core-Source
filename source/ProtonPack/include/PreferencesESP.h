@@ -447,6 +447,14 @@ void readEEPROM() {
       i_spectral_cyclotron_inner_custom_saturation = gObjLEDEEPROM.cyclotron_inner_spectral_saturation_custom;
     }
 
+    // Transfer custom color values to the Lighting library so they're available when rendering
+    LED_HSV powercellCustom = {i_spectral_powercell_custom_colour, i_spectral_powercell_custom_saturation, 255};
+    LED_HSV cyclotronCustom = {i_spectral_cyclotron_custom_colour, i_spectral_cyclotron_custom_saturation, 255};
+    LED_HSV cyclotronInnerCustom = {i_spectral_cyclotron_inner_custom_colour, i_spectral_cyclotron_inner_custom_saturation, 255};
+    LightingManager::getInstance().setCustomColorHSV(0, C_CUSTOM_POWERCELL, powercellCustom);
+    LightingManager::getInstance().setCustomColorHSV(0, C_CUSTOM_CYCLOTRON, cyclotronCustom);
+    LightingManager::getInstance().setCustomColorHSV(0, C_CUSTOM_INNER_CYCLOTRON, cyclotronInnerCustom);
+
     if(gObjLEDEEPROM.powercell_brightness > 19 && gObjLEDEEPROM.powercell_brightness < 101) {
       i_powercell_brightness = gObjLEDEEPROM.powercell_brightness;
     }
