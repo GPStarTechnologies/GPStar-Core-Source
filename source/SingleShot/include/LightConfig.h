@@ -51,6 +51,7 @@ enum LED_CHAIN {
  */
 #define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel
 #define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel
+#define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT) // Sum of cyclotron and barrel LEDs.
 #define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
 
 /*
@@ -58,20 +59,18 @@ enum LED_CHAIN {
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
 #ifdef ESP32
-  #define SYSTEM_LED_PIN 41
-  #define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT)
+  #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs used by the barrel and cyclotron.
   #define TOP_LED_PIN 42 // RGB Vent light only for ESP32.
   #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #else
-  #define SYSTEM_LED_PIN 10
-  #define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT)
+  #define BARREL_LED_PIN 10 // Data pin for the addressable LEDs used by the barrel and cyclotron.
   #define VENT_LED_PIN 13 // Vent light (either stock or RGB LED).
   #define RGB_VENT_PIN VENT_LED_PIN // Common name between hardware.
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
 /*
- * Delay for LED driver to update the addressable LEDs.
+ * Delay for the LED driver to update the addressable LEDs.
  */
 #define LED_DRIVER_UPDATE_MS 3
 uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
@@ -86,7 +85,7 @@ const uint8_t i_num_cyclotron_leds = CYCLOTRON_LED_COUNT; // This will be the nu
 const uint8_t i_cyclotron_led_start = i_num_barrel_leds; // The first element (index) for the cyclotron.
 
 /*
- * RGB Vent Light Control (ESP32 Only)
+ * RGB Vent Light Control
  */
 const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
 bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
@@ -151,7 +150,7 @@ public:
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness for both chains
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, SYSTEM_LED_PIN>(systemLEDs, SYSTEM_LED_COUNT).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<NEOPIXEL, BARREL_LED_PIN>(systemLEDs, SYSTEM_LED_COUNT).setCorrection(TypicalLEDStrip);
     FastLED.addLeds<NEOPIXEL, RGB_VENT_PIN>(ventLEDs, VENT_LED_COUNT).setCorrection(TypicalLEDStrip);
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
     FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
@@ -160,14 +159,24 @@ public:
 
   // Get color as RGB based on LED chain and color enum
   CRGB getColorRGB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
   // Get color as GRB based on LED chain and color enum
   CRGB getColorGRB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
@@ -175,7 +184,12 @@ public:
 
   // Get color as GBR based on LED chain and color enum
   CRGB getColorGBR(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
     return CRGB(rgb.g, rgb.b, rgb.r);
@@ -194,9 +208,7 @@ public:
       break;
 
       case CHAIN_VENT:
-        if(VENT_LED_COUNT > 0) {
-          fill_solid(ventLEDs, VENT_LED_COUNT, CRGB::Black); // Set all to black (off).
-        }
+        fill_solid(ventLEDs, VENT_LED_COUNT, CRGB::Black); // Set all to black (off).
       break;
     }
   }

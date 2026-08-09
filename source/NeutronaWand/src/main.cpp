@@ -220,8 +220,6 @@ void setup() {
   pinMode(VIBRATION_PIN, OUTPUT); // Vibration motor is PWM, so fallback to default pinMode just to be safe.
 #endif
 
-  ms_vent_light.start(i_vent_light_update_interval); // Setup a timer for updating the vent light.
-
   // Setup default system settings.
   gpstarWand.setFiringModeVG();
   gpstarWand.removeAllSpectralStreams();
@@ -595,7 +593,7 @@ void mainLoop() {
 
       // Top white light.
       if(ms_white_light.justFinished()) {
-        vent_leds[1] ? ventTopLightControl(false) : ventTopLightControl(true);
+        LightingManager::getInstance().getLEDs(CHAIN_VENT)[1] ? ventTopLightControl(false) : ventTopLightControl(true);
 
         ms_white_light.repeat();
       }
@@ -650,7 +648,7 @@ void loop() {
         // If not already doing so, explicitly tell the pack a wand is here to sync.
         packSerialSend(A_SYNC_WAND, PROTOCOL_SIGNATURE); // Perform an initial synchronization.
         ms_packsync.start(i_sync_initial_delay); // Prepare for the next sync attempt.
-        vent_leds[1] ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
+        LightingManager::getInstance().getLEDs(CHAIN_VENT)[1] ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
         digitalWriteFast(WAND_STATUS_LED_PIN, (digitalReadFast(WAND_STATUS_LED_PIN) == LOW) ? HIGH : LOW); // Blink the onboard LED on the Neutrona Wand board.
 
         if(i_boot_connection_count < 10) {
@@ -698,7 +696,7 @@ void loop() {
         FastLED[1].showLeds(255);
 
       #ifndef ESP32
-        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && !vent_leds[1]) {
+        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && !LightingManager::getInstance().getLEDs(CHAIN_VENT)[1]) {
           // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
           digitalWriteFast(TOP_LED_PIN, HIGH);
         }

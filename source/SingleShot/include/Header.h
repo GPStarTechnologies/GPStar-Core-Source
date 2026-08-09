@@ -31,10 +31,8 @@
 #endif
 
 /*
- * Addressable LEDs
- * The device contains 2 GPStar 7-LED jewel arrays: 1 for the barrel, 1 for the cyclotron.
- * The barrel will be the first in the addressable LED chain, while the cyclotron is last.
- * LED #1 is the "top" (near the DIN pin) while #7 is the dead center of the jewel itself.
+ * All input and output pin definitions go here.
+ * Only non-addressable LEDs are defined here.
  */
 #ifdef ESP32
   // For the i2c Bus
@@ -42,27 +40,20 @@
   #define I2C_SCL 16
   #define IMU_SCL 47
   #define IMU_SDA 48
-#endif
 
-/*
- * Non-addressable LEDs
- * Uses a common object to define and set expected properties for all LEDs
- */
-#ifdef ESP32
-  #define SLO_BLO_LED_PIN 12 // SLO-BLO LED. (Red LED)
   #define CLIPPARD_LED_PIN 3 // LED underneath the Clippard valve. (Orange or White LED)
-  
-  #define BARREL_HAT_LED_PIN 10 // Hat light at front of the blaster near the barrel tip. (Orange LED)
-  #define TOP_HAT_LED_PIN 9 // Hat light at top of the blaster body near vent. (Orange or White LED)
-  #define BARREL_TIP_LED_PIN 46 // White LED at tip of the blaster barrel. (White LED)
+  #define TOP_HAT_LED_PIN 9 // Hat[2] light at top of the device body near vent. (Orange or White LED)
+  #define BARREL_HAT_LED_PIN 10 // Hat[1] light, not used but initialized to ensure it is turned off.
+  #define SLO_BLO_LED_PIN 12 // SLO-BLO LED. (Red LED)
   #define WAND_STATUS_LED_PIN 38 // V1.4 GPStar Neutrona Wand onboard LED pin.
+  #define BARREL_TIP_LED_PIN 46 // LED at tip of the barrel. (White LED)
 #else
   #define SLO_BLO_LED_PIN 8 // SLO-BLO LED. (Red LED)
   #define CLIPPARD_LED_PIN 9 // LED underneath the Clippard valve. (Orange or White LED)
-  #define TOP_LED_PIN 12 // Blinking white light beside the vent on top of the blaster.
-  #define BARREL_HAT_LED_PIN 22 // Hat[1] light at front of the blaster near the barrel tip. (Orange LED)
-  #define TOP_HAT_LED_PIN 23 // Hat[2] light at top of the blaster body near vent. (Orange or White LED)
-  #define BARREL_TIP_LED_PIN 24 // White LED at tip of the blaster barrel. (White LED)
+  #define TOP_LED_PIN 12 // Blinking white light beside the vent on top of the device.
+  #define BARREL_HAT_LED_PIN 22 // Hat[1] light at front of the device near the barrel tip. (Orange LED)
+  #define TOP_HAT_LED_PIN 23 // Hat[2] light at top of the device body near vent. (Orange or White LED)
+  #define BARREL_TIP_LED_PIN 24 // White LED at tip of the device barrel. (White LED)
   #define WAND_STATUS_LED_PIN 38 // V1.4 GPStar Neutrona Wand onboard LED pin.
 #endif
 

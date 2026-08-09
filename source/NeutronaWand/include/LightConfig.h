@@ -44,6 +44,10 @@ enum LED_CHAIN {
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
 
+/*
+ * Counts for segments of special LED chains
+ * Note that these are in the expected physical order in the chain
+ */
 #define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar Neutrona Barrel is 48 + 2 Strobe Tips).
 #define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
 
@@ -63,39 +67,30 @@ enum LED_CHAIN {
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
 /*
- * Delay for fastled to update the addressable LEDs.
- * 0.0312 ms to update each LED, then a 0.05 ms resting period once all are updated.
- * So 1.58 ms should be okay? Let's bump it up to 3 just in case.
+ * Delay for the LED driver to update the addressable LEDs.
  */
 #define LED_DRIVER_UPDATE_MS 3
 uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
 millisDelay ms_led_driver;
 
 /*
- * RGB vent lights.
- */
-CRGB vent_leds[VENT_LED_COUNT]; // FastLED object array for the RGB top/vent LEDs.
-millisDelay ms_vent_light; // Timer to control update rate for RGB top/vent LEDs.
-const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
-bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
-
-/*
- * Barrel LEDs
  * The Hasbro Neutrona Wand has 5 LEDs. 0 = Base, 4 = tip. These are addressable with a single pin and are GRB colour order.
  * Support for up to 50 LEDs from the GPStar Neutrona Barrel (body of 48 + 2 strobe tips which are RGB colour order).
  */
-CRGB barrel_leds[BARREL_LEDS_MAX];
 // Array of LEDs on the GPStar Neutrona Barrel. LEDs 36 and 37 are the very tips and will not be in this array.
 const uint8_t gpstar_barrel[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38};
 
 // Array of LEDs on the GPStar Neutrona Barrel II. LED 36 is the very tip which will not be in this array. There is also one less tip LED due to the inclusion of an IR LED.
 const uint8_t gpstar_barrel_ii[48] PROGMEM = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37};
 
-// This is the GPStar Barrel LED min. It has only 2 LEDs.
-//const uint8_t gpstar_barrel_led_mini[2] PROGMEM = {0, 1};
-
 // Array of LEDs on the Frutto Technology Neutrona Barrel. LED 12 is the very tip which will not be in this array.
 const uint8_t frutto_barrel[48] PROGMEM = {0, 25, 24, 48, 1, 26, 23, 47, 2, 27, 22, 46, 3, 28, 21, 45, 4, 29, 20, 44, 5, 30, 19, 43, 6, 31, 18, 42, 7, 32, 17, 41, 8, 33, 16, 40, 9, 34, 15, 39, 10, 35, 14, 38, 11, 36, 13, 37};
+
+/*
+ * RGB Vent Light Control
+ */
+const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
+bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
 
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
@@ -137,7 +132,8 @@ class LightingManager {
 private:
   static LightingManager* instance;
   Lighting lightingLib;
-  // Note: barrel_leds and vent_leds are already defined globally above
+  CRGB barrelLEDs[BARREL_LEDS_MAX];
+  CRGB ventLEDs[VENT_LED_COUNT];
 
   // Private constructor - called only once by getInstance()
   LightingManager() : lightingLib(1) {
@@ -156,15 +152,14 @@ public:
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness for both chains
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, BARREL_LED_PIN>(barrel_leds, BARREL_LEDS_MAX).setCorrection(TypicalLEDStrip);
-    FastLED.addLeds<NEOPIXEL, RGB_VENT_PIN>(vent_leds, VENT_LED_COUNT).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<NEOPIXEL, BARREL_LED_PIN>(barrelLEDs, BARREL_LEDS_MAX).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<NEOPIXEL, RGB_VENT_PIN>(ventLEDs, VENT_LED_COUNT).setCorrection(TypicalLEDStrip);
     FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
     FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
   }
 
-  // Get color as RGB based on LED chain and color enum (static or dynamic)
-  // Automatically detects and routes to the correct color method
+  // Get color as RGB based on LED chain and color enum
   CRGB getColorRGB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
@@ -176,8 +171,7 @@ public:
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
-  // Get color as GRB based on LED chain and color enum (static or dynamic)
-  // Automatically detects and routes to the correct color method
+  // Get color as GRB based on LED chain and color enum
   CRGB getColorGRB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
@@ -190,8 +184,7 @@ public:
     return CRGB(rgb.g, rgb.r, rgb.b);
   }
 
-  // Get color as GBR based on LED chain and color enum (static or dynamic)
-  // Automatically detects and routes to the correct color method
+  // Get color as GBR based on LED chain and color enum
   CRGB getColorGBR(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
@@ -213,13 +206,11 @@ public:
   void lightsOff(LED_CHAIN chain = CHAIN_BARREL) {
     switch(chain) {
       case CHAIN_BARREL:
-        fill_solid(barrel_leds, BARREL_LEDS_MAX, CRGB::Black); // Set all to black (off).
+        fill_solid(barrelLEDs, BARREL_LEDS_MAX, CRGB::Black); // Set all to black (off).
       break;
 
       case CHAIN_VENT:
-        #ifdef ESP32
-          fill_solid(vent_leds, VENT_LED_COUNT, CRGB::Black); // Set all to black (off).
-        #endif
+        fill_solid(ventLEDs, VENT_LED_COUNT, CRGB::Black); // Set all to black (off).
       break;
     }
   }
@@ -228,12 +219,12 @@ public:
   CRGB* getLEDs(LED_CHAIN chain = CHAIN_BARREL) {
     switch(chain) {
       case CHAIN_VENT:
-        return vent_leds;
+        return ventLEDs;
       break;
 
       case CHAIN_BARREL:
       default:
-        return barrel_leds;
+        return barrelLEDs;
       break;
     }
   }
