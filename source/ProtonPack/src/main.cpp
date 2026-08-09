@@ -119,21 +119,8 @@ void sendDebug(const String& message) {
 }
 
 void setup() {
-#ifdef ESP32
-  // Force RMT driver exclusively (requires FastLED 3.10.4 at a minimum, not yet released).
-  // This avoids issues with WiFi/networking on ESP32 when using the default bit-banging method.
-  //FastLED.setExclusiveDriver("RMT");
-#endif
-
-  // Power Cell, Cyclotron Lid, and N-Filter.
-  FastLED.addLeds<NEOPIXEL, PACK_LED_PIN>(pack_leds, MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT).setCorrection(TypicalLEDStrip);
-  FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-
-  // Inner Cyclotron LEDs (Inner Panel + Cyclotron + Cavity).
-  FastLED.addLeds<NEOPIXEL, CYCLOTRON_LED_PIN>(cyclotron_leds, INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX).setCorrection(TypicalLEDStrip);
-
-  // Update all addressable LEDs to prevent stale LED states.
-  FastLED.show();
+  // Initialize LED driver for barrel and vent lights
+  LightingManager::getInstance().initializeDriver();
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
@@ -360,11 +347,11 @@ void setup() {
 }
 
 void updateLEDs() {
-  // Update all LED's when the FastLED timer has finished.
+  // Update all LED's when the timer has finished.
   if(ms_led_driver.justFinished()) {
-    FastLED.show();
+    LightingManager::getInstance().show();
 
-    // Restart the FastLED timer.
+    // Restart the lighting update timer.
     ms_led_driver.start(i_led_update_delay);
 
     if(b_powercell_updating) {

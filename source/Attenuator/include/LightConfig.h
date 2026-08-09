@@ -48,6 +48,27 @@ uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
 millisDelay ms_led_driver;
 
 // ============================================================================
+// LED IDENTIFIERS
+// ============================================================================
+
+/**
+ * Attenuator LED Enumeration
+ * 
+ * Defines logical slots for each LED on the Attenuator device.
+ * These slots map to animation state in the Lighting library.
+ * 
+ * Physical layout (from top to bottom):
+ * - TOP_LED: Status indicator (connection, menu level)
+ * - UPPER_LED: Radiation lens (firing/charging state)
+ * - LOWER_LED: Stream mode indicator
+ */
+enum ATTENUATOR_LED_SLOT : uint8_t {
+  TOP_LED = 0,   // Status indicator LED
+  UPPER_LED = 1, // Radiation lens LED
+  LOWER_LED = 2  // Stream mode indicator LED
+};
+
+// ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
 // ============================================================================
 
@@ -154,20 +175,35 @@ public:
 
   // Get color as RGB based on device and color enum
   CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
   CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
   }
 
   CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
     return CRGB(rgb.g, rgb.b, rgb.r);

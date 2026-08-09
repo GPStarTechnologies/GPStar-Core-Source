@@ -161,6 +161,8 @@ void checkRotaryEncoder() {
 }
 
 void systemPOST() {
+  // NOTE: This is the only code allowed to run with direct delay() calls to modify the
+  // timing of the LED sequences. All other code MUST use the animation task for timing.
   uint8_t i_delay = 100;
 
   // Play a sound to test the audio system.

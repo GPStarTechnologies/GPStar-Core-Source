@@ -137,12 +137,6 @@ void sendDebug(const String& message) {
 }
 
 void setup() {
-#ifdef ESP32
-  // Force RMT driver exclusively (requires FastLED 3.10.4 at a minimum, not yet released).
-  // This avoids issues with WiFi/networking on ESP32 when using the default bit-banging method.
-  //FastLED.setExclusiveDriver("RMT");
-#endif
-
   // Initialize LED driver for barrel and vent lights
   LightingManager::getInstance().initializeDriver();
 
@@ -350,7 +344,7 @@ void setup() {
   // Start up some timers for MODE_ORIGINAL.
   ms_slo_blo_blink.start(i_slo_blo_blink_delay);
 
-  // Initialize the fastLED state update timer.
+  // Initialize the LED state update timer.
   ms_led_driver.start(i_led_update_delay);
 
   // Initialize the timer for initial handshake.
@@ -374,6 +368,32 @@ void setup() {
 #ifdef ESP32
   debugf("Setup complete, free heap: %u bytes\n", ESP.getFreeHeap());
 #endif
+}
+
+void updateLEDs() {
+  // Update the addressable LEDs and restart the timer.
+  if(ms_led_driver.justFinished()) {
+    LightingManager::getInstance().show();
+
+    if(b_vent_lights_changed) {
+      if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
+        // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
+        LightingManager::getInstance().show();
+
+      #ifndef ESP32
+        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && !LightingManager::getInstance().getLEDs(CHAIN_VENT)[1]) {
+          // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
+          digitalWriteFast(TOP_LED_PIN, HIGH);
+        }
+      #endif
+      }
+
+      b_vent_lights_changed = false;
+    }
+
+    // Restart the lighting update timer.
+    ms_led_driver.start(i_led_update_delay);
+  }
 }
 
 // Loop logic dedicated to this device which handles all of the standard operations.
@@ -686,28 +706,8 @@ void loop() {
     break;
   }
 
-  // Update the addressable LEDs and restart the timer.
-  if(ms_led_driver.justFinished()) {
-    FastLED[0].showLeds(255);
-
-    if(b_vent_lights_changed) {
-      if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
-        // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
-        FastLED[1].showLeds(255);
-
-      #ifndef ESP32
-        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && !LightingManager::getInstance().getLEDs(CHAIN_VENT)[1]) {
-          // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
-          digitalWriteFast(TOP_LED_PIN, HIGH);
-        }
-      #endif
-      }
-
-      b_vent_lights_changed = false;
-    }
-
-    ms_led_driver.start(i_led_update_delay);
-  }
+  // Update the LEDs.
+  updateLEDs();
 
 #ifdef ESP32
   // The ESP32 uses a dual-core CPU with the loop() executing in Core0 by default.

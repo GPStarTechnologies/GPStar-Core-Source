@@ -196,7 +196,7 @@ CRGB pack_leds[MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER
 CRGB cyclotron_leds[INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX];
 
 /*
- * Delay for fastled to update the addressable LEDs.
+ * Delay to update the addressable LEDs.
  * We have up to 126 addressable LEDs if using NeoPixel jewel in the N-Filter, a ring
  * for the Inner Cyclotron, and the optional "sparking" cyclotron cavity LEDs.
  * 0.0312 ms to update each LED, then a 0.05 ms resting period once all are updated.
@@ -284,20 +284,35 @@ public:
 
   // Get color as RGB based on device and color enum
   CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
   CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
   }
 
   CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
     return CRGB(rgb.g, rgb.b, rgb.r);

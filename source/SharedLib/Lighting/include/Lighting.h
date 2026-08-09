@@ -159,6 +159,9 @@ class Lighting {
     // Helper method to get static color definitions
     LED_HSV getStaticColorDefinition(ColorID color);
 
+    // Helper method to get cycle value for dynamic color animations (frame-based timing lookup)
+    uint8_t getCycleValueForColor(ColorID color);
+
   public:
     /**
      * Constructor: Initialize Lighting instance for a set number of devices.
@@ -194,13 +197,16 @@ class Lighting {
      * Parameters:
      *   color: ColorID - Which animation pattern (values 100-109 for dynamic colors)
      *   brightness: [0-255] - Target brightness (may be overridden by fade effects)
+     *   deviceSlot: [0-255] - Device slot for multi-device instances (default: 0)
+     *   color: ColorID enum for the dynamic color animation
+     *   brightness: [0-255] - LED brightness (default: 255)
      *   saturation: [0-255] - Color saturation (default: 255)
      * Returns: LED_HSV for the current animation frame
      * Note: Each Lighting instance manages animations independently.
-     * For multi-device setups, create separate Lighting instances per device or device group.
-     * Example: LED_HSV hsv = lighting.getDynamicColorHSV(C_RAINBOW, 255);
+     * For multi-device setups, each device should pass its own deviceSlot to maintain independent state.
+     * Example: LED_HSV hsv = lighting.getDynamicColorHSV(deviceSlot, C_RAINBOW, 255, 255);
      */
-    LED_HSV getDynamicColorHSV(ColorID color, uint8_t brightness = 255, uint8_t saturation = 255);
+    LED_HSV getDynamicColorHSV(uint8_t deviceSlot = 0, ColorID color = C_WHITE, uint8_t brightness = 255, uint8_t saturation = 255);
 
     /**
      * Set a custom static color HSV value for a device slot.

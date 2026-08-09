@@ -68,8 +68,9 @@ enum LED_CHAIN {
 
 /*
  * Delay for the LED driver to update the addressable LEDs.
+ * Standardized to 5ms across all millisDelay-based devices for consistent animation timing.
  */
-#define LED_DRIVER_UPDATE_MS 3
+#define LED_DRIVER_UPDATE_MS 5
 uint8_t i_led_update_delay = LED_DRIVER_UPDATE_MS;
 millisDelay ms_led_driver;
 
@@ -163,7 +164,7 @@ public:
   CRGB getColorRGB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+      hsv = lightingLib.getDynamicColorHSV((uint8_t)chain, (ColorID)colorEnum, brightness);
     } else {
       hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     }
@@ -175,7 +176,7 @@ public:
   CRGB getColorGRB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+      hsv = lightingLib.getDynamicColorHSV((uint8_t)chain, (ColorID)colorEnum, brightness);
     } else {
       hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     }
@@ -188,7 +189,7 @@ public:
   CRGB getColorGBR(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+      hsv = lightingLib.getDynamicColorHSV((uint8_t)chain, (ColorID)colorEnum, brightness);
     } else {
       hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     }

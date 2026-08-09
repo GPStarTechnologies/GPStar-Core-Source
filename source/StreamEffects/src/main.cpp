@@ -150,7 +150,7 @@ void AnimationTask(void *parameter) {
       }
     }
 
-    // Update the device LEDs and restart the timer.
+    // Update the device LEDs.
     mgr.show();
 
     vTaskDelay(8 / portTICK_PERIOD_MS); // 8ms delay

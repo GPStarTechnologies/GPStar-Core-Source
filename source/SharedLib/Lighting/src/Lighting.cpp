@@ -131,7 +131,73 @@ LED_HSV Lighting::getStaticColorDefinition(ColorID color) {
       return {192, 255, 255};
     
     default:
+      // WARNING: Do NOT recursively call getDynamicColorHSV() here as it will cause an infinite loop!
       return {100, 0, 255};  // Default to white
+  }
+}
+
+// Helper method: Get cycle value for dynamic color animations (frame-based timing lookup)
+//
+// This centralized lookup table makes it easy to adjust animation speeds across the codebase.
+// All animation timing is defined here, using frame-based cycles instead of real-time delays.
+//
+// TIMING RELATIONSHIP:
+// actual_time_between_changes = cycle_value × LED_update_interval
+//
+// EXAMPLES WITH STANDARDIZED INTERVALS:
+// If cycle = 50 and LED updates every:
+//   - 5ms  (NeutronaWand, PSTT, ProtonPack):  50 × 5ms = 250ms
+//   - 8ms  (Attenuator, StreamEffects):       50 × 8ms = 400ms
+//   - 16ms (BeltGizmo, SingleShot):           50 × 16ms = 800ms
+//
+// CYCLE SPEEDS (frames between animation updates):
+// - cycle = 1  (C_BLUE_FADE): Fastest, changes every frame
+//   - At 5ms:  5ms   | At 8ms:  8ms    | At 16ms: 16ms
+// - cycle = 4  (C_BLUE_FADE in C_PASTEL): Very fast, changes every 4 calls
+//   - At 5ms:  20ms  | At 8ms:  32ms   | At 16ms: 64ms
+// - cycle = 6  (DEFAULT, C_RAINBOW, C_PASTEL, C_AMBER_PULSE): Fast, changes every 6 calls
+//   - At 5ms:  30ms  | At 8ms:  48ms   | At 16ms: 96ms
+// - cycle = 7  (C_ORANGEPURPLE, C_REDPURPLE): Medium speed alternation
+//   - At 5ms:  35ms  | At 8ms:  56ms   | At 16ms: 112ms
+// - cycle = 8  (C_RED_FADE): Medium fade speed
+//   - At 5ms:  40ms  | At 8ms:  64ms   | At 16ms: 128ms
+// - cycle = 10 (C_ORANGE_FADE): Slower fade
+//   - At 5ms:  50ms  | At 8ms:  80ms   | At 16ms: 160ms
+// - cycle = 50 (C_REDGREEN, C_BLUEGREEN): Slow alternation
+//   - At 5ms: 250ms  | At 8ms: 400ms   | At 16ms: 800ms
+//
+// CHOOSING CYCLE VALUES:
+// - Smaller values (1-4) = rapid changes, best for streaming/smooth fades
+// - Medium values (5-10) = perceptible pulses, good for status indicators
+// - Large values (50+) = slow alternations, good for calm breathing effects
+uint8_t Lighting::getCycleValueForColor(ColorID color) {
+  switch(color) {
+    case C_REDGREEN:
+    case C_BLUEGREEN:
+      return 50;  // Slowest alternation (250-800ms at standardized intervals)
+
+    case C_ORANGE_FADE:
+      return 10;  // Slower fade (50-160ms at standardized intervals)
+
+    case C_RED_FADE:
+      return 8;   // Medium fade speed (40-128ms at standardized intervals)
+
+    case C_ORANGEPURPLE:
+    case C_REDPURPLE:
+      return 7;   // Medium speed alternation (35-112ms at standardized intervals)
+
+    case C_AMBER_PULSE:
+      return 6;   // Fast pulse (30-96ms at standardized intervals)
+
+    case C_RAINBOW:
+    case C_PASTEL:
+      return 6;   // Fast transitions (30-96ms at standardized intervals)
+
+    case C_BLUE_FADE:
+      return 1;   // Fastest - smooth continuous fade (every frame)
+
+    default:
+      return 6;   // Default: fast transitions (30-96ms at standardized intervals)
   }
 }
 
@@ -270,40 +336,34 @@ LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
 //
 // This function uses frame counting instead of real-time delays (avoiding timers).
 // Each call to this function = 1 frame. The dynamicCounter[] increments every call.
-// When counter reaches the cycle value (counter % cycle == 0), the animation advances.
-// Frames will be dependent on the update speed used for "show" of the LEDs.
+// When counter reaches the cycle value (from getCycleValueForColor), the animation advances.
+// Frames are dependent on the update speed used for "show" of the LEDs.
 //
 // - No dependency on timing libraries (millis(), millisDelay, etc.)
 // - Simpler state management - just increment a counter
 // - Self-regulating speed: animation rate = LED update rate
-// - If you call this every 10ms, a cycle of 50 = 500ms between changes
+// - Frame-based timing allows consistent behavior across different update intervals
 //
-// CYCLE SPEEDS (frames between animation updates):
-// - cycle = 2  (C_RAINBOW, C_PASTEL): Very fast, changes every 2 calls
-// - cycle = 5  (C_AMBER_PULSE): Fast pulse
-// - cycle = 7  (C_ORANGEPURPLE, C_REDPURPLE): Medium speed alternation
-// - cycle = 8  (C_RED_FADE): Medium fade speed
-// - cycle = 10 (C_ORANGE_FADE): Slower fade
-// - cycle = 50 (C_REDGREEN, C_BLUEGREEN): Slow alternation
-//
+// The actual timing for each animation is defined in getCycleValueForColor() lookup table.
 // Call this function every time you update a chain of LEDs.
-LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t saturation) {
-  // For single-device instances, always use slot 0
-  // For multi-device instances, this method only works for slot 0
-  // Multi-device instances should create separate Lighting objects per device or use modified method
-  uint8_t deviceSlot = 0;
+LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t brightness, uint8_t saturation) {
+  // Validate deviceSlot is within range, default to 0 if out of bounds
+  if(deviceSlot >= numDevices) {
+    deviceSlot = 0;
+  }
 
-  // Cycle rate for counter-based timing (frames between changes).
-  uint8_t cycle = 2; // Initial value, each pattern sets its own cycle rate.
+  // Get cycle rate for this color using centralized lookup table
+  uint8_t cycle = getCycleValueForColor(color);
+  
+  // Variable for dynamic brightness adjustments (used by some animations)
+  uint8_t dynamicBrightness = brightness;
 
   switch(color) {
     case C_REDGREEN:
-      // Alternate between red (0) and green (96)
+      // Alternate between red (0) and dark green (96)
       if(dynamicHue[deviceSlot] != 0 && dynamicHue[deviceSlot] != 96) {
         dynamicHue[deviceSlot] = 0; // Reset if out of range
       }
-
-      cycle = 50;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 96 : 0;
@@ -313,7 +373,9 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
         dynamicCounter[deviceSlot]++;
       }
 
-      return {dynamicHue[deviceSlot], 255, brightness};
+      // Use darker brightness for green to match C_DARK_GREEN visual weight.
+      dynamicBrightness = (dynamicHue[deviceSlot] == 96) ? (brightness / 2) : brightness;
+      return {dynamicHue[deviceSlot], 255, dynamicBrightness};
     // END C_REDGREEN
 
     case C_ORANGEPURPLE:
@@ -321,8 +383,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       if(dynamicHue[deviceSlot] != 15 && dynamicHue[deviceSlot] != 210) {
         dynamicHue[deviceSlot] = 15; // Reset if out of range
       }
-
-      cycle = 7;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 15) ? 210 : 15;
@@ -341,8 +401,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
         dynamicHue[deviceSlot] = 145; // Reset if out of range
       }
 
-      cycle = 50;
-
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 96) ? 145 : 96;
         dynamicCounter[deviceSlot] = 1;
@@ -359,8 +417,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       if(dynamicHue[deviceSlot] != 0 && dynamicHue[deviceSlot] != 210) {
         dynamicHue[deviceSlot] = 0; // Reset if out of range
       }
-
-      cycle = 7;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 210 : 0;
@@ -379,8 +435,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
         dynamicHue[deviceSlot] = 24; // Reset if out of range
         dynamicNextBright[deviceSlot] = 1; // Start incrementing
       }
-
-      cycle = 5;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] += dynamicNextBright[deviceSlot];
@@ -409,8 +463,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
         dynamicNextBright[deviceSlot] = 5; // Start incrementing
       }
 
-      cycle = 10;
-
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
 
@@ -438,8 +490,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
         dynamicNextBright[deviceSlot] = 5; // Start incrementing
       }
 
-      cycle = 8;
-
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
 
@@ -466,8 +516,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       if(dynamicHue[deviceSlot] < 146 || dynamicHue[deviceSlot] > 160) {
         dynamicHue[deviceSlot] = 160; // Reset if out of range
       }
-
-      cycle = 1; // Decrement hue every frame for smooth fade
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot]--;
@@ -500,7 +548,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
     // END C_PASTEL
 
     case C_RAINBOW:
-    default:
       // Cycle through all hues (0-255) at full saturation
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + 5) % 256;
@@ -512,6 +559,11 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
 
       return {dynamicHue[deviceSlot], 255, brightness};
     // END C_RAINBOW
+
+    default:
+      // Unknown color, fall back to static color definition via getColorHSV()
+      // which will safely returns a static color (or defaults to white).
+      return getColorHSV(color, brightness, saturation);
   }
 }
 

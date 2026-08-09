@@ -190,13 +190,13 @@ void updateStreamPalette() {
   }
 }
 
-// Animate the LEDs using FastLED's built-in palette system for smooth colour transitions.
+// Animate the LEDs using the built-in palette system for smooth colour transitions.
 void animateLights() {
   static uint8_t i_palette_start_index = 0; // Starting index for palette distribution across LEDs.
 
   CRGB* buffer = LightingManager::getInstance().getLEDs();
 
-  // Use FastLED's fill_palette function for automatic colour distribution and blending
+  // Use the built-in fill_palette function for automatic colour distribution and blending
   // Parameters: LED array, number of LEDs, starting palette index, delta between LEDs, palette, brightness, blending mode.
   fill_palette(buffer, i_num_leds, i_palette_start_index, 255 / i_num_leds, cp_StreamPalette, 255, LINEARBLEND);
 

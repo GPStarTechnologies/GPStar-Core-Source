@@ -149,7 +149,7 @@ void sendDebug(const String& message) {
 // 25ms reflects a refresh rate equivalent to 40fps.
 // 20ms reflects a refresh rate equivalent to 50fps.
 // 16ms reflects a refresh rate equivalent to 60fps.
-Task animateTask(20, TASK_FOREVER, &animateTaskCallback);
+Task animateTask(16, TASK_FOREVER, &animateTaskCallback);
 
 // Create a task to check for user inputs via switches/encoders.
 // Average visual reaction time to changes is 13-20ms.
