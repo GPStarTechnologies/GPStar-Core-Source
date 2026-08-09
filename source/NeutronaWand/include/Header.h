@@ -43,6 +43,8 @@
   #define WAND_STATUS_LED_PIN 38 // V1.4 GPStar Neutrona Wand onboard LED pin.
   #define INTENSIFY_SWITCH_PIN 39
   #define ACTIVATE_SWITCH_PIN 40
+  // Pin 41 (BARREL_LED_PIN) is referenced in LightConfig.h
+  // Pin 42 (TOP_LED_PIN) is referenced in LightConfig.h
   #define MAG_INT_PIN 43
   #define MAG_RDY_PIN 44
   #define VENT_SWITCH_PIN 45
@@ -55,8 +57,10 @@
   #define ROTARY_ENCODER_B 7
   #define SLO_BLO_LED_PIN 8 // SLO-BLO LED. (Red LED)
   #define CLIPPARD_LED_PIN 9 // LED underneath the Clippard valve. (Orange or White LED)
+  // Pin 10 (BARREL_LED_PIN) is referenced in LightConfig.h
   #define VIBRATION_PIN 11 // Pin for the vibration motor.
-  #define TOP_LED_PIN 12 // Blinking white light beside the vent on top of the device.
+  // Pin 12 (TOP_LED_PIN) is referenced in LightConfig.h
+  #define VENT_LED_PIN 13 // Vent light (non-RGB).
   #define BARREL_HAT_LED_PIN 22 // Hat[1] light at front of the device near the barrel tip. (Orange LED)
   #define TOP_HAT_LED_PIN 23 // Hat[2] light at top of the device body near vent. (Orange or White LED)
   #define BARREL_TIP_LED_PIN 24 // White LED at tip of the device barrel. (White LED)

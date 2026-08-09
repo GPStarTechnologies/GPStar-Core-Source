@@ -46,11 +46,15 @@
   #define BARREL_HAT_LED_PIN 10 // Hat[1] light, not used but initialized to ensure it is turned off.
   #define SLO_BLO_LED_PIN 12 // SLO-BLO LED. (Red LED)
   #define WAND_STATUS_LED_PIN 38 // V1.4 GPStar Neutrona Wand onboard LED pin.
+  // Pin 41 (BARREL_LED_PIN) is referenced in LightConfig.h
+  // Pin 42 (TOP_LED_PIN) is referenced in LightConfig.h
   #define BARREL_TIP_LED_PIN 46 // LED at tip of the barrel. (White LED)
 #else
   #define SLO_BLO_LED_PIN 8 // SLO-BLO LED. (Red LED)
   #define CLIPPARD_LED_PIN 9 // LED underneath the Clippard valve. (Orange or White LED)
-  #define TOP_LED_PIN 12 // Blinking white light beside the vent on top of the device.
+  // Pin 10 (BARREL_LED_PIN) is referenced in LightConfig.h
+  // Pin 12 (TOP_LED_PIN) is referenced in LightConfig.h
+  #define VENT_LED_PIN 13 // Vent light (non-RGB).
   #define BARREL_HAT_LED_PIN 22 // Hat[1] light at front of the device near the barrel tip. (Orange LED)
   #define TOP_HAT_LED_PIN 23 // Hat[2] light at top of the device body near vent. (Orange or White LED)
   #define BARREL_TIP_LED_PIN 24 // White LED at tip of the device barrel. (White LED)

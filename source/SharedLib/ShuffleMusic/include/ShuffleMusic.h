@@ -93,7 +93,7 @@ class StatelessShuffle {
         mask = mask >> 1;
         m_numBits++;
       }
-      m_halfIndexBits = m_numBits / 2;
+      m_halfIndexBits = m_numBits >> 1; // Divide by 2, but fast
       m_halfIndexBitsMask = (1 << m_halfIndexBits) - 1;
     }
 

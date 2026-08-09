@@ -304,11 +304,13 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 50;
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 96 : 0;
         dynamicCounter[deviceSlot] = 1;
+      }
+      else {
+        dynamicCounter[deviceSlot]++;
       }
 
       return {dynamicHue[deviceSlot], 255, brightness};
@@ -321,11 +323,13 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 7;
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 15) ? 210 : 15;
         dynamicCounter[deviceSlot] = 1;
+      }
+      else {
+        dynamicCounter[deviceSlot]++;
       }
 
       return {dynamicHue[deviceSlot], 255, brightness};
@@ -338,11 +342,13 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 50;
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 96) ? 145 : 96;
         dynamicCounter[deviceSlot] = 1;
+      }
+      else {
+        dynamicCounter[deviceSlot]++;
       }
 
       return {dynamicHue[deviceSlot], 255, brightness};
@@ -355,11 +361,13 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 7;
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 210 : 0;
         dynamicCounter[deviceSlot] = 1;
+      }
+      else {
+        dynamicCounter[deviceSlot]++;
       }
 
       return {dynamicHue[deviceSlot], 255, brightness};
@@ -373,7 +381,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 5;
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] += dynamicNextBright[deviceSlot];
@@ -388,6 +395,9 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
 
         dynamicCounter[deviceSlot] = 1;
       }
+      else {
+        dynamicCounter[deviceSlot]++;
+      }
 
       return {dynamicHue[deviceSlot], 255, brightness};
     // END C_AMBER_PULSE
@@ -400,7 +410,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 10;
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
@@ -414,6 +423,9 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
         }
 
         dynamicCounter[deviceSlot] = 1;
+      }
+      else {
+        dynamicCounter[deviceSlot]++;
       }
 
       return {28, 255, dynamicBright[deviceSlot]};
@@ -427,7 +439,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 8;
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicBright[deviceSlot] += dynamicNextBright[deviceSlot];
@@ -442,6 +453,9 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
 
         dynamicCounter[deviceSlot] = 1;
       }
+      else {
+        dynamicCounter[deviceSlot]++;
+      }
 
       return {0, 255, dynamicBright[deviceSlot]};
     // END C_RED_FADE
@@ -454,7 +468,6 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
       }
 
       cycle = 1; // Decrement hue every frame for smooth fade
-      dynamicCounter[deviceSlot]++;
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot]--;
@@ -466,17 +479,21 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
         
         dynamicCounter[deviceSlot] = 1;
       }
+      else {
+        dynamicCounter[deviceSlot]++;
+      }
 
       return {dynamicHue[deviceSlot], 255, brightness};
     // END C_BLUE_FADE
 
     case C_PASTEL:
       // Cycle through all hues (0-255) at half saturation
-      dynamicCounter[deviceSlot]++;
-
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + 5) % 256;
         dynamicCounter[deviceSlot] = 1;
+      }
+      else {
+        dynamicCounter[deviceSlot]++;
       }
 
       return {dynamicHue[deviceSlot], 128, brightness};
@@ -485,11 +502,12 @@ LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t 
     case C_RAINBOW:
     default:
       // Cycle through all hues (0-255) at full saturation
-      dynamicCounter[deviceSlot]++;
-
       if(dynamicCounter[deviceSlot] % cycle == 0) {
         dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + 5) % 256;
         dynamicCounter[deviceSlot] = 1;
+      }
+      else {
+        dynamicCounter[deviceSlot]++;
       }
 
       return {dynamicHue[deviceSlot], 255, brightness};

@@ -60,12 +60,12 @@ enum LED_CHAIN {
  */
 #ifdef ESP32
   #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs used by the barrel and cyclotron.
-  #define TOP_LED_PIN 42 // RGB Vent light only for ESP32.
+  #define TOP_LED_PIN 42 // Data pin for the addressable LEDs to the vent light.
   #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #else
   #define BARREL_LED_PIN 10 // Data pin for the addressable LEDs used by the barrel and cyclotron.
-  #define VENT_LED_PIN 13 // Vent light (either stock or RGB LED).
-  #define RGB_VENT_PIN VENT_LED_PIN // Common name between hardware.
+  #define TOP_LED_PIN 12 // Data pin for the addressable LEDs to the vent light, and top blinking light when RGB vent light is disabled.
+  #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for optimal effect
 
