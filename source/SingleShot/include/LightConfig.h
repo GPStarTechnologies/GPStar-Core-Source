@@ -160,14 +160,14 @@ public:
 
   // Get color as RGB based on LED chain and color enum
   CRGB getColorRGB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
   // Get color as GRB based on LED chain and color enum
   CRGB getColorGRB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
@@ -175,7 +175,7 @@ public:
 
   // Get color as GBR based on LED chain and color enum
   CRGB getColorGBR(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
     return CRGB(rgb.g, rgb.b, rgb.r);

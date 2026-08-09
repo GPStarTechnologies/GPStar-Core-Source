@@ -56,7 +56,7 @@ void Lighting::resetDynamicColors() {
 }
 
 // Helper method: Get static color definition (extracted from getColorHSV switch)
-LED_HSV Lighting::getStaticColorDefinition(SingleColor color) {
+LED_HSV Lighting::getStaticColorDefinition(ColorID color) {
   switch(color) {
     case C_WHITE:
       return {100, 0, 255};  // White = no saturation, full brightness
@@ -136,7 +136,7 @@ LED_HSV Lighting::getStaticColorDefinition(SingleColor color) {
 }
 
 // Get HSV color values for standard colors.
-LED_HSV Lighting::getColorHSV(SingleColor color, uint8_t brightness, uint8_t saturation) {
+LED_HSV Lighting::getColorHSV(ColorID color, uint8_t brightness, uint8_t saturation) {
   // Returns LED_HSV with appropriate hue, saturation, and brightness.
   // Some colors override saturation or brightness with fixed values.
 
@@ -287,7 +287,7 @@ LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
 // - cycle = 50 (C_REDGREEN, C_BLUEGREEN): Slow alternation
 //
 // Call this function every time you update a chain of LEDs.
-LED_HSV Lighting::getDynamicColorHSV(DynamicColor color, uint8_t brightness, uint8_t saturation) {
+LED_HSV Lighting::getDynamicColorHSV(ColorID color, uint8_t brightness, uint8_t saturation) {
   // For single-device instances, always use slot 0
   // For multi-device instances, this method only works for slot 0
   // Multi-device instances should create separate Lighting objects per device or use modified method

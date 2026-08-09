@@ -48,50 +48,52 @@ enum ColorOrder : uint8_t {
   ORDER_GBR = 2
 };
 
-// SingleColor: Common static colors used across GPStar devices.
-// These colors have fixed HSV values and no animation state.
-// Devices can extend this enum for common, custom colors.
-enum SingleColor {
-  C_BLACK,
-  C_WHITE,
-  C_WARM_WHITE,
-  C_PINK,
-  C_PASTEL_PINK,
-  C_RED,
-  C_LIGHT_RED,
-  C_RED2,
-  C_RED3,
-  C_RED4,
-  C_RED5,
-  C_ORANGE,
-  C_BEIGE,
-  C_YELLOW,
-  C_CHARTREUSE,
-  C_GREEN,
-  C_DARK_GREEN,
-  C_MINT,
-  C_AQUA,
-  C_LIGHT_BLUE,
-  C_MID_BLUE,
-  C_NAVY_BLUE,
-  C_BLUE,
-  C_PURPLE
+// ColorID: All colors (static and dynamic) in a single unified enum.
+// Static colors: 0-99 (fixed HSV values, no animation state)
+// Dynamic colors: 100+ (animated/stateful colors with frame-based animation)
+enum ColorID : uint8_t {
+  // --- Static colors (0-99) ---
+  C_BLACK = 0,
+  C_WHITE = 1,
+  C_WARM_WHITE = 2,
+  C_PINK = 3,
+  C_PASTEL_PINK = 4,
+  C_RED = 5,
+  C_LIGHT_RED = 6,
+  C_RED2 = 7,
+  C_RED3 = 8,
+  C_RED4 = 9,
+  C_RED5 = 10,
+  C_ORANGE = 11,
+  C_BEIGE = 12,
+  C_YELLOW = 13,
+  C_CHARTREUSE = 14,
+  C_GREEN = 15,
+  C_DARK_GREEN = 16,
+  C_MINT = 17,
+  C_AQUA = 18,
+  C_LIGHT_BLUE = 19,
+  C_MID_BLUE = 20,
+  C_NAVY_BLUE = 21,
+  C_BLUE = 22,
+  C_PURPLE = 23,
+  // --- Dynamic colors (100+) ---
+  C_REDGREEN = 100,
+  C_ORANGEPURPLE = 101,
+  C_BLUEGREEN = 102,
+  C_REDPURPLE = 103,
+  C_AMBER_PULSE = 104,
+  C_BLUE_FADE = 105,
+  C_ORANGE_FADE = 106,
+  C_RED_FADE = 107,
+  C_PASTEL = 108,
+  C_RAINBOW = 109
 };
 
-// DynamicColor: Animated/stateful colors that change over time.
-// These require state tracking and are managed by static methods.
-enum DynamicColor {
-  C_REDGREEN,
-  C_ORANGEPURPLE,
-  C_BLUEGREEN,
-  C_REDPURPLE,
-  C_AMBER_PULSE,
-  C_BLUE_FADE,
-  C_ORANGE_FADE,
-  C_RED_FADE,
-  C_PASTEL,
-  C_RAINBOW
-};
+// Metadata: Identifies which ColorID enum values are dynamic
+constexpr bool isColorDynamic(uint8_t colorEnum) {
+  return colorEnum >= 100; // Dynamic colors start at 100
+}
 
 // CustomColor: Device-specific custom colors for individual projects.
 // These are extended colors that may only be used by one or a few devices,
@@ -119,9 +121,9 @@ enum CustomColor {
  * - Brightness percentage conversion
  * - Custom static color mapping for device-specific colors (user-configured via NVS/Preferences/EEPROM)
  *
- * Color Types:
- *   - SingleColor: 24 static named colors (C_RED, C_BLUE, etc.)
- *   - DynamicColor: 10 animated patterns (C_RAINBOW, C_REDGREEN, etc.) - state tracked per device
+ * Color Types (all in ColorID enum):
+ *   - Static colors (0-99): 24 static named colors (C_RED, C_BLUE, etc.)
+ *   - Dynamic colors (100-109): 10 animated patterns (C_RAINBOW, C_REDGREEN, etc.) - state tracked per device
  *   - CustomColor: 5 device-specific colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.) - user-configured HSV values
  *
  * Example usage:
@@ -155,7 +157,7 @@ class Lighting {
     LED_HSV* customColorHSV;      // Array[numDevices] - user-configured HSV values for custom static colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.)
 
     // Helper method to get static color definitions
-    LED_HSV getStaticColorDefinition(SingleColor color);
+    LED_HSV getStaticColorDefinition(ColorID color);
 
   public:
     /**
@@ -179,18 +181,18 @@ class Lighting {
     /**
      * Get HSV color values for standard (static) colors.
      * Parameters:
-     *   color: SingleColor enum value
+     *   color: ColorID enum value
      *   brightness: 0-255 (default: 255 = full brightness)
      *   saturation: 0-255 (default: 255 = full saturation)
      * Returns: LED_HSV with hue, saturation, and brightness
      * Example: LED_HSV blue = lighting.getColorHSV(C_BLUE, 200, 255);
      */
-    LED_HSV getColorHSV(SingleColor color, uint8_t brightness = 255, uint8_t saturation = 255);
+    LED_HSV getColorHSV(ColorID color, uint8_t brightness = 255, uint8_t saturation = 255);
 
     /**
      * Get HSV color values for dynamic (animated) colors.
      * Parameters:
-     *   color: DynamicColor - Which animation pattern
+     *   color: ColorID - Which animation pattern (values 100-109 for dynamic colors)
      *   brightness: [0-255] - Target brightness (may be overridden by fade effects)
      *   saturation: [0-255] - Color saturation (default: 255)
      * Returns: LED_HSV for the current animation frame
@@ -198,7 +200,7 @@ class Lighting {
      * For multi-device setups, create separate Lighting instances per device or device group.
      * Example: LED_HSV hsv = lighting.getDynamicColorHSV(C_RAINBOW, 255);
      */
-    LED_HSV getDynamicColorHSV(DynamicColor color, uint8_t brightness = 255, uint8_t saturation = 255);
+    LED_HSV getDynamicColorHSV(ColorID color, uint8_t brightness = 255, uint8_t saturation = 255);
 
     /**
      * Set a custom static color HSV value for a device slot.

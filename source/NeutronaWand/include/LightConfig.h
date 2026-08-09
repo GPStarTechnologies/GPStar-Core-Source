@@ -163,24 +163,42 @@ public:
     FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
   }
 
-  // Get color as RGB based on LED chain and color enum
+  // Get color as RGB based on LED chain and color enum (static or dynamic)
+  // Automatically detects and routes to the correct color method
   CRGB getColorRGB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
-  // Get color as GRB based on LED chain and color enum
+  // Get color as GRB based on LED chain and color enum (static or dynamic)
+  // Automatically detects and routes to the correct color method
   CRGB getColorGRB(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
   }
 
-  // Get color as GBR based on LED chain and color enum
+  // Get color as GBR based on LED chain and color enum (static or dynamic)
+  // Automatically detects and routes to the correct color method
   CRGB getColorGBR(LED_CHAIN chain, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV((ColorID)colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
+    }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
     return CRGB(rgb.g, rgb.b, rgb.r);

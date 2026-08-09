@@ -284,20 +284,20 @@ public:
 
   // Get color as RGB based on device and color enum
   CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     return CRGB(rgb.r, rgb.g, rgb.b);
   }
 
   CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
     return CRGB(rgb.g, rgb.r, rgb.b);
   }
 
   CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    auto hsv = lightingLib.getColorHSV((SingleColor)colorEnum, brightness);
+    auto hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
     return CRGB(rgb.g, rgb.b, rgb.r);

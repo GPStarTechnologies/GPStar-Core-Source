@@ -76,7 +76,7 @@ TEST_F(LightingColorsFixture, StaticColor_SaturationParameterApplied) {
 }
 
 TEST_F(LightingColorsFixture, AllStaticColors_ReturnValidHSV) {
-    SingleColor colors[] = {
+    ColorID colors[] = {
         C_BLACK, C_WHITE, C_WARM_WHITE, C_PINK, C_PASTEL_PINK,
         C_RED, C_LIGHT_RED, C_RED2, C_RED3, C_RED4, C_RED5,
         C_ORANGE, C_BEIGE, C_YELLOW, C_CHARTREUSE,
@@ -84,7 +84,7 @@ TEST_F(LightingColorsFixture, AllStaticColors_ReturnValidHSV) {
         C_LIGHT_BLUE, C_MID_BLUE, C_NAVY_BLUE, C_BLUE, C_PURPLE
     };
     
-    for(SingleColor color : colors) {
+    for(ColorID color : colors) {
         LED_HSV hsv = lighting.getColorHSV(color, 255, 255);
         // All values should be in valid range
         EXPECT_GE(hsv.h, 0);
