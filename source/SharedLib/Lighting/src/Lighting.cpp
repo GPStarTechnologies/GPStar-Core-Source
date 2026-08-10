@@ -153,17 +153,13 @@ LED_HSV Lighting::getStaticColorDefinition(ColorID color) {
 // CYCLE SPEEDS (frames between animation updates):
 // - cycle = 1  (C_BLUE_FADE): Fastest, changes every frame
 //   - At 5ms:  5ms   | At 8ms:  8ms    | At 16ms: 16ms
-// - cycle = 4  (C_BLUE_FADE in C_PASTEL): Very fast, changes every 4 calls
-//   - At 5ms:  20ms  | At 8ms:  32ms   | At 16ms: 64ms
 // - cycle = 6  (DEFAULT, C_RAINBOW, C_PASTEL, C_AMBER_PULSE): Fast, changes every 6 calls
 //   - At 5ms:  30ms  | At 8ms:  48ms   | At 16ms: 96ms
-// - cycle = 7  (C_ORANGEPURPLE, C_REDPURPLE): Medium speed alternation
-//   - At 5ms:  35ms  | At 8ms:  56ms   | At 16ms: 112ms
 // - cycle = 8  (C_RED_FADE): Medium fade speed
 //   - At 5ms:  40ms  | At 8ms:  64ms   | At 16ms: 128ms
 // - cycle = 10 (C_ORANGE_FADE): Slower fade
 //   - At 5ms:  50ms  | At 8ms:  80ms   | At 16ms: 160ms
-// - cycle = 50 (C_REDGREEN, C_BLUEGREEN): Slow alternation
+// - cycle = 50 (C_REDGREEN, C_BLUEGREEN, C_ORANGEPURPLE, C_REDPURPLE): Slow alternation
 //   - At 5ms: 250ms  | At 8ms: 400ms   | At 16ms: 800ms
 //
 // CHOOSING CYCLE VALUES:
@@ -174,6 +170,8 @@ uint8_t Lighting::getCycleValueForColor(ColorID color) {
   switch(color) {
     case C_REDGREEN:
     case C_BLUEGREEN:
+    case C_ORANGEPURPLE:
+    case C_REDPURPLE:
       return 50;  // Slowest alternation (250-800ms at standardized intervals)
 
     case C_ORANGE_FADE:
@@ -181,10 +179,6 @@ uint8_t Lighting::getCycleValueForColor(ColorID color) {
 
     case C_RED_FADE:
       return 8;   // Medium fade speed (40-128ms at standardized intervals)
-
-    case C_ORANGEPURPLE:
-    case C_REDPURPLE:
-      return 7;   // Medium speed alternation (35-112ms at standardized intervals)
 
     case C_AMBER_PULSE:
       return 6;   // Fast pulse (30-96ms at standardized intervals)
@@ -437,11 +431,8 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
       }
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
-        // Sanity check: use int16_t to prevent overflow, then clamp to valid range
-        int16_t newHue = (int16_t)dynamicHue[deviceSlot] + dynamicNextBright[deviceSlot];
-        if(newHue > 255) newHue = 255;  // Prevent overflow
-        if(newHue < 0) newHue = 0;      // Prevent underflow
-        dynamicHue[deviceSlot] = (uint8_t)newHue;
+        // Let uint8_t overflow/underflow work naturally for hue (circular color wheel)
+        dynamicHue[deviceSlot] += (uint8_t)dynamicNextBright[deviceSlot];
 
         // Reverse direction at boundaries
         if(dynamicHue[deviceSlot] >= 32) {
@@ -530,11 +521,8 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
       }
 
       if(dynamicCounter[deviceSlot] % cycle == 0) {
-        // Sanity check: use int16_t to prevent underflow, then clamp to valid range
-        int16_t newHue = (int16_t)dynamicHue[deviceSlot] - 1;
-        if(newHue > 255) newHue = 255;  // Prevent overflow
-        if(newHue < 0) newHue = 0;      // Prevent underflow
-        dynamicHue[deviceSlot] = (uint8_t)newHue;
+        // Let uint8_t underflow work naturally for hue (circular color wheel)
+        dynamicHue[deviceSlot] -= 1;
         
         // Wrap around if we go below minimum
         if(dynamicHue[deviceSlot] < 146) {
@@ -576,6 +564,13 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
       return {dynamicHue[deviceSlot], 255, brightness};
     // END C_RAINBOW
 
+    case C_CUSTOM:
+      // Return the custom static color stored for this device slot.
+      // The deviceSlot parameter defaults to 0 for single-device projects,
+      // but multi-device projects can specify which slot to retrieve.
+      return getCustomColorHSV(deviceSlot);
+    // END C_CUSTOM
+
     default:
       // Unknown color, fall back to static color definition via getColorHSV()
       // which will safely returns a static color (or defaults to white).
@@ -583,8 +578,8 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
   }
 }
 
-// Set a custom static color HSV value for the device
-void Lighting::setCustomColorHSV(uint8_t deviceSlot, CustomColor color, const LED_HSV &hsv) {
+// Set a custom static color HSV value for the device (default slot 0 for single-device projects).
+void Lighting::setCustomColorHSV(const LED_HSV &hsv, uint8_t deviceSlot) {
   // For single-device instances, always use slot 0
   // Multi-device instances should override this behavior if needed
   if(deviceSlot >= numDevices) {
@@ -594,7 +589,7 @@ void Lighting::setCustomColorHSV(uint8_t deviceSlot, CustomColor color, const LE
   customColorHSV[deviceSlot] = hsv;
 }
 
-// Get the currently stored custom color HSV value for the device
+// Get the currently stored custom color HSV value for the device (default slot 0 for single-device projects).
 LED_HSV Lighting::getCustomColorHSV(uint8_t deviceSlot) const {
   if(deviceSlot >= numDevices) {
     deviceSlot = 0;

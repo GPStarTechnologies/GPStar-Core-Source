@@ -87,25 +87,15 @@ enum ColorID : uint8_t {
   C_ORANGE_FADE = 106,
   C_RED_FADE = 107,
   C_PASTEL = 108,
-  C_RAINBOW = 109
+  C_RAINBOW = 109,
+  // --- Custom color (set per device slot) ---
+  C_CUSTOM = 254
 };
 
 // Metadata: Identifies which ColorID enum values are dynamic
 constexpr bool isColorDynamic(uint8_t colorEnum) {
   return colorEnum >= 100; // Dynamic colors start at 100
 }
-
-// CustomColor: Device-specific custom colors for individual projects.
-// These are extended colors that may only be used by one or a few devices,
-// but are exposed through the canonical Lighting library API.
-// Device projects keep their own HSV values for these enum constants.
-enum CustomColor {
-  C_CUSTOM,                       // Generic custom color (typically a barrel color)
-  C_CUSTOM_POWERCELL,             // Proton Pack only
-  C_CUSTOM_CYCLOTRON,             // Proton Pack only
-  C_CUSTOM_INNER_CYCLOTRON,       // Proton Pack only
-  C_HASLAB                        // Proton Pack only (HasLab variant)
-};
 
 /**
  * Lighting: Instance-based utility class for LED color operations.
@@ -139,8 +129,9 @@ enum CustomColor {
  *   LED_RGB rgb = lighting.hsv2rgb(rainbow);
  *
  *   // Custom static colors (user-configured HSV values, no animation):
- *   LED_HSV barrel_color = {192, 200, 255};  // From NVS/Preferences/EEPROM
- *   lighting.setCustomColorHSV(0, C_CUSTOM, barrel_color);
+ *   LED_HSV custom_hsv_color = {192, 200, 255};  // From NVS/Preferences/EEPROM
+ *   lighting.setCustomColorHSV(custom_hsv_color);           // Uses default device slot 0
+ *   lighting.setCustomColorHSV(custom_hsv_color, 1);        // Uses device slot 1
  *   LED_HSV custom = lighting.getCustomColorHSV(0);  // Retrieve later
  *
  *   // Apply color ordering for GRB strips:
@@ -210,18 +201,17 @@ class Lighting {
 
     /**
      * Set a custom static color HSV value for a device slot.
-     * Used for device-specific custom colors (C_CUSTOM, C_CUSTOM_POWERCELL, C_HASLAB, etc.)
-     * where the actual HSV values come from device preferences/NVS/EEPROM.
+     * Used for user-configured custom colors where the actual HSV values come from device preferences/NVS/EEPROM.
      * These are NOT animated - they are static user-configured colors.
      * Parameters:
-     *   deviceSlot: [0..numDevices-1] - Which device slot
-     *   color: CustomColor - Which custom color enum to map
-     *   hsv: LED_HSV - The static HSV value to use for this color on this device
+     *   hsv: LED_HSV - The static HSV value to use for this device
+     *   deviceSlot: [0..numDevices-1] - Which device slot (default: 0 for single-slot projects)
      * Example:
      *   LED_HSV barrel_color = {32, 200, 255};  // From NVS preferences
-     *   lighting.setCustomColorHSV(0, C_CUSTOM, barrel_color);
+     *   lighting.setCustomColorHSV(barrel_color);           // Uses device 0
+     *   lighting.setCustomColorHSV(barrel_color, 2);        // Uses device 2
      */
-    void setCustomColorHSV(uint8_t deviceSlot, CustomColor color, const LED_HSV &hsv);
+    void setCustomColorHSV(const LED_HSV &hsv, uint8_t deviceSlot = 0);
 
     /**
      * Get the currently stored custom static color HSV value for a device slot.

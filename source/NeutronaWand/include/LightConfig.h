@@ -236,8 +236,8 @@ public:
   }
 
   // Set custom color HSV values in the Lighting library
-  void setCustomColorHSV(CustomColor color, const LED_HSV &hsv) {
-    lightingLib.setCustomColorHSV(0, color, hsv);
+  void setCustomColorHSV(const LED_HSV &hsv, uint8_t deviceSlot = 0) {
+    lightingLib.setCustomColorHSV(hsv, deviceSlot);
   }
 };
 

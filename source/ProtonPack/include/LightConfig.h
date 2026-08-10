@@ -53,6 +53,20 @@ enum LED_CHAIN {
 };
 
 // ============================================================================
+// CUSTOM COLOR DEVICE SLOTS
+// ============================================================================
+
+/*
+ * Custom color slots for independent device-specific colors.
+ * Each slot holds one HSV custom color value.
+ */
+enum CUSTOM_COLOR_SLOT {
+  SLOT_POWERCELL = 0, // Power Cell custom color
+  SLOT_CYC_LID = 1,   // Cyclotron Outer/Lid custom color
+  SLOT_CYC_CAKE = 2   // Cyclotron Inner/Cake custom color
+};
+
+// ============================================================================
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
 
@@ -367,8 +381,8 @@ public:
   }
 
   // Set custom color HSV values in the Lighting library
-  void setCustomColorHSV(uint8_t deviceSlot, CustomColor color, const LED_HSV &hsv) {
-    lightingLib.setCustomColorHSV(deviceSlot, color, hsv);
+  void setCustomColorHSV(const LED_HSV &hsv, uint8_t deviceSlot = 0) {
+    lightingLib.setCustomColorHSV(hsv, deviceSlot);
   }
 };
 

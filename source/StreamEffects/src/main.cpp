@@ -349,7 +349,7 @@ void setup() {
 
   // Initialize custom color in the Lighting library
   LED_HSV customColor = {i_spectral_custom_colour, i_spectral_custom_saturation, 255};
-  LightingManager::getInstance().setCustomColorHSV(C_CUSTOM, customColor);
+  LightingManager::getInstance().setCustomColorHSV(customColor);
 
   Serial.begin(115200); // Serial monitor via USB connection.
 
@@ -391,10 +391,6 @@ void setup() {
     }
     preferences.end();
   }
-
-  // Initialize custom color in the Lighting library
-  LED_HSV customColor = {i_spectral_custom_colour, i_spectral_custom_saturation, 255};
-  LightingManager::getInstance().setCustomColorHSV(C_CUSTOM, customColor);
 
   initializePalettes(); // Set all colour patterns by stream type.
   delay(200); // Delay before configuring and running tasks.

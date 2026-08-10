@@ -326,7 +326,7 @@ void setup() {
 
   // Initialize custom color in the Lighting library
   LED_HSV customColor = {i_spectral_custom_colour, i_spectral_custom_saturation, 255};
-  mgr.setCustomColorHSV(C_CUSTOM, customColor);
+  mgr.setCustomColorHSV(customColor);
 
   Serial.begin(115200); // Serial monitor via USB connection.
 

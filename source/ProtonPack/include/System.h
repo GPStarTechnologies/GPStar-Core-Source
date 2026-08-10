@@ -246,18 +246,18 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
           break;
 
           case POWERCELL:
-            return C_CUSTOM_POWERCELL;
+            return C_CUSTOM;
           break;
 
           case CYCLOTRON_OUTER:
           case VENT_LIGHT:
           default:
-            return C_CUSTOM_CYCLOTRON;
+            return C_CUSTOM;
           break;
 
           case CYCLOTRON_INNER:
           case CYCLOTRON_PANEL:
-            return C_CUSTOM_INNER_CYCLOTRON;
+            return C_CUSTOM;
           break;
         }
       break;
@@ -3004,7 +3004,7 @@ void cyclotronColourReset() {
   // We override the colour changes when using stock HasLab Cyclotron LEDs, returning full white.
   // Changing the colour space with a CHSV Object affects the brightness slightly for non RGB pixels.
   if(i_cyclotron_num_leds == HASLAB_CYCLOTRON_LED_COUNT && !b_cyclotron_haslab_chsv_colour_change) {
-    i_colour_scheme = C_HASLAB;
+    i_colour_scheme = C_WHITE;
   }
 
   switch(gpstarPack.getSystemTheme()) {
@@ -3194,7 +3194,7 @@ void cyclotronFade() {
   // We override the colour changes when using stock HasLab Cyclotron LEDs.
   // Changing the colour space with a CHSV Object affects the brightness slightly for non RGB pixels.
   if(i_cyclotron_num_leds == HASLAB_CYCLOTRON_LED_COUNT && !b_cyclotron_haslab_chsv_colour_change) {
-    i_colour_scheme = C_HASLAB;
+    i_colour_scheme = C_WHITE;
   }
 
   switch(gpstarPack.getSystemTheme()) {
@@ -3319,7 +3319,7 @@ void cyclotron84LightOn(uint8_t cLed) {
   // We override the colour changes when using stock HasLab Cyclotron LEDs, returning full white.
   // Changing the colour space with a CHSV Object affects the brightness slightly for non RGB pixels.
   if(i_cyclotron_num_leds == HASLAB_CYCLOTRON_LED_COUNT && !b_cyclotron_haslab_chsv_colour_change) {
-    i_colour_scheme = C_HASLAB;
+    i_colour_scheme = C_WHITE;
   }
 
   CRGB i_puck_color = LightingManager::getInstance().getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_brightness);
