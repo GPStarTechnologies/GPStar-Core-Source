@@ -77,7 +77,7 @@ enum ATTENUATOR_LED_SLOT : uint8_t {
  *
  * PURPOSE:
  * This class provides a driver-agnostic interface for all LED operations.
- * Instead of directly calling FastLED functions throughout the codebase,
+ * Instead of directly calling LED driver functions throughout the codebase,
  * all LED control flows through this manager. This design allows us to
  * swap the underlying LED driver without touching application logic.
  *
