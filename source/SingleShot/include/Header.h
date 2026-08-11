@@ -247,11 +247,11 @@ millisDelay ms_menu_vibration; // Timer to do non-blocking confirmation buzzing 
   #define DEVICE_SWITCH_PIN A0
   #define GRIP_SWITCH_PIN A6
 #endif
-Switch switch_intensify(INTENSIFY_SWITCH_PIN); // Considered a primary firing button, though for this device will be an alt-fire.
-Switch switch_activate(ACTIVATE_SWITCH_PIN); // Considered the primary power toggle on the right of the gun box.
+Switch switch_intensify(INTENSIFY_SWITCH_PIN); // Alt-firing button and menu navigation/settings control while in the menu system.
+Switch switch_activate(ACTIVATE_SWITCH_PIN); // Primary power toggle on the right of the gun box.
 Switch switch_device(DEVICE_SWITCH_PIN); // Top right switch on the device. Enables device for firing.
 Switch switch_vent(VENT_SWITCH_PIN); // Bottom right switch on the device. Turns on the vent light.
-Switch switch_grip(GRIP_SWITCH_PIN); // Hand-grip button to be the primary fire and used in settings menus.
+Switch switch_grip(GRIP_SWITCH_PIN); // Primary firing button (hand grip) and menu entry/exit control.
 
 /*
  * Control for the primary blast sound effects.
