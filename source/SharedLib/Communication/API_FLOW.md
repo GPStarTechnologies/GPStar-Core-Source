@@ -136,7 +136,7 @@ The following is an alphabetical listing of all `API_COMMAND` enums found in `Co
 | A_OVERHEAT_INCREASE_LEVEL_4                    |         |         |         | X       |
 | A_OVERHEAT_INCREASE_LEVEL_5                    |         |         |         | X       |
 | A_PACK_OFF                                     | X       |         | X       |         |
-| A_PACK_ON                                      | X       |         | X       | X       |
+| A_PACK_ON                                      | X       |         | X       |         |
 | A_POST_FINISH                                  |         |         | X       |         |
 | A_POWERCELL_DIMMING                            |         |         | X       |         |
 | A_PROTON_PACK_VOLUME_ADJUSTMENT                |         |         |         | X       |
@@ -274,7 +274,7 @@ The following is an alphabetical listing of all `API_COMMAND` enums found in `Co
 | A_WAND_CONNECTED                               | X       |         |         |         |
 | A_WAND_DISCONNECTED                            | X       |         |         |         |
 | A_WAND_MASH_ERROR_SOUND                        |         |         |         | X       |
-| A_WAND_OFF                                     | X       |         |         |         |
+| A_WAND_OFF                                     | X       |         |         | X       |
 | A_WAND_ON                                      | X       |         |         | X       |
 | A_WAND_POWER_AMPS                              | X       |         |         |         |
 | A_WAND_SHUTDOWN_SOUND                          |         |         |         | X       |

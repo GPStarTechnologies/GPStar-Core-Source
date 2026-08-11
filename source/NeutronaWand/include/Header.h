@@ -427,7 +427,7 @@ uint8_t i_boot_connection_count = 0;
  * Some pack flags which get transmitted to the wand depending on the pack status.
  */
 bool b_pack_on = false; // Denotes the pack has been powered on.
-bool b_pack_alarm = false; // Denotes the pack alarm is sounding (ribbon cable disconnected, overheating).
+bool b_pack_alarm = false; // Denotes the pack alarm is sounding (ribbon cable disconnected).
 bool b_pack_post_finish = true; // Checks whether the attached pack is currently in its POST sequence. Assume finished unless pack tells us otherwise.
 bool b_pack_shutting_down = false; // Denotes the pack is in the process of shutting down but not fully shut down yet.
 bool b_pack_cyclotron_lid_on = false; // For SYSTEM_FROZEN_EMPIRE. Lets us know if the pack's cyclotron lid is on or not. Default to false to favor FE effects unless told otherwise.

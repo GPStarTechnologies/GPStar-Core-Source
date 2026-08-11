@@ -3301,7 +3301,7 @@ void wandOff() {
   }
   else if(WAND_STATUS != MODE_OFF || WAND_ACTION_STATUS != ACTION_IDLE) {
     // Full wand shutdown in all other situations.
-    packSerialSend(A_WAND_ON, (switch_vent.on() && gpstarWand.getSystemMode() == MODE_SUPER_HERO) ? 0 : 1);
+    packSerialSend(A_WAND_OFF, (switch_vent.on() && !b_pack_alarm && gpstarWand.getSystemMode() == MODE_SUPER_HERO) ? 0 : 1);
     WAND_STATUS = MODE_OFF;
     WAND_ACTION_STATUS = ACTION_IDLE;
 
@@ -3500,7 +3500,7 @@ void modeActivate() {
       }
 
       // Tell the pack the wand is turned on.
-      packSerialSend(A_PACK_ON);
+      packSerialSend(A_WAND_ON);
 
       postActivation();
     break;
@@ -3523,7 +3523,7 @@ void modeActivate() {
         }
 
         // Tell the pack the wand is turned on.
-        packSerialSend(A_PACK_ON);
+        packSerialSend(A_WAND_ON);
       }
 
       postActivation(b_short_boot); // Enable lights and bargraph after wand activation.

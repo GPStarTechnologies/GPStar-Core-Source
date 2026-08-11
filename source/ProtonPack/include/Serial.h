@@ -1231,7 +1231,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       }
     break;
 
-    case A_PACK_ON:
+    case A_WAND_ON:
       // The wand has been turned on.
       b_wand_on = true;
 
@@ -1245,7 +1245,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
       attenuatorSerialSend(A_WAND_ON);
     break;
 
-    case A_WAND_ON:
+    case A_WAND_OFF:
       // The wand has been turned off.
       b_wand_on = false;
 
