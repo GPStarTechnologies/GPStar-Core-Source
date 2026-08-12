@@ -19,11 +19,8 @@
 
 #pragma once
 
-// Suppress FastLED warnings
-#define FASTLED_INTERNAL
-
-// Include the intended LED driver first: FastLED
-#include <FastLED.h>
+// Include the intended LED driver first: Adafruit Neopixel
+#include <Adafruit_NeoPixel.h>
 
 // Include the generalized Lighting library
 #include <Lighting.h>
@@ -61,6 +58,7 @@ LED_COLOR_TYPES LED_COLOR_TYPE = LED_RGB;
 
 /*
  * Define Color Options & Timers
+ * @todo: Redefine the FastLED CRGBPalette16 with a new custom implementation.
  */
 CRGBPalette16 paletteWhite;
 CRGBPalette16 paletteProton;
@@ -109,7 +107,9 @@ extern uint8_t i_spectral_custom_saturation;
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
  * - setBrightness() — Controls global brightness
- * - getLEDs() — Returns pointer to LED array for direct manipulation
+ * - setPixelColor(index, CRGB) — Set a single LED to a color
+ * - getPixelColor(index) — Read a single LED's current color as CRGB
+ * - unpackColor(uint32_t) — Convert packed color integer to CRGB
  *
  * DRIVER ABSTRACTION:
  * The methods here wrap driver-specific calls. Whenever we need to
@@ -120,11 +120,15 @@ class LightingManager {
 private:
   static LightingManager* instance;
   Lighting lightingLib;
-  CRGB deviceLEDs[DEVICE_MAX_LEDS];
+  Adafruit_NeoPixel pixels;
 
   // Private constructor - called only once by getInstance()
-  LightingManager() : lightingLib(1) {
-    // Initialize with 1 device (has PRIMARY_LED only)
+  // Initializes the Lighting library as lightingLib with 1 device slot,
+  // and initializes the Adafruit_NeoPixel object as a variable "pixels".
+  LightingManager() :
+    lightingLib(1),
+    pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800) {
+    // Initialize with 1 device (up to DEVICE_MAX_LEDS, but limited by i_num_leds)
   }
 
 public:
@@ -139,14 +143,13 @@ public:
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(deviceLEDs, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-    FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
-    FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
+    pixels.begin();
+    pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+    pixels.show();
   }
 
   // Get color as RGB based on device and color enum
-  CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  LED_RGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
       hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
@@ -154,10 +157,10 @@ public:
       hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
     }
     auto rgb = Lighting::hsv2rgb(hsv);
-    return CRGB(rgb.r, rgb.g, rgb.b);
+    return LED_RGB(rgb.r, rgb.g, rgb.b);
   }
 
-  CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  LED_RGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
       hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
@@ -166,10 +169,10 @@ public:
     }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
-    return CRGB(rgb.g, rgb.r, rgb.b);
+    return LED_RGB(rgb.g, rgb.r, rgb.b);
   }
 
-  CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
+  LED_RGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
       hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
@@ -178,27 +181,46 @@ public:
     }
     auto rgb = Lighting::hsv2rgb(hsv);
     // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
-    return CRGB(rgb.g, rgb.b, rgb.r);
+    return LED_RGB(rgb.g, rgb.b, rgb.r);
   }
 
   // Update LED display
   void show() {
-    FastLED.show(); // Pass through to the LED driver library to update LED states.
+    pixels.show(); // Pass through to the LED driver library to update LED states.
   }
 
   // Turn off all LEDs
   void lightsOff() {
-    fill_solid(deviceLEDs, DEVICE_MAX_LEDS, CRGB::Black); // Set all to black (off).
+    pixels.clear(); // Set all to black (off).
   }
 
-  // Get a pointer to the LED array (for palette rendering and direct access)
-  CRGB* getLEDs() {
-    return deviceLEDs;
+  // Helper: Convert packed uint32_t color to LED_RGB components
+  LED_RGB unpackColor(uint32_t packedColor) {
+    uint8_t r = (packedColor >> 16) & 0xFF;
+    uint8_t g = (packedColor >> 8) & 0xFF;
+    uint8_t b = packedColor & 0xFF;
+    return LED_RGB(r, g, b);
+  }
+
+  // Set a pixel color by index using LED_RGB
+  void setPixelColor(uint16_t index, LED_RGB color) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      // Convert LED_RGB to uint32_t packed color
+      pixels.setPixelColor(index, pixels.Color(color.r, color.g, color.b));
+    }
+  }
+
+  // Returns a pixel color using LED_RGB
+  LED_RGB getPixelColor(uint16_t index) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      return unpackColor(pixels.getPixelColor(index));
+    }
+    return LED_RGB::BLACK; // Return black if index is out of bounds.
   }
 
   // Set brightness
   void setBrightness(uint8_t brightness) {
-    FastLED.setBrightness(brightness);
+    pixels.setBrightness(brightness);
   }
 
   // Set custom color HSV values in the Lighting library

@@ -138,13 +138,13 @@ void AnimationTask(void *parameter) {
         switch(LED_COLOR_TYPE) {
           case LED_RGB:
           default:
-            mgr.getLEDs()[0] = mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255);
+            mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
           break;
           case LED_GRB:
-            mgr.getLEDs()[0] = mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255);
+            mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
           break;
           case LED_GBR:
-            mgr.getLEDs()[0] = mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255);
+            mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
           break;
         }
       }
@@ -287,13 +287,13 @@ void WiFiSetupTask(void *parameter) {
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
     default:
-      mgr.getLEDs()[0] = mgr.getColorRGB(PRIMARY_LED, C_RED, 255);
+      mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
     break;
     case LED_GRB:
-      mgr.getLEDs()[0] = mgr.getColorGRB(PRIMARY_LED, C_RED, 255);
+      mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
     break;
     case LED_GBR:
-      mgr.getLEDs()[0] = mgr.getColorGBR(PRIMARY_LED, C_RED, 255);
+      mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
     break;
   }
   mgr.show();
@@ -305,13 +305,13 @@ void WiFiSetupTask(void *parameter) {
       switch(LED_COLOR_TYPE) {
         case LED_RGB:
         default:
-          mgr.getLEDs()[0] = mgr.getColorRGB(PRIMARY_LED, C_BLUE, 255);
+          mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
         break;
         case LED_GRB:
-          mgr.getLEDs()[0] = mgr.getColorGRB(PRIMARY_LED, C_BLUE, 255);
+          mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
         break;
         case LED_GBR:
-          mgr.getLEDs()[0] = mgr.getColorGBR(PRIMARY_LED, C_BLUE, 255);
+          mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
         break;
       }
       mgr.show();
@@ -329,7 +329,7 @@ void WiFiSetupTask(void *parameter) {
   vTaskDelay(200 / portTICK_PERIOD_MS); // 200ms delay
 
   // Clear LED once we have the AP and web server started.
-  mgr.getLEDs()[0] = CRGB::Black;
+  mgr.setPixelColor(0, LED_RGB::BLACK);
   mgr.show();
 
   #if defined(DEBUG_TASK_TO_CONSOLE)

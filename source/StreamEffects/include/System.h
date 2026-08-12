@@ -193,14 +193,15 @@ void updateStreamPalette() {
 // Animate the LEDs using the built-in palette system for smooth colour transitions.
 void animateLights() {
   static uint8_t i_palette_start_index = 0; // Starting index for palette distribution across LEDs.
-
-  CRGB* buffer = LightingManager::getInstance().getLEDs();
+  auto& mgr = LightingManager::getInstance();
 
   // Use the built-in fill_palette function for automatic colour distribution and blending
   // Parameters: LED array, number of LEDs, starting palette index, delta between LEDs, palette, brightness, blending mode.
-  fill_palette(buffer, i_num_leds, i_palette_start_index, 255 / i_num_leds, cp_StreamPalette, 255, LINEARBLEND);
+  // @todo: Replace the FastLED fill_palette with a custom implementation within the LightingManager (mgr).
+  //fill_palette(buffer, i_num_leds, i_palette_start_index, 255 / i_num_leds, cp_StreamPalette, 255, LINEARBLEND);
 
   // Handle LED ordering as necessary.
+  // @todo: Make the color-swapping logic part of the new fill_palette function in the LightingManager.
   switch(LED_COLOR_TYPE) {
     case LED_RGB:
     default:
@@ -208,14 +209,14 @@ void animateLights() {
     break;
     case LED_GRB:
       for(uint16_t i = 0; i < i_num_leds; i++) {
-        CRGB b_temp_colour = buffer[i];
-        buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.r, b_temp_colour.b);
+        //CRGB b_temp_colour = buffer[i];
+        //buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.r, b_temp_colour.b);
       }
     break;
     case LED_GBR:
       for(uint16_t i = 0; i < i_num_leds; i++) {
-        CRGB b_temp_colour = buffer[i];
-        buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.b, b_temp_colour.r);
+        //CRGB b_temp_colour = buffer[i];
+        //buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.b, b_temp_colour.r);
       }
     break;
   }
