@@ -11,5 +11,6 @@
   "search.exclude": {
     "**/.pio": true,
     "**/node_modules": true
-  }
+  },
+  "platformio-ide.disablePIOHomeStartup": true
 }
