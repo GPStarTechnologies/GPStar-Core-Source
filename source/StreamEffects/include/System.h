@@ -60,68 +60,15 @@ void printPartitions() {
 }
 
 void initializePalettes() {
-  paletteProton = CRGBPalette16(
-    CRGB::Cyan, CRGB::Red, CRGB::Red, CRGB::Orange,
-    CRGB::Orange, CRGB::Maroon, CRGB::Maroon, CRGB::Black,
-    CRGB::Cyan, CRGB::Red, CRGB::Red, CRGB::Orange,
-    CRGB::Orange, CRGB::Maroon, CRGB::Maroon, CRGB::Black
-  );
-
-  paletteSlime = CRGBPalette16(
-    CRGB::Green, CRGB::Green, CRGB::Green, CRGB::Green,
-    CRGB::LimeGreen, CRGB::LimeGreen, CRGB::Black, CRGB::Black,
-    CRGB::Green, CRGB::Green, CRGB::Green, CRGB::Green,
-    CRGB::LimeGreen, CRGB::LimeGreen, CRGB::Black, CRGB::Black
-  );
-
-  paletteStasis = CRGBPalette16(
-    CRGB::Blue, CRGB::Blue, CRGB::Blue, CRGB::Blue,
-    CRGB::Indigo, CRGB::Indigo, CRGB::Black, CRGB::Black,
-    CRGB::Blue, CRGB::Blue, CRGB::Blue, CRGB::Blue,
-    CRGB::Indigo, CRGB::Indigo, CRGB::Black, CRGB::Black
-  );
-
-  paletteMeson = CRGBPalette16(
-    CRGB::Yellow, CRGB::Yellow, CRGB::Orange, CRGB::Orange,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
-    CRGB::Yellow, CRGB::Yellow, CRGB::Orange, CRGB::Orange,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black
-  );
-
-  paletteSpectral = CRGBPalette16(
-    CRGB::Red, CRGB::Orange, CRGB::Yellow, CRGB::Green,
-    CRGB::Blue, CRGB::Indigo, CRGB::Violet, CRGB::Black,
-    CRGB::Red, CRGB::Orange, CRGB::Yellow, CRGB::Green,
-    CRGB::Blue, CRGB::Indigo, CRGB::Violet, CRGB::Black
-  );
-
-  paletteHalloween = CRGBPalette16(
-    CRGB::Orange, CRGB::Orange, CRGB::Orange, CRGB::Orange,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
-    CRGB::Purple, CRGB::Purple, CRGB::Purple, CRGB::Purple,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black
-  );
-
-  paletteChristmas = CRGBPalette16(
-    CRGB::Red, CRGB::Red, CRGB::Red, CRGB::Red,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
-    CRGB::Green, CRGB::Green, CRGB::Green, CRGB::Green,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black
-  );
-
-  paletteBrass = CRGBPalette16(
-    CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse ,
-    CRGB::Orange, CRGB::Orange, CRGB::Black, CRGB::Black,
-    CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse, CRGB::Chartreuse ,
-    CRGB::Orange, CRGB::Orange, CRGB::Black, CRGB::Black
-  );
-
-  paletteWhite = CRGBPalette16(
-    CRGB::GhostWhite, CRGB::GhostWhite, CRGB::Gainsboro, CRGB::Gainsboro,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
-    CRGB::GhostWhite, CRGB::GhostWhite, CRGB::Gainsboro, CRGB::Gainsboro,
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black
-  );
+  paletteProton = createPaletteProton();
+  paletteSlime = createPaletteSlime();
+  paletteStasis = createPaletteStasis();
+  paletteMeson = createPaletteMeson();
+  paletteSpectral = createPaletteSpectral();
+  paletteHalloween = createPaletteHalloween();
+  paletteChristmas = createPaletteChristmas();
+  paletteBrass = createPaletteBrass();
+  paletteWhite = createPaletteWhite();
 }
 
 // Function to update the current palette based on stream mode.
@@ -190,35 +137,42 @@ void updateStreamPalette() {
   }
 }
 
-// Animate the LEDs using the built-in palette system for smooth colour transitions.
+// Animate the LEDs using the palette system for smooth colour transitions.
 void animateLights() {
   static uint8_t i_palette_start_index = 0; // Starting index for palette distribution across LEDs.
   auto& mgr = LightingManager::getInstance();
 
-  // Use the built-in fill_palette function for automatic colour distribution and blending
-  // Parameters: LED array, number of LEDs, starting palette index, delta between LEDs, palette, brightness, blending mode.
-  // @todo: Replace the FastLED fill_palette with a custom implementation within the LightingManager (mgr).
-  //fill_palette(buffer, i_num_leds, i_palette_start_index, 255 / i_num_leds, cp_StreamPalette, 255, LINEARBLEND);
-
-  // Handle LED ordering as necessary.
-  // @todo: Make the color-swapping logic part of the new fill_palette function in the LightingManager.
-  switch(LED_COLOR_TYPE) {
-    case LED_RGB:
-    default:
-      // No-op
-    break;
-    case LED_GRB:
-      for(uint16_t i = 0; i < i_num_leds; i++) {
-        //CRGB b_temp_colour = buffer[i];
-        //buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.r, b_temp_colour.b);
-      }
-    break;
-    case LED_GBR:
-      for(uint16_t i = 0; i < i_num_leds; i++) {
-        //CRGB b_temp_colour = buffer[i];
-        //buffer[i] = CRGB(b_temp_colour.g, b_temp_colour.b, b_temp_colour.r);
-      }
-    break;
+  // Distribute palette colors across the LED strip with smooth transitions.
+  // The palette_start_index advances each frame to create flowing animation.
+  // Each LED gets a color from the palette based on its position and the animation offset.
+  for(uint16_t i = 0; i < i_num_leds; i++) {
+    // Calculate which palette color to use for this LED:
+    // - Advance through palette based on LED position
+    // - Scale position to fit within 16-color palette (255 / num_leds gives color delta)
+    // - Add palette_start_index for animation flow
+    uint8_t paletteIndex = (i_palette_start_index + (i * 255 / i_num_leds)) % 16;
+    
+    // Get the color from current palette
+    LED_RGB color = cp_StreamPalette.colors[paletteIndex];
+    
+    // Handle LED ordering (color channel swapping for different strip types)
+    switch(LED_COLOR_TYPE) {
+      case COLOR_ORDER_RGB:
+      default:
+        // No swapping needed, use color as-is
+        break;
+      case COLOR_ORDER_GRB:
+        // Swap red and green channels
+        color = LED_RGB(color.g, color.r, color.b);
+        break;
+      case COLOR_ORDER_GBR:
+        // Rotate channels: G->R, B->G, R->B
+        color = LED_RGB(color.g, color.b, color.r);
+        break;
+    }
+    
+    // Set this LED to the calculated color
+    mgr.setPixelColor(i, color);
   }
 
   // Increment starting index to create flowing animation effect using the wand power level.

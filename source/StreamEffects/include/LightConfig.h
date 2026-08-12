@@ -49,27 +49,26 @@ enum device : uint8_t {
  * LED colour order type for device
  * Defaults to RGB for the type recommended for the build: https://a.co/d/dlDyCkz
  */
-enum LED_COLOR_TYPES : uint8_t {
-  LED_RGB = 1,
-  LED_GRB = 2,
-  LED_GBR = 3
+enum LED_COLOR_ORDER : uint8_t {
+  COLOR_ORDER_RGB = 1,
+  COLOR_ORDER_GRB = 2,
+  COLOR_ORDER_GBR = 3
 };
-LED_COLOR_TYPES LED_COLOR_TYPE = LED_RGB;
+LED_COLOR_ORDER LED_COLOR_TYPE = COLOR_ORDER_RGB;
 
 /*
  * Define Color Options & Timers
- * @todo: Redefine the FastLED CRGBPalette16 with a new custom implementation.
  */
-CRGBPalette16 paletteWhite;
-CRGBPalette16 paletteProton;
-CRGBPalette16 paletteSlime;
-CRGBPalette16 paletteStasis;
-CRGBPalette16 paletteMeson;
-CRGBPalette16 paletteSpectral;
-CRGBPalette16 paletteHalloween;
-CRGBPalette16 paletteChristmas;
-CRGBPalette16 paletteBrass;
-CRGBPalette16 cp_StreamPalette; // Current colour palette in use.
+LED_RGB_Palette16 paletteWhite;
+LED_RGB_Palette16 paletteProton;
+LED_RGB_Palette16 paletteSlime;
+LED_RGB_Palette16 paletteStasis;
+LED_RGB_Palette16 paletteMeson;
+LED_RGB_Palette16 paletteSpectral;
+LED_RGB_Palette16 paletteHalloween;
+LED_RGB_Palette16 paletteChristmas;
+LED_RGB_Palette16 paletteBrass;
+LED_RGB_Palette16 cp_StreamPalette; // Current colour palette in use.
 static const uint8_t i_palette_count = 9; // Total number of palettes available.
 static const uint16_t i_selftest_interval = 2000; // 2 seconds between palette changes.
 millisDelay ms_selftest_cycle; // Timer for self-test cycling using an interval.
@@ -215,7 +214,7 @@ public:
     if(index >= 0 && index < pixels.numPixels()) {
       return unpackColor(pixels.getPixelColor(index));
     }
-    return LED_RGB::BLACK; // Return black if index is out of bounds.
+    return LED_RGB_BLACK; // Return black if index is out of bounds.
   }
 
   // Set brightness
@@ -228,6 +227,234 @@ public:
     lightingLib.setCustomColorHSV(hsv, deviceSlot);
   }
 };
+
+/**
+ * PALETTE CREATION FUNCTIONS
+ * 
+ * These functions build LED_RGB_Palette16 palettes using consistent
+ * color definitions from the Lighting library. Each palette maps to
+ * a thematic set of colors for different stream modes.
+ * 
+ * All colors are derived from ColorID enum values, ensuring consistency
+ * across the application. Each function gets a single LightingManager
+ * reference to avoid redundant singleton lookups.
+ */
+
+// Create Proton stream palette: Cyan, Red, Orange, Maroon, Black
+LED_RGB_Palette16 createPaletteProton() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Repeat pattern fills 16 colors: cyan, red, red, orange, orange, maroon, maroon, black (x2)
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_AQUA);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_RED4);      // Darker red for maroon effect
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_RED4);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_AQUA);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_RED4);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_RED4);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  return palette;
+}
+
+// Create Slime stream palette: Green, LimeGreen, Black
+LED_RGB_Palette16 createPaletteSlime() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: green (x4), lime green (x2), black (x2), repeated
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);  // Bright lime-like green
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  return palette;
+}
+
+// Create Stasis stream palette: Blue, Indigo, Black
+LED_RGB_Palette16 createPaletteStasis() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: blue (x4), indigo (x2), black (x2), repeated
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_NAVY_BLUE);   // Darker blue for indigo
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_NAVY_BLUE);
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_NAVY_BLUE);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_NAVY_BLUE);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  return palette;
+}
+
+// Create Meson stream palette: Yellow, Orange, Black
+LED_RGB_Palette16 createPaletteMeson() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: yellow (x4), orange (x2), black (x3), repeated
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  return palette;
+}
+
+// Create Spectral stream palette: Full rainbow cycle
+LED_RGB_Palette16 createPaletteSpectral() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: red, orange, yellow, green, blue, indigo, violet, black, repeated
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_NAVY_BLUE);   // Indigo
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_PURPLE);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_YELLOW);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_BLUE);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_NAVY_BLUE);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_PURPLE);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  return palette;
+}
+
+// Create Halloween palette: Orange and Purple with Black
+LED_RGB_Palette16 createPaletteHalloween() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: orange (x4), black (x2), purple (x4), black (x2)
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_PURPLE);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_PURPLE);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_PURPLE);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_PURPLE);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  return palette;
+}
+
+// Create Christmas palette: Red and Green with Black
+LED_RGB_Palette16 createPaletteChristmas() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: red (x4), black (x2), green (x4), black (x2)
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_GREEN);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_RED);
+  return palette;
+}
+
+// Create Brass palette: Chartreuse and Orange with Black
+LED_RGB_Palette16 createPaletteBrass() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: chartreuse (x4), orange (x2), black (x2), repeated
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_CHARTREUSE);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_ORANGE);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  return palette;
+}
+
+// Create White palette: GhostWhite and Gainsboro with Black
+LED_RGB_Palette16 createPaletteWhite() {
+  LED_RGB_Palette16 palette;
+  auto& mgr = LightingManager::getInstance();
+  // Pattern: warm white (x2), regular white (x2), black (x3), repeated
+  palette.colors[0]  = mgr.getColorRGB(PRIMARY_LED, C_WARM_WHITE);
+  palette.colors[1]  = mgr.getColorRGB(PRIMARY_LED, C_WARM_WHITE);
+  palette.colors[2]  = mgr.getColorRGB(PRIMARY_LED, C_WHITE);
+  palette.colors[3]  = mgr.getColorRGB(PRIMARY_LED, C_WHITE);
+  palette.colors[4]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[5]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[6]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[7]  = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[8]  = mgr.getColorRGB(PRIMARY_LED, C_WARM_WHITE);
+  palette.colors[9]  = mgr.getColorRGB(PRIMARY_LED, C_WARM_WHITE);
+  palette.colors[10] = mgr.getColorRGB(PRIMARY_LED, C_WHITE);
+  palette.colors[11] = mgr.getColorRGB(PRIMARY_LED, C_WHITE);
+  palette.colors[12] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[13] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[14] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  palette.colors[15] = mgr.getColorRGB(PRIMARY_LED, C_BLACK);
+  return palette;
+}
 
 /**
  * SINGLETON PATTERN: Static member variable initialization

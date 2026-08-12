@@ -25,27 +25,37 @@
 
 // LED_RGB: Platform-independent RGB color representation.
 // Example: LED_RGB red = {255, 0, 0};
-// Also provides common color constants: LED_RGB::BLACK, LED_RGB::WHITE
 struct LED_RGB {
   uint8_t r;
   uint8_t g;
   uint8_t b;
-  
-  static constexpr LED_RGB BLACK = {0, 0, 0};
-  static constexpr LED_RGB WHITE = {255, 255, 255};
+};
+
+// LED_RGB default constants (defined outside struct to avoid incomplete type issues)
+constexpr LED_RGB LED_RGB_BLACK = {0, 0, 0};
+constexpr LED_RGB LED_RGB_WHITE = {255, 255, 255};
+
+/**
+ * LED_RGB_Palette16: A platform-independent 16-color palette.
+ * 
+ * This provides a simple, driver-agnostic container using the LED_RGB type.
+ * Palettes distribute colors across pixels for transitions and lighting effects.
+ */
+struct LED_RGB_Palette16 {
+  LED_RGB colors[16];
 };
 
 // LED_HSV: Platform-independent HSV color representation.
 // Example: LED_HSV cyan = {128, 255, 200}; (hue, saturation, brightness)
-// Also provides common color constants: LED_HSV::BLACK, LED_HSV::WHITE
 struct LED_HSV {
   uint8_t h; // Hue: 0-255 (0=red, 85=green, 170=blue)
   uint8_t s; // Saturation: 0-255 (0=white, 255=full color)
   uint8_t v; // Value (brightness): 0-255
-  
-  static constexpr LED_HSV BLACK = {0, 0, 0};
-  static constexpr LED_HSV WHITE = {0, 0, 255};
 };
+
+// LED_HSV default constants (defined outside struct to avoid incomplete type issues)
+constexpr LED_HSV LED_HSV_BLACK = {0, 0, 0};
+constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
 
 // ColorOrder: LED strip color channel ordering.
 // Different LED strips use different channel orders.

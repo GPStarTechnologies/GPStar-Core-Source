@@ -136,14 +136,14 @@ void AnimationTask(void *parameter) {
       }
       else {
         switch(LED_COLOR_TYPE) {
-          case LED_RGB:
+          case COLOR_ORDER_RGB:
           default:
             mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
           break;
-          case LED_GRB:
+          case COLOR_ORDER_GRB:
             mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
           break;
-          case LED_GBR:
+          case COLOR_ORDER_GBR:
             mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
           break;
         }
@@ -285,14 +285,14 @@ void WiFiSetupTask(void *parameter) {
   // Set a visual indicator that WiFi is being configured.
   auto& mgr = LightingManager::getInstance();
   switch(LED_COLOR_TYPE) {
-    case LED_RGB:
+    case COLOR_ORDER_RGB:
     default:
       mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
     break;
-    case LED_GRB:
+    case COLOR_ORDER_GRB:
       mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
     break;
-    case LED_GBR:
+    case COLOR_ORDER_GBR:
       mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
     break;
   }
@@ -303,14 +303,14 @@ void WiFiSetupTask(void *parameter) {
     if(b_local_ap_started) {
       // Indicate we've established the private network.
       switch(LED_COLOR_TYPE) {
-        case LED_RGB:
+        case COLOR_ORDER_RGB:
         default:
           mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
         break;
-        case LED_GRB:
+        case COLOR_ORDER_GRB:
           mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
         break;
-        case LED_GBR:
+        case COLOR_ORDER_GBR:
           mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
         break;
       }
@@ -329,7 +329,7 @@ void WiFiSetupTask(void *parameter) {
   vTaskDelay(200 / portTICK_PERIOD_MS); // 200ms delay
 
   // Clear LED once we have the AP and web server started.
-  mgr.setPixelColor(0, LED_RGB::BLACK);
+  mgr.setPixelColor(0, LED_RGB_BLACK);
   mgr.show();
 
   #if defined(DEBUG_TASK_TO_CONSOLE)
@@ -387,7 +387,7 @@ void setup() {
       i_num_leds = preferences.getUShort("numLeds", 250);
     }
     if(preferences.isKey("ledType")) {
-      LED_COLOR_TYPE = (LED_COLOR_TYPES)preferences.getUChar("ledType", (uint8_t)LED_RGB);
+      LED_COLOR_TYPE = (LED_COLOR_ORDER)preferences.getUChar("ledType", (uint8_t)COLOR_ORDER_RGB);
     }
     preferences.end();
   }
