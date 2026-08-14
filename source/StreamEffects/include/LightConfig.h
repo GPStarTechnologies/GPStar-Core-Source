@@ -300,27 +300,27 @@ public:
  * reference to avoid redundant singleton lookups.
  */
 
-// Create Proton stream palette: Cyan, Red, Orange, Maroon, Black
+// Create Proton stream palette: Mid Blue, Red, Orange, Dark Red, Black
 LED_Palette16 createPaletteProton() {
   return {{
-    C_AQUA, C_RED, C_RED, C_ORANGE, C_ORANGE, C_RED4, C_RED4, C_BLACK,
-    C_AQUA, C_RED, C_RED, C_ORANGE, C_ORANGE, C_RED4, C_RED4, C_BLACK
+    C_MID_BLUE, C_RED, C_RED, C_ORANGE, C_ORANGE, C_RED4, C_RED5, C_BLACK,
+    C_MID_BLUE, C_RED, C_RED, C_ORANGE, C_ORANGE, C_RED4, C_RED5, C_BLACK
   }};
 }
 
-// Create Slime stream palette: Green, LimeGreen, Black
+// Create Slime stream palette: Green, Chartreuse, Dark Green, Black
 LED_Palette16 createPaletteSlime() {
   return {{
-    C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_BLACK, C_BLACK,
-    C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_BLACK, C_BLACK
+    C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_DARK_GREEN, C_BLACK,
+    C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_DARK_GREEN, C_BLACK
   }};
 }
 
-// Create Stasis stream palette: Blue, Indigo, Black
+// Create Stasis stream palette: Blue, Navy, Mid Blue, Black
 LED_Palette16 createPaletteStasis() {
   return {{
-    C_BLUE, C_BLUE, C_BLUE, C_BLUE, C_NAVY_BLUE, C_NAVY_BLUE, C_BLACK, C_BLACK,
-    C_BLUE, C_BLUE, C_BLUE, C_BLUE, C_NAVY_BLUE, C_NAVY_BLUE, C_BLACK, C_BLACK
+    C_BLUE, C_BLUE, C_BLUE, C_BLUE, C_NAVY_BLUE, C_NAVY_BLUE, C_MID_BLUE, C_BLACK,
+    C_BLUE, C_BLUE, C_BLUE, C_BLUE, C_NAVY_BLUE, C_NAVY_BLUE, C_MID_BLUE, C_BLACK
   }};
 }
 
@@ -332,7 +332,7 @@ LED_Palette16 createPaletteMeson() {
   }};
 }
 
-// Create Spectral stream palette: Full rainbow cycle
+// Create Spectral stream palette: Full rainbow cycle (ROYGBIV)
 LED_Palette16 createPaletteSpectral() {
   return {{
     C_RED, C_ORANGE, C_YELLOW, C_GREEN, C_BLUE, C_NAVY_BLUE, C_PURPLE, C_BLACK,
@@ -344,7 +344,7 @@ LED_Palette16 createPaletteSpectral() {
 LED_Palette16 createPaletteHalloween() {
   return {{
     C_ORANGE, C_ORANGE, C_ORANGE, C_ORANGE, C_ORANGE, C_ORANGE, C_BLACK, C_BLACK,
-    C_BLACK, C_BLACK, C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE
+    C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_BLACK, C_BLACK
   }};
 }
 
@@ -352,19 +352,18 @@ LED_Palette16 createPaletteHalloween() {
 LED_Palette16 createPaletteChristmas() {
   return {{
     C_RED, C_RED, C_RED, C_RED, C_RED, C_RED, C_BLACK, C_BLACK,
-    C_BLACK, C_BLACK, C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_GREEN
+    C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_BLACK, C_BLACK
   }};
 }
 
 // Create Brass palette: Chartreuse and Orange with Black
 LED_Palette16 createPaletteBrass() {
   return {{
-    C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_ORANGE, C_ORANGE, C_BLACK, C_BLACK,
-    C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_ORANGE, C_ORANGE, C_BLACK, C_BLACK
+    C_DARK_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_ORANGE, C_ORANGE, C_ORANGE, C_BLACK,
+    C_DARK_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_ORANGE, C_ORANGE, C_ORANGE, C_BLACK
   }};
 }
 
-// Create White palette: GhostWhite and Gainsboro with Black
 // Create White palette: White with Black
 LED_Palette16 createPaletteWhite() {
   return {{

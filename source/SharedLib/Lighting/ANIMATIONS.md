@@ -16,6 +16,34 @@ The Lighting library provides dynamic color animations through the `getDynamicCo
 | **SingleShot** | TaskScheduler (animateTask) | 16ms | ~62.5 Hz | `src/main.cpp:152` | Uses direct LightingManager.show() in animation callback |
 | **StreamEffects** | FreeRTOS Task (AnimationTask) | vTaskDelay(8ms) | ~125 Hz | `src/main.cpp:154` | Direct LightingManager.show() in animation loop |
 
+## Palette Animation System
+
+The `getPaletteColor()` function provides frame-based palette animation with **refresh-rate-normalized speed control** and fractional precision.
+
+### Normalization Formula (August 2026 - COMPLETE)
+
+```cpp
+// Reference: 5ms = 200fps (minimum device refresh rate)
+const uint16_t BASE_INCREMENT = 5;
+uint16_t increment = (BASE_INCREMENT * 256 * speedMultiplier) / deviceRefreshMs;
+paletteIndex[deviceSlot] += increment;  // 16-bit fractional accumulation
+uint8_t currentPos = (paletteIndex[deviceSlot] >> 8) + positionOffset;  // Extract palette position
+```
+
+**Key Improvement**: Using `uint16_t paletteIndex` (0-65535) preserves fractional animation advancement across all refresh rates:
+- **5ms device**: increment=256/frame → smooth full advance each frame
+- **8ms device**: increment=160/frame → accumulates to 3+ positions over 6 frames
+- **16ms device**: increment=80/frame → accumulates smoothly over time
+
+**Previous Issue (FIXED)**: Using `uint8_t` with `(increment >> 8)` discarded fractional bits, causing 8ms/16ms devices to stall at 0 advancement/frame.
+
+**Palette Features**:
+- Speed multiplier (0.1-10.0x) for animation control
+- Position offset for distributing palette across LED strand (flowing animation)
+- Reverse parameter for backward animation
+- Automatic HSV interpolation between adjacent palette colors
+- ColorOrder automatically applied before returning RGB
+
 ## Animation Timing & Cycle Values
 
 The `getDynamicColorHSV()` function uses **frame-based timing** with configurable cycle values:
