@@ -59,18 +59,6 @@ void printPartitions() {
   esp_partition_iterator_release(iterator);  // Release the iterator once done
 }
 
-void initializePalettes() {
-  paletteProton = createPaletteProton();
-  paletteSlime = createPaletteSlime();
-  paletteStasis = createPaletteStasis();
-  paletteMeson = createPaletteMeson();
-  paletteSpectral = createPaletteSpectral();
-  paletteHalloween = createPaletteHalloween();
-  paletteChristmas = createPaletteChristmas();
-  paletteBrass = createPaletteBrass();
-  paletteWhite = createPaletteWhite();
-}
-
 // Function to update the current palette based on stream mode.
 void updateStreamPalette() {
   switch(gpstarSystem.getStreamMode()) {
@@ -151,28 +139,9 @@ void animateLights() {
     // - Scale position to fit within 16-color palette (255 / num_leds gives color delta)
     // - Add palette_start_index for animation flow
     uint8_t paletteIndex = (i_palette_start_index + (i * 255 / i_num_leds)) % 16;
-    
-    // Get the color from current palette
-    LED_RGB color = cp_StreamPalette.colors[paletteIndex];
-    
-    // Handle LED ordering (color channel swapping for different strip types)
-    switch(LED_COLOR_TYPE) {
-      case COLOR_ORDER_RGB:
-      default:
-        // No swapping needed, use color as-is
-        break;
-      case COLOR_ORDER_GRB:
-        // Swap red and green channels
-        color = LED_RGB(color.g, color.r, color.b);
-        break;
-      case COLOR_ORDER_GBR:
-        // Rotate channels: G->R, B->G, R->B
-        color = LED_RGB(color.g, color.b, color.r);
-        break;
-    }
-    
-    // Set this LED to the calculated color
-    mgr.setPixelColor(i, color);
+
+    // Get the color from current palette and set this LED to the calculated color
+    mgr.setPixelColor(i, cp_StreamPalette.colors[paletteIndex]);
   }
 
   // Increment starting index to create flowing animation effect using the wand power level.

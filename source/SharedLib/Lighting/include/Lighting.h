@@ -35,28 +35,6 @@ struct LED_RGB {
 constexpr LED_RGB LED_RGB_BLACK = {0, 0, 0};
 constexpr LED_RGB LED_RGB_WHITE = {255, 255, 255};
 
-/**
- * LED_RGB_Palette16: A platform-independent 16-color palette.
- * 
- * This provides a simple, driver-agnostic container using the LED_RGB type.
- * Palettes distribute colors across pixels for transitions and lighting effects.
- */
-struct LED_RGB_Palette16 {
-  LED_RGB colors[16];
-};
-
-// LED_HSV: Platform-independent HSV color representation.
-// Example: LED_HSV cyan = {128, 255, 200}; (hue, saturation, brightness)
-struct LED_HSV {
-  uint8_t h; // Hue: 0-255 (0=red, 85=green, 170=blue)
-  uint8_t s; // Saturation: 0-255 (0=white, 255=full color)
-  uint8_t v; // Value (brightness): 0-255
-};
-
-// LED_HSV default constants (defined outside struct to avoid incomplete type issues)
-constexpr LED_HSV LED_HSV_BLACK = {0, 0, 0};
-constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
-
 // ColorOrder: LED strip color channel ordering.
 // Different LED strips use different channel orders.
 // WS2812B strips use ORDER_GRB, most others use ORDER_RGB.
@@ -116,6 +94,28 @@ constexpr bool isColorDynamic(uint8_t colorEnum) {
 }
 
 /**
+ * LED_Palette16: A platform-independent 16-color palette.
+ * 
+ * This provides a simple, driver-agnostic container using the LED_RGB type.
+ * Palettes distribute colors across pixels for transitions and lighting effects.
+ */
+struct LED_Palette16 {
+  ColorID colors[16];
+};
+
+// LED_HSV: Platform-independent HSV color representation.
+// Example: LED_HSV cyan = {128, 255, 200}; (hue, saturation, brightness)
+struct LED_HSV {
+  uint8_t h; // Hue: 0-255 (0=red, 85=green, 170=blue)
+  uint8_t s; // Saturation: 0-255 (0=white, 255=full color)
+  uint8_t v; // Value (brightness): 0-255
+};
+
+// LED_HSV default constants (defined outside struct to avoid incomplete type issues)
+constexpr LED_HSV LED_HSV_BLACK = {0, 0, 0};
+constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
+
+/**
  * Lighting: Instance-based utility class for LED color operations.
  *
  * Each device creates its own Lighting instance to manage color state independently.
@@ -135,8 +135,8 @@ constexpr bool isColorDynamic(uint8_t colorEnum) {
  *   - CustomColor: 5 device-specific colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.) - user-configured HSV values
  *
  * Example usage:
- *   // Create Lighting instance to manage 6 devices
- *   Lighting lighting(6);
+ *   // Create Lighting instance to manage 6 devices with a 5ms refresh rate
+ *   Lighting lighting(6, 5);
  *
  *   // Static colors (no animation, no state):
  *   LED_HSV red_hsv = lighting.getColorHSV(C_RED, 255, 255);
@@ -159,11 +159,13 @@ class Lighting {
   private:
     // Instance variables for device count and state tracking
     uint8_t numDevices;
+    uint16_t deviceRefreshMs;     // Device refresh rate in milliseconds (5ms, 8ms, 16ms, etc.)
     uint8_t* dynamicCounter;      // Array[numDevices] - frame counter for animated colors
     uint8_t* dynamicHue;          // Array[numDevices] - current hue for dynamic patterns
     uint8_t* dynamicBright;       // Array[numDevices] - current brightness for fading effects
     int16_t* dynamicNextBright;   // Array[numDevices] - target brightness for fade animations
     LED_HSV* customColorHSV;      // Array[numDevices] - user-configured HSV values for custom static colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.)
+    ColorOrder* deviceColorOrder; // Array[numDevices] - color channel order for each device (RGB, GRB, GBR)
 
     // Helper method to get static color definitions
     LED_HSV getStaticColorDefinition(ColorID color);
@@ -176,9 +178,12 @@ class Lighting {
      * Constructor: Initialize Lighting instance for a set number of devices.
      * Parameters:
      *   deviceCount: Number of independent devices this Lighting object manages (1-6 typical)
-     * Example: Lighting lighting(6);  // ProtonPack with 6 devices
+     *   refreshRateMs: Device refresh rate in milliseconds (default: 5ms for Wand/Pack)
+     * Examples:
+     *   Lighting lighting(6, 8);  // ProtonPack with 6 devices, 8ms refresh rate
+     *   Lighting lighting(1);     // Single device, defaults to 5ms (Wand/Pack)
      */
-    Lighting(uint8_t deviceCount);
+    Lighting(uint8_t deviceCount = 1, uint16_t refreshRateMs = 5);
 
     /**
      * Destructor: Clean up dynamically allocated state arrays.
@@ -236,6 +241,26 @@ class Lighting {
      * Returns: LED_HSV value previously set by setCustomColorHSV()
      */
     LED_HSV getCustomColorHSV(uint8_t deviceSlot) const;
+
+    /**
+     * Set the color channel order for a specific device slot.
+     * Different LED strips use different channel orderings (RGB, GRB, GBR).
+     * Parameters:
+     *   deviceSlot: [0..numDevices-1] - Which device slot
+     *   order: ColorOrder enum value (ORDER_RGB, ORDER_GRB, ORDER_GBR)
+     * Example:
+     *   lighting.setColorOrder(0, ORDER_RGB);  // Device 0 uses RGB order
+     *   lighting.setColorOrder(1, ORDER_GRB);  // Device 1 uses GRB order
+     */
+    void setColorOrder(uint8_t deviceSlot, ColorOrder order);
+
+    /**
+     * Get the color channel order for a specific device slot.
+     * Returns: ColorOrder enum value (ORDER_RGB, ORDER_GRB, ORDER_GBR)
+     * Example:
+     *   ColorOrder order = lighting.getColorOrder(0);
+     */
+    ColorOrder getColorOrder(uint8_t deviceSlot) const;
 
     /**
      * Convert HSV color to RGB using rainbow algorithm for smooth color transitions.

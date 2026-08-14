@@ -870,6 +870,8 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     // Override the current LED colour order.
     if(jsonBody["ledType"].is<uint8_t>()) {
       LED_COLOR_TYPE = (LED_COLOR_ORDER)jsonBody["ledType"].as<uint8_t>(); // [1=RGB,2=GRB,3=GBR]
+      // Sync color order change to Lighting library immediately.
+      LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
     }
 
     // Accesses namespace in read/write mode.

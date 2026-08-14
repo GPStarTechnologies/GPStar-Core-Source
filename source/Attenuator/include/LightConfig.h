@@ -54,15 +54,15 @@ millisDelay ms_led_driver;
 /**
  * Attenuator LED Enumeration
  * 
- * Defines logical slots for each LED on the Attenuator device.
- * These slots map to animation state in the Lighting library.
+ * Defines logical names for each LED on the Attenuator device.
+ * These names map to animation state in the Lighting library.
  * 
  * Physical layout (from top to bottom):
  * - TOP_LED: Status indicator (connection, menu level)
  * - UPPER_LED: Radiation lens (firing/charging state)
  * - LOWER_LED: Stream mode indicator
  */
-enum ATTENUATOR_LED_SLOT : uint8_t {
+enum ATTENUATOR_LED : uint8_t {
   TOP_LED = 0,   // Status indicator LED
   UPPER_LED = 1, // Radiation lens LED
   LOWER_LED = 2  // Stream mode indicator LED

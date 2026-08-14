@@ -22,14 +22,17 @@
 #include <Lighting.h>
 #include <string.h>  // For memset (portable across Arduino platforms)
 
-// Constructor: Initialize Lighting instance for deviceCount devices
-Lighting::Lighting(uint8_t deviceCount) : numDevices(deviceCount) {
+// Constructor: Initialize Lighting instance for deviceCount devices with specified refresh rate
+Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs) 
+  : numDevices(deviceCount > 0 ? deviceCount : 1),
+    deviceRefreshMs(refreshRateMs >= 5 ? refreshRateMs : 5) {
   // Allocate state arrays for each device
   dynamicCounter = new uint8_t[numDevices];
   dynamicHue = new uint8_t[numDevices];
   dynamicBright = new uint8_t[numDevices];
   dynamicNextBright = new int16_t[numDevices];
   customColorHSV = new LED_HSV[numDevices];
+  deviceColorOrder = new ColorOrder[numDevices];
 
   // Initialize all arrays to default values
   resetDynamicColors();
@@ -42,6 +45,7 @@ Lighting::~Lighting() {
   delete[] dynamicBright;
   delete[] dynamicNextBright;
   delete[] customColorHSV;
+  delete[] deviceColorOrder;
 }
 
 // Reset all dynamic color state to initial values
@@ -52,6 +56,7 @@ void Lighting::resetDynamicColors() {
     dynamicBright[i] = 0;
     dynamicNextBright[i] = -1;
     customColorHSV[i] = {0, 0, 0};  // Default custom color: black
+    deviceColorOrder[i] = ORDER_RGB;  // Default color order
   }
 }
 
@@ -596,6 +601,24 @@ LED_HSV Lighting::getCustomColorHSV(uint8_t deviceSlot) const {
   }
   
   return customColorHSV[deviceSlot];
+}
+
+// Set the color channel order for a specific device slot.
+void Lighting::setColorOrder(uint8_t deviceSlot, ColorOrder order) {
+  if(deviceSlot >= numDevices) {
+    deviceSlot = 0;
+  }
+  
+  deviceColorOrder[deviceSlot] = order;
+}
+
+// Get the color channel order for a specific device slot.
+ColorOrder Lighting::getColorOrder(uint8_t deviceSlot) const {
+  if(deviceSlot >= numDevices) {
+    deviceSlot = 0;
+  }
+  
+  return deviceColorOrder[deviceSlot];
 }
 
 // ============================================================================

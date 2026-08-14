@@ -135,18 +135,7 @@ void AnimationTask(void *parameter) {
         mgr.lightsOff();
       }
       else {
-        switch(LED_COLOR_TYPE) {
-          case COLOR_ORDER_RGB:
-          default:
-            mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
-          break;
-          case COLOR_ORDER_GRB:
-            mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
-          break;
-          case COLOR_ORDER_GBR:
-            mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
-          break;
-        }
+        mgr.setPixelColor(PRIMARY_LED, C_PURPLE);
       }
     }
 
@@ -284,36 +273,14 @@ void WiFiSetupTask(void *parameter) {
 
   // Set a visual indicator that WiFi is being configured.
   auto& mgr = LightingManager::getInstance();
-  switch(LED_COLOR_TYPE) {
-    case COLOR_ORDER_RGB:
-    default:
-      mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
-    break;
-    case COLOR_ORDER_GRB:
-      mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
-    break;
-    case COLOR_ORDER_GBR:
-      mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
-    break;
-  }
+  mgr.setPixelColor(PRIMARY_LED, C_PURPLE);
   mgr.show();
 
   // Begin by setting up WiFi as a prerequisite to all else.
   if(startWiFi()) {
     if(b_local_ap_started) {
       // Indicate we've established the private network.
-      switch(LED_COLOR_TYPE) {
-        case COLOR_ORDER_RGB:
-        default:
-          mgr.setPixelColor(0, mgr.getColorRGB(PRIMARY_LED, C_PURPLE, 255));
-        break;
-        case COLOR_ORDER_GRB:
-          mgr.setPixelColor(0, mgr.getColorGRB(PRIMARY_LED, C_PURPLE, 255));
-        break;
-        case COLOR_ORDER_GBR:
-          mgr.setPixelColor(0, mgr.getColorGBR(PRIMARY_LED, C_PURPLE, 255));
-        break;
-      }
+      mgr.setPixelColor(PRIMARY_LED, C_PURPLE);
       mgr.show();
     }
 
@@ -329,7 +296,7 @@ void WiFiSetupTask(void *parameter) {
   vTaskDelay(200 / portTICK_PERIOD_MS); // 200ms delay
 
   // Clear LED once we have the AP and web server started.
-  mgr.setPixelColor(0, LED_RGB_BLACK);
+  mgr.setPixelColor(PRIMARY_LED, C_BLACK);
   mgr.show();
 
   #if defined(DEBUG_TASK_TO_CONSOLE)
@@ -391,6 +358,9 @@ void setup() {
     }
     preferences.end();
   }
+
+  // Sync the user's stored color order to the Lighting library for the default device slot (0).
+  LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
 
   initializePalettes(); // Set all colour patterns by stream type.
   delay(200); // Delay before configuring and running tasks.
