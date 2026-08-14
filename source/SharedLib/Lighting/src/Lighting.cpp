@@ -33,6 +33,8 @@ Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs)
   dynamicNextBright = new int16_t[numDevices];
   customColorHSV = new LED_HSV[numDevices];
   deviceColorOrder = new ColorOrder[numDevices];
+  paletteIndex = new uint16_t[numDevices];
+  paletteAnimationCycle = new uint8_t[numDevices];
 
   // Initialize all arrays to default values
   resetDynamicColors();
@@ -46,6 +48,8 @@ Lighting::~Lighting() {
   delete[] dynamicNextBright;
   delete[] customColorHSV;
   delete[] deviceColorOrder;
+  delete[] paletteIndex;
+  delete[] paletteAnimationCycle;
 }
 
 // Reset all dynamic color state to initial values
@@ -57,6 +61,8 @@ void Lighting::resetDynamicColors() {
     dynamicNextBright[i] = -1;
     customColorHSV[i] = {0, 0, 0};  // Default custom color: black
     deviceColorOrder[i] = ORDER_RGB;  // Default color order
+    paletteIndex[i] = 0;  // Start at beginning of palette
+    paletteAnimationCycle[i] = 0;  // Start at frame 0
   }
 }
 
@@ -619,6 +625,63 @@ ColorOrder Lighting::getColorOrder(uint8_t deviceSlot) const {
   }
   
   return deviceColorOrder[deviceSlot];
+}
+
+// Get an interpolated palette color with smooth animation and speed control.
+LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot, const LED_Palette16& palette, 
+                                  float speedMultiplier, uint8_t positionOffset, 
+                                  uint8_t brightness, bool reverse) {
+  if(deviceSlot >= numDevices) {
+    deviceSlot = 0;
+  }
+  
+  // Clamp speed multiplier to reasonable range (0.1x to 10x)
+  if(speedMultiplier < 0.1f) speedMultiplier = 0.1f;
+  if(speedMultiplier > 10.0f) speedMultiplier = 10.0f;
+
+  // Calculate animation increment using normalization formula
+  // baseIncrement = 5 (5ms baseline = 200fps, minimum refresh rate across all devices)
+  // refreshRateMs = device refresh rate in ms (5ms, 8ms, 16ms, etc.)
+  // increment = (5 * 256 * speedMultiplier) / refreshRateMs
+  // We use fixed-point (16-bit) to preserve fractional movement across all refresh rates
+  const uint16_t BASE_INCREMENT = 5;  // Reference baseline (5ms = 200fps, minimum device refresh rate)
+  uint16_t increment = (uint16_t)((BASE_INCREMENT * 256 * speedMultiplier) / deviceRefreshMs);
+  
+  // Advance palette index with full fractional precision (16-bit accumulation)
+  // This preserves sub-pixel movement even on slower refresh rates
+  paletteAnimationCycle[deviceSlot]++;
+  if(reverse) {
+    paletteIndex[deviceSlot] -= increment;  // Reverse: decrement instead of increment
+  } else {
+    paletteIndex[deviceSlot] += increment;  // Normal: increment position (full 16-bit value)
+  }
+  
+  // Get current palette position (0-255 maps to 16 colors) with position offset applied
+  // Upper 8 bits of paletteIndex map to visible palette position (0-255)
+  uint8_t currentPos = (paletteIndex[deviceSlot] >> 8) + positionOffset;
+  
+  // Calculate which two palette colors to interpolate between
+  uint8_t palettePos = (currentPos >> 4);  // Map 0-255 to 0-15 (16 palette colors)
+  uint8_t nextPos = (palettePos + 1) & 0x0F;  // Wrap around at 16
+  uint8_t fraction = currentPos & 0x0F;  // Interpolation fraction (0-15)
+  
+  // Get the two adjacent palette colors as HSV
+  LED_HSV hsv1 = getColorHSV(palette.colors[palettePos], brightness);
+  LED_HSV hsv2 = getColorHSV(palette.colors[nextPos], brightness);
+  
+  // Interpolate between the two HSV colors
+  // For smooth animation, interpolate all three components
+  uint8_t interpH = hsv1.h + ((int16_t)(hsv2.h - hsv1.h) * fraction / 16);
+  uint8_t interpS = hsv1.s + ((int16_t)(hsv2.s - hsv1.s) * fraction / 16);
+  uint8_t interpV = hsv1.v + ((int16_t)(hsv2.v - hsv1.v) * fraction / 16);
+  
+  LED_HSV interpolated = {interpH, interpS, interpV};
+  
+  // Convert to RGB
+  LED_RGB rgb = hsv2rgb(interpolated);
+  
+  // Apply stored color order for this device
+  return applyColorOrder(rgb, deviceColorOrder[deviceSlot]);
 }
 
 // ============================================================================

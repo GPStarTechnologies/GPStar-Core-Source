@@ -114,6 +114,9 @@ String getDeviceConfig() {
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
   jsonBody["numLeds"] = i_num_leds; // User-selected count of LEDs.
   jsonBody["ledType"] = LED_COLOR_TYPE; // [1=RGB,2=GRB,3=GBR]
+  jsonBody["maxBrightness"] = i_max_brightness; // Maximum brightness 0-255
+  jsonBody["defaultWandPower"] = i_default_wand_power; // Default power level 1-5
+  jsonBody["invertDirection"] = b_invert_direction; // Invert animation direction
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -874,10 +877,28 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
     }
 
+    // Set maximum brightness for animations.
+    if(jsonBody["maxBrightness"].is<uint8_t>()) {
+      i_max_brightness = jsonBody["maxBrightness"].as<uint8_t>();
+    }
+
+    // Set default power level for animations.
+    if(jsonBody["defaultWandPower"].is<uint8_t>()) {
+      i_default_wand_power = jsonBody["defaultWandPower"].as<uint8_t>();
+    }
+
+    // Set animation direction.
+    if(jsonBody["invertDirection"].is<bool>()) {
+      b_invert_direction = jsonBody["invertDirection"].as<bool>();
+    }
+
     // Accesses namespace in read/write mode.
     if(preferences.begin("device", false)) {
       preferences.putUShort("numLeds", i_num_leds);
       preferences.putUChar("ledType", (uint8_t)LED_COLOR_TYPE);
+      preferences.putUChar("maxBrightness", i_max_brightness);
+      preferences.putUChar("defaultPower", i_default_wand_power);
+      preferences.putBool("invertDirection", b_invert_direction);
       preferences.end();
     }
 

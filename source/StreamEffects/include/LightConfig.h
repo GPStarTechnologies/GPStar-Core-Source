@@ -60,6 +60,13 @@ enum LED_COLOR_ORDER : uint8_t {
 LED_COLOR_ORDER LED_COLOR_TYPE = COLOR_ORDER_RGB;
 
 /*
+ * LED Animation Control Settings (stored in Preferences/NVS)
+ */
+uint8_t i_max_brightness = 255; // Maximum brightness (0-255), default 100%
+bool b_invert_direction = false; // Invert animation direction, default false
+uint8_t i_default_wand_power = 1; // Default wandPower level (1-5), default 1 (for testing)
+
+/*
  * Define Color Options & Timers
  */
 LED_Palette16 paletteWhite;
@@ -241,6 +248,18 @@ public:
       // Set the pixel
       pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
     }
+  }
+
+  // Set a pixel with raw RGB color (color order already applied)
+  void setPixelColorRGB(uint16_t index, const LED_RGB &rgb) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      pixels.setPixelColor(index, pixels.Color(rgb.r, rgb.g, rgb.b));
+    }
+  }
+
+  // Get an interpolated palette color with smooth animation and speed control
+  LED_RGB getPaletteColor(const LED_Palette16& palette, float speedMultiplier = 1.0, uint8_t positionOffset = 0, uint8_t brightness = 255, bool reverse = false) {
+    return lightingLib.getPaletteColor(currentDeviceSlot, palette, speedMultiplier, positionOffset, brightness, reverse);
   }
 
   // Returns a pixel color using LED_RGB

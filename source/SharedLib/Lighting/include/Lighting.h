@@ -135,7 +135,7 @@ constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
  *   - CustomColor: 5 device-specific colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.) - user-configured HSV values
  *
  * Example usage:
- *   // Create Lighting instance to manage 6 devices with a 5ms refresh rate
+ *   // Create Lighting instance to manage 6 devices with a 5ms refresh rate (~200fps)
  *   Lighting lighting(6, 5);
  *
  *   // Static colors (no animation, no state):
@@ -166,6 +166,8 @@ class Lighting {
     int16_t* dynamicNextBright;   // Array[numDevices] - target brightness for fade animations
     LED_HSV* customColorHSV;      // Array[numDevices] - user-configured HSV values for custom static colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.)
     ColorOrder* deviceColorOrder; // Array[numDevices] - color channel order for each device (RGB, GRB, GBR)
+    uint16_t* paletteIndex;       // Array[numDevices] - smooth position through palette (0-65535) for sub-pixel interpolation
+    uint8_t* paletteAnimationCycle; // Array[numDevices] - frame counter for palette animation timing
 
     // Helper method to get static color definitions
     LED_HSV getStaticColorDefinition(ColorID color);
@@ -178,7 +180,7 @@ class Lighting {
      * Constructor: Initialize Lighting instance for a set number of devices.
      * Parameters:
      *   deviceCount: Number of independent devices this Lighting object manages (1-6 typical)
-     *   refreshRateMs: Device refresh rate in milliseconds (default: 5ms for Wand/Pack)
+     *   refreshRateMs: Device refresh rate in milliseconds (default: 5ms for Wand/Pack, ~200fps)
      * Examples:
      *   Lighting lighting(6, 8);  // ProtonPack with 6 devices, 8ms refresh rate
      *   Lighting lighting(1);     // Single device, defaults to 5ms (Wand/Pack)
@@ -261,6 +263,44 @@ class Lighting {
      *   ColorOrder order = lighting.getColorOrder(0);
      */
     ColorOrder getColorOrder(uint8_t deviceSlot) const;
+
+    /**
+     * Get an interpolated palette color with smooth animation and speed control.
+     * 
+     * Provides frame-based palette animation with automatic interpolation between
+     * adjacent palette colors. The palette index advances each frame with fractional
+     * precision, based on device refresh rate and a speed multiplier.
+     * 
+     * Parameters:
+     *   deviceSlot: [0..numDevices-1] - Which device to animate
+     *   palette: LED_Palette16 - 16-color palette to cycle through
+     *   speedMultiplier: [0.1-10.0] - Animation speed factor (default: 1.0)
+     *     - 1.0 = normal speed (baseline)
+     *     - 0.5 = half speed
+     *     - 2.0 = double speed
+     *   positionOffset: [0-255] - Starting position offset in palette for this LED (default: 0)
+     *     - Used to distribute palette across multiple LEDs (e.g., LED index scaled to 0-255)
+     *   brightness: [0-255] - Overall brightness level (default: 255)
+     *   reverse: [true/false] - Cycle palette backwards (default: false)
+     * 
+     * Returns: LED_RGB color with device's stored ColorOrder already applied
+     * 
+     * How it works:
+     * 1. Reads current paletteIndex[deviceSlot] and adds positionOffset
+     * 2. Calculates two adjacent palette color indices and interpolation fraction
+     * 3. Converts both colors to HSV, interpolates between them smoothly
+     * 4. Advances paletteIndex based on refresh rate and speedMultiplier (or decrements if reverse)
+     * 5. Applies stored ColorOrder for device and returns final RGB
+     * 
+     * Example:
+     *   LED_Palette16 myPalette = {{C_RED, C_BLUE, C_GREEN, ...}};
+     *   LED_RGB color = lighting.getPaletteColor(0, myPalette, 1.5);  // 1.5x speed
+     *   LED_RGB color = lighting.getPaletteColor(0, myPalette, 1.0, 64);  // with offset
+     *   LED_RGB reversed = lighting.getPaletteColor(0, myPalette, 1.0, 0, 255, true); // reverse
+     */
+    LED_RGB getPaletteColor(uint8_t deviceSlot, const LED_Palette16& palette, 
+                           float speedMultiplier = 1.0, uint8_t positionOffset = 0, 
+                           uint8_t brightness = 255, bool reverse = false);
 
     /**
      * Convert HSV color to RGB using rainbow algorithm for smooth color transitions.

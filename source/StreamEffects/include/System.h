@@ -127,23 +127,20 @@ void updateStreamPalette() {
 
 // Animate the LEDs using the palette system for smooth colour transitions.
 void animateLights() {
-  static uint8_t i_palette_start_index = 0; // Starting index for palette distribution across LEDs.
   auto& mgr = LightingManager::getInstance();
 
-  // Distribute palette colors across the LED strip with smooth transitions.
-  // The palette_start_index advances each frame to create flowing animation.
-  // Each LED gets a color from the palette based on its position and the animation offset.
+  // Distribute palette colors across the LED strand for flowing animation.
+  // Each LED gets a different position offset in the palette (0-255 distributed linearly).
+  // All LEDs advance together at speed controlled by wsData.wandPower.
   for(uint16_t i = 0; i < i_num_leds; i++) {
-    // Calculate which palette color to use for this LED:
-    // - Advance through palette based on LED position
-    // - Scale position to fit within 16-color palette (255 / num_leds gives color delta)
-    // - Add palette_start_index for animation flow
-    uint8_t paletteIndex = (i_palette_start_index + (i * 255 / i_num_leds)) % 16;
+    // Calculate position offset for this LED (0-255 distributed across strand)
+    uint8_t offset = (i * 255 / i_num_leds);
 
-    // Get the color from current palette and set this LED to the calculated color
-    mgr.setPixelColor(i, cp_StreamPalette.colors[paletteIndex]);
+    // Get interpolated palette color with this LED's position offset
+    // Parameters: palette, speed, offset, brightness, reverse
+    LED_RGB rgb = mgr.getPaletteColor(cp_StreamPalette, wsData.wandPower, offset, i_max_brightness, b_invert_direction);
+
+    // Set this LED to the interpolated color
+    mgr.setPixelColorRGB(i, rgb);
   }
-
-  // Increment starting index to create flowing animation effect using the wand power level.
-  i_palette_start_index += wsData.wandPower;
 }
