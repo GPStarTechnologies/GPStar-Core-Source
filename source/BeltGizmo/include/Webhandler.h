@@ -95,7 +95,8 @@ const uint16_t i_websocketCleanup = 5000;
 // Forward function declarations.
 void checkWebSocketClient();
 void notifyWSClients();
-void updateStreamColor();
+void updateStreamPalette();
+void sendDebug(const String& message);
 void registerWebRoutes(); // From Webrouting.h
 
 /**
@@ -465,7 +466,7 @@ void webSocketClientEvent(WStype_t type, uint8_t * payload, size_t length) {
           gpstarSystem.setStreamMode(PROTON);
         }
 
-        updateStreamColor(); // Set stream colour in use
+        updateStreamPalette(); // Set stream colour palette
         notifyWSClients(); // Update local WebSocket clients
       }
     break;
@@ -801,10 +802,10 @@ void handleEnableSelfTest(AsyncWebServerRequest *request) {
     debugln(F("Web: Self Test Enabled"));
     gpstarSystem.setStreamMode(SELFTEST); // Switch to self-test mode.
     ms_selftest_cycle.start(i_selftest_interval); // Start the self-test cycling timer.
-    i_stream_colour = C_WHITE; // Use white for self-test start.
-    i_selftest_colour = 0; // Reset colour index.
+    cp_StreamPalette = getPaletteWhite(); // Use white palette for self-test start.
+    i_selftest_palette = 0; // Reset palette index.
     b_firing = true; // Assume firing for maximum speed on colour changes.
-    updateStreamColor(); // Update stream colour.
+    updateStreamPalette(); // Update stream colours.
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
 }
@@ -814,10 +815,11 @@ void handleDisableSelfTest(AsyncWebServerRequest *request) {
     debugln(F("Web: Self Test Disabled"));
     gpstarSystem.setStreamMode(gpstarSystem.getPreviousStreamMode()); // Restore previous mode.
     ms_selftest_cycle.stop(); // Stop the self-test cycling timer.
-    i_selftest_colour = 0; // Reset colour index.
+    i_selftest_palette = 0; // Reset palette index.
     wsData.wandPower = 1; // Reset to lowest power for slowest speed.
     b_firing = false; // Assume not firing until next WebSocket update.
-    updateStreamColor(); // Reset stream colour.
+    updateStreamPalette(); // Reset stream palette.
+    LightingManager::getInstance().lightsOff(); // Turn off all LEDs.
   }
 
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
@@ -866,7 +868,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       }
     }
 
-    // Override the current LED count.
+    // User-defined count of addressable LEDs.
     if(jsonBody["nixieCount"].is<uint8_t>()) {
       i_num_leds = jsonBody["nixieCount"].as<uint8_t>() + 1; // [8 LEDs, 9 LEDs, 11 LEDs]
       i_animation_duration = ANIMATION_DURATION_MS / i_num_leds;
@@ -874,12 +876,14 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
 
     // Override the current LED colour order.
     if(jsonBody["ledType"].is<uint8_t>()) {
-      LED_COLOR_TYPE = (LED_COLOR_TYPES)jsonBody["ledType"].as<uint8_t>(); // [1=RGB,2=GRB,3=GBR]
+      LED_COLOR_TYPE = (LED_COLOR_ORDER)jsonBody["ledType"].as<uint8_t>(); // [1=RGB,2=GRB,3=GBR]
+      // Sync color order change to Lighting library immediately.
+      LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
     }
 
     // Accesses namespace in read/write mode.
     if(preferences.begin("device", false)) {
-      preferences.putUChar("ledCount", i_num_leds);
+      preferences.getUChar("ledCount", i_num_leds);
       preferences.putUChar("ledType", (uint8_t)LED_COLOR_TYPE);
       preferences.end();
     }

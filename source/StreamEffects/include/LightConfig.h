@@ -25,6 +25,9 @@
 // Include the generalized Lighting library
 #include <Lighting.h>
 
+// Include global palette definitions
+#include <LightingPalettes.h>
+
 // ============================================================================
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
@@ -68,16 +71,9 @@ uint8_t i_default_wand_power = 1; // Default wandPower level (1-5), default 1 (f
 
 /*
  * Define Color Options & Timers
+ * Note: Global palette instances are available from LightingPalettes.h
+ * (g_paletteWhite, g_paletteProton, g_paletteSlime, etc.)
  */
-LED_Palette16 paletteWhite;
-LED_Palette16 paletteProton;
-LED_Palette16 paletteSlime;
-LED_Palette16 paletteStasis;
-LED_Palette16 paletteMeson;
-LED_Palette16 paletteSpectral;
-LED_Palette16 paletteHalloween;
-LED_Palette16 paletteChristmas;
-LED_Palette16 paletteBrass;
 LED_Palette16 cp_StreamPalette; // Current colour palette in use.
 static const uint8_t i_palette_count = 9; // Total number of palettes available.
 static const uint16_t i_selftest_interval = 2000; // 2 seconds between palette changes.
@@ -112,13 +108,13 @@ extern uint8_t i_spectral_custom_saturation;
  *
  * INTERFACE:
  * - initializeDriver() — Sets up the driver library and hardware pins
- * - getColorRGB/GRB/GBR() — Converts color enums to CRGB values
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
  * - setBrightness() — Controls global brightness
- * - setPixelColor(index, CRGB) — Set a single LED to a color
- * - getPixelColor(index) — Read a single LED's current color as CRGB
- * - unpackColor(uint32_t) — Convert packed color integer to CRGB
+ * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
+ * - setPixelColorRGB(index, LED_RGB) — Set a single LED with raw RGB (color order pre-applied)
+ * - getPixelColor(index) — Read a single LED's current color as LED_RGB
+ * - getPaletteColor(palette, speedMultiplier, positionOffset, brightness, reverse) — Get interpolated palette color
  *
  * DRIVER ABSTRACTION:
  * The methods here wrap driver-specific calls. Whenever we need to
@@ -140,19 +136,28 @@ private:
     pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
     currentDeviceSlot(0) {}
 
-  // Helper: Map user preference color order values (1,2,3) to Lighting ColorOrder enum (0,1,2)
-  // Handles conversion from device-specific enum to Lighting library enum
+  // Helper: Converts from device-specific enum to Lighting library enum
+  // Map user preference color order values (1,2,3) to Lighting ColorOrder enum (0,1,2)
   ColorOrder mapColorOrder(uint8_t userPref) const {
     switch(userPref) {
-      case 1:  // COLOR_ORDER_RGB → ORDER_RGB
+      case 1:  // COLOR_ORDER_RGB = ORDER_RGB
         return ORDER_RGB;
-      case 2:  // COLOR_ORDER_GRB → ORDER_GRB
+      case 2:  // COLOR_ORDER_GRB = ORDER_GRB
         return ORDER_GRB;
-      case 3:  // COLOR_ORDER_GBR → ORDER_GBR
+      case 3:  // COLOR_ORDER_GBR = ORDER_GBR
         return ORDER_GBR;
       default: // Fallback to RGB
         return ORDER_RGB;
     }
+  }
+
+  // Helper: Convert packed uint32_t color to LED_RGB components
+  // Internal utility used by getPixelColor()
+  LED_RGB unpackColor(uint32_t packedColor) {
+    uint8_t r = (packedColor >> 16) & 0xFF;
+    uint8_t g = (packedColor >> 8) & 0xFF;
+    uint8_t b = packedColor & 0xFF;
+    return LED_RGB(r, g, b);
   }
 
 public:
@@ -173,42 +178,6 @@ public:
     pixels.show();
   }
 
-  // Get color as RGB based on device and color enum
-  LED_RGB getColorRGB(uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    return LED_RGB(rgb.r, rgb.g, rgb.b);
-  }
-
-  LED_RGB getColorGRB(uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
-    return LED_RGB(rgb.g, rgb.r, rgb.b);
-  }
-
-  LED_RGB getColorGBR(uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
-    return LED_RGB(rgb.g, rgb.b, rgb.r);
-  }
-
   // Update LED display
   void show() {
     pixels.show(); // Pass through to the LED driver library to update LED states.
@@ -219,12 +188,12 @@ public:
     pixels.clear(); // Set all to black (off).
   }
 
-  // Helper: Convert packed uint32_t color to LED_RGB components
-  LED_RGB unpackColor(uint32_t packedColor) {
-    uint8_t r = (packedColor >> 16) & 0xFF;
-    uint8_t g = (packedColor >> 8) & 0xFF;
-    uint8_t b = packedColor & 0xFF;
-    return LED_RGB(r, g, b);
+  // Returns a pixel's current color as LED_RGB
+  LED_RGB getPixelColor(uint16_t index) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      return unpackColor(pixels.getPixelColor(index));
+    }
+    return LED_RGB_BLACK; // Return black if index is out of bounds.
   }
 
   // Set a pixel color by ColorID and automatically apply stored color order
@@ -262,14 +231,6 @@ public:
     return lightingLib.getPaletteColor(currentDeviceSlot, palette, speedMultiplier, positionOffset, brightness, reverse);
   }
 
-  // Returns a pixel color using LED_RGB
-  LED_RGB getPixelColor(uint16_t index) {
-    if(index >= 0 && index < pixels.numPixels()) {
-      return unpackColor(pixels.getPixelColor(index));
-    }
-    return LED_RGB_BLACK; // Return black if index is out of bounds.
-  }
-
   // Set brightness
   void setBrightness(uint8_t brightness) {
     pixels.setBrightness(brightness);
@@ -280,110 +241,12 @@ public:
     lightingLib.setCustomColorHSV(hsv, currentDeviceSlot);
   }
 
-  // Set color order with automatic enum mapping
-  // Converts device color order values to Lighting library enum
+  // Set color order for a device with automatic enum mapping
   void setColorOrder(uint8_t deviceSlot, uint8_t userPrefValue) {
     ColorOrder mappedOrder = mapColorOrder(userPrefValue);
     lightingLib.setColorOrder(deviceSlot, mappedOrder);
   }
 };
-
-/**
- * PALETTE CREATION FUNCTIONS
- * 
- * These functions build LED_RGB_Palette16 palettes using consistent
- * color definitions from the Lighting library. Each palette maps to
- * a thematic set of colors for different stream modes.
- * 
- * All colors are derived from ColorID enum values, ensuring consistency
- * across the application. Each function gets a single LightingManager
- * reference to avoid redundant singleton lookups.
- */
-
-// Create Proton stream palette: Mid Blue, Red, Orange, Dark Red, Black
-LED_Palette16 createPaletteProton() {
-  return {{
-    C_MID_BLUE, C_RED, C_RED, C_ORANGE, C_ORANGE, C_RED4, C_RED5, C_BLACK,
-    C_MID_BLUE, C_RED, C_RED, C_ORANGE, C_ORANGE, C_RED4, C_RED5, C_BLACK
-  }};
-}
-
-// Create Slime stream palette: Green, Chartreuse, Dark Green, Black
-LED_Palette16 createPaletteSlime() {
-  return {{
-    C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_DARK_GREEN, C_BLACK,
-    C_GREEN, C_GREEN, C_GREEN, C_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_DARK_GREEN, C_BLACK
-  }};
-}
-
-// Create Stasis stream palette: Blue, Navy, Mid Blue, Black
-LED_Palette16 createPaletteStasis() {
-  return {{
-    C_BLUE, C_BLUE, C_BLUE, C_BLUE, C_NAVY_BLUE, C_NAVY_BLUE, C_MID_BLUE, C_BLACK,
-    C_BLUE, C_BLUE, C_BLUE, C_BLUE, C_NAVY_BLUE, C_NAVY_BLUE, C_MID_BLUE, C_BLACK
-  }};
-}
-
-// Create Meson stream palette: Yellow, Orange, Black
-LED_Palette16 createPaletteMeson() {
-  return {{
-    C_YELLOW, C_YELLOW, C_YELLOW, C_YELLOW, C_ORANGE, C_ORANGE, C_BLACK, C_BLACK,
-    C_YELLOW, C_YELLOW, C_YELLOW, C_YELLOW, C_ORANGE, C_ORANGE, C_BLACK, C_BLACK
-  }};
-}
-
-// Create Spectral stream palette: Full rainbow cycle (ROYGBIV)
-LED_Palette16 createPaletteSpectral() {
-  return {{
-    C_RED, C_ORANGE, C_YELLOW, C_GREEN, C_BLUE, C_NAVY_BLUE, C_PURPLE, C_BLACK,
-    C_RED, C_ORANGE, C_YELLOW, C_GREEN, C_BLUE, C_NAVY_BLUE, C_PURPLE, C_BLACK
-  }};
-}
-
-// Create Halloween palette: Orange and Purple with Black
-LED_Palette16 createPaletteHalloween() {
-  return {{
-    C_ORANGE, C_ORANGE, C_ORANGE, C_ORANGE, C_ORANGE, C_ORANGE, C_BLACK, C_BLACK,
-    C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_PURPLE, C_BLACK, C_BLACK
-  }};
-}
-
-// Create Christmas palette: Red and Green with Black
-LED_Palette16 createPaletteChristmas() {
-  return {{
-    C_RED, C_RED, C_RED, C_RED, C_RED, C_RED, C_BLACK, C_BLACK,
-    C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_DARK_GREEN, C_BLACK, C_BLACK
-  }};
-}
-
-// Create Brass palette: Chartreuse and Orange with Black
-LED_Palette16 createPaletteBrass() {
-  return {{
-    C_DARK_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_ORANGE, C_ORANGE, C_ORANGE, C_BLACK,
-    C_DARK_GREEN, C_CHARTREUSE, C_CHARTREUSE, C_CHARTREUSE, C_ORANGE, C_ORANGE, C_ORANGE, C_BLACK
-  }};
-}
-
-// Create White palette: White with Black
-LED_Palette16 createPaletteWhite() {
-  return {{
-    C_WHITE, C_WHITE, C_WHITE, C_WHITE, C_BLACK, C_BLACK, C_BLACK, C_BLACK,
-    C_WHITE, C_WHITE, C_WHITE, C_WHITE, C_BLACK, C_BLACK, C_BLACK, C_BLACK
-  }};
-}
-
-// Initialization of all palettes (at startup).
-void initializePalettes() {
-  paletteProton = createPaletteProton();
-  paletteSlime = createPaletteSlime();
-  paletteStasis = createPaletteStasis();
-  paletteMeson = createPaletteMeson();
-  paletteSpectral = createPaletteSpectral();
-  paletteHalloween = createPaletteHalloween();
-  paletteChristmas = createPaletteChristmas();
-  paletteBrass = createPaletteBrass();
-  paletteWhite = createPaletteWhite();
-}
 
 /**
  * SINGLETON PATTERN: Static member variable initialization

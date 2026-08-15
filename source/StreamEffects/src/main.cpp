@@ -374,7 +374,6 @@ void setup() {
   // Set the default power level for animations.
   wsData.wandPower = i_default_wand_power;
 
-  initializePalettes(); // Set all colour patterns by stream type.
   delay(200); // Delay before configuring and running tasks.
 
   /**
@@ -420,13 +419,13 @@ void setup() {
 
 // Helper function to format bytes with a comma separator
 String formatBytesWithCommas(uint32_t bytes) {
-    String result = String(bytes);
-    int insertPosition = result.length() - 3;
-    while(insertPosition > 0) {
-        result = result.substring(0, insertPosition) + "," + result.substring(insertPosition);
-        insertPosition -= 3;
-    }
-    return result;
+  String result = String(bytes);
+  int insertPosition = result.length() - 3;
+  while(insertPosition > 0) {
+    result = result.substring(0, insertPosition) + "," + result.substring(insertPosition);
+    insertPosition -= 3;
+  }
+  return result;
 }
 
 // Function to calculate and print CPU load

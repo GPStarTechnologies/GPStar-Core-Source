@@ -19,14 +19,14 @@
 
 #pragma once
 
-// Suppress FastLED warnings
-#define FASTLED_INTERNAL
-
-// Include the intended LED driver first: FastLED
-#include <FastLED.h>
+// Include the intended LED driver first: Adafruit Neopixel
+#include <Adafruit_NeoPixel.h>
 
 // Include the generalized Lighting library
 #include <Lighting.h>
+
+// Include global palette definitions
+#include <LightingPalettes.h>
 
 // ============================================================================
 // LOCAL LIGHTING VARIABLES
@@ -37,6 +37,8 @@
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
 #define DEVICE_LED_PIN 4
+#define DEVICE_SLOTS 1 // Number of device slots for the Lighting library
+#define DEVICE_REFRESH_MS 16 // Refresh rate for the addressable LEDs (in milliseconds)
 #define DEVICE_MAX_LEDS 11 // 10 "nixie" tubes + 1 "E" bulb
 #define DEVICE_MAX_BRIGHTNESS 128 // Use half-brightness to conserve power
 uint8_t i_num_leds = 8; // Default to 7 nixie tubes + 1 "E" bulb
@@ -44,20 +46,31 @@ uint8_t i_num_leds = 8; // Default to 7 nixie tubes + 1 "E" bulb
 /*
  * Addressable LED Devices
  */
-enum device : uint8_t {
+enum STRAND_LED : uint8_t {
   PRIMARY_LED = 0
 };
 
 /*
- * LED colour order type for device
- * Defaults to GBR for the type recommended for the build: https://a.co/d/ia74QSm
+ * LED colour order type for device (stored in Preferences/NVS)
+ * Defaults to COLOR_ORDER_GBR for the type recommended for the build: https://a.co/d/ia74QSm
  */
-enum LED_COLOR_TYPES : uint8_t {
-  LED_RGB = 1,
-  LED_GRB = 2,
-  LED_GBR = 3
+enum LED_COLOR_ORDER : uint8_t {
+  COLOR_ORDER_RGB = 1,
+  COLOR_ORDER_GRB = 2,
+  COLOR_ORDER_GBR = 3
 };
-LED_COLOR_TYPES LED_COLOR_TYPE = LED_GBR;
+LED_COLOR_ORDER LED_COLOR_TYPE = COLOR_ORDER_GBR;
+
+/*
+ * Define Color Options & Timers
+ * Note: Global palette instances are available from LightingPalettes.h
+ * (g_paletteWhite, g_paletteProton, g_paletteSlime, etc.)
+ */
+LED_Palette16 cp_StreamPalette; // Current colour palette in use.
+static const uint8_t i_palette_count = 9; // Total number of palettes available.
+static const uint16_t i_selftest_interval = 2000; // 2 seconds between palette changes.
+millisDelay ms_selftest_cycle; // Timer for self-test cycling using an interval.
+uint8_t i_selftest_palette = 0; // Current palette index for cycling in self-test.
 
 extern uint8_t i_spectral_custom_colour;
 extern uint8_t i_spectral_custom_saturation;
@@ -87,11 +100,13 @@ extern uint8_t i_spectral_custom_saturation;
  *
  * INTERFACE:
  * - initializeDriver() — Sets up the driver library and hardware pins
- * - getColorRGB/GRB/GBR() — Converts color enums to CRGB values
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
  * - setBrightness() — Controls global brightness
- * - getLEDs() — Returns pointer to LED array for direct manipulation
+ * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
+ * - setPixelColorRGB(index, LED_RGB) — Set a single LED with raw RGB (color order pre-applied)
+ * - getPixelColor(index) — Read a single LED's current color as LED_RGB
+ * - getPaletteColor(palette, speedMultiplier, positionOffset, brightness, reverse) — Get interpolated palette color
  *
  * DRIVER ABSTRACTION:
  * The methods here wrap driver-specific calls. Whenever we need to
@@ -102,90 +117,126 @@ class LightingManager {
 private:
   static LightingManager* instance;
   Lighting lightingLib;
-  CRGB deviceLEDs[DEVICE_MAX_LEDS];
+  Adafruit_NeoPixel pixels;
+  uint8_t currentDeviceSlot; // Track device slot for an instance.
 
   // Private constructor - called only once by getInstance()
-  LightingManager() : lightingLib(1) {
-    // Initialize with 1 device (has PRIMARY_LED only)
+  // Initializes the Lighting library as lightingLib with 1 device slot,
+  // and initializes the Adafruit_NeoPixel object as a variable "pixels".
+  LightingManager() :
+    lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
+    pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
+    currentDeviceSlot(0) {}
+
+  // Helper: Converts from device-specific enum to Lighting library enum
+  // Map user preference color order values (1,2,3) to Lighting ColorOrder enum (0,1,2)
+  ColorOrder mapColorOrder(uint8_t userPref) const {
+    switch(userPref) {
+      case 1:  // COLOR_ORDER_RGB = ORDER_RGB
+        return ORDER_RGB;
+      case 2:  // COLOR_ORDER_GRB = ORDER_GRB
+        return ORDER_GRB;
+      case 3:  // COLOR_ORDER_GBR = ORDER_GBR
+        return ORDER_GBR;
+      default: // Fallback to RGB
+        return ORDER_RGB;
+    }
+  }
+
+  // Helper: Convert packed uint32_t color to LED_RGB components
+  // Internal utility used by getPixelColor()
+  LED_RGB unpackColor(uint32_t packedColor) {
+    uint8_t r = (packedColor >> 16) & 0xFF;
+    uint8_t g = (packedColor >> 8) & 0xFF;
+    uint8_t b = packedColor & 0xFF;
+    return LED_RGB(r, g, b);
   }
 
 public:
   // Singleton instance
-  static LightingManager& getInstance() {
+  static LightingManager& getInstance(uint8_t deviceSlot = 0) {
     if(instance == nullptr) {
       instance = new LightingManager();
     }
+    instance->currentDeviceSlot = deviceSlot; // Set context for this call
     return *instance;
   }
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(deviceLEDs, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-    FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
-    FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
-  }
-
-  // Get color as RGB based on device and color enum
-  CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    return CRGB(rgb.r, rgb.g, rgb.b);
-  }
-
-  CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
-    return CRGB(rgb.g, rgb.r, rgb.b);
-  }
-
-  CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
-    return CRGB(rgb.g, rgb.b, rgb.r);
+    pixels.begin();
+    pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+    pixels.show();
   }
 
   // Update LED display
   void show() {
-    FastLED.show(); // Pass through to the LED driver library to update LED states.
+    pixels.show(); // Pass through to the LED driver library to update LED states.
   }
 
   // Turn off all LEDs
   void lightsOff() {
-    fill_solid(deviceLEDs, DEVICE_MAX_LEDS, CRGB::Black); // Set all to black (off).
+    pixels.clear(); // Set all to black (off).
   }
 
-  // Get a pointer to the LED array (for palette rendering and direct access)
-  CRGB* getLEDs() {
-    return deviceLEDs;
+  // Returns a pixel's current color as LED_RGB
+  LED_RGB getPixelColor(uint16_t index) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      return unpackColor(pixels.getPixelColor(index));
+    }
+    return LED_RGB_BLACK; // Return black if index is out of bounds.
+  }
+
+  // Set a pixel color by ColorID and automatically apply stored color order
+  void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      // Get color as HSV
+      LED_HSV hsv;
+      if(isColorDynamic(colorEnum)) {
+        hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorEnum, brightness);
+      } else {
+        hsv = lightingLib.getColorHSV(colorEnum, brightness);
+      }
+
+      // Convert to RGB
+      LED_RGB rgb = Lighting::hsv2rgb(hsv);
+
+      // Apply stored color order for this device
+      ColorOrder order = lightingLib.getColorOrder(currentDeviceSlot);
+      LED_RGB ordered = Lighting::applyColorOrder(rgb, order);
+
+      // Set the pixel
+      pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
+    }
+  }
+
+  // Set a pixel with raw RGB color (color order already applied)
+  void setPixelColorRGB(uint16_t index, const LED_RGB &rgb) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      pixels.setPixelColor(index, pixels.Color(rgb.r, rgb.g, rgb.b));
+    }
+  }
+
+  // Get an interpolated palette color with smooth animation and speed control
+  LED_RGB getPaletteColor(const LED_Palette16& palette, float speedMultiplier = 1.0, uint8_t positionOffset = 0, uint8_t brightness = 255, bool reverse = false) {
+    return lightingLib.getPaletteColor(currentDeviceSlot, palette, speedMultiplier, positionOffset, brightness, reverse);
   }
 
   // Set brightness
   void setBrightness(uint8_t brightness) {
-    FastLED.setBrightness(brightness);
+    pixels.setBrightness(brightness);
   }
 
   // Set custom color HSV values in the Lighting library
-  void setCustomColorHSV(const LED_HSV &hsv, uint8_t deviceSlot = 0) {
-    lightingLib.setCustomColorHSV(hsv, deviceSlot);
+  void setCustomColorHSV(const LED_HSV &hsv) {
+    lightingLib.setCustomColorHSV(hsv, currentDeviceSlot);
+  }
+
+  // Set color order for a device with automatic enum mapping
+  void setColorOrder(uint8_t deviceSlot, uint8_t userPrefValue) {
+    ColorOrder mappedOrder = mapColorOrder(userPrefValue);
+    lightingLib.setColorOrder(deviceSlot, mappedOrder);
   }
 };
 

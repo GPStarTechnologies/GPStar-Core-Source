@@ -38,8 +38,6 @@ const uint16_t i_animation_time = 400;
 const uint8_t i_animation_step = 4;
 bool b_invert_animation = true; // false = Right to Left, true = Left to Right
 static const uint8_t i_colour_count = 4; // Total number of colour available.
-static const uint16_t i_selftest_interval = 2000; // 2 seconds between colour changes.
-millisDelay ms_selftest_cycle; // Timer for self-test cycling using an interval.
 uint8_t i_selftest_colour = 0; // Current colour index for cycling in self-test.
 uint8_t i_stream_colour; // Current colour index for the stream type.
 

@@ -801,7 +801,7 @@ void handleEnableSelfTest(AsyncWebServerRequest *request) {
     debugln(F("Web: Self Test Enabled"));
     gpstarSystem.setStreamMode(SELFTEST); // Switch to self-test mode.
     ms_selftest_cycle.start(i_selftest_interval); // Start the self-test cycling timer.
-    cp_StreamPalette = paletteWhite; // Use white palette for self-test start.
+    cp_StreamPalette = getPaletteWhite(); // Use white palette for self-test start.
     i_selftest_palette = 0; // Reset palette index.
     updateStreamPalette(); // Update stream colours.
   }

@@ -46,16 +46,6 @@
 #include <esp_system.h>
 #include <nvs_flash.h>
 
-// Writes a debug message to the serial console or sends to the WebSocket.
-void sendDebug(const String& message) {
-  #if defined(DEBUG_SEND_TO_CONSOLE)
-    debugln(message); // Print to serial console.
-  #endif
-  #if defined(DEBUG_SEND_TO_WEBSOCKET)
-    ws.textAll(message); // Send a copy to the WebSocket.
-  #endif
-}
-
 // Shared Libraries
 #include <DeviceState.h>
 #include <WirelessManager.h>
@@ -72,6 +62,18 @@ DeviceState gpstarSystem;
 #include "Webhandler.h"
 #include "Webrouting.h"
 #include "System.h"
+
+// Writes a debug message to the serial console or sends to the WebSocket.
+void sendDebug(const String& message) {
+  #if defined(DEBUG_SEND_TO_CONSOLE)
+    debugln(message); // Print to serial console.
+  #endif
+  #if defined(DEBUG_SEND_TO_WEBSOCKET)
+    if(b_httpd_started) {
+      ws.textAll(message); // Send a copy to the WebSocket.
+    }
+  #endif
+}
 
 // Define the WirelessManager pointer globally (initialized to nullptr).
 // This matches the extern declaration in Wireless.h
@@ -120,12 +122,14 @@ void AnimationTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
+    auto& mgr = LightingManager::getInstance();
+
     // Update light animation based on websocket data (or self-test mode).
-    updateStreamColor();
+    updateStreamPalette();
     animateLights();
 
-    // Update the device LEDs and restart the timer.
-    LightingManager::getInstance().show();
+    // Update the device LEDs.
+    mgr.show();
 
     vTaskDelay(16 / portTICK_PERIOD_MS); // 16ms delay
   }
@@ -258,38 +262,14 @@ void WiFiSetupTask(void *parameter) {
 
   // Set a visual indicator that WiFi is being configured.
   auto& mgr = LightingManager::getInstance();
-  CRGB* leds = mgr.getLEDs();
-  switch(LED_COLOR_TYPE) {
-    case LED_RGB:
-      leds[0] = mgr.getColorRGB(PRIMARY_LED, C_RED, 255);
-    break;
-    case LED_GRB:
-      leds[0] = mgr.getColorGRB(PRIMARY_LED, C_RED, 255);
-    break;
-    case LED_GBR:
-    default:
-      leds[0] = mgr.getColorGBR(PRIMARY_LED, C_RED, 255);
-    break;
-  }
+  mgr.setPixelColor(PRIMARY_LED, C_RED);
   mgr.show();
 
   // Begin by setting up WiFi as a prerequisite to all else.
   if(startWiFi()) {
     if(b_local_ap_started) {
       // Indicate we've established the private network.
-      leds = mgr.getLEDs();
-      switch(LED_COLOR_TYPE) {
-        case LED_RGB:
-          leds[0] = mgr.getColorRGB(PRIMARY_LED, C_BLUE, 255);
-        break;
-        case LED_GRB:
-          leds[0] = mgr.getColorGRB(PRIMARY_LED, C_BLUE, 255);
-        break;
-        case LED_GBR:
-        default:
-          leds[0] = mgr.getColorGBR(PRIMARY_LED, C_BLUE, 255);
-        break;
-      }
+      mgr.setPixelColor(PRIMARY_LED, C_BLUE);
       mgr.show();
     }
 
@@ -305,7 +285,7 @@ void WiFiSetupTask(void *parameter) {
   vTaskDelay(200 / portTICK_PERIOD_MS); // 200ms delay
 
   // Clear LED once we have the AP and web server started.
-  mgr.lightsOff();
+  mgr.setPixelColor(PRIMARY_LED, C_BLACK);
   mgr.show();
 
   #if defined(DEBUG_TASK_TO_CONSOLE)
@@ -320,13 +300,12 @@ void WiFiSetupTask(void *parameter) {
 }
 
 void setup() {
-  // Initialize LED driver via singleton manager.
-  auto& mgr = LightingManager::getInstance();
-  mgr.initializeDriver();
+  // Initialize the LED driver first
+  LightingManager::getInstance().initializeDriver();
 
   // Initialize custom color in the Lighting library
   LED_HSV customColor = {i_spectral_custom_colour, i_spectral_custom_saturation, 255};
-  mgr.setCustomColorHSV(customColor);
+  LightingManager::getInstance().setCustomColorHSV(customColor);
 
   Serial.begin(115200); // Serial monitor via USB connection.
 
@@ -356,8 +335,8 @@ void setup() {
 
   // Make sure all LEDs are off and set the default palette for stream mode.
   ms_anim_change.start(i_animation_duration); // Default animation time.
-  mgr.lightsOff();
-  updateStreamColor();
+  LightingManager::getInstance().lightsOff();
+  updateStreamPalette();
 
   // Create Preferences object to handle non-volatile storage (NVS).
   Preferences preferences;
@@ -381,10 +360,13 @@ void setup() {
       i_animation_duration = ANIMATION_DURATION_MS / i_num_leds;
     }
     if(preferences.isKey("ledType")) {
-      LED_COLOR_TYPE = (LED_COLOR_TYPES)preferences.getUChar("ledType", (uint8_t)LED_GBR);
+      LED_COLOR_TYPE = (LED_COLOR_ORDER)preferences.getUChar("ledType", (uint8_t)COLOR_ORDER_RGB);
     }
     preferences.end();
   }
+
+  // Sync the user's stored color order to the Lighting library for the default device slot (0).
+  LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
 
   // Prepare the on-board RGB LED to be used as an output pin for indication.
   digitalWrite(BUILT_IN_LED, LOW); // Turn off the built-in LED.

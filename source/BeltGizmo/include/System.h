@@ -19,6 +19,8 @@
 
 #pragma once
 
+void sendDebug(const String& message);
+
 // Clear any prior information from the WebSocket client.
 void resetWebSocketData() {
   wsData.mode = "";
@@ -57,133 +59,83 @@ void printPartitions() {
   esp_partition_iterator_release(iterator);  // Release the iterator once done
 }
 
-// Helper: compute fixed-point scaled position (Q16) from 16-bit phase.
-// Outputs:
-//  - index: integer LED index (0..i_num_leds-1)
-//  - frac:  fractional 0..255 part used for weighting adjacent LEDs
-static inline void calculateScaledPos(uint16_t i_phase, uint8_t &index, uint8_t &frac) {
-  uint32_t scaledPos = (uint32_t)i_phase * (uint32_t)i_num_leds; // Q16
-  index = (uint8_t)(scaledPos >> 16);               // integer LED index
-  frac  = (uint8_t)((scaledPos >> 8) & 0xFF);       // fractional 0..255
-}
-
-// Function to update the current colour based on stream mode.
-void updateStreamColor() {
+// Function to update the current palette based on stream mode.
+void updateStreamPalette() {
   switch(gpstarSystem.getStreamMode()) {
     case PROTON:
-      i_stream_colour = C_RED;
+      cp_StreamPalette = getPaletteProton();
     break;
     case SLIME:
-      i_stream_colour = C_GREEN;
+      cp_StreamPalette = getPaletteSlime();
     break;
     case STASIS:
-      i_stream_colour = C_BLUE;
+      cp_StreamPalette = getPaletteStasis();
     break;
     case MESON:
-      i_stream_colour = C_ORANGE;
+      cp_StreamPalette = getPaletteMeson();
     break;
     case SPECTRAL:
-      i_stream_colour = C_RAINBOW;
+      cp_StreamPalette = getPaletteSpectral();
     break;
     case HOLIDAY_HALLOWEEN:
-      i_stream_colour = C_ORANGEPURPLE;
+      cp_StreamPalette = getPaletteHalloween();
     break;
     case HOLIDAY_CHRISTMAS:
-      i_stream_colour = C_REDGREEN;
+      cp_StreamPalette = getPaletteChristmas();
     break;
     case SELFTEST:
       // Initialize timer on first entry to self-test mode
       if(!ms_selftest_cycle.isRunning()) {
         ms_selftest_cycle.start(i_selftest_interval);
-        i_selftest_colour = 0; // Reset to first colour
+        i_selftest_palette = 0; // Reset to first palette
       }
 
-      // Cycle through all available colours every 2 seconds during self-test
+      // Cycle through all available palettes every 2 seconds during self-test
       if(ms_selftest_cycle.justFinished()) {
-        sendDebug(String(F("Self-Test: Switching to Color #")) + String(i_selftest_colour));
+        sendDebug(String(F("Self-Test: Switching to Palette #")) + String(i_selftest_palette) + String(F(" w/ Power Level ")) + String(wsData.wandPower));
 
-        // Set current colour based on count of colours available (red, green, blue).
-        switch(i_selftest_colour % i_colour_count) {
-          case 0: i_stream_colour = C_WHITE; break;
-          case 1: i_stream_colour = C_RED; break;
-          case 2: i_stream_colour = C_GREEN; break;
-          case 3: i_stream_colour = C_BLUE; break;
+        // Set current palette based on count of palettes available
+        switch(i_selftest_palette % i_palette_count) {
+          case 0: cp_StreamPalette = getPaletteWhite(); break;
+          case 1: cp_StreamPalette = getPaletteProton(); break;
+          case 2: cp_StreamPalette = getPaletteSlime(); break;
+          case 3: cp_StreamPalette = getPaletteStasis(); break;
+          case 4: cp_StreamPalette = getPaletteMeson(); break;
+          case 5: cp_StreamPalette = getPaletteSpectral(); break;
+          case 6: cp_StreamPalette = getPaletteHalloween(); break;
+          case 7: cp_StreamPalette = getPaletteChristmas(); break;
+          case 8: cp_StreamPalette = getPaletteBrass(); break;
         }
 
-        // Advance to next colour for the next cycle
-        i_selftest_colour = (i_selftest_colour + 1) % i_colour_count;
+        // Advance to next palette for the next cycle
+        i_selftest_palette = (i_selftest_palette + 1) % i_palette_count;
 
         // Restart timer for next cycle.
         ms_selftest_cycle.restart();
       }
     break;
     default:
-      i_stream_colour = C_WHITE;
+      cp_StreamPalette = getPaletteWhite();
     break;
   }
 }
 
-// Animate the LEDs in a wave-like pattern using a single colour.
+// Animate the LEDs using the palette system for smooth colour transitions.
 void animateLights() {
   auto& mgr = LightingManager::getInstance();
-  static uint16_t i_led_phase = 0; // 16-bit phase accumulator (high byte = 0..255 visible phase)
 
-  if(!ms_anim_change.justFinished()) return; // nothing to do this frame
+  // Distribute palette colors across the LED strand for flowing animation.
+  // Each LED gets a different position offset in the palette (0-255 distributed linearly).
+  // All LEDs advance together at speed controlled by wsData.wandPower.
+  for(uint16_t i = 0; i < i_num_leds; i++) {
+    // Calculate position offset for this LED (0-255 distributed across strand)
+    uint8_t offset = (i * 255 / i_num_leds);
 
-  mgr.lightsOff(); // Clear LEDs before updating animation.
+    // Get interpolated palette color with this LED's position offset
+    // Parameters: palette, speed, offset, brightness, reverse
+    LED_RGB rgb = mgr.getPaletteColor(cp_StreamPalette, wsData.wandPower, offset);
 
-  // Compute a full-bright CRGB once and scale per-LED with nscale8_video.
-  CRGB baseColor;
-  switch(LED_COLOR_TYPE) {
-    case LED_GBR:
-    default:
-      baseColor = mgr.getColorGBR(PRIMARY_LED, i_stream_colour, 255);
-    break;
-    case LED_RGB:
-      baseColor = mgr.getColorRGB(PRIMARY_LED, i_stream_colour, 255);
-    break;
-    case LED_GRB:
-      baseColor = mgr.getColorGRB(PRIMARY_LED, i_stream_colour, 255);
-    break;
-  }
-
-  // Compute fixed-point position and split between two LEDs for smooth sub-pixel motion.
-  uint8_t i_index, i_frac;
-  calculateScaledPos(i_led_phase, i_index, i_frac);
-
-  // Split peak between i_index and the next LED
-  uint8_t i_weightA = 255 - i_frac; // Weight for i_index
-  uint8_t i_weightB = i_frac;       // Weight for i_index + 1
-
-  // Apply weighted colours (nscale8_video expects 0..255)
-  CRGB* device_leds = mgr.getLEDs();
-  CRGB cA = baseColor; cA.nscale8_video(i_weightA);
-  device_leds[i_index] = cA;
-
-  uint8_t i_indexB = i_index + 1;
-  if(i_indexB >= i_num_leds) {
-    i_indexB = 0;
-  }
-  CRGB cB = baseColor; cB.nscale8_video(i_weightB);
-  device_leds[i_indexB] = cB;
-
-  // Slight blur to soften stepping (tune i_blurAmount)
-  const uint8_t i_blur_amount = 32;
-  blur1d(device_leds, i_num_leds, i_blur_amount);
-
-  // IMPORTANT: advance the 16-bit phase so the visible (high) byte moves by i_animation_step.
-  // Shift left 8 so visible phase increments by i_animation_step each frame.
-  if(b_invert_animation) {
-    i_led_phase -= (uint16_t)i_animation_step << 8;
-  } else {
-    i_led_phase += (uint16_t)i_animation_step << 8;
-  }
-
-  if(b_firing) {
-    // Speed up animation when firing, based on power level.
-    ms_anim_change.start(int(i_animation_duration / ((wsData.wandPower + 1) * 2)));
-  } else {
-    // Otherwise return to normal speed at idle.
-    ms_anim_change.start(i_animation_duration);
+    // Set this LED to the interpolated color
+    mgr.setPixelColorRGB(i, rgb);
   }
 }

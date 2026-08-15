@@ -64,29 +64,29 @@ void updateStreamPalette() {
   switch(gpstarSystem.getStreamMode()) {
     case PROTON:
       if(gpstarSystem.getSystemTheme() == SYSTEM_FROZEN_EMPIRE && !wsData.cyclotronLid && wsData.ctsActive) {
-        cp_StreamPalette = paletteBrass;
+        cp_StreamPalette = getPaletteBrass();
       }
       else {
-        cp_StreamPalette = paletteProton;
+        cp_StreamPalette = getPaletteProton();
       }
     break;
     case SLIME:
-      cp_StreamPalette = paletteSlime;
+      cp_StreamPalette = getPaletteSlime();
     break;
     case STASIS:
-      cp_StreamPalette = paletteStasis;
+      cp_StreamPalette = getPaletteStasis();
     break;
     case MESON:
-      cp_StreamPalette = paletteMeson;
+      cp_StreamPalette = getPaletteMeson();
     break;
     case SPECTRAL:
-      cp_StreamPalette = paletteSpectral;
+      cp_StreamPalette = getPaletteSpectral();
     break;
     case HOLIDAY_HALLOWEEN:
-      cp_StreamPalette = paletteHalloween;
+      cp_StreamPalette = getPaletteHalloween();
     break;
     case HOLIDAY_CHRISTMAS:
-      cp_StreamPalette = paletteChristmas;
+      cp_StreamPalette = getPaletteChristmas();
     break;
     case SELFTEST:
       // Initialize timer on first entry to self-test mode
@@ -101,15 +101,15 @@ void updateStreamPalette() {
 
         // Set current palette based on count of palettes available
         switch(i_selftest_palette % i_palette_count) {
-          case 0: cp_StreamPalette = paletteWhite; break;
-          case 1: cp_StreamPalette = paletteProton; break;
-          case 2: cp_StreamPalette = paletteSlime; break;
-          case 3: cp_StreamPalette = paletteStasis; break;
-          case 4: cp_StreamPalette = paletteMeson; break;
-          case 5: cp_StreamPalette = paletteSpectral; break;
-          case 6: cp_StreamPalette = paletteHalloween; break;
-          case 7: cp_StreamPalette = paletteChristmas; break;
-          case 8: cp_StreamPalette = paletteBrass; break;
+          case 0: cp_StreamPalette = getPaletteWhite(); break;
+          case 1: cp_StreamPalette = getPaletteProton(); break;
+          case 2: cp_StreamPalette = getPaletteSlime(); break;
+          case 3: cp_StreamPalette = getPaletteStasis(); break;
+          case 4: cp_StreamPalette = getPaletteMeson(); break;
+          case 5: cp_StreamPalette = getPaletteSpectral(); break;
+          case 6: cp_StreamPalette = getPaletteHalloween(); break;
+          case 7: cp_StreamPalette = getPaletteChristmas(); break;
+          case 8: cp_StreamPalette = getPaletteBrass(); break;
         }
 
         // Advance to next palette for the next cycle
@@ -120,7 +120,7 @@ void updateStreamPalette() {
       }
     break;
     default:
-      cp_StreamPalette = paletteWhite;
+      cp_StreamPalette = getPaletteWhite();
     break;
   }
 }
