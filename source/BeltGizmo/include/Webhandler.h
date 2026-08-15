@@ -55,6 +55,9 @@ extern const uint8_t _binary_assets_password_html_gz_end[];
 // swaggerui.html
 extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
 extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
+// help.json
+extern const uint8_t _binary_assets_help_json_gz_start[];
+extern const uint8_t _binary_assets_help_json_gz_end[];
 
 // Define standard ports and URI endpoints.
 const uint16_t WS_PORT = 80; // Web Server (+WebSocket) port
@@ -114,6 +117,9 @@ String getDeviceConfig() {
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
   jsonBody["nixieCount"] = i_num_leds - 1; // [7 TUBES, 8 TUBES, 10 TUBES]
   jsonBody["ledType"] = LED_COLOR_TYPE; // [1=RGB,2=GRB,3=GBR]
+  jsonBody["maxBrightness"] = i_max_brightness; // Maximum brightness 0-255
+  jsonBody["defaultWandPower"] = i_default_wand_power; // Default power level 1-5
+  jsonBody["invertDirection"] = b_invert_direction; // Invert animation direction
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -615,6 +621,16 @@ void handleFavSvg(AsyncWebServerRequest *request) {
   request->send(response); // Serve gzipped .svg file.
 }
 
+void handleContextHelp(AsyncWebServerRequest *request) {
+  // Serves the contextual help JSON file for web UI field descriptions.
+  debugln(F("Sending -> Help JSON"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_help_json_gz_start, _binary_assets_help_json_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, _binary_assets_help_json_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response);
+}
+
 void handleNetwork(AsyncWebServerRequest *request) {
   // Used for the network page from the web server.
   debugln(F("Sending -> Network HTML"));
@@ -816,7 +832,7 @@ void handleDisableSelfTest(AsyncWebServerRequest *request) {
     gpstarSystem.setStreamMode(gpstarSystem.getPreviousStreamMode()); // Restore previous mode.
     ms_selftest_cycle.stop(); // Stop the self-test cycling timer.
     i_selftest_palette = 0; // Reset palette index.
-    wsData.wandPower = 1; // Reset to lowest power for slowest speed.
+    wsData.wandPower = i_default_wand_power; // Reset to default power.
     b_firing = false; // Assume not firing until next WebSocket update.
     updateStreamPalette(); // Reset stream palette.
     LightingManager::getInstance().lightsOff(); // Turn off all LEDs.
@@ -871,7 +887,6 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     // User-defined count of addressable LEDs.
     if(jsonBody["nixieCount"].is<uint8_t>()) {
       i_num_leds = jsonBody["nixieCount"].as<uint8_t>() + 1; // [8 LEDs, 9 LEDs, 11 LEDs]
-      i_animation_duration = ANIMATION_DURATION_MS / i_num_leds;
     }
 
     // Override the current LED colour order.
@@ -881,10 +896,28 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
     }
 
+    // Set maximum brightness for animations.
+    if(jsonBody["maxBrightness"].is<uint8_t>()) {
+      i_max_brightness = jsonBody["maxBrightness"].as<uint8_t>();
+    }
+
+    // Set default power level for animations.
+    if(jsonBody["defaultWandPower"].is<uint8_t>()) {
+      i_default_wand_power = jsonBody["defaultWandPower"].as<uint8_t>();
+    }
+
+    // Set animation direction.
+    if(jsonBody["invertDirection"].is<bool>()) {
+      b_invert_direction = jsonBody["invertDirection"].as<bool>();
+    }
+
     // Accesses namespace in read/write mode.
     if(preferences.begin("device", false)) {
       preferences.getUChar("ledCount", i_num_leds);
       preferences.putUChar("ledType", (uint8_t)LED_COLOR_TYPE);
+      preferences.putUChar("maxBrightness", i_max_brightness);
+      preferences.putUChar("defaultPower", i_default_wand_power);
+      preferences.putBool("invertDirection", b_invert_direction);
       preferences.end();
     }
 

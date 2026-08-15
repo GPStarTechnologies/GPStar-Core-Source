@@ -71,6 +71,7 @@ void registerWebRoutes() {
   addSimpleRoute("/network", HTTP_GET, handleNetwork, "Network page", "Serves the network configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/password", HTTP_GET, handlePassword, "Password page", "Serves the password change page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/settings/device", HTTP_GET, handleDeviceSettings, "Device settings page", "Serves the device settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
+  addSimpleRoute("/help.json", HTTP_GET, handleContextHelp, "Help JSON", "Serves the help JSON file", TAG_ASSETS, RESP_JSON_OBJECT);
 
   // Configuration Endpoints
   addSimpleRoute("/config/device", HTTP_GET, handleGetDeviceConfig, "Get device config", "Returns current device configuration including WiFi name, target health, regeneration, and damage values as JSON", TAG_CONFIGURATION, RESP_CONFIG_OBJECT);

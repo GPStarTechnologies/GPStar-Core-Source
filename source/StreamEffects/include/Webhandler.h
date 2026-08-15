@@ -55,6 +55,9 @@ extern const uint8_t _binary_assets_password_html_gz_end[];
 // swaggerui.html
 extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
 extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
+// help.json
+extern const uint8_t _binary_assets_help_json_gz_start[];
+extern const uint8_t _binary_assets_help_json_gz_end[];
 
 // Define standard ports and URI endpoints.
 const uint16_t WS_PORT = 80; // Web Server (+WebSocket) port
@@ -616,6 +619,16 @@ void handleFavSvg(AsyncWebServerRequest *request) {
   request->send(response); // Serve gzipped .svg file.
 }
 
+void handleContextHelp(AsyncWebServerRequest *request) {
+  // Serves the contextual help JSON file for web UI field descriptions.
+  debugln(F("Sending -> Help JSON"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_help_json_gz_start, _binary_assets_help_json_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, _binary_assets_help_json_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response);
+}
+
 void handleNetwork(AsyncWebServerRequest *request) {
   // Used for the network page from the web server.
   debugln(F("Sending -> Network HTML"));
@@ -814,7 +827,7 @@ void handleDisableSelfTest(AsyncWebServerRequest *request) {
     gpstarSystem.setStreamMode(gpstarSystem.getPreviousStreamMode()); // Restore previous mode.
     ms_selftest_cycle.stop(); // Stop the self-test cycling timer.
     i_selftest_palette = 0; // Reset palette index.
-    wsData.wandPower = 5; // Reset to maximum power.
+    wsData.wandPower = i_default_wand_power; // Reset to default power.
     updateStreamPalette(); // Reset stream palette.
     LightingManager::getInstance().lightsOff(); // Turn off all LEDs.
   }

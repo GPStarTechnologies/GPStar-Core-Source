@@ -50,6 +50,40 @@
           <option selected value="3">GBR</option>
         </select>
       </div>
+      <div class="setting">
+        <b>Max Brightness:</b>
+        <select id="maxBrightness" name="maxBrightness">
+          <option value="26">10%</option>
+          <option value="51">20%</option>
+          <option value="77">30%</option>
+          <option value="102">40%</option>
+          <option value="128">50%</option>
+          <option value="153">60%</option>
+          <option value="179">70%</option>
+          <option value="204">80%</option>
+          <option value="230">90%</option>
+          <option value="255">100%</option>
+        </select>
+      </div>
+      <div class="setting">
+        <b>Default Power Level:</b>
+        <select id="defaultWandPower" name="defaultWandPower">
+          <option value="1">1 (Slow)</option>
+          <option value="2">2 (Slower)</option>
+          <option value="3">3 (Medium)</option>
+          <option value="4">4 (Faster)</option>
+          <option value="5">5 (Fast)</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-text="yesno" data-label="left">
+          <input id="invertDirection" name="invertDirection" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">Invert Direction:</span>
+        </label>
+      </div>
     </div>
 
     <div class="block">
@@ -68,6 +102,9 @@
       function onLoad(event) {
         // Wait 0.1s for page to fully load.
         setTimeout(getSettings, 100);
+
+        // Initialize contextual help system
+        initializeHelp("device");
       }
 
       function getSettings() {
@@ -80,6 +117,9 @@
               setValue("wifiName", settings.wifiName || "");
               setValue("nixieCount", settings.nixieCount || 7); // Default: 7 Nixie Tubes (MrKiou)
               setValue("ledType", settings.ledType || 3); // Default: GBR
+              setValue("maxBrightness", settings.maxBrightness || 255); // Default to 100%
+              setValue("defaultWandPower", settings.defaultWandPower || 1); // Default to 1
+              setToggle("invertDirection", settings.invertDirection || false); // Default to false
             }
           } else if (this.readyState == 4) {
             // Handle error responses
@@ -114,6 +154,9 @@
           wifiName: wifiName,
           nixieCount: getInt("nixieCount") || 7,
           ledType: getInt("ledType") || 3,
+          maxBrightness: getInt("maxBrightness") || 255,
+          defaultWandPower: getInt("defaultWandPower") || 1,
+          invertDirection: getToggle("invertDirection") || false,
         };
         var body = JSON.stringify(settings);
 

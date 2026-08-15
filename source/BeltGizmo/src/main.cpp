@@ -330,11 +330,7 @@ void setup() {
 
   btStop(); // Disable Bluetooth which is not needed for this hardware.
 
-  // Initialize animation duration based on LED count from LightConfig
-  i_animation_duration = ANIMATION_DURATION_MS / i_num_leds;
-
   // Make sure all LEDs are off and set the default palette for stream mode.
-  ms_anim_change.start(i_animation_duration); // Default animation time.
   LightingManager::getInstance().lightsOff();
   updateStreamPalette();
 
@@ -357,16 +353,27 @@ void setup() {
           i_num_leds = 8;
         break;
       }
-      i_animation_duration = ANIMATION_DURATION_MS / i_num_leds;
     }
     if(preferences.isKey("ledType")) {
       LED_COLOR_TYPE = (LED_COLOR_ORDER)preferences.getUChar("ledType", (uint8_t)COLOR_ORDER_RGB);
+    }
+    if(preferences.isKey("maxBrightness")) {
+      i_max_brightness = preferences.getUChar("maxBrightness", 255);
+    }
+    if(preferences.isKey("defaultPower")) {
+      i_default_wand_power = preferences.getUChar("defaultPower", 1);
+    }
+    if(preferences.isKey("invertDirection")) {
+      b_invert_direction = preferences.getBool("invertDirection", false);
     }
     preferences.end();
   }
 
   // Sync the user's stored color order to the Lighting library for the default device slot (0).
   LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
+
+  // Set the default power level for animations.
+  wsData.wandPower = i_default_wand_power;
 
   // Prepare the on-board RGB LED to be used as an output pin for indication.
   digitalWrite(BUILT_IN_LED, LOW); // Turn off the built-in LED.

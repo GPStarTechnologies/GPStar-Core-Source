@@ -29,23 +29,6 @@
  */
 #define BUILT_IN_LED 21 // GPIO21 for Waveshare ESP32-S3 Mini (RGB LED)
 
-/*
- * Define Color Options & Timers
- */
-#define ANIMATION_DURATION_MS 800  // Time for a full end-to-end animation
-millisDelay ms_anim_change;
-const uint16_t i_animation_time = 400;
-const uint8_t i_animation_step = 4;
-bool b_invert_animation = true; // false = Right to Left, true = Left to Right
-static const uint8_t i_colour_count = 4; // Total number of colour available.
-uint8_t i_selftest_colour = 0; // Current colour index for cycling in self-test.
-uint8_t i_stream_colour; // Current colour index for the stream type.
-
-// Animation duration calculated based on i_num_leds from LightConfig.h
-// Will be initialized in setup() after LightConfig.h variables are available
-extern uint8_t i_num_leds;
-uint16_t i_animation_duration; // Initialized in setup()
-
 /**
  * WebSocketData - Holds all relevant fields received from the WebSocket JSON payload.
  */

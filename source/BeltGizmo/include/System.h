@@ -129,11 +129,12 @@ void animateLights() {
   // All LEDs advance together at speed controlled by wsData.wandPower.
   for(uint16_t i = 0; i < i_num_leds; i++) {
     // Calculate position offset for this LED (0-255 distributed across strand)
-    uint8_t offset = (i * 255 / i_num_leds);
+    uint8_t i_offset = (i * 255 / i_num_leds);
 
     // Get interpolated palette color with this LED's position offset
     // Parameters: palette, speed, offset, brightness, reverse
-    LED_RGB rgb = mgr.getPaletteColor(cp_StreamPalette, wsData.wandPower, offset);
+    float f_speed = (wsData.wandPower * 0.5f);
+    LED_RGB rgb = mgr.getPaletteColor(cp_StreamPalette, f_speed, i_offset, i_max_brightness, b_invert_direction);
 
     // Set this LED to the interpolated color
     mgr.setPixelColorRGB(i, rgb);

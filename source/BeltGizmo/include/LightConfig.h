@@ -53,6 +53,7 @@ enum STRAND_LED : uint8_t {
 /*
  * LED colour order type for device (stored in Preferences/NVS)
  * Defaults to COLOR_ORDER_GBR for the type recommended for the build: https://a.co/d/ia74QSm
+ * NOTE: These enum values will be mapped via the LightingManager to the proper ColorOrder ENUM.
  */
 enum LED_COLOR_ORDER : uint8_t {
   COLOR_ORDER_RGB = 1,
@@ -60,6 +61,13 @@ enum LED_COLOR_ORDER : uint8_t {
   COLOR_ORDER_GBR = 3
 };
 LED_COLOR_ORDER LED_COLOR_TYPE = COLOR_ORDER_GBR;
+
+/*
+ * LED Animation Control Settings (stored in Preferences/NVS)
+ */
+uint8_t i_max_brightness = 255; // Maximum brightness (0-255), default 100%
+bool b_invert_direction = false; // Invert animation direction, default false
+uint8_t i_default_wand_power = 1; // Default wandPower level (1-5), default 1 (for testing)
 
 /*
  * Define Color Options & Timers
