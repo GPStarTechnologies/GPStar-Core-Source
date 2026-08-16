@@ -45,6 +45,7 @@ struct WebSocketData {
 WebSocketData wsData; // Instance of WebSocketData struct.
 
 /*
- * Special States
+ * Special Values/States
  */
+uint8_t i_default_wand_power = 1; // Default wandPower level (1-5), default 1 (for testing)
 bool b_firing = false;

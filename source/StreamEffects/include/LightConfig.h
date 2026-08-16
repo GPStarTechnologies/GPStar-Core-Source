@@ -51,7 +51,7 @@ enum STRAND_LED : uint8_t {
 };
 
 /*
- * LED colour order type for device (stored in Preferences/NVS)
+ * LED Color Order Type (for device), intended to be stored in Preferences/NVS.
  * Defaults to COLOR_ORDER_GRB for the type recommended for the build: https://a.co/d/dlDyCkz
  * NOTE: These enum values will be mapped via the LightingManager to the proper ColorOrder ENUM.
  */
@@ -63,11 +63,10 @@ enum LED_COLOR_ORDER : uint8_t {
 LED_COLOR_ORDER LED_COLOR_TYPE = COLOR_ORDER_GRB;
 
 /*
- * LED Animation Control Settings (stored in Preferences/NVS)
+ * LED Animation Control Settings, intended to be stored in Preferences/NVS.
  */
 uint8_t i_max_brightness = 255; // Maximum brightness (0-255), default 100%
 bool b_invert_direction = false; // Invert animation direction, default false
-uint8_t i_default_wand_power = 1; // Default wandPower level (1-5), default 1 (for testing)
 
 /*
  * Define Color Options & Timers
@@ -91,20 +90,16 @@ extern uint8_t i_spectral_custom_saturation;
  * LightingManager - Abstraction Layer for LED Driver Operations
  *
  * PURPOSE:
- * This class provides a driver-agnostic interface for all LED operations.
- * Instead of directly calling LED driver functions throughout the codebase,
- * all LED control flows through this manager. This design allows us to
- * swap the underlying LED driver without touching application logic.
+ * This class provides a driver-agnostic interface for direct LED operations.
+ * Instead of calling driver functions throughout the codebase, all LED control
+ * MUST flow through this manager. This design allows us to swap the underlying
+ * LED driver without touching application logic. This manager should exist as
+ * the only location where the driver library is directly referenced.
  *
  * PATTERN:
- * LightingManager uses the SINGLETON pattern. There is only ONE
- * instance of this class for the entire program. Access it via:
- *   LightingManager::getInstance()
- *
- * WHY SINGLETON:
- * LED hardware is a system-wide resource. Having one centralized manager
- * ensures consistent state, prevents multiple initialization calls, and
- * provides a single point of control for all LED operations.
+ * LightingManager uses a SINGLETON pattern which returns an instance of the
+ * manager for a specific chain of LEDs, refererred to as a "deviceSlot":
+ *   LightingManager::getInstance(<deviceSlot>);
  *
  * INTERFACE:
  * - initializeDriver() — Sets up the driver library and hardware pins
@@ -112,14 +107,10 @@ extern uint8_t i_spectral_custom_saturation;
  * - lightsOff() — Blanks all LEDs
  * - setBrightness() — Controls global brightness
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
- * - setPixelColorRGB(index, LED_RGB) — Set a single LED with raw RGB (color order pre-applied)
  * - getPixelColor(index) — Read a single LED's current color as LED_RGB
- * - getPaletteColor(palette, speedMultiplier, positionOffset, brightness, reverse) — Get interpolated palette color
- *
- * DRIVER ABSTRACTION:
- * The methods here wrap driver-specific calls. Whenever we need to
- * support a different LED library, we only modify this class, not the
- * caller code. This keeps the rest of the application clean and portable.
+ * - setCustomColorHSV(hsv) — Store custom HSV color in the Lighting library (thin wrapper)
+ * - setColorOrder(deviceSlot, userPref) — Set color channel order for the device (thin wrapper)
+ * - fillPalette(palette, speedMultiplier) — Fill all LEDs with palette animation using Lighting library
  */
 class LightingManager {
 private:
@@ -212,7 +203,7 @@ public:
     return LED_RGB_BLACK; // Return black if index is out of bounds.
   }
 
-  // Set a pixel color by ColorID and automatically apply stored color order
+  // Set a pixel color by ColorID and automatically apply stored color order.
   void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
     if(index >= 0 && index < pixels.numPixels()) {
       // Get color as HSV
@@ -223,28 +214,15 @@ public:
         hsv = lightingLib.getColorHSV(colorEnum, brightness);
       }
 
-      // Convert to RGB
+      // Convert the HSV color to RGB triplet.
       LED_RGB rgb = Lighting::hsv2rgb(hsv);
 
-      // Apply stored color order for this device
-      ColorOrder order = lightingLib.getColorOrder(currentDeviceSlot);
-      LED_RGB ordered = Lighting::applyColorOrder(rgb, order);
+      // Apply the device-specific color order for the RGB values.
+      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(currentDeviceSlot));
 
-      // Set the pixel
+      // Set the given LED to the calculated, ordered RGB value.
       pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
     }
-  }
-
-  // Set a pixel with raw RGB color (color order already applied)
-  void setPixelColorRGB(uint16_t index, const LED_RGB &rgb) {
-    if(index >= 0 && index < pixels.numPixels()) {
-      pixels.setPixelColor(index, pixels.Color(rgb.r, rgb.g, rgb.b));
-    }
-  }
-
-  // Get an interpolated palette color with smooth animation and speed control
-  LED_RGB getPaletteColor(const LED_Palette16& palette, float speedMultiplier = 1.0f, uint8_t positionOffset = 0, uint8_t brightness = 255, bool reverse = false) {
-    return lightingLib.getPaletteColor(currentDeviceSlot, palette, speedMultiplier, positionOffset, brightness, reverse);
   }
 
   // Animates the LEDs using the palette system for smooth colour transitions.
@@ -253,8 +231,8 @@ public:
     // phase value so the library can interpolate smoothly between adjacent palette
     // entries. This is a palette phase, not the physical LED position on the strand.
     //
-    // We assign each LED a different starting phase so the animation appears to
-    // flow along the strip as a traveling wave. In other words:
+    // We assign each LED a different starting phase so the animation appears
+    // to flow along the strip as a traveling wave. In other words:
     //   - i_curr_led = physical LED index (0..N-1, where N = i_num_leds)
     //   - i_phase = palette phase offset for that LED (resolution: 0..255)
     //
@@ -266,12 +244,17 @@ public:
       // Calculate position offset for this LED (0-255 distributed across strand)
       uint8_t i_phase = (i_curr_led * 255 / i_num_leds);
 
-      // Get interpolated palette color with this LED's position offset
+      // Get interpolated palette color for the device with this LED's calculated phase.
       // Parameters: palette, speed, offset, brightness, reverse
-      LED_RGB rgb = getPaletteColor(palette, speedMultiplier, i_phase, i_max_brightness, b_invert_direction);
+      LED_RGB rgb = lightingLib.getPaletteColor(currentDeviceSlot, // Device slot for this instance
+                                                palette, // Palette in use for color interpolation
+                                                speedMultiplier, // Speed for animation (1.0-10.0)
+                                                i_phase, // Calculated iterpolation phase for this LED (0-255)
+                                                i_max_brightness, // User-defined maximum brightness (26-255)
+                                                b_invert_direction); // User-defined animation inversion flag
 
-      // Set this LED to the interpolated color
-      setPixelColorRGB(i_curr_led, rgb);
+      // Set the current LED to the interpolated color.
+      pixels.setPixelColor(i_curr_led, pixels.Color(rgb.r, rgb.g, rgb.b));
     }
   }
 };
