@@ -429,13 +429,17 @@ void checkDeviceAction() {
       }
 
       // Top white light.
+      // This creates a blinking effect by toggling the physical vent light control,
+      // based on whether the addressable LED animation is currently lit or dark/off.
       if(ms_white_light.justFinished()) {
         ms_white_light.repeat();
-        auto* vent_leds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
-        if(vent_leds[1]) {
+        auto& mgr = LightingManager::getInstance(CHAIN_VENT);
+        if(mgr.getPixelColor(1) != LED_RGB_BLACK) {
+          // LED is currently lit (has color), so turn off the physical control
           ventTopLightControl(false);
         }
         else {
+          // LED is currently off (black), so turn on the physical control
           ventTopLightControl(true);
         }
       }

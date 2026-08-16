@@ -51,9 +51,9 @@ void barrelLightsOff() {
   i_pulse_step = 0;
 
   // Turn off the barrel LEDs.
-  CRGB* systemLeds = LightingManager::getInstance().getLEDs(CHAIN_SYSTEM);
+  auto& mgr = LightingManager::getInstance(CHAIN_SYSTEM);
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
-    systemLeds[i] = CRGB::Black;
+    mgr.setPixelColor(i, C_BLACK);
   }
 
   // Turn off the device barrel tip LED.
@@ -77,8 +77,8 @@ void allLightsOff() {
   ventTopLightControl(false);
 
   // Clear all addressable LEDs by filling the arrays with black.
-  LightingManager::getInstance().lightsOff(CHAIN_SYSTEM);
-  LightingManager::getInstance().lightsOff(CHAIN_VENT);
+  LightingManager::getInstance(CHAIN_SYSTEM).lightsOff();
+  LightingManager::getInstance(CHAIN_VENT).lightsOff();
 
   if(!b_playing_music) {
     // If music is not playing, arm the power-on reminder LED system.
@@ -184,12 +184,11 @@ void systemPOST() {
 
   if(b_rgb_vent_light) {
     // These are driven from the TopWhite LED pin.
-    auto& mgr = LightingManager::getInstance();
-    auto* vent_leds = mgr.getLEDs(CHAIN_VENT);
-    vent_leds[0] = mgr.getColorRGB(CHAIN_VENT, C_WARM_WHITE);
+    auto& mgr = LightingManager::getInstance(CHAIN_VENT);
+    mgr.setPixelColor(0, C_WARM_WHITE);
     mgr.show();
     delay(i_delay);
-    vent_leds[1] = mgr.getColorRGB(CHAIN_VENT, C_WHITE);
+    mgr.setPixelColor(1, C_WHITE);
     mgr.show();
     delay(i_delay);
   }
@@ -208,25 +207,24 @@ void systemPOST() {
   delay(i_delay);
 
   // Get LED pointer for barrel operations
-  auto& mgr = LightingManager::getInstance();
-  auto* system_leds = mgr.getLEDs(CHAIN_SYSTEM);
+  auto& mgr = LightingManager::getInstance(CHAIN_SYSTEM);
 
   // Sequentially turn on all LEDs in the barrel.
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
-    system_leds[i] = mgr.getColorRGB(CHAIN_SYSTEM, C_BLUE);
+    mgr.setPixelColor(i, C_BLUE);
     mgr.show();
     delay(i_delay);
   }
 
   // Sequentially turn on all LEDs in the cyclotron.
   for(uint8_t i = 0; i < i_num_cyclotron_leds; i++) {
-    system_leds[i_cyclotron_led_start + i] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED);
+    mgr.setPixelColor(i_cyclotron_led_start + i, C_RED);
     mgr.show();
     delay(i_delay);
   }
 
   // Turn on the front barrel.
-  system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
+  mgr.setPixelColor(i_barrel_led, C_WHITE);
   mgr.show();
 
   delay(i_delay * 8);
@@ -574,64 +572,63 @@ void firePulseEffect() {
   i_pulse_step % 2 == 0 ? led_Tip.turnOn() : led_Tip.turnOff();
 
   // Primary blast.
-  auto& mgr = LightingManager::getInstance();
-  auto* system_leds = mgr.getLEDs(CHAIN_SYSTEM);
+  auto& mgr = LightingManager::getInstance(CHAIN_SYSTEM);
   switch(i_pulse_step) {
     case 0:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED);
+      mgr.setPixelColor(i_barrel_led, C_RED);
     break;
     case 1:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED3);
+      mgr.setPixelColor(i_barrel_led, C_RED3);
     break;
     case 2:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED5);
+      mgr.setPixelColor(i_barrel_led, C_RED5);
     break;
     case 3:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
+      mgr.setPixelColor(i_barrel_led, C_WHITE);
     break;
     case 4:
-      system_leds[i_barrel_led] = CRGB::Black;
+      mgr.setPixelColor(i_barrel_led, C_BLACK);
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
+        mgr.setPixelColor(i, C_WHITE);
       }
     break;
     case 5:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
+      mgr.setPixelColor(i_barrel_led, C_WHITE);
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = CRGB::Black;
+        mgr.setPixelColor(i, C_BLACK);
       }
     break;
     case 6:
-      system_leds[i_barrel_led] = CRGB::Black;
+      mgr.setPixelColor(i_barrel_led, C_BLACK);
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
+        mgr.setPixelColor(i, C_WHITE);
       }
     break;
     case 7:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_WHITE);
+      mgr.setPixelColor(i_barrel_led, C_WHITE);
 
       for(uint8_t i = 0; i < i_num_barrel_leds - 1; i++) {
-        system_leds[i] = CRGB::Black;
+        mgr.setPixelColor(i, C_BLACK);
       }
     break;
     case 8:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED4);
+      mgr.setPixelColor(i_barrel_led, C_RED4);
     break;
     case 9:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED2);
+      mgr.setPixelColor(i_barrel_led, C_RED2);
     break;
     case 10:
-      system_leds[i_barrel_led] = mgr.getColorRGB(CHAIN_SYSTEM, C_RED);
+      mgr.setPixelColor(i_barrel_led, C_RED);
     break;
     case 11:
-      system_leds[i_barrel_led] = CRGB::Black;
+      mgr.setPixelColor(i_barrel_led, C_BLACK);
     break;
     default:
       // This is an invalid state, so turn off all the LEDs.
-      system_leds[i_barrel_led] = CRGB::Black;
+      mgr.setPixelColor(i_barrel_led, C_BLACK);\
       led_Tip.turnOff();
     break;
   }
@@ -672,6 +669,8 @@ void checkGeneralTimers() {
 }
 
 void ventTopLightControl(bool b_on) {
+  auto& mgr = LightingManager::getInstance(CHAIN_VENT);
+
   if(!b_on) {
     #ifndef ESP32
     if(!b_rgb_vent_light) {
@@ -681,9 +680,8 @@ void ventTopLightControl(bool b_on) {
     #endif
 
     // Turn off if not off already.
-    auto* vent_leds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
-    if(vent_leds[1]) {
-      vent_leds[1] = CRGB::Black;
+    if(mgr.getPixelColor(1) != LED_RGB_BLACK) {
+      mgr.setPixelColor(1, C_BLACK);
       b_vent_lights_changed = true;
     }
   }
@@ -696,15 +694,16 @@ void ventTopLightControl(bool b_on) {
     #endif
 
     // Turn on if not on already.
-    auto* vent_leds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
-    if(!vent_leds[1]) {
-      vent_leds[1] = LightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WHITE);
+    if(mgr.getPixelColor(1) == LED_RGB_BLACK) {
+      mgr.setPixelColor(1, C_WHITE);
       b_vent_lights_changed = true;
     }
   }
 }
 
 void ventLightControl(uint8_t i_intensity) {
+  auto& mgr = LightingManager::getInstance(CHAIN_VENT);
+
   if(b_rgb_vent_light) {
     // Put in a check just to be sure the non-addressable pin stays off.
   #ifndef ESP32
@@ -713,12 +712,11 @@ void ventLightControl(uint8_t i_intensity) {
     }
   #endif
 
-    CRGB* ventLeds = LightingManager::getInstance().getLEDs(CHAIN_VENT);
     if(i_intensity < 20) {
-      ventLeds[0] = LightingManager::getInstance().getColorRGB(CHAIN_VENT, C_BLACK);
+      mgr.setPixelColor(0, C_BLACK);
     }
     else {
-      ventLeds[0] = LightingManager::getInstance().getColorRGB(CHAIN_VENT, C_WARM_WHITE, i_intensity);
+      mgr.setPixelColor(0, C_WARM_WHITE, i_intensity);
     }
 
     b_vent_lights_changed = true;

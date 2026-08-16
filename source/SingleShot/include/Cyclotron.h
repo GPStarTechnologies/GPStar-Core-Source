@@ -54,7 +54,7 @@ uint16_t getCyclotronDelay() {
 }
 
 // Manage lights in pairs to move in a predefined sequence, fading each light in and out.
-void updateCyclotron(uint8_t i_colour) {
+void updateCyclotron(ColorID color) {
   static bool sb_toggle = true; // Static toggle to remain scoped to this function between calls
   static uint8_t si_pairing = 0; // Which pair of LEDs to use for each "cycle" of fade in/out actions
   static uint8_t si_brightness_in = i_cyclotron_min_brightness; // Static brightness variable for fade-in effect
@@ -82,18 +82,19 @@ void updateCyclotron(uint8_t i_colour) {
       }
     }
 
-    // Toggle between the LEDs in the i_cyclotron_pair using the given colour.
-    auto& mgr = LightingManager::getInstance();
-    CRGB* systemLeds = mgr.getLEDs(CHAIN_SYSTEM);
-    CRGB colorRGB = mgr.getColorRGB(CHAIN_SYSTEM, i_colour);
-    
+    // Toggle between the LEDs in the i_cyclotron_pair using the given colour via LightingManager.
+    // The manager handles brightness scaling internally (replaces old nscale8 pattern).
+    auto& mgr = LightingManager::getInstance(CHAIN_SYSTEM);
+    uint16_t led_index_0 = i_cyclotron_led_start + i_cyclotron_pair[si_pairing][0];
+    uint16_t led_index_1 = i_cyclotron_led_start + i_cyclotron_pair[si_pairing][1];
+
     if(sb_toggle) {
-      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][0]] = colorRGB.nscale8(si_brightness_in);  // Fade in LED 1 in the pair
-      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][1]] = colorRGB.nscale8(si_brightness_out); // Fade out LED 2 in the pair
+      mgr.setPixelColor(led_index_0, color, si_brightness_in);  // Fade in LED 1 in the pair
+      mgr.setPixelColor(led_index_1, color, si_brightness_out); // Fade out LED 2 in the pair
     }
     else {
-      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][0]] = colorRGB.nscale8(si_brightness_out); // Fade out LED 1 in the pair
-      systemLeds[i_cyclotron_led_start + i_cyclotron_pair[si_pairing][1]] = colorRGB.nscale8(si_brightness_in);  // Fade in LED 2 in the pair
+      mgr.setPixelColor(led_index_0, color, si_brightness_out); // Fade out LED 1 in the pair
+      mgr.setPixelColor(led_index_1, color, si_brightness_in);  // Fade in LED 2 in the pair
     }
 
     // Toggle state and reset brightness variables after fade-in is complete.

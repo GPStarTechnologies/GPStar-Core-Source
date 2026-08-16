@@ -148,7 +148,7 @@ private:
     uint8_t r = (packedColor >> 16) & 0xFF;
     uint8_t g = (packedColor >> 8) & 0xFF;
     uint8_t b = packedColor & 0xFF;
-    return LED_RGB(r, g, b);
+    return LED_RGB{r, g, b};
   }
 
 public:

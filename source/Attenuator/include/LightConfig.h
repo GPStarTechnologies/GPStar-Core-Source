@@ -41,7 +41,6 @@
 #define DEVICE_REFRESH_MS 5 // Refresh rate for the addressable LEDs (in milliseconds)
 #define DEVICE_MAX_LEDS 3 // The maximum number of LEDs (Top, Upper, Lower)
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for the optimal effect
-uint16_t i_num_leds = DEVICE_MAX_LEDS;
 
 /*
  * Delay for LED driver to update the addressable LEDs.
@@ -147,7 +146,7 @@ private:
     uint8_t r = (packedColor >> 16) & 0xFF;
     uint8_t g = (packedColor >> 8) & 0xFF;
     uint8_t b = packedColor & 0xFF;
-    return LED_RGB(r, g, b);
+    return LED_RGB{r, g, b};
   }
 
 public:
@@ -246,16 +245,16 @@ public:
     //
     // We assign each LED a different starting phase so the animation appears
     // to flow along the strip as a traveling wave. In other words:
-    //   - i_curr_led = physical LED index (0..N-1, where N = i_num_leds)
+    //   - i_curr_led = physical LED index (0..N-1, where N = DEVICE_MAX_LEDS)
     //   - i_phase = palette phase offset for that LED (resolution: 0..255)
     //
     // The resulting "phase" is the interpolation between the two neighboring palette
     // entries. When spread, the palette phase is the color state across the strand.
     // This gives each LED a slightly different color in the palette timeline while
     // the animation itself still advances at the same speed.
-    for(uint16_t i_curr_led = 0; i_curr_led < i_num_leds; i_curr_led++) {
+    for(uint16_t i_curr_led = 0; i_curr_led < DEVICE_MAX_LEDS; i_curr_led++) {
       // Calculate position offset for this LED (0-255 distributed across strand)
-      uint8_t i_phase = (i_curr_led * 255 / i_num_leds);
+      uint8_t i_phase = (i_curr_led * 255 / DEVICE_MAX_LEDS);
 
       // Get interpolated palette color for the device with this LED's calculated phase.
       // Parameters: palette, speed, offset, brightness, reverse

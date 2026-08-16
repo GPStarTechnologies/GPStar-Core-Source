@@ -52,21 +52,19 @@ void sendInfraredJSON(const char* eventType, const char* deviceType = "", const 
   sendInfraredEvent(jsonData.c_str());
 }
 
-void setIndicatorColor(uint8_t i_colour) {
-  auto leds = LightingManager::getInstance().getLEDs();
-  leds[DEVICE_MAX_LEDS - 1] = LightingManager::getInstance().getColorRGB(0, i_colour);
+void setIndicatorColor(ColorID i_color_id) {
+  LightingManager::getInstance().setPixelColor(DEVICE_MAX_LEDS - 1, i_color_id);
 }
 
-void setIndicatorLEDs(uint8_t i_colour, uint8_t i_leds_start, uint8_t i_leds_end) {
-  auto leds = LightingManager::getInstance().getLEDs();
+void setIndicatorLEDs(ColorID i_color_id, uint8_t i_leds_start, uint8_t i_leds_end) {
+  auto& mgr = LightingManager::getInstance();
   for(uint8_t i_tmp = i_leds_start; i_tmp < i_leds_end; i_tmp++) {
-    leds[i_tmp] = LightingManager::getInstance().getColorRGB(0, i_colour);
+    mgr.setPixelColor(i_tmp, i_color_id);
   }
 }
 
-void setIndicatorLED(uint8_t i_colour, uint8_t i_led) {
-  auto leds = LightingManager::getInstance().getLEDs();
-  leds[i_led] = LightingManager::getInstance().getColorRGB(0, i_colour);
+void setIndicatorLED(ColorID i_color_id, uint8_t i_led) {
+  LightingManager::getInstance().setPixelColor(i_led, i_color_id);
 }
 
 // Target is ready.

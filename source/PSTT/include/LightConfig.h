@@ -19,14 +19,14 @@
 
 #pragma once
 
-// Suppress FastLED warnings
-#define FASTLED_INTERNAL
-
-// Include the intended LED driver first: FastLED
-#include <FastLED.h>
+// Include the intended LED driver first: Adafruit NeoPXL8 (for ESP32-S3)
+#include <Adafruit_NeoPXL8.h>
 
 // Include the generalized Lighting library
 #include <Lighting.h>
+
+// Include global palette definitions
+#include <LightingPalettes.h>
 
 // ============================================================================
 // LOCAL LIGHTING VARIABLES
@@ -37,7 +37,9 @@
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
 #define DEVICE_LED_PIN 41 // Data pin for the addressable LEDs.
-#define DEVICE_MAX_LEDS 14 // The maximum number of jewel LEDs.
+#define DEVICE_SLOTS 1 // Number of device slots for the Lighting library
+#define DEVICE_REFRESH_MS 16 // Refresh rate for the addressable LEDs (in milliseconds)
+#define DEVICE_MAX_LEDS 14 // The maximum number of LEDs (2x 7-LED Jewels).
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for the optimal effect
 
 // ============================================================================
@@ -48,117 +50,156 @@
  * LightingManager - Abstraction Layer for LED Driver Operations
  *
  * PURPOSE:
- * This class provides a driver-agnostic interface for all LED operations.
- * Instead of directly calling LED driver functions throughout the codebase,
- * all LED control flows through this manager. This design allows us to
- * swap the underlying LED driver without touching application logic.
+ * This class provides a driver-agnostic interface for direct LED operations.
+ * Instead of calling driver functions throughout the codebase, all LED control
+ * MUST flow through this manager. This design allows us to swap the underlying
+ * LED driver without touching application logic. This manager should exist as
+ * the only location where the driver library is directly referenced.
  *
  * PATTERN:
- * LightingManager uses the SINGLETON pattern. There is only ONE
- * instance of this class for the entire program. Access it via:
- *   LightingManager::getInstance()
- *
- * WHY SINGLETON:
- * LED hardware is a system-wide resource. Having one centralized manager
- * ensures consistent state, prevents multiple initialization calls, and
- * provides a single point of control for all LED operations.
+ * LightingManager uses a SINGLETON pattern which returns an instance of the
+ * manager for a specific chain of LEDs, refererred to as a "deviceSlot":
+ *   LightingManager::getInstance(<deviceSlot>);
  *
  * INTERFACE:
  * - initializeDriver() — Sets up the driver library and hardware pins
- * - getColorRGB/GRB/GBR() — Converts color enums to CRGB values
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
- * - setBrightness() — Controls global brightness
- * - getLEDs() — Returns pointer to LED array for direct manipulation
- *
- * DRIVER ABSTRACTION:
- * The methods here wrap driver-specific calls. Whenever we need to
- * support a different LED library, we only modify this class, not the
- * caller code. This keeps the rest of the application clean and portable.
+ * - setBrightness(brightness) — Controls global brightness (0-255)
+ * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
+ * - getPixelColor(index) — Read a single LED's current color as LED_RGB
+ * - setCustomColorHSV(hsv) — Store custom HSV color in the Lighting library
+ * - setColorOrder(deviceSlot, colorOrder) — Set color channel order for the device
+ * - fillPalette(palette, speedMultiplier) — Fill all LEDs with palette animation using Lighting library
  */
 class LightingManager {
 private:
   static LightingManager* instance;
+  static inline int8_t pxl8Pins[8] = {DEVICE_LED_PIN, -1, -1, -1, -1, -1, -1, -1};
   Lighting lightingLib;
-  CRGB deviceLEDs[DEVICE_MAX_LEDS];
+  Adafruit_NeoPXL8 pixels;
+  uint8_t currentDeviceSlot; // Track device slot for an instance.
 
   // Private constructor - called only once by getInstance()
-  LightingManager() : lightingLib(1) {
-    // Initialize with 1 device (has PRIMARY_LED only)
+  // Initializes the Lighting library as lightingLib with 1 device slot,
+  // and initializes the Adafruit_NeoPXL8 object as a variable "pixels".
+  LightingManager() :
+    lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
+    pixels(DEVICE_MAX_LEDS, pxl8Pins, NEO_RGB + NEO_KHZ800),
+    currentDeviceSlot(0) {}
+
+  // Helper: Convert packed uint32_t color to LED_RGB components
+  // Internal utility used by getPixelColor()
+  LED_RGB unpackColor(uint32_t packedColor) {
+    uint8_t r = (packedColor >> 16) & 0xFF;
+    uint8_t g = (packedColor >> 8) & 0xFF;
+    uint8_t b = packedColor & 0xFF;
+    return LED_RGB{r, g, b};
   }
 
 public:
   // Singleton instance
-  static LightingManager& getInstance() {
+  static LightingManager& getInstance(uint8_t deviceSlot = 0) {
     if(instance == nullptr) {
       instance = new LightingManager();
     }
+    instance->currentDeviceSlot = deviceSlot; // Set context for this call
     return *instance;
   }
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
   void initializeDriver() {
-    FastLED.addLeds<NEOPIXEL, DEVICE_LED_PIN>(deviceLEDs, DEVICE_MAX_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setMaxRefreshRate(0); // Disable FastLED's blocking 2.5ms delay.
-    FastLED.setBrightness(DEVICE_MAX_BRIGHTNESS);
-    FastLED.show(); // Update all addressable LEDs to prevent stale LED states.
-  }
-
-  // Get color as RGB based on device and color enum
-  CRGB getColorRGB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    return CRGB(rgb.r, rgb.g, rgb.b);
-  }
-
-  CRGB getColorGRB(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    // Swap to GRB: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.r, rgb.b }
-    return CRGB(rgb.g, rgb.r, rgb.b);
-  }
-
-  CRGB getColorGBR(uint8_t device, uint8_t colorEnum, uint8_t brightness = 255) {
-    LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(device, (ColorID)colorEnum, brightness);
-    } else {
-      hsv = lightingLib.getColorHSV((ColorID)colorEnum, brightness);
-    }
-    auto rgb = Lighting::hsv2rgb(hsv);
-    // Swap to GBR: { rgb.r, rgb.g, rgb.b } -> { rgb.g, rgb.b, rgb.r }
-    return CRGB(rgb.g, rgb.b, rgb.r);
-  }
-
-  // Update LED display
-  void show() {
-    FastLED.show(); // Pass through to the LED driver library to update LED states.
+    pixels.begin();
+    pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+    pixels.show();
   }
 
   // Turn off all LEDs
   void lightsOff() {
-    fill_solid(deviceLEDs, DEVICE_MAX_LEDS, CRGB::Black); // Set all to black (off).
-  }
-
-  // Get a pointer to the LED array (for palette rendering and direct access)
-  CRGB* getLEDs() {
-    return deviceLEDs;
+    pixels.clear(); // Set all to black (off).
   }
 
   // Set brightness
   void setBrightness(uint8_t brightness) {
-    FastLED.setBrightness(brightness);
+    pixels.setBrightness(brightness);
+  }
+
+  // Set custom color HSV values in the Lighting library
+  void setCustomColorHSV(const LED_HSV &hsv) {
+    lightingLib.setCustomColorHSV(hsv, currentDeviceSlot);
+  }
+
+  // Set color order for a device with standard enum mapping
+  void setColorOrder(uint8_t deviceSlot, ColorOrder newColorOrder) {
+    lightingLib.setColorOrder(deviceSlot, newColorOrder);
+  }
+
+  // Update LED display
+  void show() {
+    pixels.show(); // Pass through to the LED driver library to update LED states.
+  }
+
+  // Returns a pixel's current color as LED_RGB
+  LED_RGB getPixelColor(uint16_t index) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      return unpackColor(pixels.getPixelColor(index));
+    }
+    return LED_RGB_BLACK; // Return black if index is out of bounds.
+  }
+
+  // Set a pixel color by ColorID and automatically apply stored color order.
+  void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
+    if(index >= 0 && index < pixels.numPixels()) {
+      // Get color as HSV
+      LED_HSV hsv;
+      if(isColorDynamic(colorEnum)) {
+        hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorEnum, brightness);
+      } else {
+        hsv = lightingLib.getColorHSV(colorEnum, brightness);
+      }
+
+      // Convert the HSV color to RGB triplet.
+      LED_RGB rgb = Lighting::hsv2rgb(hsv);
+
+      // Apply the device-specific color order for the RGB values.
+      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(currentDeviceSlot));
+
+      // Set the given LED to the calculated, ordered RGB value.
+      pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
+    }
+  }
+
+  // Animates the LEDs using the palette system for smooth colour transitions.
+  void fillPalette(const LED_Palette16& palette, float speedMultiplier = 1.0f) {
+    // The palette itself is not indexed by LED count; it is indexed by a 0..255 (256)
+    // phase value so the library can interpolate smoothly between adjacent palette
+    // entries. This is a palette phase, not the physical LED position on the strand.
+    //
+    // We assign each LED a different starting phase so the animation appears
+    // to flow along the strip as a traveling wave. In other words:
+    //   - i_curr_led = physical LED index (0..N-1, where N = DEVICE_MAX_LEDS)
+    //   - i_phase = palette phase offset for that LED (resolution: 0..255)
+    //
+    // The resulting "phase" is the interpolation between the two neighboring palette
+    // entries. When spread, the palette phase is the color state across the strand.
+    // This gives each LED a slightly different color in the palette timeline while
+    // the animation itself still advances at the same speed.
+
+	// Iterate over the pixels and set the color according to the device's current state.
+    for(uint16_t i_curr_led = 0; i_curr_led < DEVICE_MAX_LEDS; i_curr_led++) {
+      // Calculate position offset for this LED (0-255 distributed across strand)
+      uint8_t i_phase = (i_curr_led * 255 / DEVICE_MAX_LEDS);
+
+      // Get interpolated palette color for the device with this LED's calculated phase.
+      LED_RGB rgb = lightingLib.getPaletteColor(currentDeviceSlot, // Device slot for this instance
+                                                palette, // Palette in use for color interpolation
+                                                speedMultiplier, // Speed for animation (1.0-10.0)
+                                                i_phase); // Calculated interpolation phase for this LED (0-255)
+
+      // Set the current LED to the interpolated color.
+      pixels.setPixelColor(i_curr_led, pixels.Color(rgb.r, rgb.g, rgb.b));
+    }
   }
 };
 
