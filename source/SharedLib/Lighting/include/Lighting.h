@@ -29,6 +29,14 @@ struct LED_RGB {
   uint8_t r;
   uint8_t g;
   uint8_t b;
+
+  // Comparison operators for checking if two RGB colors are identical
+  bool operator==(const LED_RGB& other) const {
+    return r == other.r && g == other.g && b == other.b;
+  }
+  bool operator!=(const LED_RGB& other) const {
+    return !(*this == other);
+  }
 };
 
 // LED_RGB default constants (defined outside struct to avoid incomplete type issues)
@@ -254,7 +262,7 @@ class Lighting {
      *   lighting.setColorOrder(0, ORDER_RGB);  // Device 0 uses RGB order
      *   lighting.setColorOrder(1, ORDER_GRB);  // Device 1 uses GRB order
      */
-    void setColorOrder(uint8_t deviceSlot, ColorOrder order);
+    void setColorOrder(uint8_t deviceSlot, ColorOrder order = ORDER_RGB);
 
     /**
      * Get the color channel order for a specific device slot.

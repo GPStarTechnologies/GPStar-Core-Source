@@ -63,7 +63,7 @@ Reassemble the Cyclotron Lid using low-profile machine screws. The new LEDs shou
 [Installation Video](https://www.youtube.com/watch?v=S4SVeivRyuc) (YouTube)
 [![Installation Video](https://img.youtube.com/vi/S4SVeivRyuc/maxresdefault.jpg)](https://www.youtube.com/watch?v=S4SVeivRyuc)
 
-### 40-LED Neopixel Ring (Deprecated)
+### 40-LED NeoPixel Ring (Deprecated)
 
 This approach simply adds the lights atop the old circuit board and LEDs between the outer and inner layers of the Cyclotron Lid. A part called the Cyclotron Ring Diffuser was used to help orient the ring and keep it positioned behind each lens. The pixel opposite the soldered connections should be number 1 and should be made the dead center of the top-right lens. See below for an illustration of this orientation and use of the diffuser ring.
 
@@ -74,6 +74,6 @@ For the electrical connections, this reuses 3/4 the available connections on the
 To improve the fit of the new ring, it is recommended to use a Dremel with a sanding drum to remove any raised plastic bits which are below the ring. Also note that the added materials will not allow the inner and outer shells to fit as tightly. Applying some black foam weatherstripping to the edge of the outer shell will help hide any gaps but also provide some material to push back against the inner shell when screwing the halves together.
 
 [Demonstration Video by JustinDustin](https://www.youtube.com/watch?v=kXAhU2Zis18) (YouTube)
-[![HasLab Proton Pack 40 LED Neopixel Ring](https://img.youtube.com/vi/kXAhU2Zis18/maxresdefault.jpg)](https://www.youtube.com/watch?v=kXAhU2Zis18)
+[![HasLab Proton Pack 40 LED NeoPixel Ring](https://img.youtube.com/vi/kXAhU2Zis18/maxresdefault.jpg)](https://www.youtube.com/watch?v=kXAhU2Zis18)
 
 Note: This approach is considered deprecated for the cyclotron lid as the 5-LED lid lights provide the same density, while the new 9-LED lid lights provide a much smoother transition. But for users who have implemented this the solution is still supported in software.

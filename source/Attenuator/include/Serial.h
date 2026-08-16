@@ -228,9 +228,9 @@ bool checkPack() {
           i_spectral_custom_colour = attenuatorSyncData.spectralColour;
           i_spectral_custom_saturation = attenuatorSyncData.spectralSaturation;
 
-          // Transfer custom color to the Lighting library for LOWER_LED device slot
+          // Transfer custom color to the Lighting library for LOWER_LED (when needed)
           LED_HSV customColor = {i_spectral_custom_colour, i_spectral_custom_saturation, 255};
-          LightingManager::getInstance().setCustomColorHSV(customColor, LOWER_LED);
+          LightingManager::getInstance().setCustomColorHSV(customColor);
 
           // Specific to the ESP32 and Web UI
           b_wand_connected = attenuatorSyncData.wandPresent;
@@ -913,9 +913,9 @@ bool handleData(uint8_t i_command, uint8_t i_value1, uint8_t i_value2, uint8_t i
         i_spectral_custom_saturation = i_value2;
       }
 
-      // Transfer custom color to the Lighting library for LOWER_LED device slot
+      // Transfer custom color to the Lighting library for LOWER_LED (when needed)
       LED_HSV customColor = {i_spectral_custom_colour, i_spectral_custom_saturation, 255};
-      LightingManager::getInstance().setCustomColorHSV(customColor, LOWER_LED);
+      LightingManager::getInstance().setCustomColorHSV(customColor);
     break;
   }
 

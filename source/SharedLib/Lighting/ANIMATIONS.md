@@ -10,8 +10,8 @@ The Lighting library provides dynamic color animations through the `getDynamicCo
 |--------|--------|----------|-----------|----------|-------|
 | **Attenuator** | FreeRTOS Task (AnimationTask) | vTaskDelay(8ms) | ~125 Hz | `src/main.cpp:169` | Direct LightingManager.show() in animation loop |
 | **BeltGizmo** | FreeRTOS Task (AnimationTask) | vTaskDelay(16ms) | ~62.5 Hz | `src/main.cpp:128` | Direct LightingManager.show() in animation loop |
-| **NeutronaWand** | millisDelay Timer (updateLEDs) | LED_DRIVER_UPDATE_MS (5ms) | ~200 Hz | `src/main.cpp:379` | Uses LightingManager.show() in millisDelay timer block |
-| **ProtonPack** | millisDelay Timer (updateLEDs) | LED_DRIVER_UPDATE_MS (5ms) | ~200 Hz | `src/main.cpp:365` | Uses LightingManager.show() in millisDelay timer block |
+| **NeutronaWand** | millisDelay Timer (updateLEDs) | DEVICE_REFRESH_MS (5ms) | ~200 Hz | `src/main.cpp:379` | Uses LightingManager.show() in millisDelay timer block |
+| **ProtonPack** | millisDelay Timer (updateLEDs) | DEVICE_REFRESH_MS (5ms) | ~200 Hz | `src/main.cpp:365` | Uses LightingManager.show() in millisDelay timer block |
 | **PSTT** | FreeRTOS Task (AnimationTask) | vTaskDelay(16ms) | ~62.5 Hz | `src/main.cpp:113` | Direct LightingManager.show() in animation loop |
 | **SingleShot** | TaskScheduler (animateTask) | 16ms | ~62.5 Hz | `src/main.cpp:152` | Uses direct LightingManager.show() in animation callback |
 | **StreamEffects** | FreeRTOS Task (AnimationTask) | vTaskDelay(8ms) | ~125 Hz | `src/main.cpp:154` | Direct LightingManager.show() in animation loop |
@@ -124,7 +124,7 @@ Adjust cycle values based on device update interval to maintain consistent anima
 
 ```cpp
 // In each device's LightConfig.h
-#define ANIMATION_CYCLE_SCALE (5.0 / LED_DRIVER_UPDATE_MS)  // Normalize to 5ms reference
+#define ANIMATION_CYCLE_SCALE (5.0 / DEVICE_REFRESH_MS)  // Normalize to 5ms reference
 ```
 
 ### Option 2: Runtime Interval Detection

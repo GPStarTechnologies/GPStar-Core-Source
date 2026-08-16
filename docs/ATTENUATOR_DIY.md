@@ -88,7 +88,7 @@ The following is a diagram of the ESP32 pins from left and right, when oriented 
 
 | Connection    | ESP32 (L) |     | ESP32 (R) | Connection    |
 |---------------|-----------|-----|-----------|---------------|
-|               | EN        |     | GPIO23    | Neopixels (2) |
+|               | EN        |     | GPIO23    | NeoPixels (2) |
 |               | GPIO36    |     | GPIO22    | SCL Bargraph  |
 |               | GPIO39    |     | GPIO1     |               |
 | Left Toggle   | GPIO34    |     | GPIO3     |               |

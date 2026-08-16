@@ -19,7 +19,7 @@
 
 #pragma once
 
-// Include the intended LED driver first: Adafruit Neopixel
+// Include the intended LED driver first: Adafruit NeoPixel
 #include <Adafruit_NeoPixel.h>
 
 // Include the generalized Lighting library
@@ -108,8 +108,8 @@ extern uint8_t i_spectral_custom_saturation;
  * - setBrightness() — Controls global brightness
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
  * - getPixelColor(index) — Read a single LED's current color as LED_RGB
- * - setCustomColorHSV(hsv) — Store custom HSV color in the Lighting library (thin wrapper)
- * - setColorOrder(deviceSlot, userPref) — Set color channel order for the device (thin wrapper)
+ * - setCustomColorHSV(hsv) — Store custom HSV color in the Lighting library
+ * - setColorOrder(deviceSlot, userPref) — Set color channel order for the device
  * - fillPalette(palette, speedMultiplier) — Fill all LEDs with palette animation using Lighting library
  */
 class LightingManager {
@@ -249,7 +249,7 @@ public:
       LED_RGB rgb = lightingLib.getPaletteColor(currentDeviceSlot, // Device slot for this instance
                                                 palette, // Palette in use for color interpolation
                                                 speedMultiplier, // Speed for animation (1.0-10.0)
-                                                i_phase, // Calculated iterpolation phase for this LED (0-255)
+                                                i_phase, // Calculated interpolation phase for this LED (0-255)
                                                 i_max_brightness, // User-defined maximum brightness (26-255)
                                                 b_invert_direction); // User-defined animation inversion flag
 

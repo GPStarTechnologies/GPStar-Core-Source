@@ -50,7 +50,7 @@ To access the EEPROM LED Menu System, hold down the `Intensify Button` and toggl
 
 - Disable all the video game colours (Power Cell remains blue, Cyclotron remains red).
 - Enable only the Power Cell LEDs to change colours (requires RGB Power Cell).
-- Enable only the Cyclotron LEDs to change colours (requires RGB replacement such as a Neopixel ring).
+- Enable only the Cyclotron LEDs to change colours (requires RGB replacement such as a NeoPixel ring).
 - Enable both the Power Cell and Cyclotron to use video game colours.
 
 ### LED Menu - Level 3

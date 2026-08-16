@@ -50,9 +50,9 @@ void printPartitions() {
   while(iterator != nullptr) {
     partition = esp_partition_get(iterator);
     debugf("Label: %s, Size: %lu bytes, Address: 0x%08lx\n",
-                  partition->label,
-                  partition->size,
-                  partition->address);
+           partition->label,
+           partition->size,
+           partition->address);
     iterator = esp_partition_next(iterator);
   }
 
