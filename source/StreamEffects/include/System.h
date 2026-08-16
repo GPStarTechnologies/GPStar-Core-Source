@@ -124,24 +124,3 @@ void updateStreamPalette() {
     break;
   }
 }
-
-// Animate the LEDs using the palette system for smooth colour transitions.
-void animateLights() {
-  auto& mgr = LightingManager::getInstance();
-
-  // Distribute palette colors across the LED strand for flowing animation.
-  // Each LED gets a different position offset in the palette (0-255 distributed linearly).
-  // All LEDs advance together at speed controlled by wsData.wandPower.
-  for(uint16_t i = 0; i < i_num_leds; i++) {
-    // Calculate position offset for this LED (0-255 distributed across strand)
-    uint8_t i_offset = (i * 255 / i_num_leds);
-
-    // Get interpolated palette color with this LED's position offset
-    // Parameters: palette, speed, offset, brightness, reverse
-    float f_speed = (wsData.wandPower * 1.0f);
-    LED_RGB rgb = mgr.getPaletteColor(cp_StreamPalette, f_speed, i_offset, i_max_brightness, b_invert_direction);
-
-    // Set this LED to the interpolated color
-    mgr.setPixelColorRGB(i, rgb);
-  }
-}

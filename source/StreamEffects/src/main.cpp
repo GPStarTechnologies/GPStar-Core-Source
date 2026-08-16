@@ -122,12 +122,13 @@ void AnimationTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
-    auto& mgr = LightingManager::getInstance();
+    auto& mgr = LightingManager::getInstance(); // Get a reference to the LED device (default: 0).
+    float f_speed = (wsData.wandPower * 1.0f); // Calculate animation speed based on wand power.
 
     // Update light animation based on websocket data (or self-test mode).
     if(b_firing || gpstarSystem.inStreamMode(SELFTEST)) {
-      updateStreamPalette();
-      animateLights();
+      updateStreamPalette(); // Get the current palette based on the test or stream mode.
+      mgr.fillPalette(cp_StreamPalette, f_speed); // Animate the LEDs using the palette.
     }
     else {
       // Not firing and not testing, update LED[0] to indicate status.

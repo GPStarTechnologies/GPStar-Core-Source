@@ -39,7 +39,7 @@
 #define DEVICE_LED_PIN 4
 #define DEVICE_SLOTS 1 // Number of device slots for the Lighting library
 #define DEVICE_REFRESH_MS 16 // Refresh rate for the addressable LEDs (in milliseconds)
-#define DEVICE_MAX_LEDS 11 // 10 "nixie" tubes + 1 "E" bulb
+#define DEVICE_MAX_LEDS 11 // Up to 10 "nixie" tubes + 1 "E" bulb
 #define DEVICE_MAX_BRIGHTNESS 128 // Use half-brightness to conserve power
 uint8_t i_num_leds = 8; // Default to 7 nixie tubes + 1 "E" bulb
 
@@ -178,14 +178,30 @@ public:
     pixels.show();
   }
 
-  // Update LED display
-  void show() {
-    pixels.show(); // Pass through to the LED driver library to update LED states.
-  }
-
   // Turn off all LEDs
   void lightsOff() {
     pixels.clear(); // Set all to black (off).
+  }
+
+  // Set brightness
+  void setBrightness(uint8_t brightness) {
+    pixels.setBrightness(brightness);
+  }
+
+  // Set custom color HSV values in the Lighting library
+  void setCustomColorHSV(const LED_HSV &hsv) {
+    lightingLib.setCustomColorHSV(hsv, currentDeviceSlot);
+  }
+
+  // Set color order for a device with automatic enum mapping
+  void setColorOrder(uint8_t deviceSlot, uint8_t userPrefValue) {
+    ColorOrder mappedOrder = mapColorOrder(userPrefValue);
+    lightingLib.setColorOrder(deviceSlot, mappedOrder);
+  }
+
+  // Update LED display
+  void show() {
+    pixels.show(); // Pass through to the LED driver library to update LED states.
   }
 
   // Returns a pixel's current color as LED_RGB
@@ -227,24 +243,36 @@ public:
   }
 
   // Get an interpolated palette color with smooth animation and speed control
-  LED_RGB getPaletteColor(const LED_Palette16& palette, float speedMultiplier = 1.0, uint8_t positionOffset = 0, uint8_t brightness = 255, bool reverse = false) {
+  LED_RGB getPaletteColor(const LED_Palette16& palette, float speedMultiplier = 1.0f, uint8_t positionOffset = 0, uint8_t brightness = 255, bool reverse = false) {
     return lightingLib.getPaletteColor(currentDeviceSlot, palette, speedMultiplier, positionOffset, brightness, reverse);
   }
 
-  // Set brightness
-  void setBrightness(uint8_t brightness) {
-    pixels.setBrightness(brightness);
-  }
+  // Animates the LEDs using the palette system for smooth colour transitions.
+  void fillPalette(const LED_Palette16& palette, float speedMultiplier = 1.0f) {
+    // The palette itself is not indexed by LED count; it is indexed by a 0..255 (256)
+    // phase value so the library can interpolate smoothly between adjacent palette
+    // entries. This is a palette phase, not the physical LED position on the strand.
+    //
+    // We assign each LED a different starting phase so the animation appears to
+    // flow along the strip as a traveling wave. In other words:
+    //   - i_curr_led = physical LED index (0..N-1, where N = i_num_leds)
+    //   - i_phase = palette phase offset for that LED (resolution: 0..255)
+    //
+    // The resulting "phase" is the interpolation between the two neighboring palette
+    // entries. When spread, the palette phase is the color state across the strand.
+    // This gives each LED a slightly different color in the palette timeline while
+    // the animation itself still advances at the same speed.
+    for(uint16_t i_curr_led = 0; i_curr_led < i_num_leds; i_curr_led++) {
+      // Calculate position offset for this LED (0-255 distributed across strand)
+      uint8_t i_phase = (i_curr_led * 255 / i_num_leds);
 
-  // Set custom color HSV values in the Lighting library
-  void setCustomColorHSV(const LED_HSV &hsv) {
-    lightingLib.setCustomColorHSV(hsv, currentDeviceSlot);
-  }
+      // Get interpolated palette color with this LED's position offset
+      // Parameters: palette, speed, offset, brightness, reverse
+      LED_RGB rgb = getPaletteColor(palette, speedMultiplier, i_phase, i_max_brightness, b_invert_direction);
 
-  // Set color order for a device with automatic enum mapping
-  void setColorOrder(uint8_t deviceSlot, uint8_t userPrefValue) {
-    ColorOrder mappedOrder = mapColorOrder(userPrefValue);
-    lightingLib.setColorOrder(deviceSlot, mappedOrder);
+      // Set this LED to the interpolated color
+      setPixelColorRGB(i_curr_led, rgb);
+    }
   }
 };
 
