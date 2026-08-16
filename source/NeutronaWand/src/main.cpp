@@ -381,7 +381,8 @@ void updateLEDs() {
         LightingManager::getInstance().show();
 
       #ifndef ESP32
-        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && !LightingManager::getInstance().getLEDs(CHAIN_VENT)[1]) {
+        LED_RGB ventPixel = LightingManager::getInstance(CHAIN_VENT).getPixelColor(1);
+        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && ventPixel == LED_RGB_BLACK) {
           // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
           digitalWriteFast(TOP_LED_PIN, HIGH);
         }
@@ -409,6 +410,9 @@ void mainLoop() {
 
   // Handle one-off vibrations such as those in menus.
   checkMenuVibration();
+
+
+  auto& mgr = LightingManager::getInstance(CHAIN_VENT);
 
   if(WAND_ACTION_STATUS != ACTION_FIRING) {
     if(ms_bmash.remaining() < 1) {
@@ -611,9 +615,9 @@ void mainLoop() {
         }
       }
 
-      // Top white light.
+      // Top white light - blink based on the current color/state.
       if(ms_white_light.justFinished()) {
-        LightingManager::getInstance().getLEDs(CHAIN_VENT)[1] ? ventTopLightControl(false) : ventTopLightControl(true);
+        (mgr.getPixelColor(1) != LED_RGB_BLACK) ? ventTopLightControl(false) : ventTopLightControl(true);
 
         ms_white_light.repeat();
       }
@@ -668,7 +672,8 @@ void loop() {
         // If not already doing so, explicitly tell the pack a wand is here to sync.
         packSerialSend(A_SYNC_WAND, PROTOCOL_SIGNATURE); // Perform an initial synchronization.
         ms_packsync.start(i_sync_initial_delay); // Prepare for the next sync attempt.
-        LightingManager::getInstance().getLEDs(CHAIN_VENT)[1] ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
+        LED_RGB ventPixel = LightingManager::getInstance(CHAIN_VENT).getPixelColor(1);
+        (ventPixel != LED_RGB_BLACK) ? ventTopLightControl(false) : ventTopLightControl(true); // Blink the top LED.
         digitalWriteFast(WAND_STATUS_LED_PIN, (digitalReadFast(WAND_STATUS_LED_PIN) == LOW) ? HIGH : LOW); // Blink the onboard LED on the Neutrona Wand board.
 
         if(i_boot_connection_count < 10) {

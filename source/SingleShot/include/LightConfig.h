@@ -138,11 +138,11 @@ private:
   LightingManager() :
     lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
     #ifdef ESP32
-      systemLEDs(SYSTEM_LED_COUNT, pxl8Pins, NEO_GRB + NEO_KHZ800),
-      ventLEDs(VENT_LED_COUNT, pxl8Pins, NEO_GRB + NEO_KHZ800),
+      systemLEDs(SYSTEM_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
+      ventLEDs(VENT_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
     #else
-      systemLEDs(SYSTEM_LED_COUNT, BARREL_LED_PIN, NEO_GRB + NEO_KHZ800),
-      ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_GRB + NEO_KHZ800),
+      systemLEDs(SYSTEM_LED_COUNT, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
+      ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
     #endif
     currentDeviceSlot(0) {}
 
@@ -202,7 +202,7 @@ public:
     pixels.show();
   }
 
-  // Turn off all LEDs
+  // Turn off LEDs on the current device slot
   void lightsOff() {
     auto& pixels = getDevicePixels(currentDeviceSlot);
     pixels.clear(); // Set all to black (off).
