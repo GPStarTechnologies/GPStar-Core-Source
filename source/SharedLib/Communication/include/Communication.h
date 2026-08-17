@@ -440,23 +440,23 @@ enum API_COMMAND : uint16_t {
  */
 uint16_t crc16(const uint8_t *pData, size_t numBytes)
 {
-	uint32_t crc = 0;
+  uint32_t crc = 0;
 
-	for (size_t i=0; i<numBytes; i++)
-	{
-		uint8_t  d = *(pData++);
-		uint32_t x = ((crc ^ d) & 0xff) << 8;
-		uint32_t y = x;
+  for (size_t i=0; i<numBytes; i++)
+  {
+    uint8_t  d = *(pData++);
+    uint32_t x = ((crc ^ d) & 0xff) << 8;
+    uint32_t y = x;
 
-		x ^= x << 1;
-		x ^= x << 2;
-		x ^= x << 4;
+    x ^= x << 1;
+    x ^= x << 2;
+    x ^= x << 4;
 
-		x  = (x & 0x8000) | (y >> 1);
+    x  = (x & 0x8000) | (y >> 1);
 
-		crc = (crc >> 8) ^ (x >> 15) ^ (x >> 1) ^ x;
-	}
-	return crc;
+    crc = (crc >> 8) ^ (x >> 15) ^ (x >> 1) ^ x;
+  }
+  return crc;
 }
 
 /**

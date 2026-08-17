@@ -42,7 +42,7 @@ const uint8_t YELLOW_LED_PIN = 10; // PC0
 const uint8_t STOCK_TOP_LED_PIN = 12; // PC2
 
 // Pin definition for addressable LEDs
-const uint8_t FASTLED_PIN = 13; // PC3
+const uint8_t LED_PIN = 13; // PC3
 
 // Pin definitions for smoke machine
 const uint8_t SMOKE_PIN = 5; // PB4

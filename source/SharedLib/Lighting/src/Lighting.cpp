@@ -628,9 +628,12 @@ ColorOrder Lighting::getColorOrder(uint8_t deviceSlot) const {
 }
 
 // Get an interpolated palette color with smooth animation and speed control.
-LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot, const LED_Palette16& palette, 
-                                  float speedMultiplier, uint8_t positionOffset, 
-                                  uint8_t brightness, bool reverse) {
+LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot,
+                                  const LED_Palette16& palette, 
+                                  float speedMultiplier,
+                                  uint8_t phaseOffset, 
+                                  uint8_t brightness,
+                                  bool reverse) {
   if(deviceSlot >= numDevices) {
     deviceSlot = 0;
   }
@@ -658,7 +661,7 @@ LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot, const LED_Palette16& palet
   
   // Get current palette position (0-255 maps to 16 colors) with position offset applied
   // Upper 8 bits of paletteIndex map to visible palette position (0-255)
-  uint8_t currentPos = (paletteIndex[deviceSlot] >> 8) + positionOffset;
+  uint8_t currentPos = (paletteIndex[deviceSlot] >> 8) + phaseOffset;
   
   // Calculate which two palette colors to interpolate between
   uint8_t palettePos = (currentPos >> 4);  // Map 0-255 to 0-15 (16 palette colors)

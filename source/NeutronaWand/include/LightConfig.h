@@ -81,7 +81,7 @@ const uint8_t frutto_barrel[48] PROGMEM = {0, 25, 24, 48, 1, 26, 23, 47, 2, 27, 
 /*
  * RGB Vent Light Control
  */
-const uint16_t i_vent_light_update_interval = 150; // FastLED update interval specifically for the top/vent LEDs.
+const uint16_t i_vent_light_update_interval = 150; // Update interval specifically for the top/vent LEDs.
 bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
 
 // ============================================================================
@@ -315,11 +315,11 @@ public:
     // This gives each LED a slightly different color in the palette timeline while
     // the animation itself still advances at the same speed.
 
-	// Since multiple devices are used, we must first obtain the correct list of pixels.
+    // Since multiple devices are used, we must first obtain the correct list of pixels.
     auto& pixels = getDevicePixels(currentDeviceSlot);
     uint16_t i_slot_leds = getCount(currentDeviceSlot);
 
-	// Iterate over the pixels and set the color according to the device's current state.
+    // Iterate over the pixels and set the color according to the device's current state.
     for(uint16_t i_curr_led = 0; i_curr_led < i_slot_leds; i_curr_led++) {
       // Calculate position offset for this LED (0-255 distributed across strand)
       uint8_t i_phase = (i_curr_led * 255 / i_slot_leds);

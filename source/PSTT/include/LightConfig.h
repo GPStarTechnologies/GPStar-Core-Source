@@ -186,7 +186,7 @@ public:
     // This gives each LED a slightly different color in the palette timeline while
     // the animation itself still advances at the same speed.
 
-	// Iterate over the pixels and set the color according to the device's current state.
+    // Iterate over the pixels and set the color according to the device's current state.
     for(uint16_t i_curr_led = 0; i_curr_led < DEVICE_MAX_LEDS; i_curr_led++) {
       // Calculate position offset for this LED (0-255 distributed across strand)
       uint8_t i_phase = (i_curr_led * 255 / DEVICE_MAX_LEDS);

@@ -45,7 +45,7 @@ void printPartitions() {
 }
 
 /*
- * Determine the current state of any LEDs before next FastLED refresh.
+ * Determine the current state of any LEDs before next LED refresh.
  */
 void updateLEDs() {  // Static variable to use for choice of LED colour.
   if(ms_light.isRunning()) {

@@ -702,7 +702,7 @@ void loop() {
     break;
 
     case NC_BENCHTEST:
-	  // User has opted to operate the Neutrona Wand in a standalone manner, without a Proton Pack attached.
+      // User has opted to operate the Neutrona Wand in a standalone manner, without a Proton Pack attached.
       updateAudio(); // Update the state of the selected sound board.
 
       checkMusic(); // Music control is here since pack is not present.

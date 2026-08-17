@@ -132,7 +132,7 @@ constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
  * - Standard color definitions used across all GPStar devices
  * - HSV color lookup for predefined static colors
  * - HSV color lookup for dynamic/animated colors with per-device state tracking
- * - HSV to RGB color conversion (without FastLED dependency)
+ * - HSV to RGB color conversion
  * - Color channel reordering for different LED strip types
  * - Brightness percentage conversion
  * - Custom static color mapping for device-specific colors (user-configured via NVS/Preferences/EEPROM)
@@ -286,7 +286,7 @@ class Lighting {
      *     - 1.0 = normal speed (baseline)
      *     - 0.5 = half speed
      *     - 2.0 = double speed
-     *   positionOffset: [0-255] - Starting position offset in palette for this LED (default: 0)
+     *   phaseOffset: [0-255] - Starting interpolation offset in palette for this LED (default: 0)
      *     - Used to distribute palette across multiple LEDs (e.g., LED index scaled to 0-255)
      *   brightness: [0-255] - Overall brightness level (default: 255)
      *   reverse: [true/false] - Cycle palette backwards (default: false)
@@ -294,7 +294,7 @@ class Lighting {
      * Returns: LED_RGB color with device's stored ColorOrder already applied
      * 
      * How it works:
-     * 1. Reads current paletteIndex[deviceSlot] and adds positionOffset
+     * 1. Reads current paletteIndex[deviceSlot] and adds phaseOffset
      * 2. Calculates two adjacent palette color indices and interpolation fraction
      * 3. Converts both colors to HSV, interpolates between them smoothly
      * 4. Advances paletteIndex based on refresh rate and speedMultiplier (or decrements if reverse)
@@ -306,9 +306,12 @@ class Lighting {
      *   LED_RGB color = lighting.getPaletteColor(0, myPalette, 1.0, 64);  // with offset
      *   LED_RGB reversed = lighting.getPaletteColor(0, myPalette, 1.0, 0, 255, true); // reverse
      */
-    LED_RGB getPaletteColor(uint8_t deviceSlot, const LED_Palette16& palette, 
-                           float speedMultiplier = 1.0, uint8_t positionOffset = 0, 
-                           uint8_t brightness = 255, bool reverse = false);
+    LED_RGB getPaletteColor(uint8_t deviceSlot,
+                            const LED_Palette16& palette, 
+                            float speedMultiplier = 1.0,
+                            uint8_t phaseOffset = 0, 
+                            uint8_t brightness = 255,
+                            bool reverse = false);
 
     /**
      * Convert HSV color to RGB using rainbow algorithm for smooth color transitions.

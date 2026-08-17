@@ -169,7 +169,7 @@ Adding a switch to the GPStar Power Boost device will allow you to fully turn of
 - **System Volume**
      - While the Single Shot Blaster is **OFF** and no music is playing, turn the `Top Dial` to quickly adjust the master volume.
      - While the `Activate` switch is **UP** and the left-hand switches are **DOWN**, hold the `Intensify` button while turning the `Top Dial` to quickly adjust the master volume.
-	 - While the `Activate` switch is **UP** and the boot error sequence is playing, turn the `Top Dial` to quickly adjust the master volume.
+     - While the `Activate` switch is **UP** and the boot error sequence is playing, turn the `Top Dial` to quickly adjust the master volume.
 
 - **Music**
     - While the Single Shot Blaster is **OFF** and music is playing, turn the `Top Dial` to quickly adjust the music volume.

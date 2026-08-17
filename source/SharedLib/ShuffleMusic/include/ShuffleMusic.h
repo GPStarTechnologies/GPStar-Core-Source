@@ -60,13 +60,13 @@ uint32_t MurmurHash2A(const void* key, int32_t len, uint32_t seed) {
 
   // Handle the last few bytes of the input array
   uint32_t t = 0;
-	switch(len) {
+  switch(len) {
     case 3: t ^= (uint32_t)data[2] << 16;
     case 2: t ^= (uint32_t)data[1] << 8;
     case 1: t ^= (uint32_t)data[0];
-	};
-	mmix(h,t);
-	mmix(h,l);
+  };
+  mmix(h,t);
+  mmix(h,l);
 
   // Do a few final mixes of the hash to ensure the last few
   // bytes are well-incorporated.

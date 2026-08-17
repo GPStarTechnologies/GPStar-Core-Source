@@ -22,10 +22,6 @@
 // Required for PlatformIO
 #include <Arduino.h>
 
-// Suppress warning about SPI hardware pins
-// Define this before including <FastLED.h>
-#define FASTLED_INTERNAL
-
 // PROGMEM macro
 #define PROGMEM_READU32(x) pgm_read_dword_near(&(x))
 #define PROGMEM_READU16(x) pgm_read_word_near(&(x))
