@@ -1118,15 +1118,13 @@ bool fadeOutCyclotron() {
       if(i_curr_brightness > i_cyclotron_led_value[i]) {
         i_curr_brightness = 0;
       }
-
       i_cyclotron_led_value[i] = i_curr_brightness;
 
       if(i_curr_brightness > 0) {
-
         b_return = true;
 
         if(cyclotronLookupTable(i) > 0) {
-          pack_leds[i_tmp_lid_led].maximizeBrightness(i_curr_brightness);
+          cyclotronLidMgr.setPixelBrightness(i_tmp_lid_led, i_curr_brightness);
         }
       }
       else {
@@ -3001,23 +2999,33 @@ void cyclotronColourReset() {
 
 // Controls the slime cyclotron fadeout effect.
 void slimeCyclotronFadeout() {
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
   bool b_leds_fading = false;
 
   if(b_cyclotron_lid_on) {
     for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-      pack_leds[i + i_cyclotron_led_start].fadeToBlackBy(1);
+      uint16_t i_led_index = i + i_cyclotron_led_start;
+      LED_RGB current_color = cyclotronLidMgr.getPixelColor(i_led_index);
 
-      if(!b_leds_fading && pack_leds[i + i_cyclotron_led_start]) {
+      // Check if LED is not black (any RGB component > 0)
+      if(current_color.r > 0 || current_color.g > 0 || current_color.b > 0) {
         b_leds_fading = true;
+        // Fade by scaling down RGB components while preserving color ratio
+        cyclotronLidMgr.scalePixelBrightness(i_led_index, 1);
       }
     }
   }
   else {
     for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
-      cyclotron_leds[i + i_ic_cake_start].fadeToBlackBy(1);
+      uint16_t i_led_index = i + i_ic_cake_start;
+      LED_RGB current_color = innerCakeMgr.getPixelColor(i_led_index);
 
-      if(!b_leds_fading && cyclotron_leds[i + i_ic_cake_start]) {
+      // Check if LED is not black (any RGB component > 0)
+      if(current_color.r > 0 || current_color.g > 0 || current_color.b > 0) {
         b_leds_fading = true;
+        // Fade by scaling down RGB components while preserving color ratio
+        innerCakeMgr.scalePixelBrightness(i_led_index, 1);
       }
     }
   }
@@ -3087,12 +3095,7 @@ void slimeCyclotronEffect() {
     else {
       for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
         ColorID i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAKE, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
-        if(CAKE_LED_TYPE == GRB_LED) {
-          cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(i_colour_scheme, random(i_random_lower, i_random_upper));
-        }
-        else {
-          cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(i_colour_scheme, random(i_random_lower, i_random_upper));
-        }
+        innerCakeMgr.setPixelColor(i + i_ic_cake_start, i_colour_scheme, random(i_random_lower, i_random_upper));
       }
     }
 
@@ -3147,12 +3150,7 @@ void cyclotronIceAnimation() {
     else {
       for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
         if((i + i_ic_cake_start) != i_led_cyclotron_ring - 1 || (!b_fading_out_frozen && !b_inner_ramp_down)) {
-          if(CAKE_LED_TYPE == GRB_LED) {
-            cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
-          }
-          else {
-            cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
-          }
+          innerCakeMgr.setPixelColor(i + i_ic_cake_start, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
         }
       }
     }
@@ -3297,14 +3295,14 @@ void cyclotron84LightOn(uint8_t i_led) {
     i_colour_scheme = C_WHITE;
   }
 
-  ColorID i_puck_color = cyclotronLidMgr.getColorRGB(SEGMENT_CYCLOTRON_LID, i_colour_scheme, i_brightness);
-  pack_leds[i_led] = i_puck_color;
+  LED_RGB i_puck_color = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_brightness);
+  cyclotronLidMgr.setPixelColor(i_led, i_puck_color);
   i_cyclotron_led_value[i_led - i_cyclotron_led_start] = i_brightness;
 
   // Turn on the other 2 LEDs if we are allowing 3 to light up.
   if(!b_cyclotron_single_led) {
     for(uint8_t i = 1; i <= i_led_array_width; i++) {
-      pack_leds[i_led + i] = i_puck_color;
+      cyclotronLidMgr.setPixelColor(i_led + 1, i_puck_color);
       i_cyclotron_led_value[i_led + i - i_cyclotron_led_start] = i_brightness;
 
       uint8_t i_led_temp = i_led; // Create new temporary variable for the negative side.
@@ -3316,7 +3314,7 @@ void cyclotron84LightOn(uint8_t i_led) {
         i_led_temp = i_led - i;
       }
 
-      pack_leds[i_led_temp] = i_puck_color;
+      cyclotronLidMgr.setPixelColor(i_led_temp, i_puck_color);
       i_cyclotron_led_value[i_led_temp - i_cyclotron_led_start] = i_brightness;
     }
   }
@@ -4450,36 +4448,36 @@ void cyclotronControl() {
         if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
           if(i_led_cyclotron_ring == i_ic_cake_start) {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_ic_cake_end] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_ic_cake_end, C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_ic_cake_end] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_ic_cake_end, C_ORANGE, i_brightness);
             }
           }
           else {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_led_cyclotron_ring - 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_led_cyclotron_ring - 1, C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_led_cyclotron_ring - 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_led_cyclotron_ring - 1, C_ORANGE, i_brightness);
             }
           }
         }
         else {
           if(i_led_cyclotron_ring + 1 > i_ic_cake_end) {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_ic_cake_start] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_ic_cake_start, C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_ic_cake_start] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_ic_cake_start, C_ORANGE, i_brightness);
             }
           }
           else {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_led_cyclotron_ring + 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_led_cyclotron_ring + 1, C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_led_cyclotron_ring + 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
+              innerCakeMgr.setPixelColor(i_led_cyclotron_ring + 1, C_ORANGE, i_brightness);
             }
           }
         }
@@ -5916,22 +5914,17 @@ void systemPOST() {
     }
 
     if(i_inner_cake_counter <= i_ic_cake_end) {
-      if(CAKE_LED_TYPE == GRB_LED) {
-        cyclotron_leds[i_inner_cake_counter] = innerCakeMgr.setPixelColor(C_RED);
-      }
-      else {
-        cyclotron_leds[i_inner_cake_counter] = innerCakeMgr.setPixelColor(C_RED);
-      }
+      innerCakeMgr.setPixelColor(i_inner_cake_counter, C_RED);
     }
 
     if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
       if(i_inner_cake_counter - 1 >= i_ic_cake_start && i_inner_cake_counter - 1 <= i_ic_cake_end) {
-        cyclotron_leds[i_inner_cake_counter - 1] = innerCakeMgr.setPixelColor(C_BLACK);
+        innerCakeMgr.setPixelColor(i_inner_cake_counter - 1, C_BLACK);
       }
     }
     else {
       if(i_inner_cake_counter + 1 <= i_ic_cake_end) {
-        cyclotron_leds[i_inner_cake_counter + 1] = innerCakeMgr.setPixelColor(C_BLACK);
+        innerCakeMgr.setPixelColor(i_inner_cake_counter + 1, C_BLACK);
       }
     }
 

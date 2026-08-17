@@ -552,6 +552,52 @@ public:
     }
   }
 
+  // Uniformly scale the brightness of a pixel, while attempting to retain the RGB color.
+  void setPixelBrightness(uint16_t index, uint8_t brightness_limit) {
+    auto& pixels = getDevicePixels(currentChain);
+    if(index >= 0 && index < pixels.numPixels()) {
+      // Get current pixel's RGB color
+      LED_RGB current_rgb = getPixelColor(index);
+      
+      // Find the maximum RGB component
+      uint8_t max_component = max(current_rgb.r, max(current_rgb.g, current_rgb.b));
+      
+      if(max_component == 0) {
+        // Black pixel, nothing to scale
+        return;
+      }
+      
+      // Scale all components proportionally so max becomes brightness_limit
+      float scale_factor = (float)brightness_limit / (float)max_component;
+      LED_RGB scaled_rgb;
+      scaled_rgb.r = (uint8_t)(current_rgb.r * scale_factor);
+      scaled_rgb.g = (uint8_t)(current_rgb.g * scale_factor);
+      scaled_rgb.b = (uint8_t)(current_rgb.b * scale_factor);
+      
+      // Apply the scaled color back
+      setPixelColor(index, scaled_rgb);
+    }
+  }
+
+  // Scale pixel brightness by a fade amount, preserving color ratio (mimics FastLED's fadeToBlackBy).
+  // fade_amount: 0-255 where 0 = no fade, 255 = complete black
+  // Multiplies each RGB component by (255 - fade_amount) / 255.0
+  void scalePixelBrightness(uint16_t index, uint8_t fade_amount) {
+    LED_RGB current_rgb = getPixelColor(index);
+    
+    // Calculate fade factor: (255 - fade_amount) / 255
+    float fade_factor = (255.0f - fade_amount) / 255.0f;
+    
+    // Scale each component proportionally
+    LED_RGB scaled_rgb;
+    scaled_rgb.r = (uint8_t)(current_rgb.r * fade_factor);
+    scaled_rgb.g = (uint8_t)(current_rgb.g * fade_factor);
+    scaled_rgb.b = (uint8_t)(current_rgb.b * fade_factor);
+    
+    // Apply the scaled color back
+    setPixelColor(index, scaled_rgb);
+  }
+
   // Animates the LEDs using the palette system for smooth colour transitions.
   void fillPalette(const LED_Palette16& palette, float speedMultiplier = 1.0f) {
     // The palette itself is not indexed by LED count; it is indexed by a 0..255 (256)
