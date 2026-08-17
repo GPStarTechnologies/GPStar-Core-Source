@@ -579,16 +579,21 @@ public:
     }
   }
 
-  // Scale pixel brightness by a fade amount, preserving color ratio (mimics FastLED's fadeToBlackBy).
-  // fade_amount: 0-255 where 0 = no fade, 255 = complete black
-  // Multiplies each RGB component by (255 - fade_amount) / 255.0
+  // Scale pixel brightness by a fade amount, preserving color ratio (mimics FastLED fadeToBlackBy).
   void scalePixelBrightness(uint16_t index, uint8_t fade_amount) {
+    // No fade needed if fade_amount is 0
+    if(fade_amount == 0) {
+      return;
+    }
+    
     LED_RGB current_rgb = getPixelColor(index);
     
-    // Calculate fade factor: (255 - fade_amount) / 255
+    // Convert fade_amount (0-255 scale) to a brightness retention factor (0.0-1.0)
+    // fade_amount is the intensity of the fade; higher values fade more
+    // Example: fade_amount=1 keeps 99.6% brightness; fade_amount=255 keeps 0%
     float fade_factor = (255.0f - fade_amount) / 255.0f;
     
-    // Scale each component proportionally
+    // Scale each component proportionally to preserve color ratio
     LED_RGB scaled_rgb;
     scaled_rgb.r = (uint8_t)(current_rgb.r * fade_factor);
     scaled_rgb.g = (uint8_t)(current_rgb.g * fade_factor);
