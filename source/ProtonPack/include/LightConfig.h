@@ -371,7 +371,15 @@ private:
       cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800),
       packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_RGB + NEO_KHZ800),
     #endif
-    currentDeviceSlot(0), currentChain(CHAIN_PACK) {}
+    currentDeviceSlot(0),
+    currentChain(CHAIN_PACK) {
+      lightingLib.setColorOrder(CHAIN_PACK, ORDER_RGB); // Set a clear default order for this device.
+      lightingLib.setColorOrder(CHAIN_CYCLOTRON, ORDER_RGB); // Set a clear default order for this device.
+    #ifdef ESP32
+      lightingLib.setColorOrder(CHAIN_EXP1, ORDER_RGB); // Set a clear default order for this device.
+      lightingLib.setColorOrder(CHAIN_EXP2, ORDER_RGB); // Set a clear default order for this device.
+    #endif
+    }
 
   // Helper: Maps an LED_SEGMENT to its physical hardware CHAIN
   LED_CHAIN segmentToChain(LED_SEGMENT segment) const {

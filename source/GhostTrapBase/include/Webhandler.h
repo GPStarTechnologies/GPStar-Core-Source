@@ -122,12 +122,12 @@ String getDeviceConfig() {
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
-  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
-  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
   jsonBody["openedSmokeEnabled"] = b_smoke_opened_enabled;
   jsonBody["closedSmokeEnabled"] = b_smoke_closed_enabled;
   jsonBody["openedSmokeDuration"] = i_smoke_opened_duration / 1000; // Convert MS to Seconds.
   jsonBody["closedSmokeDuration"] = i_smoke_closed_duration / 1000; // Convert MS to Seconds.
+  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
+  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {

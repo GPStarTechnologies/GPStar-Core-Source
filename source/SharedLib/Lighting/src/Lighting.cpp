@@ -22,17 +22,17 @@
 #include <Lighting.h>
 #include <string.h>  // For memset (portable across Arduino platforms)
 
-// Constructor: Initialize Lighting instance for deviceCount devices with specified refresh rate
+// Constructor: Initialize Lighting instance for deviceCount devices with specified refresh rate (default: 5ms).
 Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs) 
   : numDevices(deviceCount > 0 ? deviceCount : 1),
     deviceRefreshMs(refreshRateMs >= 5 ? refreshRateMs : 5) {
-  // Allocate state arrays for each device
+  // Allocate state arrays for each device slot.
+  customColorHSV = new LED_HSV[numDevices];
+  deviceColorOrder = new ColorOrder[numDevices];
   dynamicCounter = new uint8_t[numDevices];
   dynamicHue = new uint8_t[numDevices];
   dynamicBright = new uint8_t[numDevices];
   dynamicNextBright = new int16_t[numDevices];
-  customColorHSV = new LED_HSV[numDevices];
-  deviceColorOrder = new ColorOrder[numDevices];
   paletteIndex = new uint16_t[numDevices];
   paletteAnimationCycle = new uint8_t[numDevices];
 
@@ -42,12 +42,12 @@ Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs)
 
 // Destructor: Clean up dynamically allocated arrays
 Lighting::~Lighting() {
+  delete[] customColorHSV;
+  delete[] deviceColorOrder;
   delete[] dynamicCounter;
   delete[] dynamicHue;
   delete[] dynamicBright;
   delete[] dynamicNextBright;
-  delete[] customColorHSV;
-  delete[] deviceColorOrder;
   delete[] paletteIndex;
   delete[] paletteAnimationCycle;
 }
@@ -55,19 +55,19 @@ Lighting::~Lighting() {
 // Reset all dynamic color state to initial values
 void Lighting::resetDynamicColors() {
   for(uint8_t i = 0; i < numDevices; i++) {
+    customColorHSV[i] = {0, 0, 0};  // Default custom color: black
+    deviceColorOrder[i] = ORDER_RGB;  // Default color order: RGB
     dynamicCounter[i] = 1;
     dynamicHue[i] = 0;
     dynamicBright[i] = 0;
     dynamicNextBright[i] = -1;
-    customColorHSV[i] = {0, 0, 0};  // Default custom color: black
-    deviceColorOrder[i] = ORDER_RGB;  // Default color order
     paletteIndex[i] = 0;  // Start at beginning of palette
     paletteAnimationCycle[i] = 0;  // Start at frame 0
   }
 }
 
 // Helper method: Get static color definition (extracted from getColorHSV switch)
-LED_HSV Lighting::getStaticColorDefinition(ColorID color) {
+LED_HSV Lighting::getStaticColorDefinition(ColorID color) const {
   switch(color) {
     case C_WHITE:
       return {100, 0, 255};  // White = no saturation, full brightness
@@ -207,7 +207,7 @@ uint8_t Lighting::getCycleValueForColor(ColorID color) {
 }
 
 // Get HSV color values for standard colors.
-LED_HSV Lighting::getColorHSV(ColorID color, uint8_t brightness, uint8_t saturation) {
+LED_HSV Lighting::getColorHSV(ColorID color, uint8_t brightness, uint8_t saturation) const {
   // Returns LED_HSV with appropriate hue, saturation, and brightness.
   // Some colors override saturation or brightness with fixed values.
 
@@ -354,7 +354,7 @@ LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
 LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t brightness, uint8_t saturation) {
   // Validate deviceSlot is within range, default to 0 if out of bounds
   if(deviceSlot >= numDevices) {
-    deviceSlot = 0;
+    return getColorHSV(color, brightness, saturation); // Return the color as-is, without regard to device slot.
   }
 
   // Get cycle rate for this color using centralized lookup table
@@ -593,38 +593,34 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
 void Lighting::setCustomColorHSV(const LED_HSV &hsv, uint8_t deviceSlot) {
   // For single-device instances, always use slot 0
   // Multi-device instances should override this behavior if needed
-  if(deviceSlot >= numDevices) {
-    deviceSlot = 0;
+  if(deviceSlot < numDevices) {
+    customColorHSV[deviceSlot] = hsv;
   }
-  
-  customColorHSV[deviceSlot] = hsv;
 }
 
 // Get the currently stored custom color HSV value for the device (default slot 0 for single-device projects).
 LED_HSV Lighting::getCustomColorHSV(uint8_t deviceSlot) const {
-  if(deviceSlot >= numDevices) {
-    deviceSlot = 0;
+  if(deviceSlot < numDevices) {
+    return customColorHSV[deviceSlot];
+  } else {
+    return getColorHSV(C_WHITE, 255, 255); // Return white as a default value.
   }
-  
-  return customColorHSV[deviceSlot];
 }
 
 // Set the color channel order for a specific device slot.
 void Lighting::setColorOrder(uint8_t deviceSlot, ColorOrder order) {
-  if(deviceSlot >= numDevices) {
-    deviceSlot = 0;
+  if(deviceSlot < numDevices) {
+    deviceColorOrder[deviceSlot] = order;
   }
-  
-  deviceColorOrder[deviceSlot] = order;
 }
 
 // Get the color channel order for a specific device slot.
 ColorOrder Lighting::getColorOrder(uint8_t deviceSlot) const {
-  if(deviceSlot >= numDevices) {
-    deviceSlot = 0;
+  if(deviceSlot < numDevices) {
+    return deviceColorOrder[deviceSlot];
+  } else {
+    return ORDER_RGB;
   }
-  
-  return deviceColorOrder[deviceSlot];
 }
 
 // Get an interpolated palette color with smooth animation and speed control.
@@ -635,7 +631,7 @@ LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot,
                                   uint8_t brightness,
                                   bool reverse) {
   if(deviceSlot >= numDevices) {
-    deviceSlot = 0;
+    return LED_RGB_BLACK;
   }
   
   // Clamp speed multiplier to reasonable range (0.1x to 10x)

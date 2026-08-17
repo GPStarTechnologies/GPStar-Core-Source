@@ -124,7 +124,7 @@ enum LED_CHAIN {
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
  * - getPixelColor(index) — Read a single LED's current color as LED_RGB
  * - setCustomColorHSV(hsv) — Store custom HSV color in the Lighting library
- * - setColorOrder(deviceSlot, colorOrder) — Set color channel order for the device
+ * - setColorOrder(colorOrder) — Set color channel order for the device
  * - fillPalette(palette, speedMultiplier) — Fill all LEDs with palette animation using Lighting library
  */
 class LightingManager {
@@ -152,7 +152,10 @@ private:
       barrelLEDs(BARREL_LEDS_MAX, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
       ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
     #endif
-    currentDeviceSlot(0) {}
+    currentDeviceSlot(0) {
+      lightingLib.setColorOrder(CHAIN_BARREL, ORDER_RGB); // Set a clear default order for this device.
+      lightingLib.setColorOrder(CHAIN_VENT, ORDER_RGB); // Set a clear default order for this device.
+    }
 
   // Helper: Returns the physical strip object for the given device slot.
   #ifdef ESP32
@@ -228,8 +231,8 @@ public:
   }
 
   // Set color order for a device with standard enum mapping
-  void setColorOrder(uint8_t deviceSlot, ColorOrder newColorOrder) {
-    lightingLib.setColorOrder(deviceSlot, newColorOrder);
+  void setColorOrder(ColorOrder newColorOrder = ORDER_RGB) {
+    lightingLib.setColorOrder(currentDeviceSlot, newColorOrder);
   }
 
   // Update LED display

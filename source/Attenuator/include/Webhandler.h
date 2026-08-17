@@ -168,6 +168,17 @@ String getDeviceConfig() {
   jsonBody["audioVersion"] = i_pack_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
   jsonBody["audioOutdated"] = b_microsd_outdated;
+  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
+  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
+
+  // Refresh external WiFi info when/if connected and get the values.
+  if(wirelessMgr->getExtWifiNetworkInfo()) {
+    jsonBody["extAddr"] = wirelessMgr->getExtWifiAddress().toString();
+    jsonBody["extMask"] = wirelessMgr->getExtWifiSubnet().toString();
+  } else {
+    jsonBody["extAddr"] = "";
+    jsonBody["extMask"] = "";
+  }
 
   // Always report pack connection state
   switch(PACK_CONN_STATE) {

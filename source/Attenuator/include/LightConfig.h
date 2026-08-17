@@ -98,7 +98,7 @@ enum ATTENUATOR_LED : uint8_t {
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
  * - getPixelColor(index) — Read a single LED's current color as LED_RGB
  * - setCustomColorHSV(hsv) — Store custom HSV color in the Lighting library
- * - setColorOrder(deviceSlot, colorOrder) — Set color channel order for the device
+ * - setColorOrder(colorOrder) — Set color channel order for the device
  * - fillPalette(palette, speedMultiplier) — Fill all LEDs with palette animation using Lighting library
  */
 class LightingManager {
@@ -123,7 +123,9 @@ private:
   LightingManager() :
     lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
     pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
-    currentDeviceSlot(0) {}
+    currentDeviceSlot(0) {
+      lightingLib.setColorOrder(currentDeviceSlot, ORDER_RGB); // Set a clear default order for this device.s
+    }
 
   // Helper: Apply a mapping of LED names based on invert flag.
   void applyMapping(bool invert) {
@@ -198,8 +200,8 @@ public:
   }
 
   // Set color order for a device with standard enum mapping
-  void setColorOrder(uint8_t deviceSlot, ColorOrder newColorOrder) {
-    lightingLib.setColorOrder(deviceSlot, newColorOrder);
+  void setColorOrder(ColorOrder newColorOrder = ORDER_RGB) {
+    lightingLib.setColorOrder(currentDeviceSlot, newColorOrder);
   }
 
   // Update LED display

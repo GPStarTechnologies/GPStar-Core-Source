@@ -113,13 +113,13 @@ String getDeviceConfig() {
 
   // Provide current values for the device.
   jsonBody["buildDate"] = build_date;
-  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
-  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
   jsonBody["numLeds"] = i_num_leds; // User-selected count of LEDs.
   jsonBody["ledType"] = LED_COLOR_TYPE; // [1=RGB,2=GRB,3=GBR]
   jsonBody["maxBrightness"] = i_max_brightness; // Maximum brightness 0-255
   jsonBody["defaultWandPower"] = i_default_wand_power; // Default power level 1-5
   jsonBody["invertDirection"] = b_invert_direction; // Invert animation direction
+  jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
+  jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -887,7 +887,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     if(jsonBody["ledType"].is<uint8_t>()) {
       LED_COLOR_TYPE = (LED_COLOR_ORDER)jsonBody["ledType"].as<uint8_t>(); // [1=RGB,2=GRB,3=GBR]
       // Sync color order change to Lighting library immediately.
-      LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
+      LightingManager::getInstance().setColorOrder(LED_COLOR_TYPE);
     }
 
     // Set maximum brightness for animations.

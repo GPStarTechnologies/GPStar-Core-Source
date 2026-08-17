@@ -178,7 +178,7 @@ class Lighting {
     uint8_t* paletteAnimationCycle; // Array[numDevices] - frame counter for palette animation timing
 
     // Helper method to get static color definitions
-    LED_HSV getStaticColorDefinition(ColorID color);
+    LED_HSV getStaticColorDefinition(ColorID color) const;
 
     // Helper method to get cycle value for dynamic color animations (frame-based timing lookup)
     uint8_t getCycleValueForColor(ColorID color);
@@ -214,7 +214,7 @@ class Lighting {
      * Returns: LED_HSV with hue, saturation, and brightness
      * Example: LED_HSV blue = lighting.getColorHSV(C_BLUE, 200, 255);
      */
-    LED_HSV getColorHSV(ColorID color, uint8_t brightness = 255, uint8_t saturation = 255);
+    LED_HSV getColorHSV(ColorID color, uint8_t brightness = 255, uint8_t saturation = 255) const;
 
     /**
      * Get HSV color values for dynamic (animated) colors.
@@ -241,8 +241,8 @@ class Lighting {
      *   deviceSlot: [0..numDevices-1] - Which device slot (default: 0 for single-slot projects)
      * Example:
      *   LED_HSV barrel_color = {32, 200, 255};  // From NVS preferences
-     *   lighting.setCustomColorHSV(barrel_color);           // Uses device 0
-     *   lighting.setCustomColorHSV(barrel_color, 2);        // Uses device 2
+     *   lighting.setCustomColorHSV(barrel_color);     // Uses device 0
+     *   lighting.setCustomColorHSV(barrel_color, 2);  // Uses device 2
      */
     void setCustomColorHSV(const LED_HSV &hsv, uint8_t deviceSlot = 0);
 
@@ -250,7 +250,7 @@ class Lighting {
      * Get the currently stored custom static color HSV value for a device slot.
      * Returns: LED_HSV value previously set by setCustomColorHSV()
      */
-    LED_HSV getCustomColorHSV(uint8_t deviceSlot) const;
+    LED_HSV getCustomColorHSV(uint8_t deviceSlot = 0) const;
 
     /**
      * Set the color channel order for a specific device slot.
@@ -262,7 +262,7 @@ class Lighting {
      *   lighting.setColorOrder(0, ORDER_RGB);  // Device 0 uses RGB order
      *   lighting.setColorOrder(1, ORDER_GRB);  // Device 1 uses GRB order
      */
-    void setColorOrder(uint8_t deviceSlot, ColorOrder order = ORDER_RGB);
+    void setColorOrder(uint8_t deviceSlot = 0, ColorOrder order = ORDER_RGB);
 
     /**
      * Get the color channel order for a specific device slot.
@@ -270,7 +270,7 @@ class Lighting {
      * Example:
      *   ColorOrder order = lighting.getColorOrder(0);
      */
-    ColorOrder getColorOrder(uint8_t deviceSlot) const;
+    ColorOrder getColorOrder(uint8_t deviceSlot = 0) const;
 
     /**
      * Get an interpolated palette color with smooth animation and speed control.
@@ -301,13 +301,13 @@ class Lighting {
      * 5. Applies stored ColorOrder for device and returns final RGB
      * 
      * Example:
-     *   LED_Palette16 myPalette = {{C_RED, C_BLUE, C_GREEN, ...}};
+     *   LED_Palette16 myPalette = {{C_RED, C_GREEN, C_BLUE, ...}};
      *   LED_RGB color = lighting.getPaletteColor(0, myPalette, 1.5);  // 1.5x speed
-     *   LED_RGB color = lighting.getPaletteColor(0, myPalette, 1.0, 64);  // with offset
+     *   LED_RGB color = lighting.getPaletteColor(0, myPalette, 1.0, 64);  // with phase
      *   LED_RGB reversed = lighting.getPaletteColor(0, myPalette, 1.0, 0, 255, true); // reverse
      */
     LED_RGB getPaletteColor(uint8_t deviceSlot,
-                            const LED_Palette16& palette, 
+                            const LED_Palette16& palette,
                             float speedMultiplier = 1.0,
                             uint8_t phaseOffset = 0, 
                             uint8_t brightness = 255,

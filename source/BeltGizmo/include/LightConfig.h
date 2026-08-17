@@ -125,7 +125,9 @@ private:
   LightingManager() :
     lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
     pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
-    currentDeviceSlot(0) {}
+    currentDeviceSlot(0) {
+      lightingLib.setColorOrder(currentDeviceSlot, ORDER_GBR); // Set a clear default order for this device.
+    }
 
   // Helper: Converts from device-specific enum to Lighting library enum
   // Map user preference color order values (1,2,3) to Lighting ColorOrder enum (0,1,2)
@@ -185,9 +187,9 @@ public:
   }
 
   // Set color order for a device with automatic enum mapping
-  void setColorOrder(uint8_t deviceSlot, uint8_t userPrefValue) {
+  void setColorOrder(LED_COLOR_ORDER userPrefValue) {
     ColorOrder mappedOrder = mapColorOrder(userPrefValue);
-    lightingLib.setColorOrder(deviceSlot, mappedOrder);
+    lightingLib.setColorOrder(currentDeviceSlot, mappedOrder);
   }
 
   // Update LED display

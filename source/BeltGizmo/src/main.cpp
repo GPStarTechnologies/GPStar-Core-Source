@@ -371,7 +371,7 @@ void setup() {
   }
 
   // Sync the user's stored color order to the Lighting library for the default device slot (0).
-  LightingManager::getInstance().setColorOrder(0, (uint8_t)LED_COLOR_TYPE);
+  LightingManager::getInstance().setColorOrder(LED_COLOR_TYPE);
 
   // Set the default power level for animations.
   wsData.wandPower = i_default_wand_power;
