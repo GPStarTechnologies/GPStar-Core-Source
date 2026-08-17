@@ -249,7 +249,7 @@ public:
 
   // Returns barrel-type-aware color (RGB or GRB based on WAND_BARREL_LED)
   // Guard: only operates when called on CHAIN_BARREL device slot
-  LED_RGB getBarrelColor(ColorID colorName, uint8_t brightness, ColorOrder colorOrder) {
+  LED_RGB getBarrelColor(ColorID colorEnum, uint8_t brightness, ColorOrder colorOrder) {
     // Guard: only operate on CHAIN_BARREL device slot
     if(currentDeviceSlot != CHAIN_BARREL) {
       return LED_RGB_BLACK;
@@ -257,10 +257,10 @@ public:
 
     // Get the HSV color through normal lighting library
     LED_HSV hsv;
-    if(isColorDynamic(colorName)) {
-      hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorName, brightness);
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorEnum, brightness);
     } else {
-      hsv = lightingLib.getColorHSV(colorName, brightness);
+      hsv = lightingLib.getColorHSV(colorEnum, brightness);
     }
 
     // Convert HSV to RGB and return in the color order passed from caller

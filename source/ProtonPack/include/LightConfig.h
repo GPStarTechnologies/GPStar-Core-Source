@@ -505,6 +505,22 @@ public:
     return LED_RGB_BLACK; // Return black if index is out of bounds.
   }
 
+  // Get an RGB color by ColorID and automatically apply stored color order.
+  // NOTE: This does not actually set the color in a pixel, only returns the intended LED_RGB value.
+  LED_RGB getColorRGB(ColorID colorEnum, uint8_t brightness = 255) {
+    // Get color as HSV
+    LED_HSV hsv;
+    if(isColorDynamic(colorEnum)) {
+      hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorEnum, brightness);
+    } else {
+      hsv = lightingLib.getColorHSV(colorEnum, brightness);
+    }
+
+    // Convert HSV to RGB and return in the color order as set for the device
+    LED_RGB rgb = Lighting::hsv2rgb(hsv);
+    return Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(currentDeviceSlot));
+  }
+
   // Set a pixel color by ColorID and automatically apply stored color order.
   void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
     auto& pixels = getDevicePixels(currentChain);

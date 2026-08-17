@@ -51,15 +51,17 @@ void sanitizeCyclotronMultipliers() {
 }
 
 void innerCyclotronCakeOff() {
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
   for(uint8_t i = i_ic_cake_start; i <= i_ic_cake_end; i++) {
-    cyclotron_leds[i] = LightingManager::getInstance().getColorRGB(CYCLOTRON_INNER, C_BLACK);
+    innerCakeMgr.setPixelColor(i, C_BLACK);
   }
 }
 
 void innerCyclotronCavityOff() {
   if(i_inner_cyclotron_cavity_num_leds > 0) {
+    auto& cavityMgr = LightingManager::getInstance(SEGMENT_INNER_CAVITY);
     for(uint8_t i = i_ic_cavity_start; i <= i_ic_cavity_end; i++) {
-      cyclotron_leds[i] = LightingManager::getInstance().getColorRGB(CYCLOTRON_CAVITY, C_BLACK);
+      cavityMgr.setPixelColor(i, C_BLACK);
     }
   }
 }
@@ -124,7 +126,7 @@ void vibrationOff() {
 // This must match the number of device ENUM entries (though that is rarely changed).
 uint8_t i_count[6] = { 0, 0, 0, 0, 0, 0 };
 
-uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) {
+ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool b_toggle) {
   // Toggle indicates use of Video Game colours, which is based on the firing mode.
   // Otherwise a default colour will be used based on the device itself.
   if(b_toggle) {
@@ -132,18 +134,18 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
       case PROTON:
       default:
         switch(i_device) {
-          case POWERCELL:
+          case SEGMENT_POWERCELL:
             return C_MID_BLUE;
           break;
 
-          case CYCLOTRON_OUTER:
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
+          case SEGMENT_CYCLOTRON_LID:
+          case SEGMENT_INNER_CAKE:
+          case SEGMENT_INNER_PANEL:
           default:
             return C_RED;
           break;
 
-          case CYCLOTRON_CAVITY:
+          case SEGMENT_INNER_CAVITY:
             // Cycles through 3 colours, changing on each call.
             // If starting at 0, value will increment to 1.
             // If value is above/divisible by 4, reset to 1.
@@ -166,8 +168,8 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
             }
           break;
 
-          // VENT_LIGHT colour in PROTON mode will always be overridden by void ventLight()
-          case VENT_LIGHT:
+          // SEGMENT_NFILTER colour in PROTON mode will always be overridden by void ventLight()
+          case SEGMENT_NFILTER:
             return C_WHITE;
           break;
         }
@@ -175,7 +177,7 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
 
       case SLIME:
         switch(i_device) {
-          case POWERCELL:
+          case SEGMENT_POWERCELL:
             // Note this is separate because yellow will eventually be an option.
             if(gpstarPack.getSystemTheme() == SYSTEM_1989) {
               return C_PINK;
@@ -185,10 +187,10 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
             }
           break;
 
-          case CYCLOTRON_OUTER:
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
-          case VENT_LIGHT:
+          case SEGMENT_CYCLOTRON_LID:
+          case SEGMENT_INNER_CAKE:
+          case SEGMENT_INNER_PANEL:
+          case SEGMENT_NFILTER:
           default:
             if(gpstarPack.getSystemTheme() == SYSTEM_1989) {
               return C_PINK;
@@ -222,7 +224,7 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
 
       case SPECTRAL_CUSTOM:
         switch(i_device) {
-          case CYCLOTRON_CAVITY:
+          case SEGMENT_INNER_CAVITY:
             // Cycles through 3 colours, changing on each call.
             // If starting at 0, value will increment to 1.
             // If value is above/divisible by 4, reset to 1.
@@ -245,18 +247,18 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
             }
           break;
 
-          case POWERCELL:
+          case SEGMENT_POWERCELL:
             return C_CUSTOM;
           break;
 
-          case CYCLOTRON_OUTER:
-          case VENT_LIGHT:
+          case SEGMENT_CYCLOTRON_LID:
+          case SEGMENT_NFILTER:
           default:
             return C_CUSTOM;
           break;
 
-          case CYCLOTRON_INNER:
-          case CYCLOTRON_PANEL:
+          case SEGMENT_INNER_CAKE:
+          case SEGMENT_INNER_PANEL:
             return C_CUSTOM;
           break;
         }
@@ -265,17 +267,17 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
   }
   else {
     switch(i_device) {
-      case POWERCELL:
+      case SEGMENT_POWERCELL:
         return C_MID_BLUE;
       break;
 
-      case CYCLOTRON_OUTER:
-      case CYCLOTRON_INNER:
-      case CYCLOTRON_PANEL:
+      case SEGMENT_CYCLOTRON_LID:
+      case SEGMENT_INNER_CAKE:
+      case SEGMENT_INNER_PANEL:
         return C_RED;
       break;
 
-      case CYCLOTRON_CAVITY:
+      case SEGMENT_INNER_CAVITY:
         // Cycles through 3 colours, changing on each call.
         // If starting at 0, value will increment to 1.
         // If value is above/divisible by 4, reset to 1.
@@ -298,8 +300,8 @@ uint8_t getDeviceColour(uint8_t i_device, uint8_t i_firing_mode, bool b_toggle) 
         }
       break;
 
-      // VENT_LIGHT colour in PROTON mode will always be overridden by void ventLight()
-      case VENT_LIGHT:
+      // SEGMENT_NFILTER colour in PROTON mode will always be overridden by void ventLight()
+      case SEGMENT_NFILTER:
       default:
         return C_WHITE;
       break;
@@ -317,8 +319,8 @@ void ventLightLEDW(bool b_on) {
 }
 
 void ventLight(bool b_on) {
-  auto& mgr = LightingManager::getInstance();
-  uint8_t i_colour_scheme = getDeviceColour(VENT_LIGHT, gpstarPack.getStreamMode(), true);
+  auto& nfilterMgr = LightingManager::getInstance(SEGMENT_NFILTER);
+  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_NFILTER, gpstarPack.getStreamMode(), true);
   b_vent_light_on = b_on;
 
   if(b_on && b_cyclotron_lid_on) {
@@ -359,12 +361,12 @@ void ventLight(bool b_on) {
     }
 
     for(uint8_t i = i_vent_light_start; i < i_pack_num_leds; i++) {
-      pack_leds[i] = mgr.getColorRGB(VENT_LIGHT, i_colour_scheme); // Uses full brightness.
+      nfilterMgr.setPixelColor(i, i_colour_scheme);
     }
   }
   else {
     for(uint8_t i = i_vent_light_start; i < i_pack_num_leds; i++) {
-      pack_leds[i] = mgr.getColorRGB(VENT_LIGHT, C_BLACK);
+      nfilterMgr.setPixelColor(i, C_BLACK);
     }
   }
 }
@@ -778,10 +780,10 @@ bool usingSlimeCyclotron(STREAM_MODES mode) {
 }
 
 void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
-  auto& mgr = LightingManager::getInstance();
+  auto& cavityMgr = LightingManager::getInstance(SEGMENT_INNER_CAVITY);
   // Map the value from the inner cake to the cavity lights to get current position.
   uint8_t i_midpoint = i_ic_cavity_start + (i_inner_cyclotron_cavity_num_leds / 2) - 1;
-  uint8_t i_colour_scheme = C_BLACK; // Colour scheme for lighting, to be set later.
+  ColorID i_colour_scheme = C_BLACK; // Colour scheme for lighting, to be set later.
   uint8_t i_brightness = getBrightness(i_cyclotron_inner_brightness);
 
   // Sanity check to make sure the midpoint is set to a sane value.
@@ -812,32 +814,21 @@ void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
       }
       else {
         // Light spiraling higher than the lower half will have variable colours.
-        i_colour_scheme = getDeviceColour(CYCLOTRON_CAVITY, gpstarPack.getStreamMode(), false);
+        i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAVITY, gpstarPack.getStreamMode(), false);
       }
     }
   }
 
   if((b_clockwise && !b_inner_cavity_inverted) || (!b_clockwise && b_inner_cavity_inverted)) {
     if(iRampDelay < 40 && !b_cyclotron_lid_on) {
-      switch(CAVITY_LED_TYPE) {
-        case RGB_LED:
-        default:
-          cyclotron_leds[i_led_cyclotron_cavity] = mgr.getColorRGB(CYCLOTRON_CAVITY, i_colour_scheme, i_brightness);
-        break;
-        case GRB_LED:
-          cyclotron_leds[i_led_cyclotron_cavity] = mgr.getColorGRB(CYCLOTRON_CAVITY, i_colour_scheme, i_brightness);
-        break;
-        case GBR_LED:
-          cyclotron_leds[i_led_cyclotron_cavity] = mgr.getColorGBR(CYCLOTRON_CAVITY, i_colour_scheme, i_brightness);
-        break;
-      }
+      cavityMgr.setPixelColor(i_led_cyclotron_cavity, i_colour_scheme, i_brightness);
 
       // Set to black, which is universal for any type of LED.
       if(i_led_cyclotron_cavity == i_ic_cavity_start) {
-        cyclotron_leds[i_ic_cavity_end] = mgr.getColorRGB(CYCLOTRON_CAVITY, C_BLACK);
+        cavityMgr.setPixelColor(i_ic_cavity_end, C_BLACK);
       }
       else {
-        cyclotron_leds[i_led_cyclotron_cavity - 1] = mgr.getColorRGB(CYCLOTRON_CAVITY, C_BLACK);
+        cavityMgr.setPixelColor(i_led_cyclotron_cavity - 1, C_BLACK);
       }
     }
 
@@ -849,24 +840,13 @@ void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
   }
   else {
     if(iRampDelay < 40 && !b_cyclotron_lid_on) {
-      switch(CAVITY_LED_TYPE) {
-        case RGB_LED:
-        default:
-          cyclotron_leds[i_led_cyclotron_cavity] = mgr.getColorRGB(CYCLOTRON_CAVITY, i_colour_scheme, i_brightness);
-        break;
-        case GRB_LED:
-          cyclotron_leds[i_led_cyclotron_cavity] = mgr.getColorGRB(CYCLOTRON_CAVITY, i_colour_scheme, i_brightness);
-        break;
-        case GBR_LED:
-          cyclotron_leds[i_led_cyclotron_cavity] = mgr.getColorGBR(CYCLOTRON_CAVITY, i_colour_scheme, i_brightness);
-        break;
-      }
+      cavityMgr.setPixelColor(i_led_cyclotron_cavity, i_colour_scheme, i_brightness);
 
       if(i_led_cyclotron_cavity + 1 > i_ic_cavity_end) {
-        cyclotron_leds[i_ic_cavity_start] = mgr.getColorRGB(CYCLOTRON_CAVITY, C_BLACK);
+        cavityMgr.setPixelColor(i_ic_cavity_start, C_BLACK);
       }
       else {
-        cyclotron_leds[i_led_cyclotron_cavity + 1] = mgr.getColorRGB(CYCLOTRON_CAVITY, C_BLACK);
+        cavityMgr.setPixelColor(i_led_cyclotron_cavity + 1, C_BLACK);
       }
     }
 
@@ -880,7 +860,7 @@ void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
 
 // For NeoPixel rings, ramp up and ramp down the LEDs in the ring and set the speed. (optional)
 void innerCyclotronRingUpdate(uint16_t iRampDelay) {
-  auto& mgr = LightingManager::getInstance();
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
 
   if(ms_cyclotron_ring.justFinished()) {
     if(b_inner_ramp_up) {
@@ -940,8 +920,8 @@ void innerCyclotronRingUpdate(uint16_t iRampDelay) {
     }
 
     // Colour control for the Inner Cyclotron LEDs.
+    ColorID i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAKE, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
     uint8_t i_brightness = getBrightness(i_cyclotron_inner_brightness);
-    uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_INNER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
 
     if(isBrassPack() && gpstarPack.inStreamMode(PROTON)) {
       // As a "sparking" effect is predominant in GB:FE during the Proton stream,
@@ -953,18 +933,13 @@ void innerCyclotronRingUpdate(uint16_t iRampDelay) {
 
     if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
       if(!b_cyclotron_lid_on) {
-        if(CAKE_LED_TYPE == GRB_LED) {
-          cyclotron_leds[i_led_cyclotron_ring] = mgr.getColorGRB(CYCLOTRON_INNER, i_colour_scheme, i_brightness);
-        }
-        else {
-          cyclotron_leds[i_led_cyclotron_ring] = mgr.getColorRGB(CYCLOTRON_INNER, i_colour_scheme, i_brightness);
-        }
+        innerCakeMgr.setPixelColor(i_led_cyclotron_ring, i_colour_scheme, i_brightness);
 
         if(i_led_cyclotron_ring == i_ic_cake_start) {
-          cyclotron_leds[i_ic_cake_end] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+          innerCakeMgr.setPixelColor(i_ic_cake_end, C_BLACK);
         }
         else {
-          cyclotron_leds[i_led_cyclotron_ring - 1] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+          innerCakeMgr.setPixelColor(i_led_cyclotron_ring - 1, C_BLACK);
         }
       }
 
@@ -976,18 +951,13 @@ void innerCyclotronRingUpdate(uint16_t iRampDelay) {
     }
     else {
       if(!b_cyclotron_lid_on) {
-        if(CAKE_LED_TYPE == GRB_LED) {
-          cyclotron_leds[i_led_cyclotron_ring] = mgr.getColorGRB(CYCLOTRON_INNER, i_colour_scheme, i_brightness);
-        }
-        else {
-          cyclotron_leds[i_led_cyclotron_ring] = mgr.getColorRGB(CYCLOTRON_INNER, i_colour_scheme, i_brightness);
-        }
+        innerCakeMgr.setPixelColor(i_led_cyclotron_ring, i_colour_scheme, i_brightness);
 
         if(i_led_cyclotron_ring + 1 > i_ic_cake_end) {
-          cyclotron_leds[i_ic_cake_start] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+          innerCakeMgr.setPixelColor(i_ic_cake_start, C_BLACK);
         }
         else {
-          cyclotron_leds[i_led_cyclotron_ring + 1] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+          innerCakeMgr.setPixelColor(i_led_cyclotron_ring + 1, C_BLACK);
         }
       }
 
@@ -1061,8 +1031,9 @@ void innerCyclotronRingUpdate(uint16_t iRampDelay) {
 // Turns off the LEDs in the Cyclotron Lid only.
 void cyclotronLidLedsOff() {
   if(!b_fade_out) {
+    auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
     for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-      pack_leds[i + i_cyclotron_led_start] = LightingManager::getInstance().getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, C_BLACK);
     }
 
     clearCyclotronFades();
@@ -1140,7 +1111,9 @@ bool fadeOutCyclotron() {
 
   if((gpstarPack.isThemeModern()) && !usingSlimeCyclotron(gpstarPack.getStreamMode())) {
     for(uint8_t i = 0; i < OUTER_CYCLOTRON_LED_MAX; i++) {
+      auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
       uint8_t i_curr_brightness = i_cyclotron_led_value[i] - 10;
+      uint8_t i_tmp_lid_led = cyclotronLookupTable(i) + i_cyclotron_led_start - 1;
 
       if(i_curr_brightness > i_cyclotron_led_value[i]) {
         i_curr_brightness = 0;
@@ -1153,12 +1126,12 @@ bool fadeOutCyclotron() {
         b_return = true;
 
         if(cyclotronLookupTable(i) > 0) {
-          pack_leds[cyclotronLookupTable(i) + i_cyclotron_led_start - 1].maximizeBrightness(i_curr_brightness);
+          pack_leds[i_tmp_lid_led].maximizeBrightness(i_curr_brightness);
         }
       }
       else {
         if(cyclotronLookupTable(i) > 0) {
-          pack_leds[cyclotronLookupTable(i) + i_cyclotron_led_start - 1] = LightingManager::getInstance().getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+          cyclotronLidMgr.setPixelColor(i_tmp_lid_led, C_BLACK);
         }
       }
     }
@@ -1646,27 +1619,28 @@ void powercellOn() {
 }
 
 void powercellOff() {
+  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
   for(uint8_t i = 0; i < i_powercell_num_leds; i++) {
-    pack_leds[i] = LightingManager::getInstance().getColorRGB(POWERCELL, C_BLACK);
+    powercellMgr.setPixelColor(i, C_BLACK);
   }
 
   i_powercell_led = 0;
 }
 
 void innerCyclotronLEDPanelOff() {
-  auto& mgr = LightingManager::getInstance();
+  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
 
   if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
     if(b_cyclotron_lid_on) {
       // All lights turn off while the cyclotron lid is on.
       for(uint8_t i = i_ic_panel_start; i <= i_ic_panel_end; i++) {
-        cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+        panelMgr.setPixelColor(i, C_BLACK);
       }
     }
     else {
       // Otherwise the 2 switch panel lights remain on when lid is removed.
       for(uint8_t i = i_ic_panel_start; i <= i_ic_panel_end - 2; i++) {
-        cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+        panelMgr.setPixelColor(i, C_BLACK);
       }
     }
   }
@@ -1831,7 +1805,7 @@ void setYearModeByToggle() {
 
 // LEDs for the 1984/2021 and vibration switches.
 void cyclotronSwitchPlateLEDs() {
-  auto& mgr = LightingManager::getInstance();
+  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
   bool b_brass_pack_effect_active = b_brass_pack_sound_loop || (isBrassPack() && (b_ramp_down || b_pack_alarm || b_wand_mash_lockout));
 
   if(!b_cyclotron_lid_on && !b_brass_pack_effect_active) {
@@ -1846,16 +1820,16 @@ void cyclotronSwitchPlateLEDs() {
         if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
           if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC) {
             // Static LED will always light green.
-            cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
+            panelMgr.setPixelColor(i_ic_panel_end - 1, C_GREEN, i_brightness);
           }
           else {
             if(gpstarPack.getSystemTheme() == SYSTEM_1984) {
               // If in 1984, LED will light red.
-              cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
+              panelMgr.setPixelColor(i_ic_panel_end - 1, C_RED, i_brightness);
             }
             else {
               // If in 1989, LED will light pink.
-              cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_PINK, i_brightness);
+              panelMgr.setPixelColor(i_ic_panel_end - 1, C_PINK, i_brightness);
             }
           }
         }
@@ -1865,7 +1839,7 @@ void cyclotronSwitchPlateLEDs() {
         digitalWriteFast(YEAR_TOGGLE_LED_PIN, LOW);
 #endif
         if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-          cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+          panelMgr.setPixelColor(i_ic_panel_end - 1, C_BLACK);
         }
       }
     }
@@ -1876,11 +1850,11 @@ void cyclotronSwitchPlateLEDs() {
       if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
         if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC || gpstarPack.getSystemTheme() == SYSTEM_AFTERLIFE) {
           // If using static LEDs or in Afterlife, LED will light green.
-          cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
+          panelMgr.setPixelColor(i_ic_panel_end - 1, C_GREEN, i_brightness);
         }
         else {
           // Frozen Empire will light the LED ice blue.
-          cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_LIGHT_BLUE, i_brightness);
+          panelMgr.setPixelColor(i_ic_panel_end - 1, C_LIGHT_BLUE, i_brightness);
         }
       }
     }
@@ -1892,7 +1866,7 @@ void cyclotronSwitchPlateLEDs() {
         digitalWriteFast(VIBRATION_TOGGLE_LED_PIN, HIGH);
 #endif
         if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-          cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
+          panelMgr.setPixelColor(i_ic_panel_end, C_YELLOW, i_brightness);
         }
       }
       else {
@@ -1900,7 +1874,7 @@ void cyclotronSwitchPlateLEDs() {
         digitalWriteFast(VIBRATION_TOGGLE_LED_PIN, LOW);
 #endif
         if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-          cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+          panelMgr.setPixelColor(i_ic_panel_end, C_BLACK);
         }
       }
     }
@@ -1909,7 +1883,7 @@ void cyclotronSwitchPlateLEDs() {
       digitalWriteFast(VIBRATION_TOGGLE_LED_PIN, HIGH);
 #endif
       if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-        cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
+        panelMgr.setPixelColor(i_ic_panel_end, C_YELLOW, i_brightness);
       }
     }
   }
@@ -1920,8 +1894,8 @@ void cyclotronSwitchPlateLEDs() {
     digitalWriteFast(VIBRATION_TOGGLE_LED_PIN, LOW);
 #endif
     if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-      cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-      cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+      panelMgr.setPixelColor(i_ic_panel_end - 1, C_BLACK);
+      panelMgr.setPixelColor(i_ic_panel_end, C_BLACK);
     }
   }
 
@@ -1931,42 +1905,38 @@ void cyclotronSwitchPlateLEDs() {
 }
 
 void spectralLightsOff() {
-  auto& mgr = LightingManager::getInstance();
-
   b_spectral_lights_on = false;
 
+  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
   for(uint8_t i = 0; i < i_max_pack_leds; i++) {
-    pack_leds[i] = mgr.getColorRGB(POWERCELL, C_BLACK);
+    powercellMgr.setPixelColor(i, C_BLACK);
   }
 
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
   for(uint8_t i = i_ic_cake_start; i <= i_ic_cake_end; i++) {
-    cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+    innerCakeMgr.setPixelColor(i, C_BLACK);
   }
 }
 
 void spectralLightsOn() {
-  auto& mgr = LightingManager::getInstance();
-
   b_spectral_lights_on = true;
 
-  uint8_t i_colour_scheme = getDeviceColour(POWERCELL, SPECTRAL_CUSTOM, true);
+  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
+  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_POWERCELL, SPECTRAL_CUSTOM, true);
   for(uint8_t i = 0; i < i_powercell_num_leds; i++) {
-    pack_leds[i] = mgr.getColorRGB(POWERCELL, i_colour_scheme);
+    powercellMgr.setPixelColor(i, i_colour_scheme);
   }
 
-  i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, SPECTRAL_CUSTOM, true);
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, SPECTRAL_CUSTOM, true);
   for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-    pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme);
+    cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme);
   }
 
-  i_colour_scheme = getDeviceColour(CYCLOTRON_INNER, SPECTRAL_CUSTOM, true);
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAKE, SPECTRAL_CUSTOM, true);
   for(uint8_t i = i_ic_cake_start; i <= i_ic_cake_end; i++) {
-    if(CAKE_LED_TYPE == GRB_LED) {
-      cyclotron_leds[i] = mgr.getColorGRB(CYCLOTRON_INNER, i_colour_scheme);
-    }
-    else {
-      cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_INNER, i_colour_scheme);
-    }
+    innerCakeMgr.setPixelColor(i, i_colour_scheme);
   }
 
   attenuatorSerialSend(A_SPECTRAL_COLOUR_DATA);
@@ -2323,12 +2293,12 @@ void checkSwitches() {
 }
 
 void cyclotronSwitchLEDUpdate() {
-  auto& mgr = LightingManager::getInstance();
+  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
 
   // When lid is off, updates the switch panel lights using either the stock connectors for individual LEDs,
   // or via the addressable LEDs if the user has installed the custom PCB between the Pack Controller and Cake.
   if(!b_cyclotron_lid_on) {
-    uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_PANEL, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+    ColorID i_colour_scheme = getDeviceColorID(SEGMENT_INNER_PANEL, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
     uint8_t i_brightness = getBrightness(i_cyclotron_panel_brightness);
 
     if(b_pack_alarm) {
@@ -2343,17 +2313,17 @@ void cyclotronSwitchLEDUpdate() {
 #endif
         if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
           if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC) {
-            cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-            cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-            cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-            cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-            cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
-            cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
+            panelMgr.setPixelColor(0, C_RED, i_brightness);
+            panelMgr.setPixelColor(1, C_RED, i_brightness);
+            panelMgr.setPixelColor(2, C_YELLOW, i_brightness);
+            panelMgr.setPixelColor(3, C_YELLOW, i_brightness);
+            panelMgr.setPixelColor(4, C_GREEN, i_brightness);
+            panelMgr.setPixelColor(5, C_GREEN, i_brightness);
           }
           else {
             // Uses all red for the alarm sequence.
             for(uint8_t i = i_ic_panel_start; i <= i_ic_panel_end - 2; i++) {
-              cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
+              panelMgr.setPixelColor(i, C_RED, i_brightness);
             }
           }
         }
@@ -2369,7 +2339,7 @@ void cyclotronSwitchLEDUpdate() {
 #endif
         if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
           for(uint8_t i = i_ic_panel_start; i <= i_ic_panel_end - 2; i++) {
-            cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+            panelMgr.setPixelColor(i, C_BLACK);
           }
         }
       }
@@ -2388,7 +2358,7 @@ void cyclotronSwitchLEDUpdate() {
           if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
             // All but the switch LEDs are turned off
             for(uint8_t i = i_ic_panel_start; i <= i_ic_panel_end - 2; i++) {
-              cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+              panelMgr.setPixelColor(i, C_BLACK);
             }
           }
         break;
@@ -2403,18 +2373,18 @@ void cyclotronSwitchLEDUpdate() {
           digitalWriteFast(CYCLOTRON_SWITCH_LED_G2_PIN, HIGH);
 #endif
           if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-            cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-            cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-            cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-            cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+            panelMgr.setPixelColor(0, C_BLACK);
+            panelMgr.setPixelColor(1, C_BLACK);
+            panelMgr.setPixelColor(2, C_BLACK);
+            panelMgr.setPixelColor(3, C_BLACK);
 
             if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC || gpstarPack.getStreamMode() == PROTON) {
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
+              panelMgr.setPixelColor(4, C_GREEN, i_brightness);
+              panelMgr.setPixelColor(5, C_GREEN, i_brightness);
             }
             else {
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(4, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(5, i_colour_scheme, i_brightness);
             }
           }
         break;
@@ -2429,20 +2399,20 @@ void cyclotronSwitchLEDUpdate() {
           digitalWriteFast(CYCLOTRON_SWITCH_LED_G2_PIN, HIGH);
 #endif
           if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-            cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-            cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+            panelMgr.setPixelColor(0, C_BLACK);
+            panelMgr.setPixelColor(1, C_BLACK);
 
             if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC || gpstarPack.getStreamMode() == PROTON) {
-              cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-              cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
+              panelMgr.setPixelColor(2, C_YELLOW, i_brightness);
+              panelMgr.setPixelColor(3, C_YELLOW, i_brightness);
+              panelMgr.setPixelColor(4, C_GREEN, i_brightness);
+              panelMgr.setPixelColor(5, C_GREEN, i_brightness);
             }
             else {
-              cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(2, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(3, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(4, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(5, i_colour_scheme, i_brightness);
             }
           }
         break;
@@ -2459,16 +2429,16 @@ void cyclotronSwitchLEDUpdate() {
 #endif
           if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
             if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC || gpstarPack.getStreamMode() == PROTON) {
-              cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-              cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-              cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-              cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_brightness);
+              panelMgr.setPixelColor(0, C_RED, i_brightness);
+              panelMgr.setPixelColor(1, C_RED, i_brightness);
+              panelMgr.setPixelColor(2, C_YELLOW, i_brightness);
+              panelMgr.setPixelColor(3, C_YELLOW, i_brightness);
+              panelMgr.setPixelColor(4, C_GREEN, i_brightness);
+              panelMgr.setPixelColor(5, C_GREEN, i_brightness);
             }
             else {
               for(uint8_t i = i_ic_panel_start; i <= i_ic_panel_end - 2; i++) {
-                cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
+                panelMgr.setPixelColor(i, i_colour_scheme, i_brightness);
               }
             }
           }
@@ -2485,20 +2455,20 @@ void cyclotronSwitchLEDUpdate() {
 #endif
           if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
             if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC || gpstarPack.getStreamMode() == PROTON) {
-              cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-              cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-              cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-              cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_brightness);
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+              panelMgr.setPixelColor(0, C_RED, i_brightness);
+              panelMgr.setPixelColor(1, C_RED, i_brightness);
+              panelMgr.setPixelColor(2, C_YELLOW, i_brightness);
+              panelMgr.setPixelColor(3, C_YELLOW, i_brightness);
+              panelMgr.setPixelColor(4, C_BLACK);
+              panelMgr.setPixelColor(5, C_BLACK);
             }
             else {
-              cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+              panelMgr.setPixelColor(0, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(1, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(2, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(3, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(4, C_BLACK);
+              panelMgr.setPixelColor(5, C_BLACK);
             }
           }
         break;
@@ -2514,20 +2484,20 @@ void cyclotronSwitchLEDUpdate() {
 #endif
           if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
             if(INNER_CYC_PANEL_MODE == PANEL_RGB_STATIC || gpstarPack.getStreamMode() == PROTON) {
-              cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-              cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_brightness);
-              cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+              panelMgr.setPixelColor(0, C_RED, i_brightness);
+              panelMgr.setPixelColor(1, C_RED, i_brightness);
+              panelMgr.setPixelColor(2, C_BLACK);
+              panelMgr.setPixelColor(3, C_BLACK);
+              panelMgr.setPixelColor(4, C_BLACK);
+              panelMgr.setPixelColor(5, C_BLACK);
             }
             else {
-              cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, i_colour_scheme, i_brightness);
-              cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-              cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+              panelMgr.setPixelColor(0, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(1, i_colour_scheme, i_brightness);
+              panelMgr.setPixelColor(2, C_BLACK);
+              panelMgr.setPixelColor(3, C_BLACK);
+              panelMgr.setPixelColor(4, C_BLACK);
+              panelMgr.setPixelColor(5, C_BLACK);
             }
           }
         break;
@@ -2543,7 +2513,7 @@ void cyclotronSwitchLEDUpdate() {
 #endif
           if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
             for(uint8_t i = i_ic_panel_start; i <= i_ic_panel_end - 2; i++) {
-              cyclotron_leds[i] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+              panelMgr.setPixelColor(i, C_BLACK);
             }
           }
         break;
@@ -2683,6 +2653,7 @@ void powercellRampDown() {
       // Do Nothing.
     }
     else {
+      auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
       uint8_t i_tmp_powercell_led = 0;
 
       if(b_powercell_invert) {
@@ -2702,7 +2673,7 @@ void powercellRampDown() {
         }
       }
 
-      pack_leds[i_tmp_powercell_led] = LightingManager::getInstance().getColorRGB(POWERCELL, C_BLACK);
+      powercellMgr.setPixelColor(i_tmp_powercell_led, C_BLACK);
 
       i_powercell_led--;
     }
@@ -2908,8 +2879,9 @@ void powercellLoop() {
 }
 
 void powercellDraw(uint8_t i_start) {
+  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
+  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_POWERCELL, gpstarPack.getStreamMode(), b_powercell_colour_toggle);
   uint8_t i_brightness = getBrightness(i_powercell_brightness); // Calculate desired brightness.
-  uint8_t i_colour_scheme = getDeviceColour(POWERCELL, gpstarPack.getStreamMode(), b_powercell_colour_toggle);
 
   // Sets the colour for each Power Cell LED, subject to colour toggle setting.
   for(uint8_t i = i_start; i <= i_powercell_led; i++) {
@@ -2934,7 +2906,7 @@ void powercellDraw(uint8_t i_start) {
       }
 
       // Note: Always assumed to be RGB for built-in.
-      pack_leds[i_tmp_powercell_led] = LightingManager::getInstance().getColorRGB(POWERCELL, i_colour_scheme, i_brightness);
+      powercellMgr.setPixelColor(i_tmp_powercell_led, i_colour_scheme, i_brightness);
     }
   }
 }
@@ -2998,8 +2970,8 @@ uint8_t cyclotron84LookupTable(uint8_t index) {
 
 // Reset the Cyclotron LED colours.
 void cyclotronColourReset() {
-  auto& mgr = LightingManager::getInstance();
-  uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
 
   // We override the colour changes when using stock HasLab Cyclotron LEDs, returning full white.
   // Changing the colour space with a CHSV Object affects the brightness slightly for non RGB pixels.
@@ -3013,7 +2985,7 @@ void cyclotronColourReset() {
     default:
       for(uint8_t i = 0; i < OUTER_CYCLOTRON_LED_MAX; i++) {
         if(cyclotronLookupTable(i) > 0) {
-          pack_leds[cyclotronLookupTable(i) + i_cyclotron_led_start - 1] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_cyclotron_led_value[i]);
+          cyclotronLidMgr.setPixelColor(cyclotronLookupTable(i) + i_cyclotron_led_start - 1, i_colour_scheme, i_cyclotron_led_value[i]);
         }
       }
     break;
@@ -3021,7 +2993,7 @@ void cyclotronColourReset() {
     case SYSTEM_1984:
     case SYSTEM_1989:
       for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-        pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_cyclotron_led_value[i]);
+        cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_cyclotron_led_value[i]);
       }
     break;
   }
@@ -3063,7 +3035,8 @@ void slimeCyclotronFadeout() {
 
 // Controls the slime cyclotron effect.
 void slimeCyclotronEffect() {
-  auto& mgr = LightingManager::getInstance();
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
 
   if(ms_cyclotron_slime_effect.justFinished()) {
     if(PACK_STATE == MODE_OFF && b_ramp_down) {
@@ -3107,18 +3080,18 @@ void slimeCyclotronEffect() {
 
     if(b_cyclotron_lid_on) {
       for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-        uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
-        pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, random(i_random_lower, i_random_upper));
+        ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+        cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, random(i_random_lower, i_random_upper));
       }
     }
     else {
       for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
-        uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_INNER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+        ColorID i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAKE, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
         if(CAKE_LED_TYPE == GRB_LED) {
-          cyclotron_leds[i + i_ic_cake_start] = mgr.getColorGRB(CYCLOTRON_INNER, i_colour_scheme, random(i_random_lower, i_random_upper));
+          cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(i_colour_scheme, random(i_random_lower, i_random_upper));
         }
         else {
-          cyclotron_leds[i + i_ic_cake_start] = mgr.getColorRGB(CYCLOTRON_INNER, i_colour_scheme, random(i_random_lower, i_random_upper));
+          cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(i_colour_scheme, random(i_random_lower, i_random_upper));
         }
       }
     }
@@ -3159,7 +3132,8 @@ void slimeCyclotronEffect() {
 }
 
 void cyclotronIceAnimation() {
-  auto& mgr = LightingManager::getInstance();
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
   // The slime overheat animation, but blue for ice.
   if(ms_cyclotron_slime_effect.justFinished()) {
     uint8_t i_random_lower = 5;
@@ -3167,17 +3141,17 @@ void cyclotronIceAnimation() {
 
     if(b_cyclotron_lid_on) {
       for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-        pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
+        cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
       }
     }
     else {
       for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
         if((i + i_ic_cake_start) != i_led_cyclotron_ring - 1 || (!b_fading_out_frozen && !b_inner_ramp_down)) {
           if(CAKE_LED_TYPE == GRB_LED) {
-            cyclotron_leds[i + i_ic_cake_start] = mgr.getColorGRB(CYCLOTRON_INNER, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
+            cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
           }
           else {
-            cyclotron_leds[i + i_ic_cake_start] = mgr.getColorRGB(CYCLOTRON_INNER, C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
+            cyclotron_leds[i + i_ic_cake_start] = innerCakeMgr.setPixelColor(C_LIGHT_BLUE, random(i_random_lower, i_random_upper));
           }
         }
       }
@@ -3188,8 +3162,8 @@ void cyclotronIceAnimation() {
 }
 
 void cyclotronFade() {
-  auto& mgr = LightingManager::getInstance();
-  uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
 
   // We override the colour changes when using stock HasLab Cyclotron LEDs.
   // Changing the colour space with a CHSV Object affects the brightness slightly for non RGB pixels.
@@ -3209,7 +3183,7 @@ void cyclotronFade() {
           i_cyclotron_led_value[i] = i_curr_brightness;
 
           if(cyclotronLookupTable(i) > 0) {
-            pack_leds[cyclotronLookupTable(i) + i_cyclotron_led_start - 1] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(cyclotronLookupTable(i) + i_cyclotron_led_start - 1, i_colour_scheme, i_curr_brightness);
           }
         }
 
@@ -3235,7 +3209,7 @@ void cyclotronFade() {
           }
 
           if(cyclotronLookupTable(i) > 0) {
-            pack_leds[cyclotronLookupTable(i) + i_cyclotron_led_start - 1] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_new_brightness);
+            cyclotronLidMgr.setPixelColor(cyclotronLookupTable(i) + i_cyclotron_led_start - 1, i_colour_scheme, i_new_brightness);
           }
         }
 
@@ -3244,7 +3218,7 @@ void cyclotronFade() {
           i_cyclotron_led_value[i] = i_curr_brightness;
 
           if(cyclotronLookupTable(i) > 0) {
-            pack_leds[cyclotronLookupTable(i) + i_cyclotron_led_start - 1] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(cyclotronLookupTable(i) + i_cyclotron_led_start - 1, i_colour_scheme, i_curr_brightness);
           }
         }
 
@@ -3253,7 +3227,7 @@ void cyclotronFade() {
           b_cyclotron_led_fading_in[i] = true;
 
           if(cyclotronLookupTable(i) > 0) {
-            pack_leds[cyclotronLookupTable(i) + i_cyclotron_led_start - 1] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+            cyclotronLidMgr.setPixelColor(cyclotronLookupTable(i) + i_cyclotron_led_start - 1, C_BLACK);
           }
         }
       }
@@ -3274,25 +3248,25 @@ void cyclotronFade() {
             b_cyclotron_led_fading_in[i] = true;
             uint8_t i_curr_brightness = r_cyclotron_led_fade_in[i].update();
 
-            pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_curr_brightness);
             i_cyclotron_led_value[i] = i_curr_brightness;
           }
 
           if(r_cyclotron_led_fade_in[i].isFinished() && i_cyclotron_led_value[i] == (i_new_brightness - 1) && b_cyclotron_led_fading_in[i]) {
-            pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_new_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_new_brightness);
             i_cyclotron_led_value[i] = i_new_brightness;
           }
 
           if(r_cyclotron_led_fade_out[i].isRunning()) {
             uint8_t i_curr_brightness = r_cyclotron_led_fade_out[i].update();
 
-            pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_curr_brightness);
             i_cyclotron_led_value[i] = i_curr_brightness;
             b_cyclotron_led_fading_in[i] = false;
           }
 
           if(r_cyclotron_led_fade_out[i].isFinished() && !b_cyclotron_led_fading_in[i]) {
-            pack_leds[i + i_cyclotron_led_start] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, C_BLACK);
             i_cyclotron_led_value[i] = 0;
             b_cyclotron_led_fading_in[i] = true;
           }
@@ -3302,9 +3276,10 @@ void cyclotronFade() {
   }
 }
 
-void cyclotron84LightOn(uint8_t cLed) {
+void cyclotron84LightOn(uint8_t i_led) {
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
   uint8_t i_brightness = getBrightness(i_cyclotron_brightness);
-  uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
   uint8_t i_led_array_width = 1; // Variable to store the number of LEDs to either side of the center LED.
 
   /*
@@ -3322,33 +3297,33 @@ void cyclotron84LightOn(uint8_t cLed) {
     i_colour_scheme = C_WHITE;
   }
 
-  CRGB i_puck_color = LightingManager::getInstance().getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_brightness);
-  pack_leds[cLed] = i_puck_color;
-  i_cyclotron_led_value[cLed - i_cyclotron_led_start] = i_brightness;
+  ColorID i_puck_color = cyclotronLidMgr.getColorRGB(SEGMENT_CYCLOTRON_LID, i_colour_scheme, i_brightness);
+  pack_leds[i_led] = i_puck_color;
+  i_cyclotron_led_value[i_led - i_cyclotron_led_start] = i_brightness;
 
   // Turn on the other 2 LEDs if we are allowing 3 to light up.
   if(!b_cyclotron_single_led) {
     for(uint8_t i = 1; i <= i_led_array_width; i++) {
-      pack_leds[cLed + i] = i_puck_color;
-      i_cyclotron_led_value[cLed + i - i_cyclotron_led_start] = i_brightness;
+      pack_leds[i_led + i] = i_puck_color;
+      i_cyclotron_led_value[i_led + i - i_cyclotron_led_start] = i_brightness;
 
-      uint8_t cLedTemp = cLed; // Create new temporary variable for the negative side.
+      uint8_t i_led_temp = i_led; // Create new temporary variable for the negative side.
 
-      if(cLed - i < i_cyclotron_led_start) {
-        cLedTemp = i_pack_num_leds - i_nfilter_jewel_leds - i;
+      if(i_led - i < i_cyclotron_led_start) {
+        i_led_temp = i_pack_num_leds - i_nfilter_jewel_leds - i;
       }
       else {
-        cLedTemp = cLed - i;
+        i_led_temp = i_led - i;
       }
 
-      pack_leds[cLedTemp] = i_puck_color;
-      i_cyclotron_led_value[cLedTemp - i_cyclotron_led_start] = i_brightness;
+      pack_leds[i_led_temp] = i_puck_color;
+      i_cyclotron_led_value[i_led_temp - i_cyclotron_led_start] = i_brightness;
     }
   }
 }
 
-void cyclotron84LightOff(uint8_t cLed) {
-  auto& mgr = LightingManager::getInstance();
+void cyclotron84LightOff(uint8_t i_led) {
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
   uint8_t i_brightness = getBrightness(i_cyclotron_brightness); // Calculate desired brightness.
   uint8_t i_led_array_width = 1; // Variable to store the number of LEDs to either side of the center LED.
 
@@ -3365,54 +3340,54 @@ void cyclotron84LightOff(uint8_t cLed) {
   */
 
   if(!b_fade_cyclotron_led) {
-    pack_leds[cLed] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+    cyclotronLidMgr.setPixelColor(i_led, C_BLACK);
 
     // Turn off the other 2 LEDs if we are allowing 3 to light up.
     if(!b_cyclotron_single_led) {
       for(uint8_t i = 1; i <= i_led_array_width; i++) {
-        pack_leds[cLed + i] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+        cyclotronLidMgr.setPixelColor(i_led + i, C_BLACK);
 
-        uint8_t cLedTemp = cLed; // Create new temporary variable for the negative side.
+        uint8_t i_led_temp = i_led; // Create new temporary variable for the negative side.
 
-        if(cLed - i < i_cyclotron_led_start) {
-          cLedTemp = i_pack_num_leds - i_nfilter_jewel_leds - i;
+        if(i_led - i < i_cyclotron_led_start) {
+          i_led_temp = i_pack_num_leds - i_nfilter_jewel_leds - i;
         }
         else {
-          cLedTemp = cLed - i;
+          i_led_temp = i_led - i;
         }
 
-        pack_leds[cLedTemp] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+        cyclotronLidMgr.setPixelColor(i_led_temp, C_BLACK);
       }
     }
   }
   else {
     uint8_t i_brightness_tmp = 0;
 
-    if(i_cyclotron_led_value[cLed - i_cyclotron_led_start] == i_brightness) {
-      r_cyclotron_led_fade_out[cLed - i_cyclotron_led_start].go(i_brightness);
-      r_cyclotron_led_fade_out[cLed - i_cyclotron_led_start].go(i_brightness_tmp, (i_1984_delay * 1.5) / i_cyclotron_multiplier, LINEAR);
+    if(i_cyclotron_led_value[i_led - i_cyclotron_led_start] == i_brightness) {
+      r_cyclotron_led_fade_out[i_led - i_cyclotron_led_start].go(i_brightness);
+      r_cyclotron_led_fade_out[i_led - i_cyclotron_led_start].go(i_brightness_tmp, (i_1984_delay * 1.5) / i_cyclotron_multiplier, LINEAR);
     }
 
     // Turn off the other 2 LEDs if we are allowing 3 to light up.
     if(!b_cyclotron_single_led) {
       for(uint8_t i = 1; i <= i_led_array_width; i++) {
-        if(i_cyclotron_led_value[cLed + i - i_cyclotron_led_start] == i_brightness) {
-          r_cyclotron_led_fade_out[cLed + i - i_cyclotron_led_start].go(i_brightness);
-          r_cyclotron_led_fade_out[cLed + i - i_cyclotron_led_start].go(i_brightness_tmp, (i_1984_delay * 1.5) / i_cyclotron_multiplier, LINEAR);
+        if(i_cyclotron_led_value[i_led + i - i_cyclotron_led_start] == i_brightness) {
+          r_cyclotron_led_fade_out[i_led + i - i_cyclotron_led_start].go(i_brightness);
+          r_cyclotron_led_fade_out[i_led + i - i_cyclotron_led_start].go(i_brightness_tmp, (i_1984_delay * 1.5) / i_cyclotron_multiplier, LINEAR);
         }
 
-        uint8_t cLedTemp = cLed; // Create new temporary variable for the negative side.
+        uint8_t i_led_temp = i_led; // Create new temporary variable for the negative side.
 
-        if(cLed - i < i_cyclotron_led_start) {
-          cLedTemp = i_pack_num_leds - i_nfilter_jewel_leds - i;
+        if(i_led - i < i_cyclotron_led_start) {
+          i_led_temp = i_pack_num_leds - i_nfilter_jewel_leds - i;
         }
         else {
-          cLedTemp = cLed - i;
+          i_led_temp = i_led - i;
         }
 
-        if(i_cyclotron_led_value[cLedTemp - i_cyclotron_led_start] == i_brightness) {
-          r_cyclotron_led_fade_out[cLedTemp - i_cyclotron_led_start].go(i_brightness);
-          r_cyclotron_led_fade_out[cLedTemp - i_cyclotron_led_start].go(i_brightness_tmp, (i_1984_delay * 1.5) / i_cyclotron_multiplier, LINEAR);
+        if(i_cyclotron_led_value[i_led_temp - i_cyclotron_led_start] == i_brightness) {
+          r_cyclotron_led_fade_out[i_led_temp - i_cyclotron_led_start].go(i_brightness);
+          r_cyclotron_led_fade_out[i_led_temp - i_cyclotron_led_start].go(i_brightness_tmp, (i_1984_delay * 1.5) / i_cyclotron_multiplier, LINEAR);
         }
       }
     }
@@ -3420,7 +3395,7 @@ void cyclotron84LightOff(uint8_t cLed) {
 }
 
 void cyclotron1984(uint16_t iRampDelay) {
-  i_led_update_delay = LED_DRIVER_UPDATE_MS;
+  i_led_update_delay = DEVICE_REFRESH_MS;
 
   // Guard against divide-by-zero just in case.
   sanitizeCyclotronMultipliers();
@@ -3503,7 +3478,7 @@ void cyclotron2021(uint16_t iRampDelay) {
     uint8_t i_cyclotron_matrix_led = cyclotronLookupTable(i_curr_cyclotron_position);
 
     if(b_ramp_up) {
-      i_led_update_delay = LED_DRIVER_UPDATE_MS;
+      i_led_update_delay = DEVICE_REFRESH_MS;
 
       if(r_outer_cyclotron_ramp.isFinished()) {
         b_ramp_up = false;
@@ -3530,7 +3505,7 @@ void cyclotron2021(uint16_t iRampDelay) {
       }
     }
     else if(b_ramp_down) {
-      i_led_update_delay = LED_DRIVER_UPDATE_MS;
+      i_led_update_delay = DEVICE_REFRESH_MS;
 
       if(r_outer_cyclotron_ramp.isFinished()) {
         b_ramp_down = false;
@@ -3570,14 +3545,14 @@ void cyclotron2021(uint16_t iRampDelay) {
             }
 
             if(b_cyclotron_lid_on) {
-              i_led_update_delay = LED_DRIVER_UPDATE_MS + i_cyclotron_multiplier;
+              i_led_update_delay = DEVICE_REFRESH_MS + i_cyclotron_multiplier;
             }
             else {
-              i_led_update_delay = LED_DRIVER_UPDATE_MS;
+              i_led_update_delay = DEVICE_REFRESH_MS;
             }
           }
           else {
-            i_led_update_delay = LED_DRIVER_UPDATE_MS;
+            i_led_update_delay = DEVICE_REFRESH_MS;
           }
 
           if(i_led_update_delay > 10) {
@@ -3587,7 +3562,7 @@ void cyclotron2021(uint16_t iRampDelay) {
 
         case FRUTTO_CYCLOTRON_LED_COUNT:
         case HASLAB_CYCLOTRON_LED_COUNT:
-          i_led_update_delay = LED_DRIVER_UPDATE_MS;
+          i_led_update_delay = DEVICE_REFRESH_MS;
 
           if(i_cyclotron_multiplier > 1) {
             if(t_iRampDelay - i_cyclotron_multiplier > 0) {
@@ -3855,9 +3830,9 @@ void cyclotronNoCable() {
 }
 
 void cyclotron1984Alarm() {
-  auto& mgr = LightingManager::getInstance();
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
   uint8_t i_brightness = getBrightness(i_cyclotron_brightness);
-  uint8_t i_colour_scheme = getDeviceColour(CYCLOTRON_OUTER, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
   uint8_t led1 = i_cyclotron_led_start + cyclotron84LookupTable(0);
   uint8_t led2 = i_cyclotron_led_start + cyclotron84LookupTable(1);
   uint8_t led3 = i_cyclotron_led_start + cyclotron84LookupTable(2);
@@ -3879,19 +3854,19 @@ void cyclotron1984Alarm() {
   */
 
   if(!b_fade_cyclotron_led) {
-    CRGB i_puck_color_1 = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_brightness);
-    CRGB i_puck_color_2 = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_brightness);
-    CRGB i_puck_color_3 = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_brightness);
-    CRGB i_puck_color_4 = mgr.getColorRGB(CYCLOTRON_OUTER, i_colour_scheme, i_brightness);
-    pack_leds[led1] = i_puck_color_1;
-    pack_leds[led2] = i_puck_color_2;
-    pack_leds[led3] = i_puck_color_3;
-    pack_leds[led4] = i_puck_color_4;
+    LED_RGB rgb_puck_color_1 = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_brightness);
+    LED_RGB rgb_puck_color_2 = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_brightness);
+    LED_RGB rgb_puck_color_3 = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_brightness);
+    LED_RGB rgb_puck_color_4 = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_brightness);
+    cyclotronLidMgr.setPixelColor(led1, rgb_puck_color_1);
+    cyclotronLidMgr.setPixelColor(led2, rgb_puck_color_2);
+    cyclotronLidMgr.setPixelColor(led3, rgb_puck_color_3);
+    cyclotronLidMgr.setPixelColor(led4, rgb_puck_color_4);
 
     // Turn on all the other cyclotron LEDs if required.
     if(!b_cyclotron_single_led) {
       for(uint8_t i = 1; i <= i_led_array_width; i++) {
-        pack_leds[led1 + i] = i_puck_color_1;
+        cyclotronLidMgr.setPixelColor(led1 + i, rgb_puck_color_1);
 
         if(led1 - i < i_cyclotron_led_start) {
           led1 = i_pack_num_leds - i_nfilter_jewel_leds - 1;
@@ -3900,8 +3875,8 @@ void cyclotron1984Alarm() {
           led1 = led1 - i;
         }
 
-        pack_leds[led1] = i_puck_color_1;
-        pack_leds[led2 + i] = i_puck_color_2;
+        cyclotronLidMgr.setPixelColor(led1, rgb_puck_color_1);
+        cyclotronLidMgr.setPixelColor(led2 + i, rgb_puck_color_2);
 
         if(led2 - i < i_cyclotron_led_start) {
           led2 = i_pack_num_leds - i_nfilter_jewel_leds - 1;
@@ -3910,8 +3885,8 @@ void cyclotron1984Alarm() {
           led2 = led2 - i;
         }
 
-        pack_leds[led2] = i_puck_color_2;
-        pack_leds[led3 + i] = i_puck_color_3;
+        cyclotronLidMgr.setPixelColor(led2, rgb_puck_color_2);
+        cyclotronLidMgr.setPixelColor(led3 + i, rgb_puck_color_3);
 
         if(led3 - i < i_cyclotron_led_start) {
           led3 = i_pack_num_leds - i_nfilter_jewel_leds - 1;
@@ -3920,8 +3895,8 @@ void cyclotron1984Alarm() {
           led3 = led3 - i;
         }
 
-        pack_leds[led3] = i_puck_color_3;
-        pack_leds[led4 + i] = i_puck_color_4;
+        cyclotronLidMgr.setPixelColor(led3, rgb_puck_color_3);
+        cyclotronLidMgr.setPixelColor(led4 + i, rgb_puck_color_4);
 
         if(led4 - i < i_cyclotron_led_start) {
           led4 = i_pack_num_leds - i_nfilter_jewel_leds - 1;
@@ -3930,7 +3905,7 @@ void cyclotron1984Alarm() {
           led4 = led4 - i;
         }
 
-        pack_leds[led4] = i_puck_color_4;
+        cyclotronLidMgr.setPixelColor(led4, rgb_puck_color_4);
       }
     }
   }
@@ -4282,7 +4257,7 @@ void cyclotronOverheating() {
 }
 
 void cyclotronControl() {
-  auto& mgr = LightingManager::getInstance();
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
 
   // Only reset the starting LED when the pack is first started up.
   if(b_reset_start_led) {
@@ -4475,36 +4450,36 @@ void cyclotronControl() {
         if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
           if(i_led_cyclotron_ring == i_ic_cake_start) {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_ic_cake_end] = mgr.getColorGRB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_ic_cake_end] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_ic_cake_end] = mgr.getColorRGB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_ic_cake_end] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
           }
           else {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_led_cyclotron_ring - 1] = mgr.getColorGRB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_led_cyclotron_ring - 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_led_cyclotron_ring - 1] = mgr.getColorRGB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_led_cyclotron_ring - 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
           }
         }
         else {
           if(i_led_cyclotron_ring + 1 > i_ic_cake_end) {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_ic_cake_start] = mgr.getColorGRB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_ic_cake_start] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_ic_cake_start] = mgr.getColorRGB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_ic_cake_start] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
           }
           else {
             if(CAKE_LED_TYPE == GRB_LED) {
-              cyclotron_leds[i_led_cyclotron_ring + 1] = mgr.getColorGRB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_led_cyclotron_ring + 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
             else {
-              cyclotron_leds[i_led_cyclotron_ring + 1] = mgr.getColorRGB(CYCLOTRON_INNER, C_ORANGE, i_brightness);
+              cyclotron_leds[i_led_cyclotron_ring + 1] = innerCakeMgr.setPixelColor(C_ORANGE, i_brightness);
             }
           }
         }
@@ -5699,7 +5674,10 @@ uint8_t getRampPercentage(ramp &input) {
 }
 
 void systemPOST() {
-  auto& mgr = LightingManager::getInstance();
+  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
+  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
+  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
   uint8_t i_tmp_led1 = i_cyclotron_led_start + cyclotron84LookupTable(0);
   uint8_t i_tmp_led2 = i_cyclotron_led_start + cyclotron84LookupTable(1);
   uint8_t i_tmp_led3 = i_cyclotron_led_start + cyclotron84LookupTable(2);
@@ -5707,8 +5685,7 @@ void systemPOST() {
   uint8_t i_tmp_led5 = i_pack_num_leds - 1;
 
   uint8_t i_tmp_powercell_led = i_post_powercell_up;
-
-  uint8_t c_outer_cyclotron_colour = ((i_cyclotron_num_leds == HASLAB_CYCLOTRON_LED_COUNT && !b_cyclotron_haslab_chsv_colour_change) ? C_WHITE : C_RED);
+  ColorID c_outer_cyclotron_colour = ((i_cyclotron_num_leds == HASLAB_CYCLOTRON_LED_COUNT && !b_cyclotron_haslab_chsv_colour_change) ? C_WHITE : C_RED);
 
   if(i_post_powercell_up < i_powercell_num_leds && ms_delay_post.justFinished()) {
     if(b_powercell_invert) {
@@ -5728,24 +5705,24 @@ void systemPOST() {
       }
     }
 
-    pack_leds[i_tmp_powercell_led] = mgr.getColorRGB(POWERCELL, C_MID_BLUE);
+    powercellMgr.setPixelColor(i_tmp_powercell_led, C_MID_BLUE);
 
     if((i_post_powercell_up % 5) == 0) {
-      pack_leds[i_tmp_led1] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led2] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led3] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led4] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led5] = mgr.getColorRGB(CYCLOTRON_OUTER, C_WHITE);
+      cyclotronLidMgr.setPixelColor(i_tmp_led1, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led2, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led3, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led4, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led5, C_WHITE);
 
       if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-        cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED);
-        cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED);
-        cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW);
-        cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW);
-        cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN);
-        cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN);
-        cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN);
-        cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW);
+        panelMgr.setPixelColor(0, C_RED);
+        panelMgr.setPixelColor(1, C_RED);
+        panelMgr.setPixelColor(2, C_YELLOW);
+        panelMgr.setPixelColor(3, C_YELLOW);
+        panelMgr.setPixelColor(4, C_GREEN);
+        panelMgr.setPixelColor(5, C_GREEN);
+        panelMgr.setPixelColor(i_ic_panel_end - 1, C_GREEN);
+        panelMgr.setPixelColor(i_ic_panel_end, C_YELLOW);
       }
 #ifndef ESP32
       else {
@@ -5761,21 +5738,21 @@ void systemPOST() {
 #endif
     }
     else {
-      pack_leds[i_tmp_led1] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led2] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led3] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led4] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led5] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led1, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led2, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led3, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led4, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led5, C_BLACK);
 
       if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-        cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+        panelMgr.setPixelColor(0, C_BLACK);
+        panelMgr.setPixelColor(1, C_BLACK);
+        panelMgr.setPixelColor(2, C_BLACK);
+        panelMgr.setPixelColor(3, C_BLACK);
+        panelMgr.setPixelColor(4, C_BLACK);
+        panelMgr.setPixelColor(5, C_BLACK);
+        panelMgr.setPixelColor(i_ic_panel_end - 1, C_BLACK);
+        panelMgr.setPixelColor(i_ic_panel_end, C_BLACK);
       }
 #ifndef ESP32
       else {
@@ -5820,25 +5797,25 @@ void systemPOST() {
       }
     }
 
-    pack_leds[(i_powercell_num_leds - 1) - i_tmp_powercell_led] = mgr.getColorRGB(POWERCELL, C_BLACK); // Ramp up and ramp down.
-    //pack_leds[i_post_powercell_down] = mgr.getColorRGB(POWERCELL, C_BLACK); // Ramp up and ramp away.
+    powercellMgr.setPixelColor((i_powercell_num_leds - 1) - i_tmp_powercell_led, C_BLACK); // Ramp up and ramp down.
+    //powercellMgr.setPixelColor(i_post_powercell_down, C_BLACK); // Ramp up and ramp away.
 
     if((i_post_powercell_down % 5) == 0) {
-      pack_leds[i_tmp_led1] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led2] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led3] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led4] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour);
-      pack_leds[i_tmp_led5] = mgr.getColorRGB(CYCLOTRON_OUTER, C_WHITE);
+      cyclotronLidMgr.setPixelColor(i_tmp_led1, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led2, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led3, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led4, c_outer_cyclotron_colour);
+      cyclotronLidMgr.setPixelColor(i_tmp_led5, C_WHITE);
 
       if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-        cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED);
-        cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED);
-        cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW);
-        cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW);
-        cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN);
-        cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN);
-        cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN);
-        cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW);
+        panelMgr.setPixelColor(0, C_RED);
+        panelMgr.setPixelColor(1, C_RED);
+        panelMgr.setPixelColor(2, C_YELLOW);
+        panelMgr.setPixelColor(3, C_YELLOW);
+        panelMgr.setPixelColor(4, C_GREEN);
+        panelMgr.setPixelColor(5, C_GREEN);
+        panelMgr.setPixelColor(i_ic_panel_end - 1, C_GREEN);
+        panelMgr.setPixelColor(i_ic_panel_end, C_YELLOW);
       }
 #ifndef ESP32
       else {
@@ -5854,21 +5831,21 @@ void systemPOST() {
 #endif
     }
     else {
-      pack_leds[i_tmp_led1] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led2] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led3] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led4] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led5] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led1, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led2, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led3, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led4, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led5, C_BLACK);
 
       if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-        cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
-        cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_BLACK);
+        panelMgr.setPixelColor(0, C_BLACK);
+        panelMgr.setPixelColor(1, C_BLACK);
+        panelMgr.setPixelColor(2, C_BLACK);
+        panelMgr.setPixelColor(3, C_BLACK);
+        panelMgr.setPixelColor(4, C_BLACK);
+        panelMgr.setPixelColor(5, C_BLACK);
+        panelMgr.setPixelColor(i_ic_panel_end - 1, C_BLACK);
+        panelMgr.setPixelColor(i_ic_panel_end, C_BLACK);
       }
 #ifndef ESP32
       else {
@@ -5896,21 +5873,21 @@ void systemPOST() {
   }
 
   if(i_post_fade > 0 && ms_delay_post_3.justFinished()) {
-    pack_leds[i_tmp_led1] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour, i_post_fade);
-    pack_leds[i_tmp_led2] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour, i_post_fade);
-    pack_leds[i_tmp_led3] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour, i_post_fade);
-    pack_leds[i_tmp_led4] = mgr.getColorRGB(CYCLOTRON_OUTER, c_outer_cyclotron_colour, i_post_fade);
-    pack_leds[i_tmp_led5] = mgr.getColorRGB(CYCLOTRON_OUTER, C_WHITE, i_post_fade);
+    cyclotronLidMgr.setPixelColor(i_tmp_led1, c_outer_cyclotron_colour, i_post_fade);
+    cyclotronLidMgr.setPixelColor(i_tmp_led2, c_outer_cyclotron_colour, i_post_fade);
+    cyclotronLidMgr.setPixelColor(i_tmp_led3, c_outer_cyclotron_colour, i_post_fade);
+    cyclotronLidMgr.setPixelColor(i_tmp_led4, c_outer_cyclotron_colour, i_post_fade);
+    cyclotronLidMgr.setPixelColor(i_tmp_led5, C_WHITE, i_post_fade);
 
     if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
-      cyclotron_leds[0] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_post_fade);
-      cyclotron_leds[1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_RED, i_post_fade);
-      cyclotron_leds[2] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_post_fade);
-      cyclotron_leds[3] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_post_fade);
-      cyclotron_leds[4] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_post_fade);
-      cyclotron_leds[5] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_post_fade);
-      cyclotron_leds[i_ic_panel_end - 1] = mgr.getColorRGB(CYCLOTRON_PANEL, C_GREEN, i_post_fade);
-      cyclotron_leds[i_ic_panel_end] = mgr.getColorRGB(CYCLOTRON_PANEL, C_YELLOW, i_post_fade);
+      panelMgr.setPixelColor(0, C_RED, i_post_fade);
+      panelMgr.setPixelColor(1, C_RED, i_post_fade);
+      panelMgr.setPixelColor(2, C_YELLOW, i_post_fade);
+      panelMgr.setPixelColor(3, C_YELLOW, i_post_fade);
+      panelMgr.setPixelColor(4, C_GREEN, i_post_fade);
+      panelMgr.setPixelColor(5, C_GREEN, i_post_fade);
+      panelMgr.setPixelColor(i_ic_panel_end - 1, C_GREEN, i_post_fade);
+      panelMgr.setPixelColor(i_ic_panel_end, C_YELLOW, i_post_fade);
     }
 
     uint8_t i_inner_cake_divisor = 7;
@@ -5940,21 +5917,21 @@ void systemPOST() {
 
     if(i_inner_cake_counter <= i_ic_cake_end) {
       if(CAKE_LED_TYPE == GRB_LED) {
-        cyclotron_leds[i_inner_cake_counter] = mgr.getColorGRB(CYCLOTRON_INNER, C_RED);
+        cyclotron_leds[i_inner_cake_counter] = innerCakeMgr.setPixelColor(C_RED);
       }
       else {
-        cyclotron_leds[i_inner_cake_counter] = mgr.getColorRGB(CYCLOTRON_INNER, C_RED);
+        cyclotron_leds[i_inner_cake_counter] = innerCakeMgr.setPixelColor(C_RED);
       }
     }
 
     if((b_clockwise && !b_inner_cyclotron_inverted) || (!b_clockwise && b_inner_cyclotron_inverted)) {
       if(i_inner_cake_counter - 1 >= i_ic_cake_start && i_inner_cake_counter - 1 <= i_ic_cake_end) {
-        cyclotron_leds[i_inner_cake_counter - 1] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+        cyclotron_leds[i_inner_cake_counter - 1] = innerCakeMgr.setPixelColor(C_BLACK);
       }
     }
     else {
       if(i_inner_cake_counter + 1 <= i_ic_cake_end) {
-        cyclotron_leds[i_inner_cake_counter + 1] = mgr.getColorRGB(CYCLOTRON_INNER, C_BLACK);
+        cyclotron_leds[i_inner_cake_counter + 1] = innerCakeMgr.setPixelColor(C_BLACK);
       }
     }
 
@@ -5963,18 +5940,18 @@ void systemPOST() {
     if(i_post_fade == 0) {
       ms_delay_post_3.stop();
 
-      pack_leds[i_tmp_led1] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led2] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led3] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led4] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
-      pack_leds[i_tmp_led5] = mgr.getColorRGB(CYCLOTRON_OUTER, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led1, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led2, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led3, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led4, C_BLACK);
+      cyclotronLidMgr.setPixelColor(i_tmp_led5, C_BLACK);
 
       cyclotronSwitchLEDOff();
       innerCyclotronCakeOff();
 
       b_pack_post_finish = true;
       updateLEDs();
-      delay(LED_DRIVER_UPDATE_MS); // Delay to give the LEDs a chance to finish updating.
+      delay(DEVICE_REFRESH_MS); // Delay to give the LEDs a chance to finish updating.
     }
     else {
       ms_delay_post_3.start(5);
