@@ -119,8 +119,15 @@ void sendDebug(const String& message) {
 }
 
 void setup() {
-  // Initialize LED driver for barrel and vent lights
-  LightingManager::getInstance().initializeDriver();
+  // Initialize LED driver for each hardware chain
+  // Use a representative segment from each chain to initialize hardware.
+  LightingManager::getInstance(SEGMENT_POWERCELL).initializeDriver();  // CHAIN_PACK
+  LightingManager::getInstance(SEGMENT_INNER_CAKE).initializeDriver(); // CHAIN_CYCLOTRON
+#ifdef ESP32
+  // TODO: Add expansion port segments if/when expansion chains are used
+  // LightingManager::getInstance(SEGMENT_EXP1).initializeDriver();
+  // LightingManager::getInstance(SEGMENT_EXP2).initializeDriver();
+#endif
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
@@ -251,11 +258,7 @@ void setup() {
   pinModeFast(NFILTER_LED_PIN, OUTPUT);
 
 #ifdef ESP32
-  // Reserved for future expansion.
-  // FastLED.addLeds<NEOPIXEL, EXPANSION1_LED_PIN>(tvg_leds, 64).setCorrection(TypicalLEDStrip);
-
-  // Reserved for future expansion.
-  // FastLED.addLeds<NEOPIXEL, EXPANSION2_LED_PIN>(expansion_leds, 64).setCorrection(TypicalLEDStrip);
+  // Reserved.
 #else
   // Cyclotron Switch Panel LEDs [Deprecated for the PackII board]
   pinModeFast(CYCLOTRON_SWITCH_LED_R1_PIN, OUTPUT);
@@ -349,7 +352,14 @@ void setup() {
 void updateLEDs() {
   // Update all LED's when the timer has finished.
   if(ms_led_driver.justFinished()) {
-    LightingManager::getInstance().show();
+    // Call show() on a representative segment from each chain.
+    LightingManager::getInstance(SEGMENT_POWERCELL).show();  // CHAIN_PACK
+    LightingManager::getInstance(SEGMENT_INNER_CAKE).show(); // CHAIN_CYCLOTRON
+  #ifdef ESP32
+    // TODO: Add expansion port show() calls if/when expansion chains are used
+    // LightingManager::getInstance(SEGMENT_EXP1).show();
+    // LightingManager::getInstance(SEGMENT_EXP2).show();
+  #endif
 
     // Restart the lighting update timer.
     ms_led_driver.start(i_led_update_delay);

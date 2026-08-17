@@ -364,18 +364,6 @@ enum pack_led_dim_control {
 uint8_t pack_dim_toggle = DIM_POWERCELL;
 
 /*
- * LED Devices.
- */
-enum device {
-  POWERCELL,
-  CYCLOTRON_OUTER,
-  CYCLOTRON_INNER,
-  CYCLOTRON_CAVITY,
-  CYCLOTRON_PANEL,
-  VENT_LIGHT
-};
-
-/*
  * System preference ENUM holders.
  * Stores temporary or last-saved theme (year) the Proton Pack operates in.
  */
