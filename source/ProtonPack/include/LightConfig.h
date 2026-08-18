@@ -19,12 +19,8 @@
 
 #pragma once
 
-// Include the intended LED driver first: Adafruit NeoPixel (ATMega) or NeoPXL8 (for ESP32-S3)
-#ifdef ESP32
-  #include <Adafruit_NeoPXL8.h>
-#else
-  #include <Adafruit_NeoPixel.h>
-#endif
+// Include the intended LED driver: Adafruit NeoPixel
+#include <Adafruit_NeoPixel.h>
 
 // Include the generalized Lighting library
 #include <Lighting.h>
@@ -39,11 +35,6 @@ extern uint8_t i_cyclotron_num_leds;
 // ============================================================================
 // LOCAL LIGHTING VARIABLES
 // ============================================================================
-
-/*
- * Counts for segments of special LED chains
- */
-#define DEVICE_REFRESH_MS 5 // Refresh rate for the addressable LEDs (in milliseconds)
 
 /*
  * The HasLab Power Cell has 13 LEDs.
@@ -186,7 +177,7 @@ uint8_t i_vent_light_start = i_powercell_num_leds + i_cyclotron_num_leds;
  * This works by "skipping frames" in the animation, which can be done up until about 15 ms.
  * After 15ms it will become painfully obvious to most people that the animation is not smooth.
  */
-#define DEVICE_REFRESH_MS 5
+#define DEVICE_REFRESH_MS 6 // Refresh rate for the addressable LEDs (in milliseconds)
 uint8_t i_led_update_delay = DEVICE_REFRESH_MS;
 millisDelay ms_led_driver;
 
@@ -312,34 +303,25 @@ static constexpr LightingDevice lighting_devices[DEVICE_SLOTS] = {
 class LightingManager {
 private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
-  Lighting lightingLib; // The Lighting library instance used for color management and animation.
-#ifdef ESP32
-  static inline int8_t pxl8Pins[8] = {CYCLOTRON_LED_PIN, PACK_LED_PIN, EXPANSION1_LED_PIN, EXPANSION2_LED_PIN, -1, -1, -1, -1};
-  Adafruit_NeoPXL8 packLEDs;
-  Adafruit_NeoPXL8 cyclotronLEDs;
-  Adafruit_NeoPXL8 exp1LEDs;
-  Adafruit_NeoPXL8 exp2LEDs;
-#else
+  static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
   Adafruit_NeoPixel packLEDs;
   Adafruit_NeoPixel cyclotronLEDs;
+#ifdef ESP32
+  Adafruit_NeoPixel exp1LEDs;
+  Adafruit_NeoPixel exp2LEDs;
 #endif
   const LED_SEGMENT assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
   // Private constructor - called once per segment by getInstance()
-  // Initializes the Lighting library as lightingLib with DEVICE_SLOTS total segments.
+  // Initializes the driver objects for this segment.
   LightingManager(LED_SEGMENT segment) :
-    lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
-    #ifdef ESP32
-      packLEDs(PACK_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
-      cyclotronLEDs(CYCLOTRON_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
-      exp1LEDs(EXP1_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
-      exp2LEDs(EXP2_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
-    #else
-      packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_RGB + NEO_KHZ800),
-      cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800),
-    #endif
-    assignedSlot(segment)
-  {
+    packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_RGB + NEO_KHZ800),
+    cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800),
+#ifdef ESP32
+    exp1LEDs(EXP1_LED_COUNT, EXPANSION1_LED_PIN, NEO_RGB + NEO_KHZ800),
+    exp2LEDs(EXP2_LED_COUNT, EXPANSION2_LED_PIN, NEO_RGB + NEO_KHZ800),
+#endif
+    assignedSlot(segment) {
     lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this segment.
   }
 
@@ -357,11 +339,7 @@ private:
 
   // Helper: Returns the physical strip object for the given segment.
   // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
-#ifdef ESP32
-  Adafruit_NeoPXL8& getDevicePixels(LED_SEGMENT segment) {
-#else
   Adafruit_NeoPixel& getDevicePixels(LED_SEGMENT segment) {
-#endif
     LED_CHAIN chain = segmentToChain(segment);
     switch(chain) {
       case CHAIN_CYCLOTRON:
@@ -390,6 +368,7 @@ private:
         return CYCLOTRON_LED_COUNT;
 
       case CHAIN_PACK:
+      default:
         return PACK_LED_COUNT;
 
     #ifdef ESP32
@@ -399,9 +378,6 @@ private:
       case CHAIN_EXP2:
         return EXP2_LED_COUNT;
     #endif
-
-      default:
-        return PACK_LED_COUNT;
     }
   }
 
@@ -620,5 +596,9 @@ public:
  * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
  * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
+ *
+ * Additionally, the Lighting library is shared across all instances so that animation
+ * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);

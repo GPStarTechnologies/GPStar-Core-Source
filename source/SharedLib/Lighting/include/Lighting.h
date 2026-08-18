@@ -143,8 +143,8 @@ constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
  *   - CustomColor: 5 device-specific colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.) - user-configured HSV values
  *
  * Example usage:
- *   // Create Lighting instance to manage 6 devices with a 5ms refresh rate (~200fps)
- *   Lighting lighting(6, 5);
+ *   // Create Lighting instance to manage 6 devices with a 6ms refresh rate (~167fps)
+ *   Lighting lighting(6, 6);
  *
  *   // Static colors (no animation, no state):
  *   LED_HSV red_hsv = lighting.getColorHSV(C_RED, 255, 255);
@@ -167,7 +167,7 @@ class Lighting {
   private:
     // Instance variables for device count and state tracking
     uint8_t numDevices;
-    uint16_t deviceRefreshMs;     // Device refresh rate in milliseconds (5ms, 8ms, 16ms, etc.)
+    uint16_t deviceRefreshMs;     // Device refresh rate in milliseconds (6ms, 8ms, 16ms, etc.)
     uint8_t* dynamicCounter;      // Array[numDevices] - frame counter for animated colors
     uint8_t* dynamicHue;          // Array[numDevices] - current hue for dynamic patterns
     uint8_t* dynamicBright;       // Array[numDevices] - current brightness for fading effects
@@ -188,12 +188,12 @@ class Lighting {
      * Constructor: Initialize Lighting instance for a set number of devices.
      * Parameters:
      *   deviceCount: Number of independent devices this Lighting object manages (1-6 typical)
-     *   refreshRateMs: Device refresh rate in milliseconds (default: 5ms for Wand/Pack, ~200fps)
+     *   refreshRateMs: Device refresh rate in milliseconds (default: 6ms for Wand/Pack, ~167fps)
      * Examples:
      *   Lighting lighting(6, 8);  // ProtonPack with 6 devices, 8ms refresh rate
-     *   Lighting lighting(1);     // Single device, defaults to 5ms (Wand/Pack)
+     *   Lighting lighting(1);     // Single device, defaults to 6ms (Wand/Pack)
      */
-    Lighting(uint8_t deviceCount = 1, uint16_t refreshRateMs = 5);
+    Lighting(uint8_t deviceCount = 1, uint16_t refreshRateMs = 6);
 
     /**
      * Destructor: Clean up dynamically allocated state arrays.

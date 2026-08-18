@@ -19,8 +19,8 @@
 
 #pragma once
 
-// Include the intended LED driver first: Adafruit NeoPXL8 (for ESP32-S3)
-#include <Adafruit_NeoPXL8.h>
+// Include the intended LED driver: Adafruit NeoPixel
+#include <Adafruit_NeoPixel.h>
 
 // Include the generalized Lighting library
 #include <Lighting.h>
@@ -75,27 +75,15 @@
 class LightingManager {
 private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
+  static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
+  Adafruit_NeoPixel pixels;
   const uint8_t assignedSlot; // The device slot assigned to this instance of the LightingManager.
-  Lighting lightingLib; // The Lighting library instance used for color management and animation.
-
-  #ifdef ESP32
-    static inline int8_t pxl8Pins[8] = {DEVICE_LED_PIN, -1, -1, -1, -1, -1, -1, -1};
-    Adafruit_NeoPXL8 pixels;
-  #else
-    Adafruit_NeoPixel pixels;
-  #endif
 
   // Private constructor - called only once per slot by getInstance()
-  // Initializes the Lighting library as lightingLib with 1 device slot,
-  // and initializes the Adafruit_NeoPXL8 (ESP32) or Adafruit_NeoPixel (ATMega) object as "pixels".
+  // Initializes the Lighting library and LED driver for this device.
   LightingManager() :
-    assignedSlot(0),
-    lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
-    #ifdef ESP32
-      pixels(DEVICE_MAX_LEDS, pxl8Pins, NEO_RGB + NEO_KHZ800) {
-    #else
-      pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800) {
-    #endif
+    pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
+    assignedSlot(0) {
     lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this device.
   }
 
@@ -224,5 +212,9 @@ public:
  * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
  * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
+ *
+ * Additionally, the Lighting library is shared across all instances so that animation
+ * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);

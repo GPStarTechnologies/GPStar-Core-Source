@@ -20,12 +20,8 @@
 
 #pragma once
 
-// Include the intended LED driver first: Adafruit NeoPixel (ATMega) or NeoPXL8 (for ESP32-S3)
-#ifdef ESP32
-  #include <Adafruit_NeoPXL8.h>
-#else
-  #include <Adafruit_NeoPixel.h>
-#endif
+// Include the intended LED driver: Adafruit NeoPixel
+#include <Adafruit_NeoPixel.h>
 
 // Include the generalized Lighting library
 #include <Lighting.h>
@@ -122,39 +118,22 @@ enum LED_CHAIN {
 class LightingManager {
 private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
-  Lighting lightingLib; // The Lighting library instance used for color management and animation.
-#ifdef ESP32
-  static inline int8_t pxl8Pins[8] = {BARREL_LED_PIN, RGB_VENT_PIN, -1, -1, -1, -1, -1, -1};
-  Adafruit_NeoPXL8 systemLEDs;
-  Adafruit_NeoPXL8 ventLEDs;
-#else
+  static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
   Adafruit_NeoPixel systemLEDs;
   Adafruit_NeoPixel ventLEDs;
-#endif
   const LED_CHAIN assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
   // Private constructor - called once per slot by getInstance()
-  // Initializes the Lighting library as lightingLib with 2 device slots.
+  // Initializes the driver objects for this slot.
   LightingManager(LED_CHAIN slot) :
-    lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
-    #ifdef ESP32
-      systemLEDs(SYSTEM_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
-      ventLEDs(VENT_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
-    #else
-      systemLEDs(SYSTEM_LED_COUNT, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
-      ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
-    #endif
-    assignedSlot(slot)
-  {
+    systemLEDs(SYSTEM_LED_COUNT, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
+    ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
+    assignedSlot(slot) {
     lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this device.
   }
 
   // Helper: Returns the physical strip object for the given device slot.
-#ifdef ESP32
-  Adafruit_NeoPXL8& getDevicePixels(LED_CHAIN slot) {
-#else
   Adafruit_NeoPixel& getDevicePixels(LED_CHAIN slot) {
-#endif
     switch(slot) {
       case CHAIN_VENT:
         return ventLEDs;
@@ -312,5 +291,9 @@ public:
  * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
  * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
+ *
+ * Additionally, the Lighting library is shared across all instances so that animation
+ * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);

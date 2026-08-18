@@ -115,17 +115,16 @@ extern uint8_t i_spectral_custom_saturation;
 class LightingManager {
 private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
-  const uint8_t assignedSlot; // The device slot assigned to this instance of the LightingManager.
-  Lighting lightingLib; // The Lighting library instance used for color management and animation.
+  static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
   Adafruit_NeoPixel pixels; // The single chain of LEDs associated with a hardware pin.
+  const uint8_t assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
   // Private constructor - called only once per slot by getInstance()
   // Initializes the Lighting library as lightingLib with 1 device slot,
   // and initializes the Adafruit_NeoPixel object as a variable "pixels".
   LightingManager() :
-    assignedSlot(0),
-    lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
-    pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800) {
+    pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
+    assignedSlot(0) {
     lightingLib.setColorOrder(assignedSlot, ORDER_GBR); // Set a clear default order for this device.
   }
 
@@ -271,5 +270,9 @@ public:
  * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
  * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
+ *
+ * Additionally, the Lighting library is shared across all instances so that animation
+ * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
