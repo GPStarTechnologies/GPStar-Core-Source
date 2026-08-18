@@ -77,7 +77,7 @@ const uint16_t i_vent_light_update_interval = 150; // Update interval specifical
 bool b_vent_lights_changed = false; // Check for whether there was actually a change to prevent superfluous calls to showLeds().
 
 // ============================================================================
-// LED CHAIN IDENTIFIERS
+// LED DEVICE CONFIGURATION
 // ============================================================================
 
 /*
@@ -105,7 +105,7 @@ enum LED_CHAIN {
  *
  * PATTERN:
  * LightingManager uses a SINGLETON pattern which returns an instance of the
- * manager for a specific chain of LEDs, refererred to as a "deviceSlot":
+ * manager for a specific chain of LEDs, referred to as a "deviceSlot":
  *   LightingManager::getInstance(<deviceSlot>);
  *
  * INTERFACE:
@@ -121,21 +121,21 @@ enum LED_CHAIN {
  */
 class LightingManager {
 private:
-  static LightingManager* instance;
-  Lighting lightingLib;
-  #ifdef ESP32
-    static inline int8_t pxl8Pins[8] = {BARREL_LED_PIN, RGB_VENT_PIN, -1, -1, -1, -1, -1, -1};
-    Adafruit_NeoPXL8 systemLEDs;
-    Adafruit_NeoPXL8 ventLEDs;
-  #else
-    Adafruit_NeoPixel systemLEDs;
-    Adafruit_NeoPixel ventLEDs;
-  #endif
-  uint8_t currentDeviceSlot; // Track device slot for an instance.
+  static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
+  Lighting lightingLib; // The Lighting library instance used for color management and animation.
+#ifdef ESP32
+  static inline int8_t pxl8Pins[8] = {BARREL_LED_PIN, RGB_VENT_PIN, -1, -1, -1, -1, -1, -1};
+  Adafruit_NeoPXL8 systemLEDs;
+  Adafruit_NeoPXL8 ventLEDs;
+#else
+  Adafruit_NeoPixel systemLEDs;
+  Adafruit_NeoPixel ventLEDs;
+#endif
+  const LED_CHAIN assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
-  // Private constructor - called only once by getInstance()
+  // Private constructor - called once per slot by getInstance()
   // Initializes the Lighting library as lightingLib with 2 device slots.
-  LightingManager() :
+  LightingManager(LED_CHAIN slot) :
     lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
     #ifdef ESP32
       systemLEDs(SYSTEM_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
@@ -144,17 +144,17 @@ private:
       systemLEDs(SYSTEM_LED_COUNT, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
       ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
     #endif
-    currentDeviceSlot(0) {
-      lightingLib.setColorOrder(CHAIN_SYSTEM, ORDER_RGB); // Set a clear default order for this device.
-      lightingLib.setColorOrder(CHAIN_VENT, ORDER_RGB); // Set a clear default order for this device.
-    }
+    assignedSlot(slot)
+  {
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this device.
+  }
 
   // Helper: Returns the physical strip object for the given device slot.
-  #ifdef ESP32
-    Adafruit_NeoPXL8& getDevicePixels(uint8_t slot) {
-  #else
-    Adafruit_NeoPixel& getDevicePixels(uint8_t slot) {
-  #endif
+#ifdef ESP32
+  Adafruit_NeoPXL8& getDevicePixels(LED_CHAIN slot) {
+#else
+  Adafruit_NeoPixel& getDevicePixels(LED_CHAIN slot) {
+#endif
     switch(slot) {
       case CHAIN_VENT:
         return ventLEDs;
@@ -166,7 +166,7 @@ private:
   }
 
   // Helper: Returns the LED count for the given device slot.
-  uint16_t getCount(uint8_t slot) {
+  uint16_t getCount(LED_CHAIN slot) {
     switch(slot) {
       case CHAIN_VENT:
         return VENT_LED_COUNT;
@@ -187,19 +187,18 @@ private:
   }
 
 public:
-  // Singleton instance
-  static LightingManager& getInstance(uint8_t deviceSlot = 0) {
-    if(instance == nullptr) {
-      instance = new LightingManager();
+  // Singleton instances per slot
+  static LightingManager& getInstance(LED_CHAIN deviceSlot) {
+    if(instances[deviceSlot] == nullptr) {
+      instances[deviceSlot] = new LightingManager(deviceSlot);
     }
-    instance->currentDeviceSlot = deviceSlot; // Set context for this call
-    return *instance;
+    return *instances[deviceSlot];
   }
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
   void initializeDriver() {
-    auto& pixels = getDevicePixels(currentDeviceSlot);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
     pixels.show();
@@ -207,35 +206,35 @@ public:
 
   // Turn off LEDs on the current device slot
   void lightsOff() {
-    auto& pixels = getDevicePixels(currentDeviceSlot);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.clear(); // Set all to black (off).
   }
 
   // Set brightness
   void setBrightness(uint8_t brightness) {
-    auto& pixels = getDevicePixels(currentDeviceSlot);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.setBrightness(brightness);
   }
 
   // Set custom color HSV values in the Lighting library
   void setCustomColorHSV(const LED_HSV &hsv) {
-    lightingLib.setCustomColorHSV(hsv, currentDeviceSlot);
+    lightingLib.setCustomColorHSV(hsv, assignedSlot);
   }
 
   // Set color order for a device with standard enum mapping
   void setColorOrder(ColorOrder newColorOrder = ORDER_RGB) {
-    lightingLib.setColorOrder(currentDeviceSlot, newColorOrder);
+    lightingLib.setColorOrder(assignedSlot, newColorOrder);
   }
 
   // Update LED display
   void show() {
-    auto& pixels = getDevicePixels(currentDeviceSlot);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.show(); // Pass through to the LED driver library to update LED states.
   }
 
   // Returns a pixel's current color as LED_RGB
   LED_RGB getPixelColor(uint16_t index) {
-    auto& pixels = getDevicePixels(currentDeviceSlot);
+    auto& pixels = getDevicePixels(assignedSlot);
     if(index >= 0 && index < pixels.numPixels()) {
       return unpackColor(pixels.getPixelColor(index));
     }
@@ -244,12 +243,12 @@ public:
 
   // Set a pixel color by ColorID and automatically apply stored color order.
   void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
-    auto& pixels = getDevicePixels(currentDeviceSlot);
+    auto& pixels = getDevicePixels(assignedSlot);
     if(index >= 0 && index < pixels.numPixels()) {
       // Get color as HSV
       LED_HSV hsv;
       if(isColorDynamic(colorEnum)) {
-        hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorEnum, brightness);
+        hsv = lightingLib.getDynamicColorHSV(assignedSlot, colorEnum, brightness);
       } else {
         hsv = lightingLib.getColorHSV(colorEnum, brightness);
       }
@@ -258,7 +257,7 @@ public:
       LED_RGB rgb = Lighting::hsv2rgb(hsv);
 
       // Apply the device-specific color order for the RGB values.
-      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(currentDeviceSlot));
+      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
 
       // Set the given LED to the calculated, ordered RGB value.
       pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
@@ -282,8 +281,8 @@ public:
     // the animation itself still advances at the same speed.
 
     // Since multiple devices are used, we must first obtain the correct list of pixels.
-    auto& pixels = getDevicePixels(currentDeviceSlot);
-    uint16_t i_slot_leds = getCount(currentDeviceSlot);
+    auto& pixels = getDevicePixels(assignedSlot);
+    uint16_t i_slot_leds = getCount(assignedSlot);
 
     // Iterate over the pixels and set the color according to the device's current state.
     for(uint16_t i_curr_led = 0; i_curr_led < i_slot_leds; i_curr_led++) {
@@ -291,7 +290,7 @@ public:
       uint8_t i_phase = (i_curr_led * 255 / i_slot_leds);
 
       // Get interpolated palette color for the device with this LED's calculated phase.
-      LED_RGB rgb = lightingLib.getPaletteColor(currentDeviceSlot, // Device slot for this instance
+      LED_RGB rgb = lightingLib.getPaletteColor(assignedSlot, // Device slot for this instance
                                                 palette, // Palette in use for color interpolation
                                                 speedMultiplier, // Speed for animation (1.0-10.0)
                                                 i_phase); // Calculated interpolation phase for this LED (0-255)
@@ -305,13 +304,13 @@ public:
 /**
  * SINGLETON PATTERN: Static member variable initialization
  *
- * This line MUST exist outside the class definition for any static member.
- * It allocates memory for the single instance pointer and initializes it to nullptr.
+ * This array MUST exist outside the class definition for any static member.
+ * It allocates memory for instance pointers per slot and initializes them to nullptr.
  *
- * The actual LightingManager object is NOT created here—it's created lazily on
- * the FIRST call to getInstance(), which checks if instance is nullptr, creates it if
- * needed, then returns a reference to it. Subsequent calls return the same instance.
+ * Each LightingManager object is created lazily on the FIRST call to getInstance(slot),
+ * which checks if instances[slot] is nullptr, creates it if needed with that slot bound,
+ * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
- * This ensures only ONE LightingManager exists for the entire program.
+ * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
  */
-LightingManager* LightingManager::instance = nullptr;
+LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};

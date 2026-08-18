@@ -138,7 +138,8 @@ void sendDebug(const String& message) {
 
 void setup() {
   // Initialize LED driver for barrel and vent lights
-  LightingManager::getInstance().initializeDriver();
+  LightingManager::getInstance(CHAIN_BARREL).initializeDriver();
+  LightingManager::getInstance(CHAIN_VENT).initializeDriver();
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
@@ -373,15 +374,19 @@ void setup() {
 void updateLEDs() {
   // Update the addressable LEDs and restart the timer.
   if(ms_led_driver.justFinished()) {
-    LightingManager::getInstance().show();
+    auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
+    auto& ventMgr = LightingManager::getInstance(CHAIN_BARREL);
+    barrelMgr.show();
+    ventMgr.show();
 
     if(b_vent_lights_changed) {
       if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
         // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
-        LightingManager::getInstance().show();
+        barrelMgr.show();
+        ventMgr.show();
 
       #ifndef ESP32
-        LED_RGB ventPixel = LightingManager::getInstance(CHAIN_VENT).getPixelColor(1);
+        LED_RGB ventPixel = ventMgr.getPixelColor(1);
         if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && ventPixel == LED_RGB_BLACK) {
           // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
           digitalWriteFast(TOP_LED_PIN, HIGH);

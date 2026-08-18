@@ -191,23 +191,11 @@ uint8_t i_led_update_delay = DEVICE_REFRESH_MS;
 millisDelay ms_led_driver;
 
 // ============================================================================
-// LED CHAIN IDENTIFIERS
+// LED DEVICE CONFIGURATION
 // ============================================================================
 
-/*
- * Addressable LED Chains
- * 
- * ProtonPack has up to 4 independent LED chains:
- * - CHAIN_PACK: Power Cell + Cyclotron Outer (lid) + N-Filter Jewel (PACK_LED_PIN)
- * - CHAIN_CYCLOTRON: Inner Panel + Cake + Cavity (CYCLOTRON_LED_PIN)
- * - CHAIN_EXP1: Expansion port 1 (EXPANSION1_LED_PIN, ESP32 only)
- * - CHAIN_EXP2: Expansion port 2 (EXPANSION2_LED_PIN, ESP32 only)
- *
- * DEVICE_SLOTS = Total number of segments across all chains.
- * Each segment maps to a Lighting library slot for tracking custom colors and animation state.
- */
 #ifdef ESP32
-  #define DEVICE_SLOTS 6 // Total segments: 3 (PACK) + 3 (CYCLOTRON) for Lighting library
+  #define DEVICE_SLOTS 8 // Total segments: 3 (PACK) + 3 (CYCLOTRON) + 2 (EXPANSION) for Lighting library
   #define PACK_LED_COUNT (MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT)  // Max 62 LEDs
   #define CYCLOTRON_LED_COUNT (INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX)  // Max 64 LEDs
   #define EXP1_LED_COUNT 60  // Default expansion port 1 LED count
@@ -218,6 +206,9 @@ millisDelay ms_led_driver;
   #define CYCLOTRON_LED_COUNT (INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX)  // Max 64 LEDs
 #endif
 
+/*
+ * Addressable LED Chains - Physical lengths of LEDs driven by a hardware pin.
+ */
 enum LED_CHAIN {
   CHAIN_PACK = 0,      // Power Cell + Outer Cyclotron + N-Filter on PACK_LED_PIN
   CHAIN_CYCLOTRON = 1, // Inner Panel + Cake + Cavity on CYCLOTRON_LED_PIN
@@ -226,79 +217,68 @@ enum LED_CHAIN {
 };
 
 /*
- * LED Segment Identifiers
- *
- * Each segment represents a distinct logical device or section of LEDs within a physical chain.
- * Segments are mapped to Lighting library slots (0..DEVICE_SLOTS-1) by LightingManager.
- *
- * Segment to Lighting Library Device Slot Mapping:
- *   SEGMENT_POWERCELL      = slot 0 (CHAIN_PACK, offset 0)
- *   SEGMENT_CYCLOTRON_LID  = slot 1 (CHAIN_PACK, offset MAX_POWERCELL_LED_COUNT)
- *   SEGMENT_NFILTER        = slot 2 (CHAIN_PACK, offset i_powercell_num_leds + i_cyclotron_num_leds)
- *   SEGMENT_INNER_PANEL    = slot 3 (CHAIN_CYCLOTRON, offset 0)
- *   SEGMENT_INNER_CAKE     = slot 4 (CHAIN_CYCLOTRON, offset INNER_CYCLOTRON_LED_PANEL_MAX)
- *   SEGMENT_INNER_CAVITY   = slot 5 (CHAIN_CYCLOTRON, offset PANEL_MAX + CAKE_MAX)
+ * LED Segment Identifiers - Logical groupings of LEDs within a physical chain.
  */
 enum LED_SEGMENT : uint8_t {
+#ifdef ESP32
   // CHAIN_PACK segments
-  SEGMENT_POWERCELL = 0,
-  SEGMENT_CYCLOTRON_LID = 1,
-  SEGMENT_NFILTER = 2,
+  DEVICE_POWERCELL = 0,
+  DEVICE_CYCLOTRON_LID = 1,
+  DEVICE_NFILTER = 2,
 
   // CHAIN_CYCLOTRON segments
-  SEGMENT_INNER_PANEL = 3,
-  SEGMENT_INNER_CAKE = 4,
-  SEGMENT_INNER_CAVITY = 5
+  DEVICE_INNER_PANEL = 3,
+  DEVICE_INNER_CAKE = 4,
+  DEVICE_INNER_CAVITY = 5,
+
+  // Expansion segments
+  DEVICE_EXP1 = 6,
+  DEVICE_EXP2 = 7
+#else
+  // CHAIN_PACK segments
+  DEVICE_POWERCELL = 0,
+  DEVICE_CYCLOTRON_LID = 1,
+  DEVICE_NFILTER = 2,
+
+  // CHAIN_CYCLOTRON segments
+  DEVICE_INNER_PANEL = 3,
+  DEVICE_INNER_CAKE = 4,
+  DEVICE_INNER_CAVITY = 5
+#endif
 };
 
-/**
- * Visualization of the device and segment structure:
- * 
-  {
-    CHAINS:{
-      CHAIN_PACK: {
-        HARDWARE_PIN: PACK_LED_PIN,
-        LED_COUNT: MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT,
-        SEGMENTS: {
-          POWERCELL: {
-            COUNT_MAX: MAX_POWERCELL_LED_COUNT,
-            COUNT_CONFIG: i_powercell_num_leds,
-            SEGMENT_RANGE: [0, i_powercell_num_leds - 1],
-            CUSTOM_COLOR: <led_rgb>, // Currently, CUSTOM_POWERCELL
-          },
-          CYCLOTRON_LID: {
-            COUNT_MAX: OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT,
-            COUNT_CONFIG: i_cyclotron_num_leds + i_nfilter_jewel_leds,
-            SEGMENT_RANGE: [i_powercell_num_leds, MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT - 1],
-            CUSTOM_COLOR: <led_rgb>, // Currently, CUSTOM_CYC_LID
-          }
-        }
-      },
-      CHAIN_CYCLOTRON: {
-        HARDWARE_PIN: CYCLOTRON_LED_PIN,
-        LED_COUNT: INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX,
-        SEGMENTS: {
-          INNER_CYLOTRON_PANEL: {
-            COUNT_MAX: INNER_CYCLOTRON_LED_PANEL_MAX,
-            COUNT_CONFIG: i_inner_cyclotron_panel_num_leds, // INNER_CYCLOTRON_LED_PANEL_MAX
-            SEGMENT_RANGE: [0, INNER_CYCLOTRON_LED_PANEL_MAX - 1]
-          },
-          INNER_CYCLOTRON_CAKE: {
-            COUNT_MAX: INNER_CYCLOTRON_CAKE_LED_MAX,
-            COUNT_CONFIG: i_inner_cyclotron_cake_num_leds,
-            SEGMENT_RANGE: [i_ic_panel_end + 1, i_ic_cake_start + INNER_CYCLOTRON_CAKE_LED_MAX - 1],
-            CUSTOM_COLOR: <led_rgb>, // Currently, CUSTOM_CYC_CAKE
-          },
-          INNER_CYCLOTRON_CAVITY: {
-            COUNT_MAX: INNER_CYCLOTRON_CAVITY_LED_MAX,
-            COUNT_CONFIG: i_inner_cyclotron_cavity_num_leds,
-            SEGMENT_RANGE: [i_ic_cake_end + 1, i_ic_cavity_start + INNER_CYCLOTRON_CAVITY_LED_MAX - 1]
-          }
-        }
-      }
-    }
-  }
-*/
+
+/*
+ * Lighting Devices - Registry of segments to chains (w/ pin).
+ */
+struct LightingDevice {
+  LED_SEGMENT SegmentID; // LED device segment identifier.
+  LED_CHAIN ChainID; // Identifier for the associated chain.
+  uint8_t HWPin; // Hardware pin for the physical LED chain
+};
+
+/*
+ * Lighting Registry - source of truth for segment→chain→pin mapping
+ */
+static constexpr LightingDevice lighting_devices[DEVICE_SLOTS] = {
+#ifdef ESP32
+  {DEVICE_POWERCELL,     CHAIN_PACK,      PACK_LED_PIN},
+  {DEVICE_CYCLOTRON_LID, CHAIN_PACK,      PACK_LED_PIN},
+  {DEVICE_NFILTER,       CHAIN_PACK,      PACK_LED_PIN},
+  {DEVICE_INNER_PANEL,   CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
+  {DEVICE_INNER_CAKE,    CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
+  {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
+  {DEVICE_EXP1, CHAIN_EXP1, EXPANSION1_LED_PIN},
+  {DEVICE_EXP2, CHAIN_EXP2, EXPANSION2_LED_PIN}
+#else
+  {DEVICE_POWERCELL,     CHAIN_PACK,      PACK_LED_PIN},
+  {DEVICE_CYCLOTRON_LID, CHAIN_PACK,      PACK_LED_PIN},
+  {DEVICE_NFILTER,       CHAIN_PACK,      PACK_LED_PIN},
+  {DEVICE_INNER_PANEL,   CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
+  {DEVICE_INNER_CAKE,    CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
+  {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN}
+#endif
+};
 
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
@@ -315,20 +295,8 @@ enum LED_SEGMENT : uint8_t {
  *
  * PATTERN:
  * LightingManager uses a SINGLETON pattern accessed via segment identifier:
- *   LightingManager::getInstance(SEGMENT_POWERCELL).setPixelColor(...)
- *   LightingManager::getInstance(SEGMENT_INNER_CAKE).setCustomColorHSV(...)
- *
- * Segment → Device Slot Mapping:
- *   SEGMENT_POWERCELL      = slot 0
- *   SEGMENT_CYCLOTRON_LID  = slot 1
- *   SEGMENT_NFILTER        = slot 2
- *   SEGMENT_INNER_PANEL    = slot 3
- *   SEGMENT_INNER_CAKE     = slot 4
- *   SEGMENT_INNER_CAVITY   = slot 5
- *
- * Segment → Hardware Chain Mapping:
- *   SEGMENT_POWERCELL, CYCLOTRON_LID, NFILTER → CHAIN_PACK
- *   SEGMENT_INNER_PANEL, CAKE, CAVITY         → CHAIN_CYCLOTRON
+ *   LightingManager::getInstance(DEVICE_POWERCELL).setPixelColor(...)
+ *   LightingManager::getInstance(DEVICE_INNER_CAKE).setCustomColorHSV(...)
  *
  * INTERFACE:
  * - initializeDriver() — Sets up the driver library and hardware pins
@@ -343,68 +311,58 @@ enum LED_SEGMENT : uint8_t {
  */
 class LightingManager {
 private:
-  static LightingManager* instance;
-  Lighting lightingLib;
-  #ifdef ESP32
-    static inline int8_t pxl8Pins[8] = {CYCLOTRON_LED_PIN, PACK_LED_PIN, EXPANSION1_LED_PIN, EXPANSION2_LED_PIN, -1, -1, -1, -1};
-    Adafruit_NeoPXL8 cyclotronLEDs;
-    Adafruit_NeoPXL8 packLEDs;
-    Adafruit_NeoPXL8 exp1LEDs;
-    Adafruit_NeoPXL8 exp2LEDs;
-  #else
-    Adafruit_NeoPixel cyclotronLEDs;
-    Adafruit_NeoPixel packLEDs;
-  #endif
-  uint8_t currentDeviceSlot; // Lighting library slot (0..DEVICE_SLOTS-1)
-  LED_CHAIN currentChain;    // Physical hardware chain context
+  static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
+  Lighting lightingLib; // The Lighting library instance used for color management and animation.
+#ifdef ESP32
+  static inline int8_t pxl8Pins[8] = {CYCLOTRON_LED_PIN, PACK_LED_PIN, EXPANSION1_LED_PIN, EXPANSION2_LED_PIN, -1, -1, -1, -1};
+  Adafruit_NeoPXL8 packLEDs;
+  Adafruit_NeoPXL8 cyclotronLEDs;
+  Adafruit_NeoPXL8 exp1LEDs;
+  Adafruit_NeoPXL8 exp2LEDs;
+#else
+  Adafruit_NeoPixel packLEDs;
+  Adafruit_NeoPixel cyclotronLEDs;
+#endif
+  const LED_SEGMENT assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
-  // Private constructor - called only once by getInstance()
+  // Private constructor - called once per segment by getInstance()
   // Initializes the Lighting library as lightingLib with DEVICE_SLOTS total segments.
-  LightingManager() :
+  LightingManager(LED_SEGMENT segment) :
     lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS),
     #ifdef ESP32
-      cyclotronLEDs(CYCLOTRON_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
       packLEDs(PACK_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
+      cyclotronLEDs(CYCLOTRON_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
       exp1LEDs(EXP1_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
       exp2LEDs(EXP2_LED_COUNT, pxl8Pins, NEO_RGB + NEO_KHZ800),
     #else
-      cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800),
       packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_RGB + NEO_KHZ800),
+      cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800),
     #endif
-    currentDeviceSlot(0),
-    currentChain(CHAIN_PACK) {
-      lightingLib.setColorOrder(CHAIN_PACK, ORDER_RGB); // Set a clear default order for this device.
-      lightingLib.setColorOrder(CHAIN_CYCLOTRON, ORDER_RGB); // Set a clear default order for this device.
-    #ifdef ESP32
-      lightingLib.setColorOrder(CHAIN_EXP1, ORDER_RGB); // Set a clear default order for this device.
-      lightingLib.setColorOrder(CHAIN_EXP2, ORDER_RGB); // Set a clear default order for this device.
-    #endif
-    }
-
-  // Helper: Maps an LED_SEGMENT to its physical hardware CHAIN
-  LED_CHAIN segmentToChain(LED_SEGMENT segment) const {
-    switch(segment) {
-      case SEGMENT_POWERCELL:
-      case SEGMENT_CYCLOTRON_LID:
-      case SEGMENT_NFILTER:
-        return CHAIN_PACK;
-
-      case SEGMENT_INNER_PANEL:
-      case SEGMENT_INNER_CAKE:
-      case SEGMENT_INNER_CAVITY:
-        return CHAIN_CYCLOTRON;
-
-      default:
-        return CHAIN_PACK;
-    }
+    assignedSlot(segment)
+  {
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this segment.
   }
 
-  // Helper: Returns the physical strip object for the given hardware chain.
-  #ifdef ESP32
-    Adafruit_NeoPXL8& getDevicePixels(LED_CHAIN chain) {
-  #else
-    Adafruit_NeoPixel& getDevicePixels(LED_CHAIN chain) {
-  #endif
+  // Helper: Maps an LED_SEGMENT to its physical hardware CHAIN using the registry
+  // Looks up the segment in the lighting_devices registry and returns its associated chain.
+  // Falls back to CHAIN_PACK if segment is not found (should not happen in normal operation).
+  LED_CHAIN segmentToChain(LED_SEGMENT segment) const {
+    for(const auto& device : lighting_devices) {
+      if(device.SegmentID == segment) {
+        return device.ChainID;
+      }
+    }
+    return CHAIN_PACK; // fallback
+  }
+
+  // Helper: Returns the physical strip object for the given segment.
+  // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
+#ifdef ESP32
+  Adafruit_NeoPXL8& getDevicePixels(LED_SEGMENT segment) {
+#else
+  Adafruit_NeoPixel& getDevicePixels(LED_SEGMENT segment) {
+#endif
+    LED_CHAIN chain = segmentToChain(segment);
     switch(chain) {
       case CHAIN_CYCLOTRON:
         return cyclotronLEDs;
@@ -423,8 +381,10 @@ private:
     }
   }
 
-  // Helper: Returns the LED count for the given hardware chain.
-  uint16_t getCount(LED_CHAIN chain) const {
+  // Helper: Returns the LED count for the given segment.
+  // Internally converts the segment to its hardware chain and returns the LED count.
+  uint16_t getCount(LED_SEGMENT segment) const {
+    LED_CHAIN chain = segmentToChain(segment);
     switch(chain) {
       case CHAIN_CYCLOTRON:
         return CYCLOTRON_LED_COUNT;
@@ -455,22 +415,20 @@ private:
   }
 
 public:
-  // Singleton access via LED_SEGMENT identifier
+  // Singleton instances per segment/slot
   // Maps the segment to its lighting library slot and hardware chain,
   // returning a manager instance configured for that segment.
   static LightingManager& getInstance(LED_SEGMENT segment) {
-    if(instance == nullptr) {
-      instance = new LightingManager();
+    if(instances[segment] == nullptr) {
+      instances[segment] = new LightingManager(segment);
     }
-    instance->currentDeviceSlot = segment;                          // Segment value IS the slot (0-5)
-    instance->currentChain = instance->segmentToChain(segment);     // Map segment to hardware chain
-    return *instance;
+    return *instances[segment];
   }
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
   void initializeDriver() {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
     pixels.show();
@@ -478,35 +436,35 @@ public:
 
   // Turn off LEDs on the current segment
   void lightsOff() {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.clear(); // Set all to black (off).
   }
 
   // Set brightness
   void setBrightness(uint8_t brightness) {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.setBrightness(brightness);
   }
 
   // Set custom color HSV values in the Lighting library
   void setCustomColorHSV(const LED_HSV &hsv) {
-    lightingLib.setCustomColorHSV(hsv, currentDeviceSlot);
+    lightingLib.setCustomColorHSV(hsv, assignedSlot);
   }
 
   // Set color order for this segment with standard enum mapping
   void setColorOrder(ColorOrder newColorOrder) {
-    lightingLib.setColorOrder(currentDeviceSlot, newColorOrder);
+    lightingLib.setColorOrder(assignedSlot, newColorOrder);
   }
 
   // Update LED display on current chain
   void show() {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     pixels.show(); // Pass through to the LED driver library to update LED states.
   }
 
   // Returns a pixel's current color as LED_RGB
   LED_RGB getPixelColor(uint16_t index) {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     if(index >= 0 && index < pixels.numPixels()) {
       return unpackColor(pixels.getPixelColor(index));
     }
@@ -519,24 +477,24 @@ public:
     // Get color as HSV
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
-      hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorEnum, brightness);
+      hsv = lightingLib.getDynamicColorHSV(assignedSlot, colorEnum, brightness);
     } else {
       hsv = lightingLib.getColorHSV(colorEnum, brightness);
     }
 
     // Convert HSV to RGB and return in the color order as set for the device
     LED_RGB rgb = Lighting::hsv2rgb(hsv);
-    return Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(currentDeviceSlot));
+    return Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
   }
 
   // Set a pixel color by ColorID and automatically apply stored color order.
   void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     if(index >= 0 && index < pixels.numPixels()) {
       // Get color as HSV
       LED_HSV hsv;
       if(isColorDynamic(colorEnum)) {
-        hsv = lightingLib.getDynamicColorHSV(currentDeviceSlot, colorEnum, brightness);
+        hsv = lightingLib.getDynamicColorHSV(assignedSlot, colorEnum, brightness);
       } else {
         hsv = lightingLib.getColorHSV(colorEnum, brightness);
       }
@@ -545,7 +503,7 @@ public:
       LED_RGB rgb = Lighting::hsv2rgb(hsv);
 
       // Apply the device-specific color order for the RGB values.
-      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(currentDeviceSlot));
+      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
 
       // Set the given LED to the calculated, ordered RGB value.
       pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
@@ -554,7 +512,7 @@ public:
 
   // Set a pixel color direct from an RGB triplet.
   void setPixelColor(uint16_t index, LED_RGB colorRGB) {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     if(index >= 0 && index < pixels.numPixels()) {
       pixels.setPixelColor(index, pixels.Color(colorRGB.r, colorRGB.g, colorRGB.b));
     }
@@ -562,7 +520,7 @@ public:
 
   // Uniformly scale the brightness of a pixel, while attempting to retain the RGB color.
   void setPixelBrightness(uint16_t index, uint8_t brightness_limit) {
-    auto& pixels = getDevicePixels(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
     if(index >= 0 && index < pixels.numPixels()) {
       // Get current pixel's RGB color
       LED_RGB current_rgb = getPixelColor(index);
@@ -628,8 +586,8 @@ public:
     // the animation itself still advances at the same speed.
 
     // Since multiple devices are used, we must first obtain the correct list of pixels.
-    auto& pixels = getDevicePixels(currentChain);
-    uint16_t i_slot_leds = getCount(currentChain);
+    auto& pixels = getDevicePixels(assignedSlot);
+    uint16_t i_slot_leds = getCount(assignedSlot);
 
     // Iterate over the pixels and set the color according to the device's current state.
     for(uint16_t i_curr_led = 0; i_curr_led < i_slot_leds; i_curr_led++) {
@@ -637,13 +595,13 @@ public:
       uint8_t i_phase = (i_curr_led * 255 / i_slot_leds);
 
       // Get interpolated palette color for the device with this LED's calculated phase.
-      LED_RGB rgb = lightingLib.getPaletteColor(currentDeviceSlot, // Device slot for this instance
+      LED_RGB rgb = lightingLib.getPaletteColor(assignedSlot, // Device slot for this instance
                                                 palette, // Palette in use for color interpolation
                                                 speedMultiplier, // Speed for animation (1.0-10.0)
                                                 i_phase); // Calculated interpolation phase for this LED (0-255)
 
       // Apply the device-specific color order for the RGB values.
-      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(currentDeviceSlot));
+      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
 
       // Set the given LED to the calculated, ordered RGB value.
       pixels.setPixelColor(i_curr_led, pixels.Color(ordered.r, ordered.g, ordered.b));
@@ -654,13 +612,13 @@ public:
 /**
  * SINGLETON PATTERN: Static member variable initialization
  *
- * This line MUST exist outside the class definition for any static member.
- * It allocates memory for the single instance pointer and initializes it to nullptr.
+ * This array MUST exist outside the class definition for any static member.
+ * It allocates memory for instance pointers per slot and initializes them to nullptr.
  *
- * The actual LightingManager object is NOT created here—it's created lazily on
- * the FIRST call to getInstance(), which checks if instance is nullptr, creates it if
- * needed, then returns a reference to it. Subsequent calls return the same instance.
+ * Each LightingManager object is created lazily on the FIRST call to getInstance(slot),
+ * which checks if instances[slot] is nullptr, creates it if needed with that slot bound,
+ * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
- * This ensures only ONE LightingManager exists for the entire program.
+ * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
  */
-LightingManager* LightingManager::instance = nullptr;
+LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};

@@ -46,10 +46,10 @@ Compile Targets:
   pack         Compile Proton Pack
   wand         Compile Neutrona Wand
   att[enuator] Compile Attenuator
+  pstt         Compile PSTT
   blast[er]    Compile Single-Shot Blaster
   gizmo        Compile Belt Gizmo
   stream       Compile Stream Effects
-  pstt         Compile PSTT
   trap         Compile Ghost Trap Base and Cartridge
   toast[er]    Compile Dancing Toaster
 
@@ -88,7 +88,7 @@ apply_environment_overrides() {
 
 resolve_target() {
   case "$TARGET" in
-    all|env|pack|wand|gizmo|stream|pstt|trap)
+    all|env|pack|wand|pstt|gizmo|stream|trap)
       ;;
     att|attenuator)
       TARGET="attenuator"
@@ -250,10 +250,10 @@ compile_all() {
   run_script "compile_pack.sh"
   run_script "compile_wand.sh"
   run_script "compile_attenuator.sh"
+  run_script "compile_pstt.sh"
   run_script "compile_blaster.sh"
   run_script "compile_gizmo.sh"
   run_script "compile_stream.sh"
-  run_script "compile_pstt.sh"
   run_script "compile_trap_base.sh"
   run_script "compile_trap_cartridge.sh"
   run_script "compile_toaster.sh"
@@ -279,6 +279,10 @@ compile_target() {
       run_script "run_tests.sh"
       run_script "compile_attenuator.sh"
       ;;
+    pstt)
+      run_script "run_tests.sh"
+      run_script "compile_pstt.sh"
+      ;;
     blaster)
       run_script "run_tests.sh"
       run_script "compile_blaster.sh"
@@ -290,10 +294,6 @@ compile_target() {
     stream)
       run_script "run_tests.sh"
       run_script "compile_stream.sh"
-      ;;
-    pstt)
-      run_script "run_tests.sh"
-      run_script "compile_pstt.sh"
       ;;
     trap)
       run_script "run_tests.sh"

@@ -73,6 +73,10 @@
 			"path": "source/GhostTrapCartridge"
 		},
 		{
+			"name": "PSTT",
+			"path": "source/PSTT"
+		},
+		{
 			"name": "SingleShot",
 			"path": "source/SingleShot"
 		},
@@ -87,10 +91,6 @@
 		{
 			"name": "Toaster",
 			"path": "source/Toaster"
-		},
-		{
-			"name": "PSTT",
-			"path": "source/PSTT"
 		},
 		{
 			"name": "Sounds",

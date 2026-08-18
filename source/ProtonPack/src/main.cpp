@@ -121,12 +121,12 @@ void sendDebug(const String& message) {
 void setup() {
   // Initialize LED driver for each hardware chain
   // Use a representative segment from each chain to initialize hardware.
-  LightingManager::getInstance(SEGMENT_POWERCELL).initializeDriver();  // CHAIN_PACK
-  LightingManager::getInstance(SEGMENT_INNER_CAKE).initializeDriver(); // CHAIN_CYCLOTRON
+  LightingManager::getInstance(DEVICE_POWERCELL).initializeDriver();  // CHAIN_PACK
+  LightingManager::getInstance(DEVICE_INNER_CAKE).initializeDriver(); // CHAIN_CYCLOTRON
 #ifdef ESP32
   // TODO: Add expansion port segments if/when expansion chains are used
-  // LightingManager::getInstance(SEGMENT_EXP1).initializeDriver();
-  // LightingManager::getInstance(SEGMENT_EXP2).initializeDriver();
+  // LightingManager::getInstance(DEVICE_EXP1).initializeDriver();
+  // LightingManager::getInstance(DEVICE_EXP2).initializeDriver();
 #endif
 
 #ifdef ESP32
@@ -353,12 +353,12 @@ void updateLEDs() {
   // Update all LED's when the timer has finished.
   if(ms_led_driver.justFinished()) {
     // Call show() on a representative segment from each chain.
-    LightingManager::getInstance(SEGMENT_POWERCELL).show();  // CHAIN_PACK
-    LightingManager::getInstance(SEGMENT_INNER_CAKE).show(); // CHAIN_CYCLOTRON
+    LightingManager::getInstance(DEVICE_POWERCELL).show();  // CHAIN_PACK
+    LightingManager::getInstance(DEVICE_INNER_CAKE).show(); // CHAIN_CYCLOTRON
   #ifdef ESP32
     // TODO: Add expansion port show() calls if/when expansion chains are used
-    // LightingManager::getInstance(SEGMENT_EXP1).show();
-    // LightingManager::getInstance(SEGMENT_EXP2).show();
+    // LightingManager::getInstance(DEVICE_EXP1).show();
+    // LightingManager::getInstance(DEVICE_EXP2).show();
   #endif
 
     // Restart the lighting update timer.

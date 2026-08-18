@@ -51,7 +51,7 @@ void sanitizeCyclotronMultipliers() {
 }
 
 void innerCyclotronCakeOff() {
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
   for(uint8_t i = i_ic_cake_start; i <= i_ic_cake_end; i++) {
     innerCakeMgr.setPixelColor(i, C_BLACK);
   }
@@ -59,7 +59,7 @@ void innerCyclotronCakeOff() {
 
 void innerCyclotronCavityOff() {
   if(i_inner_cyclotron_cavity_num_leds > 0) {
-    auto& cavityMgr = LightingManager::getInstance(SEGMENT_INNER_CAVITY);
+    auto& cavityMgr = LightingManager::getInstance(DEVICE_INNER_CAVITY);
     for(uint8_t i = i_ic_cavity_start; i <= i_ic_cavity_end; i++) {
       cavityMgr.setPixelColor(i, C_BLACK);
     }
@@ -134,18 +134,18 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
       case PROTON:
       default:
         switch(i_device) {
-          case SEGMENT_POWERCELL:
+          case DEVICE_POWERCELL:
             return C_MID_BLUE;
           break;
 
-          case SEGMENT_CYCLOTRON_LID:
-          case SEGMENT_INNER_CAKE:
-          case SEGMENT_INNER_PANEL:
+          case DEVICE_CYCLOTRON_LID:
+          case DEVICE_INNER_CAKE:
+          case DEVICE_INNER_PANEL:
           default:
             return C_RED;
           break;
 
-          case SEGMENT_INNER_CAVITY:
+          case DEVICE_INNER_CAVITY:
             // Cycles through 3 colours, changing on each call.
             // If starting at 0, value will increment to 1.
             // If value is above/divisible by 4, reset to 1.
@@ -168,8 +168,8 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
             }
           break;
 
-          // SEGMENT_NFILTER colour in PROTON mode will always be overridden by void ventLight()
-          case SEGMENT_NFILTER:
+          // DEVICE_NFILTER colour in PROTON mode will always be overridden by void ventLight()
+          case DEVICE_NFILTER:
             return C_WHITE;
           break;
         }
@@ -177,7 +177,7 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
 
       case SLIME:
         switch(i_device) {
-          case SEGMENT_POWERCELL:
+          case DEVICE_POWERCELL:
             // Note this is separate because yellow will eventually be an option.
             if(gpstarPack.getSystemTheme() == SYSTEM_1989) {
               return C_PINK;
@@ -187,10 +187,10 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
             }
           break;
 
-          case SEGMENT_CYCLOTRON_LID:
-          case SEGMENT_INNER_CAKE:
-          case SEGMENT_INNER_PANEL:
-          case SEGMENT_NFILTER:
+          case DEVICE_CYCLOTRON_LID:
+          case DEVICE_INNER_CAKE:
+          case DEVICE_INNER_PANEL:
+          case DEVICE_NFILTER:
           default:
             if(gpstarPack.getSystemTheme() == SYSTEM_1989) {
               return C_PINK;
@@ -224,7 +224,7 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
 
       case SPECTRAL_CUSTOM:
         switch(i_device) {
-          case SEGMENT_INNER_CAVITY:
+          case DEVICE_INNER_CAVITY:
             // Cycles through 3 colours, changing on each call.
             // If starting at 0, value will increment to 1.
             // If value is above/divisible by 4, reset to 1.
@@ -247,18 +247,18 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
             }
           break;
 
-          case SEGMENT_POWERCELL:
+          case DEVICE_POWERCELL:
             return C_CUSTOM;
           break;
 
-          case SEGMENT_CYCLOTRON_LID:
-          case SEGMENT_NFILTER:
+          case DEVICE_CYCLOTRON_LID:
+          case DEVICE_NFILTER:
           default:
             return C_CUSTOM;
           break;
 
-          case SEGMENT_INNER_CAKE:
-          case SEGMENT_INNER_PANEL:
+          case DEVICE_INNER_CAKE:
+          case DEVICE_INNER_PANEL:
             return C_CUSTOM;
           break;
         }
@@ -267,17 +267,17 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
   }
   else {
     switch(i_device) {
-      case SEGMENT_POWERCELL:
+      case DEVICE_POWERCELL:
         return C_MID_BLUE;
       break;
 
-      case SEGMENT_CYCLOTRON_LID:
-      case SEGMENT_INNER_CAKE:
-      case SEGMENT_INNER_PANEL:
+      case DEVICE_CYCLOTRON_LID:
+      case DEVICE_INNER_CAKE:
+      case DEVICE_INNER_PANEL:
         return C_RED;
       break;
 
-      case SEGMENT_INNER_CAVITY:
+      case DEVICE_INNER_CAVITY:
         // Cycles through 3 colours, changing on each call.
         // If starting at 0, value will increment to 1.
         // If value is above/divisible by 4, reset to 1.
@@ -300,8 +300,8 @@ ColorID getDeviceColorID(LED_SEGMENT i_device, STREAM_MODES i_firing_mode, bool 
         }
       break;
 
-      // SEGMENT_NFILTER colour in PROTON mode will always be overridden by void ventLight()
-      case SEGMENT_NFILTER:
+      // DEVICE_NFILTER colour in PROTON mode will always be overridden by void ventLight()
+      case DEVICE_NFILTER:
       default:
         return C_WHITE;
       break;
@@ -319,8 +319,8 @@ void ventLightLEDW(bool b_on) {
 }
 
 void ventLight(bool b_on) {
-  auto& nfilterMgr = LightingManager::getInstance(SEGMENT_NFILTER);
-  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_NFILTER, gpstarPack.getStreamMode(), true);
+  auto& nfilterMgr = LightingManager::getInstance(DEVICE_NFILTER);
+  ColorID i_colour_scheme = getDeviceColorID(DEVICE_NFILTER, gpstarPack.getStreamMode(), true);
   b_vent_light_on = b_on;
 
   if(b_on && b_cyclotron_lid_on) {
@@ -780,7 +780,7 @@ bool usingSlimeCyclotron(STREAM_MODES mode) {
 }
 
 void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
-  auto& cavityMgr = LightingManager::getInstance(SEGMENT_INNER_CAVITY);
+  auto& cavityMgr = LightingManager::getInstance(DEVICE_INNER_CAVITY);
   // Map the value from the inner cake to the cavity lights to get current position.
   uint8_t i_midpoint = i_ic_cavity_start + (i_inner_cyclotron_cavity_num_leds / 2) - 1;
   ColorID i_colour_scheme = C_BLACK; // Colour scheme for lighting, to be set later.
@@ -814,7 +814,7 @@ void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
       }
       else {
         // Light spiraling higher than the lower half will have variable colours.
-        i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAVITY, gpstarPack.getStreamMode(), false);
+        i_colour_scheme = getDeviceColorID(DEVICE_INNER_CAVITY, gpstarPack.getStreamMode(), false);
       }
     }
   }
@@ -860,7 +860,7 @@ void innerCyclotronCavityUpdate(uint16_t iRampDelay) {
 
 // For NeoPixel rings, ramp up and ramp down the LEDs in the ring and set the speed. (optional)
 void innerCyclotronRingUpdate(uint16_t iRampDelay) {
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
 
   if(ms_cyclotron_ring.justFinished()) {
     if(b_inner_ramp_up) {
@@ -920,7 +920,7 @@ void innerCyclotronRingUpdate(uint16_t iRampDelay) {
     }
 
     // Colour control for the Inner Cyclotron LEDs.
-    ColorID i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAKE, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+    ColorID i_colour_scheme = getDeviceColorID(DEVICE_INNER_CAKE, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
     uint8_t i_brightness = getBrightness(i_cyclotron_inner_brightness);
 
     if(isBrassPack() && gpstarPack.inStreamMode(PROTON)) {
@@ -1031,7 +1031,7 @@ void innerCyclotronRingUpdate(uint16_t iRampDelay) {
 // Turns off the LEDs in the Cyclotron Lid only.
 void cyclotronLidLedsOff() {
   if(!b_fade_out) {
-    auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+    auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
     for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
       cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, C_BLACK);
     }
@@ -1111,7 +1111,7 @@ bool fadeOutCyclotron() {
 
   if((gpstarPack.isThemeModern()) && !usingSlimeCyclotron(gpstarPack.getStreamMode())) {
     for(uint8_t i = 0; i < OUTER_CYCLOTRON_LED_MAX; i++) {
-      auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+      auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
       uint8_t i_curr_brightness = i_cyclotron_led_value[i] - 10;
       uint8_t i_tmp_lid_led = cyclotronLookupTable(i) + i_cyclotron_led_start - 1;
 
@@ -1617,7 +1617,7 @@ void powercellOn() {
 }
 
 void powercellOff() {
-  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
+  auto& powercellMgr = LightingManager::getInstance(DEVICE_POWERCELL);
   for(uint8_t i = 0; i < i_powercell_num_leds; i++) {
     powercellMgr.setPixelColor(i, C_BLACK);
   }
@@ -1626,7 +1626,7 @@ void powercellOff() {
 }
 
 void innerCyclotronLEDPanelOff() {
-  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
+  auto& panelMgr = LightingManager::getInstance(DEVICE_INNER_PANEL);
 
   if(INNER_CYC_PANEL_MODE != PANEL_DISABLED) {
     if(b_cyclotron_lid_on) {
@@ -1803,7 +1803,7 @@ void setYearModeByToggle() {
 
 // LEDs for the 1984/2021 and vibration switches.
 void cyclotronSwitchPlateLEDs() {
-  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
+  auto& panelMgr = LightingManager::getInstance(DEVICE_INNER_PANEL);
   bool b_brass_pack_effect_active = b_brass_pack_sound_loop || (isBrassPack() && (b_ramp_down || b_pack_alarm || b_wand_mash_lockout));
 
   if(!b_cyclotron_lid_on && !b_brass_pack_effect_active) {
@@ -1905,12 +1905,12 @@ void cyclotronSwitchPlateLEDs() {
 void spectralLightsOff() {
   b_spectral_lights_on = false;
 
-  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
+  auto& powercellMgr = LightingManager::getInstance(DEVICE_POWERCELL);
   for(uint8_t i = 0; i < i_max_pack_leds; i++) {
     powercellMgr.setPixelColor(i, C_BLACK);
   }
 
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
   for(uint8_t i = i_ic_cake_start; i <= i_ic_cake_end; i++) {
     innerCakeMgr.setPixelColor(i, C_BLACK);
   }
@@ -1919,20 +1919,20 @@ void spectralLightsOff() {
 void spectralLightsOn() {
   b_spectral_lights_on = true;
 
-  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
-  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_POWERCELL, SPECTRAL_CUSTOM, true);
+  auto& powercellMgr = LightingManager::getInstance(DEVICE_POWERCELL);
+  ColorID i_colour_scheme = getDeviceColorID(DEVICE_POWERCELL, SPECTRAL_CUSTOM, true);
   for(uint8_t i = 0; i < i_powercell_num_leds; i++) {
     powercellMgr.setPixelColor(i, i_colour_scheme);
   }
 
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, SPECTRAL_CUSTOM, true);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  i_colour_scheme = getDeviceColorID(DEVICE_CYCLOTRON_LID, SPECTRAL_CUSTOM, true);
   for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
     cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme);
   }
 
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
-  i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAKE, SPECTRAL_CUSTOM, true);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
+  i_colour_scheme = getDeviceColorID(DEVICE_INNER_CAKE, SPECTRAL_CUSTOM, true);
   for(uint8_t i = i_ic_cake_start; i <= i_ic_cake_end; i++) {
     innerCakeMgr.setPixelColor(i, i_colour_scheme);
   }
@@ -2291,12 +2291,12 @@ void checkSwitches() {
 }
 
 void cyclotronSwitchLEDUpdate() {
-  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
+  auto& panelMgr = LightingManager::getInstance(DEVICE_INNER_PANEL);
 
   // When lid is off, updates the switch panel lights using either the stock connectors for individual LEDs,
   // or via the addressable LEDs if the user has installed the custom PCB between the Pack Controller and Cake.
   if(!b_cyclotron_lid_on) {
-    ColorID i_colour_scheme = getDeviceColorID(SEGMENT_INNER_PANEL, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+    ColorID i_colour_scheme = getDeviceColorID(DEVICE_INNER_PANEL, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
     uint8_t i_brightness = getBrightness(i_cyclotron_panel_brightness);
 
     if(b_pack_alarm) {
@@ -2651,7 +2651,7 @@ void powercellRampDown() {
       // Do Nothing.
     }
     else {
-      auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
+      auto& powercellMgr = LightingManager::getInstance(DEVICE_POWERCELL);
       uint8_t i_tmp_powercell_led = 0;
 
       if(b_powercell_invert) {
@@ -2877,8 +2877,8 @@ void powercellLoop() {
 }
 
 void powercellDraw(uint8_t i_start) {
-  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
-  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_POWERCELL, gpstarPack.getStreamMode(), b_powercell_colour_toggle);
+  auto& powercellMgr = LightingManager::getInstance(DEVICE_POWERCELL);
+  ColorID i_colour_scheme = getDeviceColorID(DEVICE_POWERCELL, gpstarPack.getStreamMode(), b_powercell_colour_toggle);
   uint8_t i_brightness = getBrightness(i_powercell_brightness); // Calculate desired brightness.
 
   // Sets the colour for each Power Cell LED, subject to colour toggle setting.
@@ -2968,8 +2968,8 @@ uint8_t cyclotron84LookupTable(uint8_t index) {
 
 // Reset the Cyclotron LED colours.
 void cyclotronColourReset() {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(DEVICE_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
 
   // We override the colour changes when using stock HasLab Cyclotron LEDs, returning full white.
   // Changing the colour space with a CHSV Object affects the brightness slightly for non RGB pixels.
@@ -2999,8 +2999,8 @@ void cyclotronColourReset() {
 
 // Controls the slime cyclotron fadeout effect.
 void slimeCyclotronFadeout() {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
   bool b_leds_fading = false;
 
   if(b_cyclotron_lid_on) {
@@ -3043,8 +3043,8 @@ void slimeCyclotronFadeout() {
 
 // Controls the slime cyclotron effect.
 void slimeCyclotronEffect() {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
 
   if(ms_cyclotron_slime_effect.justFinished()) {
     if(PACK_STATE == MODE_OFF && b_ramp_down) {
@@ -3088,13 +3088,13 @@ void slimeCyclotronEffect() {
 
     if(b_cyclotron_lid_on) {
       for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-        ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+        ColorID i_colour_scheme = getDeviceColorID(DEVICE_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
         cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, random(i_random_lower, i_random_upper));
       }
     }
     else {
       for(uint8_t i = 0; i < i_inner_cyclotron_cake_num_leds; i++) {
-        ColorID i_colour_scheme = getDeviceColorID(SEGMENT_INNER_CAKE, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+        ColorID i_colour_scheme = getDeviceColorID(DEVICE_INNER_CAKE, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
         innerCakeMgr.setPixelColor(i + i_ic_cake_start, i_colour_scheme, random(i_random_lower, i_random_upper));
       }
     }
@@ -3135,8 +3135,8 @@ void slimeCyclotronEffect() {
 }
 
 void cyclotronIceAnimation() {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
   // The slime overheat animation, but blue for ice.
   if(ms_cyclotron_slime_effect.justFinished()) {
     uint8_t i_random_lower = 5;
@@ -3160,8 +3160,8 @@ void cyclotronIceAnimation() {
 }
 
 void cyclotronFade() {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(DEVICE_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
 
   // We override the colour changes when using stock HasLab Cyclotron LEDs.
   // Changing the colour space with a CHSV Object affects the brightness slightly for non RGB pixels.
@@ -3275,8 +3275,8 @@ void cyclotronFade() {
 }
 
 void cyclotron84LightOn(uint8_t i_led) {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(DEVICE_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
   uint8_t i_brightness = getBrightness(i_cyclotron_brightness);
   uint8_t i_led_array_width = 1; // Variable to store the number of LEDs to either side of the center LED.
 
@@ -3321,7 +3321,7 @@ void cyclotron84LightOn(uint8_t i_led) {
 }
 
 void cyclotron84LightOff(uint8_t i_led) {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
   uint8_t i_brightness = getBrightness(i_cyclotron_brightness); // Calculate desired brightness.
   uint8_t i_led_array_width = 1; // Variable to store the number of LEDs to either side of the center LED.
 
@@ -3828,8 +3828,8 @@ void cyclotronNoCable() {
 }
 
 void cyclotron1984Alarm() {
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  ColorID i_colour_scheme = getDeviceColorID(SEGMENT_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  ColorID i_colour_scheme = getDeviceColorID(DEVICE_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
   uint8_t i_brightness = getBrightness(i_cyclotron_brightness);
   uint8_t led1 = i_cyclotron_led_start + cyclotron84LookupTable(0);
   uint8_t led2 = i_cyclotron_led_start + cyclotron84LookupTable(1);
@@ -4255,7 +4255,7 @@ void cyclotronOverheating() {
 }
 
 void cyclotronControl() {
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
 
   // Only reset the starting LED when the pack is first started up.
   if(b_reset_start_led) {
@@ -5672,10 +5672,10 @@ uint8_t getRampPercentage(ramp &input) {
 }
 
 void systemPOST() {
-  auto& powercellMgr = LightingManager::getInstance(SEGMENT_POWERCELL);
-  auto& cyclotronLidMgr = LightingManager::getInstance(SEGMENT_CYCLOTRON_LID);
-  auto& panelMgr = LightingManager::getInstance(SEGMENT_INNER_PANEL);
-  auto& innerCakeMgr = LightingManager::getInstance(SEGMENT_INNER_CAKE);
+  auto& powercellMgr = LightingManager::getInstance(DEVICE_POWERCELL);
+  auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
+  auto& panelMgr = LightingManager::getInstance(DEVICE_INNER_PANEL);
+  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
   uint8_t i_tmp_led1 = i_cyclotron_led_start + cyclotron84LookupTable(0);
   uint8_t i_tmp_led2 = i_cyclotron_led_start + cyclotron84LookupTable(1);
   uint8_t i_tmp_led3 = i_cyclotron_led_start + cyclotron84LookupTable(2);

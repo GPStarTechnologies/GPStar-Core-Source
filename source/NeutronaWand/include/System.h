@@ -8012,7 +8012,7 @@ void modeFiring() {
 }
 
 void wandBarrelHeatDown() {
-  auto& mgr = LightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
   uint8_t i_barrel_led;
 
   // Set this variable to the tip LED index.
@@ -8201,7 +8201,7 @@ void wandBarrelHeatDown() {
 }
 
 void wandBarrelHeatUp() {
-  auto& mgr = LightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
   uint8_t i_barrel_led;
 
   // Set this variable to the tip LED index.
@@ -8380,7 +8380,7 @@ void wandBarrelHeatUp() {
 }
 
 void barrelLEDTranslation(uint8_t id, ColorID colour) {
-  auto& mgr = LightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
 
   if(WAND_BARREL_LED == HASBRO_BARREL || WAND_BARREL_LED == GPSTAR_BARREL_MINI) {
     mgr.setPixelColor(id, getBarrelColor(colour));
@@ -8962,7 +8962,7 @@ void firePulseEffect() {
 }
 
 void fireEffectEnd() {
-  auto& mgr = LightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
 
   // Initialize temporary colour variable to reduce code complexity.
   ColorID c_temp = C_WHITE;
@@ -9289,7 +9289,7 @@ void fireEffectEnd() {
 }
 
 void fireStreamEnd(LED_RGB c_colour) {
-  auto& mgr = LightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
 
   if(i_barrel_light < i_num_barrel_leds) {
     switch(WAND_BARREL_LED) {
@@ -9449,7 +9449,7 @@ int8_t readRotary() {
 }
 
 void wandBarrelSpectralCustomConfigOn() {
-  auto& mgr = LightingManager::getInstance();
+  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
 
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
     switch(WAND_BARREL_LED) {

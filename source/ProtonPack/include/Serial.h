@@ -671,7 +671,7 @@ void handlePackPrefsUpdate() {
 
   // Transfer cyclotron custom color to the Lighting library
   LED_HSV cyclotronCustom = {i_spectral_cyclotron_custom_colour, i_spectral_cyclotron_custom_saturation, 255};
-  LightingManager::getInstance(SEGMENT_CYCLOTRON_LID).setCustomColorHSV(cyclotronCustom);
+  LightingManager::getInstance(DEVICE_CYCLOTRON_LID).setCustomColorHSV(cyclotronCustom);
 
   b_fade_cyclotron_led = packConfig.ledCycLidFade;
   b_cyclotron_colour_toggle = packConfig.ledVGCyclotron;
@@ -712,7 +712,7 @@ void handlePackPrefsUpdate() {
 
   // Transfer inner cyclotron custom color to the Lighting library
   LED_HSV cyclotronInnerCustom = {i_spectral_cyclotron_inner_custom_colour, i_spectral_cyclotron_inner_custom_saturation, 255};
-  LightingManager::getInstance(SEGMENT_INNER_CAKE).setCustomColorHSV(cyclotronInnerCustom);
+  LightingManager::getInstance(DEVICE_INNER_CAKE).setCustomColorHSV(cyclotronInnerCustom);
 
   switch(packConfig.ledCycCavType) {
     case 1:
@@ -738,7 +738,7 @@ void handlePackPrefsUpdate() {
 
   // Transfer powercell custom color to the Lighting library
   LED_HSV powercellCustom = {i_spectral_powercell_custom_colour, i_spectral_powercell_custom_saturation, 255};
-  LightingManager::getInstance(SEGMENT_POWERCELL).setCustomColorHSV(powercellCustom);
+  LightingManager::getInstance(DEVICE_POWERCELL).setCustomColorHSV(powercellCustom);
 
   // GPStar Audio LED Status
   b_gpstar_audio_led_enabled = packConfig.gpstarAudioLed;
