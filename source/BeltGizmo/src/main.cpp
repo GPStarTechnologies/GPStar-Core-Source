@@ -123,7 +123,8 @@ void AnimationTask(void *parameter) {
     #endif
 
     auto& mgr = LightingManager::getInstance(); // Get a reference to the LED device (default: 0).
-    float f_speed = (wsData.wandPower * 0.5f); // Calculate animation speed based on wand power.
+    // Calculate animation speed (40% of normal) adjusted by the current wand power level.
+    float f_speed = (0.4f * wsData.wandPower);
 
     // Update light animation based on websocket data (or self-test mode).
     updateStreamPalette(); // Get the current palette based on the test or stream mode.

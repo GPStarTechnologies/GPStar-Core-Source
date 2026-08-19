@@ -80,11 +80,12 @@ private:
   const uint8_t assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
   // Private constructor - called only once per slot by getInstance()
-  // Initializes the Lighting library and LED driver for this device.
+  // Initializes the Lighting library as lightingLib with 1 device slot, and initializes the
+  // Adafruit_NeoPixel object as a variable "pixels" with the NEO_GBR color order by default.
   LightingManager() :
-    pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
+    pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_GRB + NEO_KHZ800),
     assignedSlot(0) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // 3-wire WS2811/WS2812 LEDs use RGB color order.
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets.
   }
 
   // Helper: Convert packed uint32_t color to LED_RGB components

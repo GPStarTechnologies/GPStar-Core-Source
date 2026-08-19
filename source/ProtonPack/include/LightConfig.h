@@ -316,7 +316,7 @@ private:
   // Initializes the driver objects for this segment.
   LightingManager(LED_SEGMENT segment) :
     assignedSlot(segment) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // 3-wire WS2811/WS2812 LEDs use RGB color order.
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets.
   }
 
   // Helper: Maps an LED_SEGMENT to its physical hardware CHAIN using the registry
@@ -596,12 +596,13 @@ LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
 Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
 
 /**
- * In order to allow the show() method to be called across segments (devices)
- * the actual pixel chains must be initialized using static class members.
+ * In order to allow the show() method to be called across segments (devices) the actual pixel
+ * chains must be initialized using static class members. This setup step will initialize each
+ * Adafruit_NeoPixel object as a static member with the NEO_GBR color order by default.
  */
-Adafruit_NeoPixel LightingManager::packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_RGB + NEO_KHZ800);
-Adafruit_NeoPixel LightingManager::cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel LightingManager::packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel LightingManager::cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_GRB + NEO_KHZ800);
 #ifdef ESP32
-Adafruit_NeoPixel LightingManager::exp1LEDs(EXP1_LED_COUNT, EXPANSION1_LED_PIN, NEO_RGB + NEO_KHZ800);
-Adafruit_NeoPixel LightingManager::exp2LEDs(EXP2_LED_COUNT, EXPANSION2_LED_PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel LightingManager::exp1LEDs(EXP1_LED_COUNT, EXPANSION1_LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel LightingManager::exp2LEDs(EXP2_LED_COUNT, EXPANSION2_LED_PIN, NEO_GRB + NEO_KHZ800);
 #endif

@@ -132,12 +132,13 @@ private:
   const LED_CHAIN assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
   // Private constructor - called once per slot by getInstance()
-  // Initializes the driver objects for this slot.
+  // Initializes the Lighting library as lightingLib with 1 device slot, and initializes the
+  // Adafruit_NeoPixel object as a variable "pixels" with the NEO_GBR color order by default.
   LightingManager(LED_CHAIN slot) :
-    barrelLEDs(BARREL_LEDS_MAX, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
-    ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
+    barrelLEDs(BARREL_LEDS_MAX, BARREL_LED_PIN, NEO_GRB + NEO_KHZ800),
+    ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_GRB + NEO_KHZ800),
     assignedSlot(slot) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // 3-wire WS2811/WS2812 LEDs use RGB color order (Hasbro barrels override in System.h).
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets. (Hasbro barrels override in System.h)
   }
 
   // Helper: Returns the physical strip object for the given device slot.

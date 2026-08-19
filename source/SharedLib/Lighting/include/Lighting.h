@@ -43,12 +43,12 @@ struct LED_RGB {
 constexpr LED_RGB LED_RGB_BLACK = {0, 0, 0};
 constexpr LED_RGB LED_RGB_WHITE = {255, 255, 255};
 
-// ColorOrder: LED strip color channel ordering.
-// Different LED strips use different channel orders.
-// WS2811 and 3-wire WS2812 use ORDER_RGB.
+// ColorOrder: Set the order of the RGB values as they will be sent to the LED device.
+// GPStar devices are WS2812 which is set by "NEO_GRB" at the hardware level, but we
+// will control the assembly of the LED_RGB triplets via the software for convenience.
 enum ColorOrder : uint8_t {
-  ORDER_RGB = 0,  // Red-Green-Blue (3-wire WS2811, 3-wire WS2812)
-  ORDER_GRB = 1,  // Green-Red-Blue (4-pin WS2812B)
+  ORDER_RGB = 0,  // Red-Green-Blue
+  ORDER_GRB = 1,  // Green-Red-Blue
   ORDER_GBR = 2,  // Green-Blue-Red
   ORDER_RBG = 3,  // Red-Blue-Green
   ORDER_BRG = 4,  // Blue-Red-Green

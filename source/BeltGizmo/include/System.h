@@ -28,7 +28,7 @@ void resetWebSocketData() {
   wsData.switchState = "";
   wsData.pack = "";
   wsData.safety = "";
-  wsData.wandPower = 5; // Default to max power.
+  wsData.wandPower = 1; // Default to minimum power.
   wsData.wandMode = "";
   wsData.firing = "";
   wsData.cable = "";
