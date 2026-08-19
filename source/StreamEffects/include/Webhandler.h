@@ -114,7 +114,7 @@ String getDeviceConfig() {
   // Provide current values for the device.
   jsonBody["buildDate"] = build_date;
   jsonBody["numLeds"] = i_num_leds; // User-selected count of LEDs.
-  jsonBody["ledType"] = LED_COLOR_TYPE; // [1=RGB,2=GRB,3=GBR]
+  jsonBody["ledType"] = LED_COLOR_TYPE; // [0=RGB,1=GRB,2=GBR]
   jsonBody["maxBrightness"] = i_max_brightness; // Maximum brightness 0-255
   jsonBody["defaultWandPower"] = i_default_wand_power; // Default power level 1-5
   jsonBody["invertDirection"] = b_invert_direction; // Invert animation direction
@@ -885,7 +885,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
 
     // Override the current LED colour order.
     if(jsonBody["ledType"].is<uint8_t>()) {
-      LED_COLOR_TYPE = (LED_COLOR_ORDER)jsonBody["ledType"].as<uint8_t>(); // [1=RGB,2=GRB,3=GBR]
+      LED_COLOR_TYPE = (ColorOrder)jsonBody["ledType"].as<uint8_t>(); // [0=RGB,1=GRB,2=GBR]
       // Sync color order change to Lighting library immediately.
       LightingManager::getInstance().setColorOrder(LED_COLOR_TYPE);
     }

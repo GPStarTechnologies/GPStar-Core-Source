@@ -356,7 +356,7 @@ void setup() {
       }
     }
     if(preferences.isKey("ledType")) {
-      LED_COLOR_TYPE = (LED_COLOR_ORDER)preferences.getUChar("ledType", (uint8_t)COLOR_ORDER_RGB);
+      LED_COLOR_TYPE = (ColorOrder)preferences.getUChar("ledType", (uint8_t)ORDER_GBR);
     }
     if(preferences.isKey("maxBrightness")) {
       i_max_brightness = preferences.getUChar("maxBrightness", 255);

@@ -122,6 +122,86 @@ TEST_F(LightingConversionFixture, HSV_ReducedBrightness_ScalesAllChannels) {
     EXPECT_LE(dim_rgb.b, bright_rgb.b);
 }
 
+TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_43_RedGreen) {
+    // H=43 is near the red/green sector boundary (should be yellow-ish)
+    LED_HSV boundary_hsv = {43, 255, 255};
+    LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
+    
+    // Should have significant red and green, minimal blue
+    EXPECT_GT(boundary_rgb.r, 100);
+    EXPECT_GT(boundary_rgb.g, 100);
+    EXPECT_LT(boundary_rgb.b, 50);
+}
+
+TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_85_GreenBlue) {
+    // H=85 is near green/cyan sector boundary
+    LED_HSV boundary_hsv = {85, 255, 255};
+    LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
+    
+    // Should have minimal red, strong green
+    EXPECT_LT(boundary_rgb.r, 50);
+    EXPECT_GT(boundary_rgb.g, 200);
+}
+
+TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_170_BlueRed) {
+    // H=170 is near cyan/magenta sector boundary
+    LED_HSV boundary_hsv = {170, 255, 255};
+    LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
+    
+    // Should have minimal green, strong blue
+    EXPECT_LT(boundary_rgb.g, 50);
+    EXPECT_GT(boundary_rgb.b, 200);
+}
+
+TEST_F(LightingConversionFixture, HSV_MidRangeSaturation_DesaturatedRed) {
+    // Mid-range saturation: H=0, S=128, V=255 should be light red
+    LED_HSV desaturated = {0, 128, 255};
+    LED_RGB rgb = Lighting::hsv2rgb(desaturated);
+    
+    // Red dominates but with less intensity than pure color
+    EXPECT_EQ(rgb.r, 255);           // Max value
+    EXPECT_GT(rgb.g, 100);           // Raised floor due to desaturation
+    EXPECT_GT(rgb.b, 100);           // Raised floor due to desaturation
+    EXPECT_LT(rgb.g, 200);           // But not too high
+    EXPECT_LT(rgb.b, 200);           // But not too high
+}
+
+TEST_F(LightingConversionFixture, HSV_White_AnyHueFullValueZeroSaturation) {
+    // White is any hue with S=0 and V=255
+    // Test multiple hues to ensure they all produce white
+    LED_HSV white1 = {0, 0, 255};
+    LED_HSV white2 = {85, 0, 255};
+    LED_HSV white3 = {170, 0, 255};
+    
+    LED_RGB rgb1 = Lighting::hsv2rgb(white1);
+    LED_RGB rgb2 = Lighting::hsv2rgb(white2);
+    LED_RGB rgb3 = Lighting::hsv2rgb(white3);
+    
+    // All should be white (255, 255, 255)
+    EXPECT_EQ(rgb1.r, 255);
+    EXPECT_EQ(rgb1.g, 255);
+    EXPECT_EQ(rgb1.b, 255);
+    
+    EXPECT_EQ(rgb2.r, 255);
+    EXPECT_EQ(rgb2.g, 255);
+    EXPECT_EQ(rgb2.b, 255);
+    
+    EXPECT_EQ(rgb3.r, 255);
+    EXPECT_EQ(rgb3.g, 255);
+    EXPECT_EQ(rgb3.b, 255);
+}
+
+TEST_F(LightingConversionFixture, HSV_LowValue_DimColor) {
+    // Low value with full saturation should produce dim colors
+    LED_HSV dim_red = {0, 255, 50};
+    LED_RGB rgb = Lighting::hsv2rgb(dim_red);
+    
+    // All channels should be relatively low
+    EXPECT_LT(rgb.r, 100);
+    EXPECT_LT(rgb.g, 50);
+    EXPECT_LT(rgb.b, 50);
+}
+
 // ============================================================================
 // Color Channel Ordering Tests
 // ============================================================================
@@ -150,5 +230,32 @@ TEST_F(LightingConversionFixture, ColorOrder_GBR_RotatesChannels) {
     
     EXPECT_EQ(reordered.r, 128);  // G→R
     EXPECT_EQ(reordered.g, 64);   // B→G
+    EXPECT_EQ(reordered.b, 255);  // R→B
+}
+
+TEST_F(LightingConversionFixture, ColorOrder_RBG_SwapsBG) {
+    LED_RGB original = {255, 128, 64};
+    LED_RGB reordered = Lighting::applyColorOrder(original, ORDER_RBG);
+    
+    EXPECT_EQ(reordered.r, 255);  // R stays same
+    EXPECT_EQ(reordered.g, 64);   // B moved to G
+    EXPECT_EQ(reordered.b, 128);  // G moved to B
+}
+
+TEST_F(LightingConversionFixture, ColorOrder_BRG_RotatesChannels2) {
+    LED_RGB original = {255, 128, 64};
+    LED_RGB reordered = Lighting::applyColorOrder(original, ORDER_BRG);
+    
+    EXPECT_EQ(reordered.r, 64);   // B→R
+    EXPECT_EQ(reordered.g, 255);  // R→G
+    EXPECT_EQ(reordered.b, 128);  // G→B
+}
+
+TEST_F(LightingConversionFixture, ColorOrder_BGR_ReversesChannels) {
+    LED_RGB original = {255, 128, 64};
+    LED_RGB reordered = Lighting::applyColorOrder(original, ORDER_BGR);
+    
+    EXPECT_EQ(reordered.r, 64);   // B→R
+    EXPECT_EQ(reordered.g, 128);  // G stays same
     EXPECT_EQ(reordered.b, 255);  // R→B
 }

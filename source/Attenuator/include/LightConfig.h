@@ -123,7 +123,7 @@ private:
   LightingManager() :
     pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_RGB + NEO_KHZ800),
     assignedSlot(0) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this device.
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // 3-wire WS2811/WS2812 LEDs use RGB color order.
   }
 
   // Helper: Apply a mapping of LED names based on invert flag.

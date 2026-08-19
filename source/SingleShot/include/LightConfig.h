@@ -38,11 +38,11 @@
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
 #ifdef ESP32
-  #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs used by the barrel and cyclotron.
+  #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs used by the barrel and mini-cyclotron.
   #define TOP_LED_PIN 42 // Data pin for the addressable LEDs to the vent light.
   #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #else
-  #define BARREL_LED_PIN 10 // Data pin for the addressable LEDs used by the barrel and cyclotron.
+  #define BARREL_LED_PIN 10 // Data pin for the addressable LEDs used by the barrel and mini-cyclotron.
   #define TOP_LED_PIN 12 // Data pin for the addressable LEDs to the vent light, and top blinking light when RGB vent light is disabled.
   #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #endif
@@ -52,12 +52,15 @@
  * Counts for segments of special LED chains
  * Note that these are in the expected physical order in the chain
  */
-#define DEVICE_REFRESH_MS 16 // Refresh rate for the addressable LEDs (in milliseconds)
-#define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel
-#define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel
+#define CYCLOTRON_LED_COUNT 7 // GPStar 7-LED Jewel, though only the outer 6 LEDs are used
+#define BARREL_LED_COUNT 7 // GPStar 7-LED Jewel, located behind the lens
 #define SYSTEM_LED_COUNT (CYCLOTRON_LED_COUNT + BARREL_LED_COUNT) // Sum of cyclotron and barrel LEDs.
 #define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
 
+/**
+ * Timings for LED updates
+ */
+#define DEVICE_REFRESH_MS 16 // Refresh rate for the addressable LEDs (in milliseconds)
 /*
  * Pre-calculated indices for segments of the system LED chain (Cyclotron + Barrel)
  */
@@ -129,7 +132,7 @@ private:
     systemLEDs(SYSTEM_LED_COUNT, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
     ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
     assignedSlot(slot) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this device.
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // 3-wire WS2811/WS2812 LEDs use RGB color order.
   }
 
   // Helper: Returns the physical strip object for the given device slot.

@@ -37,11 +37,11 @@
  * Assumes WS2812B addressable LEDs (NeoPixel compatible)
  */
 #ifdef ESP32
-  #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs in the barrel.
+  #define BARREL_LED_PIN 41 // Data pin for the addressable LEDs used by the barrel.
   #define TOP_LED_PIN 42 // Data pin for the addressable LEDs to the vent light.
   #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #else
-  #define BARREL_LED_PIN 10 // Data pin for the addressable LEDs in the barrel.
+  #define BARREL_LED_PIN 10 // Data pin for the addressable LEDs used by the barrel.
   #define TOP_LED_PIN 12 // Data pin for the addressable LEDs to the vent light, and top blinking light when RGB vent light is disabled.
   #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #endif
@@ -137,7 +137,7 @@ private:
     barrelLEDs(BARREL_LEDS_MAX, BARREL_LED_PIN, NEO_RGB + NEO_KHZ800),
     ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_RGB + NEO_KHZ800),
     assignedSlot(slot) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this device.
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // 3-wire WS2811/WS2812 LEDs use RGB color order (Hasbro barrels override in System.h).
   }
 
   // Helper: Returns the physical strip object for the given device slot.
@@ -219,23 +219,8 @@ public:
     pixels.show(); // Pass through to the LED driver library to update LED states.
   }
 
-  // Returns a pixel's current color as LED_RGB
-  LED_RGB getPixelColor(uint16_t index) {
-    auto& pixels = getDevicePixels(assignedSlot);
-    if(index >= 0 && index < pixels.numPixels()) {
-      return unpackColor(pixels.getPixelColor(index));
-    }
-    return LED_RGB_BLACK; // Return black if index is out of bounds.
-  }
-
-  // Returns barrel-type-aware color (RGB or GRB based on WAND_BARREL_LED)
-  // Guard: only operates when called on CHAIN_BARREL device slot
-  LED_RGB getBarrelColor(ColorID colorEnum, uint8_t brightness, ColorOrder colorOrder) {
-    // Guard: only operate on CHAIN_BARREL device slot
-    if(assignedSlot != CHAIN_BARREL) {
-      return LED_RGB_BLACK;
-    }
-
+  // Returns a color-ordered RGB color for the Barrel (and possibly the Vent)
+  LED_RGB getColorRaw(ColorID colorEnum, uint8_t brightness, ColorOrder colorOrder) {
     // Get the HSV color through normal lighting library
     LED_HSV hsv;
     if(isColorDynamic(colorEnum)) {
@@ -247,6 +232,15 @@ public:
     // Convert HSV to RGB and return in the color order passed from caller
     LED_RGB rgb = Lighting::hsv2rgb(hsv);
     return Lighting::applyColorOrder(rgb, colorOrder);
+  }
+
+  // Returns a pixel's current color as LED_RGB
+  LED_RGB getPixelColor(uint16_t index) {
+    auto& pixels = getDevicePixels(assignedSlot);
+    if(index >= 0 && index < pixels.numPixels()) {
+      return unpackColor(pixels.getPixelColor(index));
+    }
+    return LED_RGB_BLACK; // Return black if index is out of bounds.
   }
 
   // Set a pixel color by ColorID and automatically apply stored color order.

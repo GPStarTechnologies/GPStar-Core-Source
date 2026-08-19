@@ -304,25 +304,19 @@ class LightingManager {
 private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
   static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
-  Adafruit_NeoPixel packLEDs;
-  Adafruit_NeoPixel cyclotronLEDs;
+  static Adafruit_NeoPixel packLEDs;
+  static Adafruit_NeoPixel cyclotronLEDs;
 #ifdef ESP32
-  Adafruit_NeoPixel exp1LEDs;
-  Adafruit_NeoPixel exp2LEDs;
+  static Adafruit_NeoPixel exp1LEDs;
+  static Adafruit_NeoPixel exp2LEDs;
 #endif
   const LED_SEGMENT assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
   // Private constructor - called once per segment by getInstance()
   // Initializes the driver objects for this segment.
   LightingManager(LED_SEGMENT segment) :
-    packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_RGB + NEO_KHZ800),
-    cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800),
-#ifdef ESP32
-    exp1LEDs(EXP1_LED_COUNT, EXPANSION1_LED_PIN, NEO_RGB + NEO_KHZ800),
-    exp2LEDs(EXP2_LED_COUNT, EXPANSION2_LED_PIN, NEO_RGB + NEO_KHZ800),
-#endif
     assignedSlot(segment) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set a clear default order for this segment.
+    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // 3-wire WS2811/WS2812 LEDs use RGB color order.
   }
 
   // Helper: Maps an LED_SEGMENT to its physical hardware CHAIN using the registry
@@ -495,29 +489,25 @@ public:
   }
 
   // Uniformly scale the brightness of a pixel, while attempting to retain the RGB color.
-  void setPixelBrightness(uint16_t index, uint8_t brightness_limit) {
+  void maximizeBrightness(uint16_t index, uint8_t brightness_limit = 255) {
     auto& pixels = getDevicePixels(assignedSlot);
     if(index >= 0 && index < pixels.numPixels()) {
       // Get current pixel's RGB color
       LED_RGB current_rgb = getPixelColor(index);
+      LED_RGB scaled_rgb = LED_RGB_BLACK;
       
-      // Find the maximum RGB component
+      // Find the maximum component of the RGB triplet.
       uint8_t max_component = max(current_rgb.r, max(current_rgb.g, current_rgb.b));
-      
-      if(max_component == 0) {
-        // Black pixel, nothing to scale
-        return;
-      }
-      
+
       // Scale all components proportionally so max becomes brightness_limit
-      float scale_factor = (float)brightness_limit / (float)max_component;
-      LED_RGB scaled_rgb;
-      scaled_rgb.r = (uint8_t)(current_rgb.r * scale_factor);
-      scaled_rgb.g = (uint8_t)(current_rgb.g * scale_factor);
-      scaled_rgb.b = (uint8_t)(current_rgb.b * scale_factor);
-      
-      // Apply the scaled color back
-      setPixelColor(index, scaled_rgb);
+      if(max_component > 0) {
+        uint16_t scale_factor = ((uint16_t)(brightness_limit) * 256) / max_component;
+        scaled_rgb.r = (uint8_t)(current_rgb.r * scale_factor);
+        scaled_rgb.g = (uint8_t)(current_rgb.g * scale_factor);
+        scaled_rgb.b = (uint8_t)(current_rgb.b * scale_factor);
+      }
+
+      setPixelColor(index, scaled_rgb); // Apply the new color back to the same pixel.
     }
   }
 
@@ -596,9 +586,22 @@ public:
  * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
  * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
- *
- * Additionally, the Lighting library is shared across all instances so that animation
- * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
+
+/**
+ * The Lighting library is shared across all instances so that animation
+ * state (palette phase, color tracking) is consistent across all LED chains.
+ */
 Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
+
+/**
+ * In order to allow the show() method to be called across segments (devices)
+ * the actual pixel chains must be initialized using static class members.
+ */
+Adafruit_NeoPixel LightingManager::packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel LightingManager::cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_RGB + NEO_KHZ800);
+#ifdef ESP32
+Adafruit_NeoPixel LightingManager::exp1LEDs(EXP1_LED_COUNT, EXPANSION1_LED_PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel LightingManager::exp2LEDs(EXP2_LED_COUNT, EXPANSION2_LED_PIN, NEO_RGB + NEO_KHZ800);
+#endif

@@ -1124,7 +1124,7 @@ bool fadeOutCyclotron() {
         b_return = true;
 
         if(cyclotronLookupTable(i) > 0) {
-          cyclotronLidMgr.setPixelBrightness(i_tmp_lid_led, i_curr_brightness);
+          cyclotronLidMgr.maximizeBrightness(i_tmp_lid_led, i_curr_brightness);
         }
       }
       else {

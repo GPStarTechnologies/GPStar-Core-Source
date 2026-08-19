@@ -45,11 +45,14 @@ constexpr LED_RGB LED_RGB_WHITE = {255, 255, 255};
 
 // ColorOrder: LED strip color channel ordering.
 // Different LED strips use different channel orders.
-// WS2812B strips use ORDER_GRB, most others use ORDER_RGB.
+// WS2811 and 3-wire WS2812 use ORDER_RGB.
 enum ColorOrder : uint8_t {
-  ORDER_RGB = 0,
-  ORDER_GRB = 1,
-  ORDER_GBR = 2
+  ORDER_RGB = 0,  // Red-Green-Blue (3-wire WS2811, 3-wire WS2812)
+  ORDER_GRB = 1,  // Green-Red-Blue (4-pin WS2812B)
+  ORDER_GBR = 2,  // Green-Blue-Red
+  ORDER_RBG = 3,  // Red-Blue-Green
+  ORDER_BRG = 4,  // Blue-Red-Green
+  ORDER_BGR = 5   // Blue-Green-Red
 };
 
 // ColorID: All colors (static and dynamic) in a single unified enum.

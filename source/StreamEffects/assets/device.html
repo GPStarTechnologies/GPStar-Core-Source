@@ -43,9 +43,9 @@
       <div class="setting">
         <b>LED Color Type:</b>
         <select id="ledType" name="ledType">
-          <option value="1">RGB</option>
-          <option value="2">GRB</option>
-          <option selected value="3">GBR</option>
+          <option value="0">RGB</option>
+          <option selected value="1">GRB</option>
+          <option value="2">GBR</option>
         </select>
       </div>
       <div class="setting">
@@ -113,7 +113,7 @@
             if (settings) {
               // Update fields with the current values, or supply an expected default as necessary.
               setValue("wifiName", settings.wifiName || "");
-              setValue("ledType", settings.ledType || 3); // Default: GBR
+              setValue("ledType", settings.ledType ?? 1); // Default: GRB
               setValue("numLeds", settings.numLeds || 250); // Default to 250 LEDs.
               setHtml("numLedsOut", getValue("numLeds")); // Update number display.
               setValue("maxBrightness", settings.maxBrightness || 255); // Default to 100%
@@ -152,7 +152,7 @@
         var settings = {
           wifiName: wifiName,
           numLeds: getInt("numLeds") || 250,
-          ledType: getInt("ledType") || 3,
+          ledType: getInt("ledType") ?? 1,
           maxBrightness: getInt("maxBrightness") || 255,
           defaultWandPower: getInt("defaultWandPower") || 1,
           invertDirection: getToggle("invertDirection") || false,

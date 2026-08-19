@@ -20,15 +20,12 @@
 #pragma once
 
 /**
- * getBarrelColor - Barrel-type aware color selection
- * 
- * Determines the correct color order (RGB or GRB) based on WAND_BARREL_LED type,
- * then passes it to the manager's getBarrelColor() method.
- * Hasbro barrels use GRB, all others use RGB.
+ * getBarrelColor -  Determines the correct color ordering (RGB or GRB) as based
+ * on WAND_BARREL_LED type, then passes it to the manager's getColorRaw() method.
  */
 inline LED_RGB getBarrelColor(ColorID colorName, uint8_t brightness = 255) {
   ColorOrder colorOrder = (WAND_BARREL_LED == HASBRO_BARREL) ? ORDER_GRB : ORDER_RGB;
-  return LightingManager::getInstance(CHAIN_BARREL).getBarrelColor(colorName, brightness, colorOrder);
+  return LightingManager::getInstance(CHAIN_BARREL).getColorRaw(colorName, brightness, colorOrder);
 }
 
 // ============================================================================
@@ -340,7 +337,7 @@ void soundBeepLoop() {
 }
 
 void wandTipOn() {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   switch(WAND_BARREL_LED) {
     case FRUTTO_BARREL:
@@ -379,14 +376,14 @@ void wandTipOn() {
       }
 
       if(WAND_BARREL_LED == FRUTTO_BARREL) {
-        mgr.setPixelColor(12, getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(12, getBarrelColor(c_temp));
       }
       else if(WAND_BARREL_LED == GPSTAR_BARREL) {
-        mgr.setPixelColor(36, getBarrelColor(c_temp));
-        mgr.setPixelColor(37, getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(36, getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(37, getBarrelColor(c_temp));
       }
       else {
-        mgr.setPixelColor(36, getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(36, getBarrelColor(c_temp));
       }
     }
     break;
@@ -403,23 +400,23 @@ void wandTipOn() {
 }
 
 void wandTipOff() {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   switch(WAND_BARREL_LED) {
     case FRUTTO_BARREL:
       // Turn off the Frutto tip LED.
-      mgr.setPixelColor(12, LED_RGB_BLACK);
+      barrelMgr.setPixelColor(12, LED_RGB_BLACK);
     break;
 
     case GPSTAR_BARREL:
       // Turn off the GPStar Barrel tip LEDs.
-      mgr.setPixelColor(36, LED_RGB_BLACK);
-      mgr.setPixelColor(37, LED_RGB_BLACK);
+      barrelMgr.setPixelColor(36, LED_RGB_BLACK);
+      barrelMgr.setPixelColor(37, LED_RGB_BLACK);
     break;
 
     case GPSTAR_BARREL_II:
       // Turn off the GPStar Barrel II tip LED.
-      mgr.setPixelColor(36, LED_RGB_BLACK);
+      barrelMgr.setPixelColor(36, LED_RGB_BLACK);
     break;
 
     default:
@@ -3175,28 +3172,28 @@ void setPowerOnReminder(bool enable) {
 }
 
 void wandBarrelLightsOff() {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
         // Turn off the entire Frutto LED array.
-        mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), LED_RGB_BLACK);
+        barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), LED_RGB_BLACK);
       break;
 
       case GPSTAR_BARREL:
         // Turn off the entire GPStar Neutrona Barrel array.
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), LED_RGB_BLACK);
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), LED_RGB_BLACK);
       break;
 
       case GPSTAR_BARREL_II:
         // Turn off the entire GPStar Neutrona Barrel II array.
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), LED_RGB_BLACK);
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), LED_RGB_BLACK);
       break;
 
       default:
         // Turn off the entire Hasbro LED or GPStar Barrel LED Mini array.
-        mgr.setPixelColor(i, LED_RGB_BLACK);
+        barrelMgr.setPixelColor(i, LED_RGB_BLACK);
       break;
     }
   }
@@ -6244,7 +6241,7 @@ void modeFireStart() {
 }
 
 void fireStreamEffect(LED_RGB c_colour) {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
   uint8_t i_firing_stream_tmp; // Stores a calculated value based on LED count.
 
   switch(WAND_BARREL_LED) {
@@ -6261,36 +6258,36 @@ void fireStreamEffect(LED_RGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_CHARTREUSE));
-                  //mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 2]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_CHARTREUSE));
+                  //barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 2]), c_colour);
                 }
                 else {
-                  mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_WHITE));
-                  //mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 2]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_WHITE));
+                  //barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 2]), c_colour);
                 }
               }
               else if(getSystemYearMode() == SYSTEM_1989) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
                   break;
                 }
               }
@@ -6298,24 +6295,24 @@ void fireStreamEffect(LED_RGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
                   break;
                 }
               }
@@ -6323,26 +6320,26 @@ void fireStreamEffect(LED_RGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_PASTEL_PINK));
+                barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_PASTEL_PINK));
               }
               else {
-                mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_DARK_GREEN));
+                barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_DARK_GREEN));
               }
             break;
 
             case STASIS:
-              mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_BLUE));
+              barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_BLUE));
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), LED_RGB_BLACK);
+              barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), LED_RGB_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_CUSTOM));
+              barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(C_CUSTOM));
             break;
           }
         }
@@ -6388,20 +6385,20 @@ void fireStreamEffect(LED_RGB c_colour) {
           }
         }
         else if(i_barrel_light < i_num_barrel_leds) {
-          mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light]), c_colour);
+          barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light]), c_colour);
 
           switch(gpstarWand.getStreamMode()) {
             case MESON:
               if(i_barrel_light + 1 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 1]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 1]), c_colour);
               }
 
               if(i_barrel_light + 2 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 2]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 2]), c_colour);
               }
 
               if(i_barrel_light + 3 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 3]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 3]), c_colour);
               }
             break;
 
@@ -6435,7 +6432,7 @@ void fireStreamEffect(LED_RGB c_colour) {
 
               for(uint8_t i = i_barrel_light + 1; i < i_barrel_light + i_t_rand; i++) {
                 if(i < i_num_barrel_leds) {
-                  mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), c_colour);
                 }
               }
             }
@@ -6447,7 +6444,7 @@ void fireStreamEffect(LED_RGB c_colour) {
 
               for(uint8_t i = i_barrel_light + 1; i < i_barrel_light + i_t_rand_def; i++) {
                 if(i < i_num_barrel_leds) {
-                  mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), c_colour);
                 }
               }
             }
@@ -6590,36 +6587,36 @@ void fireStreamEffect(LED_RGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_CHARTREUSE));
-                  //mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 2]), getBarrelColor(c_colour));
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_CHARTREUSE));
+                  //barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 2]), getBarrelColor(c_colour));
                 }
                 else {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_WHITE));
-                  //mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 2]), getBarrelColor(c_colour));
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_WHITE));
+                  //barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 2]), getBarrelColor(c_colour));
                 }
               }
               else if(getSystemYearMode() == SYSTEM_1989) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
                   break;
                 }
               }
@@ -6627,24 +6624,24 @@ void fireStreamEffect(LED_RGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_RED5));
                   break;
                 }
               }
@@ -6652,26 +6649,26 @@ void fireStreamEffect(LED_RGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_PASTEL_PINK));
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_PASTEL_PINK));
               }
               else {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_DARK_GREEN));
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_DARK_GREEN));
               }
             break;
 
             case STASIS:
-              mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_BLUE));
+              barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_BLUE));
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), LED_RGB_BLACK);
+              barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), LED_RGB_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_CUSTOM));
+              barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(C_CUSTOM));
             break;
           }
         }
@@ -6717,20 +6714,20 @@ void fireStreamEffect(LED_RGB c_colour) {
           }
         }
         else if(i_barrel_light < i_num_barrel_leds) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light]), c_colour);
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light]), c_colour);
 
           switch(gpstarWand.getStreamMode()) {
             case MESON:
               if(i_barrel_light + 1 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 1]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 1]), c_colour);
               }
 
               if(i_barrel_light + 2 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 2]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 2]), c_colour);
               }
 
               if(i_barrel_light + 3 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 3]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 3]), c_colour);
               }
             break;
 
@@ -6764,7 +6761,7 @@ void fireStreamEffect(LED_RGB c_colour) {
 
               for(uint8_t i = i_barrel_light + 1; i < i_barrel_light + i_t_rand; i++) {
                 if(i < i_num_barrel_leds) {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), c_colour);
                 }
               }
             }
@@ -6776,7 +6773,7 @@ void fireStreamEffect(LED_RGB c_colour) {
 
               for(uint8_t i = i_barrel_light + 1; i < i_barrel_light + i_t_rand_def; i++) {
                 if(i < i_num_barrel_leds) {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), c_colour);
                 }
               }
             }
@@ -6919,36 +6916,36 @@ void fireStreamEffect(LED_RGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_CHARTREUSE));
-                  //mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 2]), getBarrelColor(c_colour));
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_CHARTREUSE));
+                  //barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 2]), getBarrelColor(c_colour));
                 }
                 else {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_WHITE));
-                  //mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 2]), getBarrelColor(c_colour));
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_WHITE));
+                  //barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 2]), getBarrelColor(c_colour));
                 }
               }
               else if(getSystemYearMode() == SYSTEM_1989) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED5));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED));
                   break;
                 }
               }
@@ -6956,24 +6953,24 @@ void fireStreamEffect(LED_RGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_RED5));
                   break;
                 }
               }
@@ -6981,26 +6978,26 @@ void fireStreamEffect(LED_RGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_PASTEL_PINK));
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_PASTEL_PINK));
               }
               else {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_DARK_GREEN));
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_DARK_GREEN));
               }
             break;
 
             case STASIS:
-              mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_BLUE));
+              barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_BLUE));
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), LED_RGB_BLACK);
+              barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), LED_RGB_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_CUSTOM));
+              barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(C_CUSTOM));
             break;
           }
         }
@@ -7046,20 +7043,20 @@ void fireStreamEffect(LED_RGB c_colour) {
           }
         }
         else if(i_barrel_light < i_num_barrel_leds) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light]), c_colour);
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light]), c_colour);
 
           switch(gpstarWand.getStreamMode()) {
             case MESON:
               if(i_barrel_light + 1 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 1]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 1]), c_colour);
               }
 
               if(i_barrel_light + 2 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 2]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 2]), c_colour);
               }
 
               if(i_barrel_light + 3 < i_num_barrel_leds) {
-                mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 3]), c_colour);
+                barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 3]), c_colour);
               }
             break;
 
@@ -7093,7 +7090,7 @@ void fireStreamEffect(LED_RGB c_colour) {
 
               for(uint8_t i = i_barrel_light + 1; i < i_barrel_light + i_t_rand; i++) {
                 if(i < i_num_barrel_leds) {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), c_colour);
                 }
               }
             }
@@ -7105,7 +7102,7 @@ void fireStreamEffect(LED_RGB c_colour) {
 
               for(uint8_t i = i_barrel_light + 1; i < i_barrel_light + i_t_rand_def; i++) {
                 if(i < i_num_barrel_leds) {
-                  mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), c_colour);
+                  barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), c_colour);
                 }
               }
             }
@@ -7245,34 +7242,34 @@ void fireStreamEffect(LED_RGB c_colour) {
             default:
               if(b_firing_cross_streams) {
                 if(isBrassPack()) {
-                  mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_CHARTREUSE));
+                  barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_CHARTREUSE));
                 }
                 else {
-                  mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_WHITE));
+                  barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_WHITE));
                 }
               }
               else if(getSystemYearMode() == SYSTEM_1989) {
                 // Shift the stream from orange to red on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED5));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED));
                   break;
                 }
               }
@@ -7280,24 +7277,24 @@ void fireStreamEffect(LED_RGB c_colour) {
                 // Shift the stream from red to orange on higher power levels.
                 switch(gpstarWand.getPowerLevel()) {
                   case LEVEL_1:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED));
                   break;
 
                   case LEVEL_2:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED2));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED2));
                   break;
 
                   case LEVEL_3:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED3));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED3));
                   break;
 
                   case LEVEL_4:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED4));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED4));
                   break;
 
                   case LEVEL_5:
                   default:
-                    mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED5));
+                    barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_RED5));
                   break;
                 }
               }
@@ -7305,26 +7302,26 @@ void fireStreamEffect(LED_RGB c_colour) {
 
             case SLIME:
               if(getSystemYearMode() == SYSTEM_1989) {
-                mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_PASTEL_PINK));
+                barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_PASTEL_PINK));
               }
               else {
-                mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_DARK_GREEN));
+                barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_DARK_GREEN));
               }
             break;
 
             case STASIS:
-              mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_BLUE));
+              barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_BLUE));
             break;
 
             case MESON:
             case SPECTRAL:
             case HOLIDAY_HALLOWEEN:
             case HOLIDAY_CHRISTMAS:
-              mgr.setPixelColor(i_barrel_light - 1, LED_RGB_BLACK);
+              barrelMgr.setPixelColor(i_barrel_light - 1, LED_RGB_BLACK);
             break;
 
             case SPECTRAL_CUSTOM:
-              mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_CUSTOM));
+              barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(C_CUSTOM));
             break;
           }
         }
@@ -7364,7 +7361,7 @@ void fireStreamEffect(LED_RGB c_colour) {
           }
         }
         else if(i_barrel_light < i_num_barrel_leds) {
-          mgr.setPixelColor(i_barrel_light, c_colour);
+          barrelMgr.setPixelColor(i_barrel_light, c_colour);
 
           switch(gpstarWand.getStreamMode()) {
             default:
@@ -7401,36 +7398,36 @@ void fireStreamEffect(LED_RGB c_colour) {
 }
 
 void fireStreamStart(LED_RGB c_colour) {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   if(ms_firing_lights.justFinished() && i_barrel_light < i_num_barrel_leds) {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
-        mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light]), c_colour);
+        barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light]), c_colour);
 
         if(i_barrel_light + 2 < i_num_barrel_leds) {
-          mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 2]), LED_RGB_BLACK);
+          barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light + 2]), LED_RGB_BLACK);
         }
       break;
 
       case GPSTAR_BARREL:
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light]), c_colour);
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light]), c_colour);
 
         if(i_barrel_light + 2 < i_num_barrel_leds) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 2]), LED_RGB_BLACK);
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light + 2]), LED_RGB_BLACK);
         }
       break;
 
       case GPSTAR_BARREL_II:
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light]), c_colour);
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light]), c_colour);
 
         if(i_barrel_light + 2 < i_num_barrel_leds) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 2]), LED_RGB_BLACK);
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light + 2]), LED_RGB_BLACK);
         }
       break;
 
       default:
-        mgr.setPixelColor(i_barrel_light, c_colour);
+        barrelMgr.setPixelColor(i_barrel_light, c_colour);
       break;
     }
 
@@ -8012,7 +8009,7 @@ void modeFiring() {
 }
 
 void wandBarrelHeatDown() {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
   uint8_t i_barrel_led;
 
   // Set this variable to the tip LED index.
@@ -8053,37 +8050,37 @@ void wandBarrelHeatDown() {
       switch(WAND_BARREL_LED) {
         case GPSTAR_BARREL:
         default:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatdown_counter));
         break;
 
         case GPSTAR_BARREL_II:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
         break;
 
         case FRUTTO_BARREL:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatdown_counter));
         break;
 
         case GPSTAR_BARREL_MINI:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
         break;
 
         case HASBRO_BARREL:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
         break;
       }
 
@@ -8157,37 +8154,37 @@ void wandBarrelHeatDown() {
     switch(WAND_BARREL_LED) {
       case GPSTAR_BARREL:
       default:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatdown_counter));
       break;
 
       case GPSTAR_BARREL_II:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
       break;
 
       case FRUTTO_BARREL:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatdown_counter));
       break;
 
       case GPSTAR_BARREL_MINI:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatdown_counter));
       break;
 
       case HASBRO_BARREL:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatdown_counter));
       break;
     }
 
@@ -8201,7 +8198,7 @@ void wandBarrelHeatDown() {
 }
 
 void wandBarrelHeatUp() {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
   uint8_t i_barrel_led;
 
   // Set this variable to the tip LED index.
@@ -8245,37 +8242,37 @@ void wandBarrelHeatUp() {
       switch(WAND_BARREL_LED) {
         case GPSTAR_BARREL:
         default:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatup_counter));
         break;
 
         case GPSTAR_BARREL_II:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
         break;
 
         case FRUTTO_BARREL:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatup_counter));
         break;
 
         case GPSTAR_BARREL_MINI:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-          mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
         break;
 
         case HASBRO_BARREL:
-          mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+          barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
         break;
       }
 
@@ -8340,37 +8337,37 @@ void wandBarrelHeatUp() {
     switch(WAND_BARREL_LED) {
       case GPSTAR_BARREL:
       default:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 2, getBarrelColor(c_temp, i_heatup_counter));
       break;
 
       case GPSTAR_BARREL_II:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 2, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 3, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
       break;
 
       case FRUTTO_BARREL:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led - 1, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 24, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 25, getBarrelColor(c_temp, i_heatup_counter));
       break;
 
       case GPSTAR_BARREL_MINI:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
-        mgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led + 1, getBarrelColor(c_temp, i_heatup_counter));
       break;
 
       case HASBRO_BARREL:
-        mgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
+        barrelMgr.setPixelColor(i_barrel_led, getBarrelColor(c_temp, i_heatup_counter));
       break;
     }
 
@@ -8380,10 +8377,10 @@ void wandBarrelHeatUp() {
 }
 
 void barrelLEDTranslation(uint8_t id, ColorID colour) {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   if(WAND_BARREL_LED == HASBRO_BARREL || WAND_BARREL_LED == GPSTAR_BARREL_MINI) {
-    mgr.setPixelColor(id, getBarrelColor(colour));
+    barrelMgr.setPixelColor(id, getBarrelColor(colour));
     return;
   }
   else if(WAND_BARREL_LED == FRUTTO_BARREL) {
@@ -8391,35 +8388,35 @@ void barrelLEDTranslation(uint8_t id, ColorID colour) {
       case 0:
         // Translate to first three rows of LEDs.
         for(uint8_t i = 0; i < 12; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 1:
         // Translate to rows 4 and 5 of the LED array.
         for(uint8_t i = 12; i < 20; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 2:
         // Translate to rows 6 and 7 of the LED array.
         for(uint8_t i = 20; i < 28; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 3:
         // Translate to rows 8 and 9 of the LED array.
         for(uint8_t i = 28; i < 36; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 4:
         // Translate to the last three rows of LEDs.
         for(uint8_t i = 36; i < 48; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(colour));
         }
       break;
 
@@ -8433,35 +8430,35 @@ void barrelLEDTranslation(uint8_t id, ColorID colour) {
       case 0:
         // Translate to first three rows of LEDs.
         for(uint8_t i = 0; i < 12; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 1:
         // Translate to rows 4 and 5 of the LED array.
         for(uint8_t i = 12; i < 20; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 2:
         // Translate to rows 6 and 7 of the LED array.
         for(uint8_t i = 20; i < 28; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 3:
         // Translate to rows 8 and 9 of the LED array.
         for(uint8_t i = 28; i < 36; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
         }
       break;
 
       case 4:
         // Translate to the last three rows of LEDs.
         for(uint8_t i = 36; i < 48; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(colour));
         }
       break;
 
@@ -8475,35 +8472,35 @@ void barrelLEDTranslation(uint8_t id, ColorID colour) {
       case 0:
         // Translate to first three rows of LEDs.
         for(uint8_t i = 0; i < 12; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
         }
       break;
 
       case 1:
         // Translate to rows 4 and 5 of the LED array.
         for(uint8_t i = 12; i < 20; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
         }
       break;
 
       case 2:
         // Translate to rows 6 and 7 of the LED array.
         for(uint8_t i = 20; i < 28; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
         }
       break;
 
       case 3:
         // Translate to rows 8 and 9 of the LED array.
         for(uint8_t i = 28; i < 36; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
         }
       break;
 
       case 4:
         // Translate to the last three rows of LEDs.
         for(uint8_t i = 36; i < 48; i++) {
-          mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
+          barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(colour));
         }
       break;
 
@@ -8962,7 +8959,7 @@ void firePulseEffect() {
 }
 
 void fireEffectEnd() {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   // Initialize temporary colour variable to reduce code complexity.
   ColorID c_temp = C_WHITE;
@@ -9263,22 +9260,22 @@ void fireEffectEnd() {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
         // Set the final LED back to whatever colour it is without the effect.
-        mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light - 1]), getBarrelColor(c_temp));
       break;
 
       case GPSTAR_BARREL:
         // Set the final LED back to whatever colour it is without the effect.
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light - 1]), getBarrelColor(c_temp));
       break;
 
       case GPSTAR_BARREL_II:
         // Set the final LED back to whatever colour it is without the effect.
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light - 1]), getBarrelColor(c_temp));
       break;
 
       default:
         // Set the final LED back to whatever colour it is without the effect.
-        mgr.setPixelColor(i_barrel_light - 1, getBarrelColor(c_temp));
+        barrelMgr.setPixelColor(i_barrel_light - 1, getBarrelColor(c_temp));
       break;
     }
 
@@ -9289,13 +9286,13 @@ void fireEffectEnd() {
 }
 
 void fireStreamEnd(LED_RGB c_colour) {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   if(i_barrel_light < i_num_barrel_leds) {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
         // Set the colour for the mapped LED.
-        mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light]), c_colour);
+        barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i_barrel_light]), c_colour);
 
         // More LEDs means a faster firing rate.
         ms_firing_lights_end.start(i_firing_stream / 25); // 4ms
@@ -9303,7 +9300,7 @@ void fireStreamEnd(LED_RGB c_colour) {
 
       case GPSTAR_BARREL:
         // Set the colour for the mapped LED.
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light]), c_colour);
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i_barrel_light]), c_colour);
 
         // More LEDs means a faster firing rate.
         ms_firing_lights_end.start(i_firing_stream / 25); // 4ms
@@ -9311,7 +9308,7 @@ void fireStreamEnd(LED_RGB c_colour) {
 
       case GPSTAR_BARREL_II:
         // Set the colour for the mapped LED.
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light]), c_colour);
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i_barrel_light]), c_colour);
 
         // More LEDs means a faster firing rate.
         ms_firing_lights_end.start(i_firing_stream / 25); // 4ms
@@ -9319,7 +9316,7 @@ void fireStreamEnd(LED_RGB c_colour) {
 
       default:
         // Set the colour for the specific LED.
-        mgr.setPixelColor(i_barrel_light, c_colour);
+        barrelMgr.setPixelColor(i_barrel_light, c_colour);
 
         // Firing at a "normal" rate
         ms_firing_lights_end.start(i_firing_stream / 5); // 20ms
@@ -9449,22 +9446,22 @@ int8_t readRotary() {
 }
 
 void wandBarrelSpectralCustomConfigOn() {
-  auto& mgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
 
   for(uint8_t i = 0; i < i_num_barrel_leds; i++) {
     switch(WAND_BARREL_LED) {
       case FRUTTO_BARREL:
-        mgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(C_CUSTOM));
+        barrelMgr.setPixelColor(PROGMEM_READU8(frutto_barrel[i]), getBarrelColor(C_CUSTOM));
       break;
       case GPSTAR_BARREL:
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(C_CUSTOM));
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel[i]), getBarrelColor(C_CUSTOM));
       break;
       case GPSTAR_BARREL_II:
-        mgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(C_CUSTOM));
+        barrelMgr.setPixelColor(PROGMEM_READU8(gpstar_barrel_ii[i]), getBarrelColor(C_CUSTOM));
       break;
       default:
         // In all other cases, no LUT is needed.
-        mgr.setPixelColor(i, getBarrelColor(C_CUSTOM));
+        barrelMgr.setPixelColor(i, getBarrelColor(C_CUSTOM));
       break;
     }
   }
@@ -10629,7 +10626,7 @@ void checkPowerOnReminder() {
 }
 
 void ventTopLightControl(bool b_on) {
-  auto& mgr = LightingManager::getInstance(CHAIN_VENT);
+  auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
 
   if(!b_on) {
   #ifndef ESP32
@@ -10640,8 +10637,8 @@ void ventTopLightControl(bool b_on) {
   #endif
 
     // Turn off if not off already.
-    if(mgr.getPixelColor(1) != LED_RGB_BLACK) {
-      mgr.setPixelColor(1, C_BLACK);
+    if(ventMgr.getPixelColor(1) != LED_RGB_BLACK) {
+      ventMgr.setPixelColor(1, C_BLACK);
       b_vent_lights_changed = true;
     }
   }
@@ -10654,41 +10651,41 @@ void ventTopLightControl(bool b_on) {
   #endif
 
     // Turn on if not on already.
-    if(mgr.getPixelColor(1) == LED_RGB_BLACK) {
+    if(ventMgr.getPixelColor(1) == LED_RGB_BLACK) {
       if(b_vent_light_stream_colours) {
         switch(gpstarWand.getStreamMode()) {
           case SPECTRAL:
-            mgr.setPixelColor(1, C_RAINBOW);
+            ventMgr.setPixelColor(1, C_RAINBOW);
           break;
 
           case HOLIDAY_HALLOWEEN:
-            mgr.setPixelColor(1, C_ORANGEPURPLE);
+            ventMgr.setPixelColor(1, C_ORANGEPURPLE);
           break;
 
           case HOLIDAY_CHRISTMAS:
-            mgr.setPixelColor(1, C_REDGREEN);
+            ventMgr.setPixelColor(1, C_REDGREEN);
           break;
 
           case SPECTRAL_CUSTOM:
-            mgr.setPixelColor(1, C_CUSTOM);
+            ventMgr.setPixelColor(1, C_CUSTOM);
           break;
 
           default:
             if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-              mgr.setPixelColor(1, C_WARM_WHITE);
+              ventMgr.setPixelColor(1, C_WARM_WHITE);
             }
             else {
-              mgr.setPixelColor(1, C_WHITE);
+              ventMgr.setPixelColor(1, C_WHITE);
             }
           break;
         }
       }
       else {
         if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-          mgr.setPixelColor(1, C_WARM_WHITE);
+          ventMgr.setPixelColor(1, C_WARM_WHITE);
         }
         else {
-          mgr.setPixelColor(1, C_WHITE);
+          ventMgr.setPixelColor(1, C_WHITE);
         }
       }
 
@@ -10697,8 +10694,8 @@ void ventTopLightControl(bool b_on) {
   }
 }
 
-void ventLightControl(uint8_t i_intensity) {
-  auto& mgr = LightingManager::getInstance(CHAIN_VENT);
+void ventLightControl(uint8_t i_brightness) {
+  auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
 
   if(b_rgb_vent_light) {
   #ifndef ESP32
@@ -10708,10 +10705,10 @@ void ventLightControl(uint8_t i_intensity) {
     }
   #endif
 
-    if(i_intensity < 25) {
+    if(i_brightness < 25) {
       // Turn off if not off already.
-      if(mgr.getPixelColor(0) != LED_RGB_BLACK) {
-        mgr.setPixelColor(0, C_BLACK);
+      if(ventMgr.getPixelColor(0) != LED_RGB_BLACK) {
+        ventMgr.setPixelColor(0, C_BLACK);
         b_vent_lights_changed = true;
       }
     }
@@ -10719,59 +10716,59 @@ void ventLightControl(uint8_t i_intensity) {
       if(b_vent_light_stream_colours) {
         switch(gpstarWand.getStreamMode()) {
           case SETTINGS:
-            mgr.setPixelColor(0, C_RED, 128);
+            ventMgr.setPixelColor(0, C_RED, 128);
           break;
 
           case STASIS:
-            mgr.setPixelColor(0, C_MID_BLUE, i_intensity);
+            ventMgr.setPixelColor(0, C_MID_BLUE, i_brightness);
           break;
 
           case SLIME:
             if(getSystemYearMode() == SYSTEM_1989) {
-              mgr.setPixelColor(0, C_PASTEL_PINK, i_intensity);
+              ventMgr.setPixelColor(0, C_PASTEL_PINK, i_brightness);
             }
             else {
-              mgr.setPixelColor(0, C_GREEN, i_intensity);
+              ventMgr.setPixelColor(0, C_GREEN, i_brightness);
             }
           break;
 
           case MESON:
-            mgr.setPixelColor(0, C_YELLOW, i_intensity);
+            ventMgr.setPixelColor(0, C_YELLOW, i_brightness);
           break;
 
           case SPECTRAL:
-            mgr.setPixelColor(0, C_RAINBOW, i_intensity);
+            ventMgr.setPixelColor(0, C_RAINBOW, i_brightness);
           break;
 
           case HOLIDAY_HALLOWEEN:
-            mgr.setPixelColor(0, C_ORANGEPURPLE, i_intensity);
+            ventMgr.setPixelColor(0, C_ORANGEPURPLE, i_brightness);
           break;
 
           case HOLIDAY_CHRISTMAS:
-            mgr.setPixelColor(0, C_REDGREEN, i_intensity);
+            ventMgr.setPixelColor(0, C_REDGREEN, i_brightness);
           break;
 
           case SPECTRAL_CUSTOM:
-            mgr.setPixelColor(0, C_CUSTOM, i_intensity);
+            ventMgr.setPixelColor(0, C_CUSTOM, i_brightness);
           break;
 
           case PROTON:
           default:
             if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-              mgr.setPixelColor(0, C_WHITE, i_intensity);
+              ventMgr.setPixelColor(0, C_WHITE, i_brightness);
             }
             else {
-              mgr.setPixelColor(0, C_WARM_WHITE, i_intensity);
+              ventMgr.setPixelColor(0, C_WARM_WHITE, i_brightness);
             }
           break;
         }
       }
       else {
         if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-          mgr.setPixelColor(0, C_WHITE, i_intensity);
+          ventMgr.setPixelColor(0, C_WHITE, i_brightness);
         }
         else {
-          mgr.setPixelColor(0, C_WARM_WHITE, i_intensity);
+          ventMgr.setPixelColor(0, C_WARM_WHITE, i_brightness);
         }
       }
 
@@ -10780,7 +10777,7 @@ void ventLightControl(uint8_t i_intensity) {
   }
 #ifndef ESP32
   else {
-    analogWrite(VENT_LED_PIN, 255 - PROGMEM_READU8(ledLookupTable[i_intensity]));
+    analogWrite(VENT_LED_PIN, 255 - PROGMEM_READU8(ledLookupTable[i_brightness]));
   }
 #endif
 }

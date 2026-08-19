@@ -433,8 +433,8 @@ void checkDeviceAction() {
       // based on whether the addressable LED animation is currently lit or dark/off.
       if(ms_white_light.justFinished()) {
         ms_white_light.repeat();
-        auto& mgr = LightingManager::getInstance(CHAIN_VENT);
-        if(mgr.getPixelColor(1) != LED_RGB_BLACK) {
+        auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
+        if(ventMgr.getPixelColor(1) != LED_RGB_BLACK) {
           // LED is currently lit (has color), so turn off the physical control
           ventTopLightControl(false);
         }

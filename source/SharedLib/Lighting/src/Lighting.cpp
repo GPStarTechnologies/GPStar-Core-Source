@@ -56,11 +56,11 @@ Lighting::~Lighting() {
 void Lighting::resetDynamicColors() {
   for(uint8_t i = 0; i < numDevices; i++) {
     customColorHSV[i] = {0, 0, 0};  // Default custom color: black
-    deviceColorOrder[i] = ORDER_RGB;  // Default color order: RGB
-    dynamicCounter[i] = 1;
-    dynamicHue[i] = 0;
-    dynamicBright[i] = 0;
-    dynamicNextBright[i] = -1;
+    deviceColorOrder[i] = ORDER_RGB;  // Default color order: RGB (for 3-wire WS2811/WS2812)
+    dynamicCounter[i] = 1;  // Frame counter starts at 1 (animations set on first call)
+    dynamicHue[i] = 0;  // Default hue: red (0) (animations set on first call)
+    dynamicBright[i] = 0;  // Default brightness: none (animations set on first call)
+    dynamicNextBright[i] = -1;  // Direction for brightness fading: uninitialized
     paletteIndex[i] = 0;  // Start at beginning of palette
     paletteAnimationCycle[i] = 0;  // Start at frame 0
   }
@@ -270,6 +270,18 @@ LED_RGB Lighting::applyColorOrder(const LED_RGB &color, ColorOrder order) {
     case ORDER_GBR:
       // Rotate channels: G->R, B->G, R->B
       return {color.g, color.b, color.r};
+
+    case ORDER_RBG:
+      // Swap blue and green channels
+      return {color.r, color.b, color.g};
+
+    case ORDER_BRG:
+      // Rotate channels: B->R, R->G, G->B
+      return {color.b, color.r, color.g};
+
+    case ORDER_BGR:
+      // Reverse channels: B->R, G stays, R->B
+      return {color.b, color.g, color.r};
 
     case ORDER_RGB:
     default:

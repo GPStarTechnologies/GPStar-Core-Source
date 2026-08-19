@@ -375,7 +375,7 @@ void updateLEDs() {
   // Update the addressable LEDs and restart the timer.
   if(ms_led_driver.justFinished()) {
     auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
-    auto& ventMgr = LightingManager::getInstance(CHAIN_BARREL);
+    auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
     barrelMgr.show();
     ventMgr.show();
 
@@ -416,8 +416,7 @@ void mainLoop() {
   // Handle one-off vibrations such as those in menus.
   checkMenuVibration();
 
-
-  auto& mgr = LightingManager::getInstance(CHAIN_VENT);
+  auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
 
   if(WAND_ACTION_STATUS != ACTION_FIRING) {
     if(ms_bmash.remaining() < 1) {
@@ -622,7 +621,7 @@ void mainLoop() {
 
       // Top white light - blink based on the current color/state.
       if(ms_white_light.justFinished()) {
-        (mgr.getPixelColor(1) != LED_RGB_BLACK) ? ventTopLightControl(false) : ventTopLightControl(true);
+        (ventMgr.getPixelColor(1) != LED_RGB_BLACK) ? ventTopLightControl(false) : ventTopLightControl(true);
 
         ms_white_light.repeat();
       }
@@ -659,7 +658,7 @@ void mainLoop() {
 
   // Play the firing stream end animation.
   if(ms_firing_lights_end.justFinished()) {
-    fireStreamEnd(getBarrelColor(C_BLACK));
+    fireStreamEnd(LED_RGB_BLACK);
   }
 
   if(ms_semi_automatic_firing.justFinished()) {
