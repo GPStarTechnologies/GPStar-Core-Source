@@ -2990,9 +2990,13 @@ void cyclotronColourReset() {
 
     case SYSTEM_1984:
     case SYSTEM_1989:
+      // Clear all physical LEDs to remove stale illumination from previous stream animations
       for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
-        cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_cyclotron_led_value[i]);
+        cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, C_BLACK);
       }
+      
+      // Clear animation state to reset fade objects and brightness tracking
+      clearCyclotronFades();
     break;
   }
 }
@@ -3265,24 +3269,21 @@ void cyclotronFade() {
         }
 
         uint8_t i_new_brightness = getBrightness(i_cyclotron_brightness);
-        
-        // Call getDynamicColorHSV() only per device per frame, not once per LED position.
-        // This effectively "caches" the current color and prevents the animation frame
-        // counter from skipping frames due to repeated calls while on the same puck.
-        LED_RGB i_puck_color_rgb = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_new_brightness);
 
         for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
           if(r_cyclotron_led_fade_in[i].isRunning()) {
             b_cyclotron_led_fading_in[i] = true;
             uint8_t i_curr_brightness = r_cyclotron_led_fade_in[i].update();
 
-            // Use RGB-based setPixelColor to avoid re-invoking getDynamicColorHSV()
-            LED_RGB scaled_color = Lighting::scaleBrightness(i_puck_color_rgb, i_curr_brightness);
-            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, scaled_color);
+            // Fetch fresh color when animation state begins to allow dynamic colors to advance
+            LED_RGB i_puck_color_rgb = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_puck_color_rgb);
             i_cyclotron_led_value[i] = i_curr_brightness;
           }
 
           if(r_cyclotron_led_fade_in[i].isFinished() && i_cyclotron_led_value[i] == (i_new_brightness - 1) && b_cyclotron_led_fading_in[i]) {
+            // Fetch fresh color when transitioning to full brightness
+            LED_RGB i_puck_color_rgb = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_new_brightness);
             cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_puck_color_rgb);
             i_cyclotron_led_value[i] = i_new_brightness;
           }
@@ -3290,9 +3291,9 @@ void cyclotronFade() {
           if(r_cyclotron_led_fade_out[i].isRunning()) {
             uint8_t i_curr_brightness = r_cyclotron_led_fade_out[i].update();
 
-            // Use RGB-based setPixelColor to avoid re-invoking getDynamicColorHSV()
-            LED_RGB scaled_color = Lighting::scaleBrightness(i_puck_color_rgb, i_curr_brightness);
-            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, scaled_color);
+            // Fetch fresh color when fade-out begins to allow dynamic colors to advance
+            LED_RGB i_puck_color_rgb = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_puck_color_rgb);
             i_cyclotron_led_value[i] = i_curr_brightness;
             b_cyclotron_led_fading_in[i] = false;
           }

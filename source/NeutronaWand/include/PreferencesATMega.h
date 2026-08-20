@@ -375,6 +375,11 @@ void readEEPROM() {
       i_spectral_wand_custom_saturation = obj_led_eeprom.barrel_spectral_saturation_custom;
     }
 
+    // Transfer custom color values to the Lighting library so they're available when rendering
+    LED_HSV barrelCustom = {i_spectral_wand_custom_colour, i_spectral_wand_custom_saturation, 255};
+    LightingManager::getInstance(CHAIN_BARREL).setCustomColorHSV(barrelCustom);
+    LightingManager::getInstance(CHAIN_VENT).setCustomColorHSV(barrelCustom);
+
     if(obj_led_eeprom.vent_light_auto_intensity > 0 && obj_led_eeprom.vent_light_auto_intensity < 3) {
       b_vent_light_control = (obj_led_eeprom.vent_light_auto_intensity > 1);
     }

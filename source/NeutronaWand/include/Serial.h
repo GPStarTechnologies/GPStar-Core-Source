@@ -310,9 +310,10 @@ void handleWandPrefsUpdate() {
   i_spectral_wand_custom_colour = wandConfig.ledWandHue;
   i_spectral_wand_custom_saturation = wandConfig.ledWandSat;
 
-  // Transfer custom color to the Lighting library
+  // Transfer custom color to the Lighting library for both barrel and vent light
   LED_HSV barrelCustom = {i_spectral_wand_custom_colour, i_spectral_wand_custom_saturation, 255};
   LightingManager::getInstance(CHAIN_BARREL).setCustomColorHSV(barrelCustom);
+  LightingManager::getInstance(CHAIN_VENT).setCustomColorHSV(barrelCustom);
 
   // Set the updated stream mode flags.
   gpstarWand.setStreamModeOpts(wandConfig.streamFlags);
