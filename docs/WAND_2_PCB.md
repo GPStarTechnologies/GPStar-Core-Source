@@ -26,9 +26,17 @@ Welcome to the second generation of GPStar Proton Wand controllers, intended for
 
 This guide is part of the kit approach to providing a minimally-invasive upgrade to the stock HasLab controllers. For the Neutrona Wand all available connections for JST-PH wiring is present, though a significant amount of wire-cutting will be required to separate the stock controller and re-attach using terminal blocks on the new PCB.
 
-This device drops support for the 5-LED bargraph offered as part of the stock wand configuration and instead requires the use of a 28-segment or 30-segment bargraph. Additionally, support for the stock 2-LED top/vent light assembly is replaced by a single wire for the RGB LED vent light.
+**NOTICE:** This device REQUIRES the [GPStar Neutrona Wand Bargraph](https://gpstartechnologies.com/products/gpstar-neutrona-wand-bargraph) and [GPStar RGB LED Vent Light](https://gpstartechnologies.com/products/gpstar-rgb-vent-lights). Support for the stock 5-LED bargraph and stock 2-LED top/vent light assembly has been discontinued as these devices required significant wiring connections on the controller.
 
 ![Bargraph PCB Connections](images/Wand2PCB-Standard.png)
+
+### UPDATED: GPStar Wand II JST
+
+Same device, simpler connections! This model supports the new [GPStar Neutrona Barrel II](https://gpstartechnologies.com/products/gpstar-neutrona-barrel-ii) which packs 48 RGB LEDs + 1 RGB LED tip, with a built-in infrared transmitter LED at the tip. That new barrel design utilizes the 4-pin connection built into the JST model wand controller.
+
+> For non-JST GPStar Wand II owners, a special 4-pin to 3+1 pin splitter cable is available for supporting the GPStar Neutrona Barrel II device using the existing 3-pin barrel connector and 3-pin Infrared connector.
+
+![Bargraph PCB Connections](images/Wand2PCB-JST-Standard.png)
 
 ## Neutrona Wand - Connection Details
 
