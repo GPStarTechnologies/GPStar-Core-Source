@@ -23,108 +23,8 @@
 // Standard library includes for integer type definitions
 #include <stdint.h>  // Provides uint8_t, uint16_t, etc.
 
-// LED_RGB: Platform-independent RGB color representation.
-// Example: LED_RGB red = {255, 0, 0};
-struct LED_RGB {
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-
-  // Comparison operators for checking if two RGB colors are identical
-  bool operator==(const LED_RGB& other) const {
-    return r == other.r && g == other.g && b == other.b;
-  }
-  bool operator!=(const LED_RGB& other) const {
-    return !(*this == other);
-  }
-};
-
-// LED_RGB default constants (defined outside struct to avoid incomplete type issues)
-constexpr LED_RGB LED_RGB_BLACK = {0, 0, 0};
-constexpr LED_RGB LED_RGB_WHITE = {255, 255, 255};
-
-// ColorOrder: Set the order of the RGB values as they will be sent to the LED device.
-// GPStar devices are WS2812 which is set by "NEO_GRB" at the hardware level, but we
-// will control the assembly of the LED_RGB triplets via the software for convenience.
-enum ColorOrder : uint8_t {
-  ORDER_RGB = 0,  // Red-Green-Blue
-  ORDER_GRB = 1,  // Green-Red-Blue
-  ORDER_GBR = 2,  // Green-Blue-Red
-  ORDER_RBG = 3,  // Red-Blue-Green
-  ORDER_BRG = 4,  // Blue-Red-Green
-  ORDER_BGR = 5   // Blue-Green-Red
-};
-
-// ColorID: All colors (static and dynamic) in a single unified enum.
-// Static colors: 0-99 (fixed HSV values, no animation state)
-// Dynamic colors: 100+ (animated/stateful colors with frame-based animation)
-enum ColorID : uint8_t {
-  // --- Static colors (0-99) ---
-  C_BLACK = 0,
-  C_WHITE = 1,
-  C_WARM_WHITE = 2,        // 36
-  C_PINK = 3,              // 244
-  C_PASTEL_PINK = 4,       // 244
-  C_RED = 5,               // 0
-  C_LIGHT_RED = 6,         // 0
-  C_RED2 = 7,              // 5
-  C_RED3 = 8,              // 10
-  C_RED4 = 9,              // 15
-  C_RED5 = 10,             // 20
-  C_ORANGE = 11,           // 32
-  C_BEIGE = 12,            // 43
-  C_YELLOW = 13,           // 64
-  C_CHARTREUSE = 14,       // 80
-  C_GREEN = 15,            // 96
-  C_DARK_GREEN = 16,       // 96
-  C_MINT = 17,             // 112
-  C_AQUA = 18,             // 128
-  C_LIGHT_BLUE = 19,       // 145
-  C_MID_BLUE = 20,         // 160
-  C_NAVY_BLUE = 21,        // 170
-  C_BLUE = 22,             // 180
-  C_PURPLE = 23,           // 192
-  // --- Dynamic colors (100+) ---
-  C_REDGREEN = 100,
-  C_ORANGEPURPLE = 101,
-  C_BLUEGREEN = 102,
-  C_REDPURPLE = 103,
-  C_AMBER_PULSE = 104,
-  C_BLUE_FADE = 105,
-  C_ORANGE_FADE = 106,
-  C_RED_FADE = 107,
-  C_PASTEL = 108,
-  C_RAINBOW = 109,
-  // --- Custom color (set per device slot) ---
-  C_CUSTOM = 254
-};
-
-// Metadata: Identifies which ColorID enum values are dynamic
-constexpr bool isColorDynamic(uint8_t colorEnum) {
-  return colorEnum >= 100; // Dynamic colors start at 100
-}
-
-/**
- * LED_Palette16: A platform-independent 16-color palette.
- * 
- * This provides a simple, driver-agnostic container using the LED_RGB type.
- * Palettes distribute colors across pixels for transitions and lighting effects.
- */
-struct LED_Palette16 {
-  ColorID colors[16];
-};
-
-// LED_HSV: Platform-independent HSV color representation.
-// Example: LED_HSV cyan = {128, 255, 200}; (hue, saturation, brightness)
-struct LED_HSV {
-  uint8_t h; // Hue: 0-255 (0=red, 85=green, 170=blue)
-  uint8_t s; // Saturation: 0-255 (0=white, 255=full color)
-  uint8_t v; // Value (brightness): 0-255
-};
-
-// LED_HSV default constants (defined outside struct to avoid incomplete type issues)
-constexpr LED_HSV LED_HSV_BLACK = {0, 0, 0};
-constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
+// Library Structs/ENUMs
+#include <LightingBasics.h>
 
 /**
  * Lighting: Instance-based utility class for LED color operations.
@@ -132,18 +32,18 @@ constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
  * Each device creates its own Lighting instance to manage color state independently.
  *
  * This class provides:
- * - Standard color definitions used across all GPStar devices
- * - HSV color lookup for predefined static colors
- * - HSV color lookup for dynamic/animated colors with per-device state tracking
- * - HSV to RGB color conversion
- * - Color channel reordering for different LED strip types
- * - Brightness percentage conversion
- * - Custom static color mapping for device-specific colors (user-configured via NVS/Preferences/EEPROM)
+ *   - Standard color definitions used across all GPStar devices
+ *   - HSV color lookup for predefined static colors
+ *   - HSV color lookup for dynamic/animated colors with per-device state tracking
+ *   - HSV to RGB color conversion
+ *   - Color channel reordering for different LED strip types
+ *   - Brightness percentage conversion
+ *   - Custom static color mapping for device-specific colors (user-configured via NVS/Preferences/EEPROM)
  *
  * Color Types (all in ColorID enum):
  *   - Static colors (0-99): 24 static named colors (C_RED, C_BLUE, etc.)
  *   - Dynamic colors (100-109): 10 animated patterns (C_RAINBOW, C_REDGREEN, etc.) - state tracked per device
- *   - CustomColor: 5 device-specific colors (C_CUSTOM, C_CUSTOM_POWERCELL, etc.) - user-configured HSV values
+ *   - Custom color (254): Single user-configured HSV value per device slot (C_CUSTOM)
  *
  * Example usage:
  *   // Create Lighting instance to manage 6 devices with a 6ms refresh rate (~167fps)
@@ -165,6 +65,8 @@ constexpr LED_HSV LED_HSV_WHITE = {0, 0, 255};
  *
  *   // Apply color ordering for GRB strips:
  *   LED_RGB grb = lighting.applyColorOrder(rgb, ORDER_GRB);
+ *
+ * See Lighting.cpp ANIMATION_CONFIGS[] array for dynamic color configuration.
  */
 class Lighting {
   private:
@@ -183,10 +85,28 @@ class Lighting {
     // Helper method to get static color definitions
     LED_HSV getStaticColorDefinition(ColorID color) const;
 
-    // Helper method to get cycle value for dynamic color animations (frame-based timing lookup)
-    uint8_t getCycleValueForColor(ColorID color);
+    // Helper method to get animation configuration for a dynamic color
+    const AnimationConfig& getAnimationConfig(ColorID color) const;
+
+    // Helper methods for each animation mode
+    LED_HSV animateAlternate(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness);
+    LED_HSV animateFade(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness);
+    LED_HSV animatePulse(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness);
+    LED_HSV animateCycleHue(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness);
+    LED_HSV animateDecayHue(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness);
 
   public:
+    /**
+     * isColorDynamic: Static utility to check if a ColorID is dynamic (animated).
+     * Parameters:
+     *   colorEnum: ColorID value to test
+     * Returns: true if colorEnum >= 100 (dynamic color range), false otherwise
+     * Example: if(Lighting::isColorDynamic(C_RAINBOW)) { animated pattern }
+     */
+    static constexpr bool isColorDynamic(uint8_t colorEnum) {
+      return colorEnum >= 100; // Dynamic colors start at 100
+    }
+
     /**
      * Constructor: Initialize Lighting instance for a set number of devices.
      * Parameters:
@@ -286,8 +206,8 @@ class Lighting {
      *   deviceSlot: [0..numDevices-1] - Which device to animate
      *   palette: LED_Palette16 - 16-color palette to cycle through
      *   speedMultiplier: [0.1-10.0] - Animation speed factor (default: 1.0)
-     *     - 1.0 = normal speed (baseline)
      *     - 0.5 = half speed
+     *     - 1.0 = normal speed (baseline)
      *     - 2.0 = double speed
      *   phaseOffset: [0-255] - Starting interpolation offset in palette for this LED (default: 0)
      *     - Used to distribute palette across multiple LEDs (e.g., LED index scaled to 0-255)

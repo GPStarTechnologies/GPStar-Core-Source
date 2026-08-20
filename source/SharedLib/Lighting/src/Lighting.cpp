@@ -18,9 +18,12 @@
  *
  */
 
+// Standard library headers
+#include <stdint.h>  // uint8_t, uint16_t, int16_t (portable across Arduino and desktop platforms)
+#include <string.h>  // memset
+
 // Library Header
 #include <Lighting.h>
-#include <string.h>  // For memset (portable across Arduino platforms)
 
 // Constructor: Initialize Lighting instance for deviceCount devices with specified refresh rate (default: 5ms).
 Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs) 
@@ -147,63 +150,50 @@ LED_HSV Lighting::getStaticColorDefinition(ColorID color) const {
   }
 }
 
-// Helper method: Get cycle value for dynamic color animations (frame-based timing lookup)
+// Animation config for all dynamic colors. Each entry explicitly maps a ColorID to its animation config.
 //
-// This centralized lookup table makes it easy to adjust animation speeds across the codebase.
-// All animation timing is defined here, using frame-based cycles instead of real-time delays.
+// Mode Enumeration Meanings:
+//   ANIM_ALTERNATE:  value1/value2 = hues to flip between
+//   ANIM_FADE:       value1/value2 = brightness min/max, fixedHue = hue to fade on
+//   ANIM_PULSE:      value1/value2 = hue min/max, reverses at boundaries
+//   ANIM_CYCLE_HUE:  value2 = hue increment/frame, saturation = fixed sat level
+//   ANIM_DECAY_HUE:  value1 = start hue, value2 = end hue, decays then wraps
 //
-// TIMING RELATIONSHIP:
-// actual_time_between_changes = cycle_value × LED_update_interval
+// Special Field Meanings:
+//   fixedHue: Only used by ANIM_FADE — which hue (0-255) to fade brightness on
+//   saturation: Only used by ANIM_CYCLE_HUE — fixed saturation level (128=pastel, 255=vivid)
+//   adjustBrightness: Only used by ANIM_ALTERNATE — darken value2 by 50% (e.g., green in C_REDGREEN)
 //
-// EXAMPLES WITH STANDARDIZED INTERVALS:
-// If cycle = 50 and LED updates every:
-//   - 5ms  (NeutronaWand, PSTT, ProtonPack):  50 × 5ms = 250ms
-//   - 8ms  (Attenuator, StreamEffects):       50 × 8ms = 400ms
-//   - 16ms (BeltGizmo, SingleShot):           50 × 16ms = 800ms
-//
-// CYCLE SPEEDS (frames between animation updates):
-// - cycle = 1  (C_BLUE_FADE): Fastest, changes every frame
-//   - At 5ms:  5ms   | At 8ms:  8ms    | At 16ms: 16ms
-// - cycle = 6  (DEFAULT, C_RAINBOW, C_PASTEL, C_AMBER_PULSE): Fast, changes every 6 calls
-//   - At 5ms:  30ms  | At 8ms:  48ms   | At 16ms: 96ms
-// - cycle = 8  (C_RED_FADE): Medium fade speed
-//   - At 5ms:  40ms  | At 8ms:  64ms   | At 16ms: 128ms
-// - cycle = 10 (C_ORANGE_FADE): Slower fade
-//   - At 5ms:  50ms  | At 8ms:  80ms   | At 16ms: 160ms
-// - cycle = 50 (C_REDGREEN, C_BLUEGREEN, C_ORANGEPURPLE, C_REDPURPLE): Slow alternation
-//   - At 5ms: 250ms  | At 8ms: 400ms   | At 16ms: 800ms
-//
-// CHOOSING CYCLE VALUES:
-// - Smaller values (1-4) = rapid changes, best for streaming/smooth fades
-// - Medium values (5-10) = perceptible pulses, good for status indicators
-// - Large values (50+) = slow alternations, good for calm breathing effects
-uint8_t Lighting::getCycleValueForColor(ColorID color) {
-  switch(color) {
-    case C_REDGREEN:
-    case C_BLUEGREEN:
-    case C_ORANGEPURPLE:
-    case C_REDPURPLE:
-      return 50;  // Slowest alternation (250-800ms at standardized intervals)
+static constexpr AnimationMapping ANIMATION_CONFIGS[] = {
+// {colorId,       {cycleMs, mode,          value1, value2, fixedHue, saturation, adjustBright}},
+  {C_REDGREEN,     {250,  ANIM_ALTERNATE,        0,     96,       0,       255,        true}},
+  {C_ORANGEPURPLE, {250,  ANIM_ALTERNATE,       15,    210,       0,       255,       false}},
+  {C_BLUEGREEN,    {250,  ANIM_ALTERNATE,      145,     96,       0,       255,       false}},
+  {C_REDPURPLE,    {250,  ANIM_ALTERNATE,        0,    210,       0,       255,       false}},
+  {C_AMBER_PULSE,  { 30,  ANIM_PULSE,           24,     32,       0,       255,       false}},
+  {C_BLUE_FADE,    {  5,  ANIM_DECAY_HUE,      160,    146,       0,       255,       false}},
+  {C_ORANGE_FADE,  { 50,  ANIM_FADE,            50,    255,      28,       255,       false}},
+  {C_RED_FADE,     { 40,  ANIM_FADE,            50,    255,       0,       255,       false}},
+  {C_PASTEL,       { 30,  ANIM_CYCLE_HUE,        0,      5,       0,       128,       false}},
+  {C_RAINBOW,      { 30,  ANIM_CYCLE_HUE,        0,      5,       0,       255,       false}},
+};
 
-    case C_ORANGE_FADE:
-      return 10;  // Slower fade (50-160ms at standardized intervals)
-
-    case C_RED_FADE:
-      return 8;   // Medium fade speed (40-128ms at standardized intervals)
-
-    case C_AMBER_PULSE:
-      return 6;   // Fast pulse (30-96ms at standardized intervals)
-
-    case C_RAINBOW:
-    case C_PASTEL:
-      return 6;   // Fast transitions (30-96ms at standardized intervals)
-
-    case C_BLUE_FADE:
-      return 1;   // Fastest - smooth continuous fade (every frame)
-
-    default:
-      return 6;   // Default: fast transitions (30-96ms at standardized intervals)
+// Helper method: Get animation configuration for a dynamic color
+const AnimationConfig& Lighting::getAnimationConfig(ColorID color) const {
+  // Search through the explicit ColorID-to-AnimationConfig mappings
+  for(const auto& mapping : ANIMATION_CONFIGS) {
+    if(mapping.colorId == color) {
+      return mapping.config;
+    }
   }
+  // Not found, return C_RAINBOW as default (should not happen in production)
+  for(const auto& mapping : ANIMATION_CONFIGS) {
+    if(mapping.colorId == C_RAINBOW) {
+      return mapping.config;
+    }
+  }
+  // Fallback (should never reach here)
+  return ANIMATION_CONFIGS[0].config;
 }
 
 // Get HSV color values for standard colors.
@@ -263,6 +253,10 @@ LED_RGB Lighting::scaleBrightness(const LED_RGB &color, uint8_t brightness) {
 // Apply color channel ordering for different LED strip types.
 LED_RGB Lighting::applyColorOrder(const LED_RGB &color, ColorOrder order) {
   switch(order) {
+    case ORDER_RGB:
+    default:
+      return color;
+
     case ORDER_GRB:
       // Swap red and green channels
       return {color.g, color.r, color.b};
@@ -282,11 +276,114 @@ LED_RGB Lighting::applyColorOrder(const LED_RGB &color, ColorOrder order) {
     case ORDER_BGR:
       // Reverse channels: B->R, G stays, R->B
       return {color.b, color.g, color.r};
-
-    case ORDER_RGB:
-    default:
-      return color;
   }
+}
+
+// Animation Helper Methods
+// Each method handles one animation mode. All follow the same frame-based counter pattern:
+// if(dynamicCounter[slot] % cycle == 0) { advance state; reset counter to 1; }
+// else { increment counter; }
+
+// ANIM_ALTERNATE: Discrete flip between two values (no interpolation)
+LED_HSV Lighting::animateAlternate(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness) {
+  if(dynamicHue[deviceSlot] != cfg.value1 && dynamicHue[deviceSlot] != cfg.value2) {
+    dynamicHue[deviceSlot] = cfg.value1;  // Initialize
+  }
+
+  if(dynamicCounter[deviceSlot] % cycle == 0) {
+    dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == cfg.value1) ? cfg.value2 : cfg.value1;
+    dynamicCounter[deviceSlot] = 1;
+  } else {
+    dynamicCounter[deviceSlot]++;
+  }
+
+  uint8_t displayBrightness = brightness;
+  if(cfg.adjustBrightness && dynamicHue[deviceSlot] == cfg.value2) {
+    displayBrightness = brightness / 2;  // Darken green on C_REDGREEN
+  }
+
+  return {dynamicHue[deviceSlot], 255, displayBrightness};
+}
+
+// ANIM_FADE: Continuous fade between value1 and value2, reversing at boundaries
+LED_HSV Lighting::animateFade(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness) {
+  if(dynamicBright[deviceSlot] == 0) {
+    dynamicBright[deviceSlot] = cfg.value1;
+    dynamicNextBright[deviceSlot] = (cfg.value2 > cfg.value1) ? 5 : -5;
+  }
+
+  if(dynamicCounter[deviceSlot] % cycle == 0) {
+    int16_t newBright = (int16_t)dynamicBright[deviceSlot] + dynamicNextBright[deviceSlot];
+    if(newBright > cfg.value2) { newBright = cfg.value2; dynamicNextBright[deviceSlot] = -5; }
+    if(newBright < cfg.value1) { newBright = cfg.value1; dynamicNextBright[deviceSlot] = 5; }
+    dynamicBright[deviceSlot] = (uint8_t)newBright;
+    dynamicCounter[deviceSlot] = 1;
+  } else {
+    dynamicCounter[deviceSlot]++;
+  }
+
+  // Use fixed hue from config (e.g., 28 for orange, 0 for red)
+  return {cfg.fixedHue, 255, dynamicBright[deviceSlot]};
+}
+
+// ANIM_PULSE: Fade that reverses at boundaries (breathing effect)
+LED_HSV Lighting::animatePulse(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness) {
+  if(dynamicHue[deviceSlot] < cfg.value1 || dynamicHue[deviceSlot] > cfg.value2) {
+    dynamicHue[deviceSlot] = cfg.value1;
+    dynamicNextBright[deviceSlot] = 1;  // Increment direction
+  }
+
+  if(dynamicCounter[deviceSlot] % cycle == 0) {
+    dynamicHue[deviceSlot] += (uint8_t)dynamicNextBright[deviceSlot];
+
+    // Reverse direction at boundaries
+    if(dynamicHue[deviceSlot] >= cfg.value2) {
+      dynamicNextBright[deviceSlot] = -1;
+    } else if(dynamicHue[deviceSlot] <= cfg.value1) {
+      dynamicNextBright[deviceSlot] = 1;
+    }
+
+    dynamicCounter[deviceSlot] = 1;
+  } else {
+    dynamicCounter[deviceSlot]++;
+  }
+
+  return {dynamicHue[deviceSlot], 255, brightness};
+}
+
+// ANIM_CYCLE_HUE: Smooth hue progression through full color wheel
+LED_HSV Lighting::animateCycleHue(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness) {
+  if(dynamicCounter[deviceSlot] % cycle == 0) {
+    dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + cfg.value2) % 256;  // value2 = hue increment per cycle
+    dynamicCounter[deviceSlot] = 1;
+  } else {
+    dynamicCounter[deviceSlot]++;
+  }
+
+  // Use saturation from config (128 for PASTEL, 255 for RAINBOW)
+  return {dynamicHue[deviceSlot], cfg.saturation, brightness};
+}
+
+// ANIM_DECAY_HUE: Hue that moves in one direction with wrap (smooth fade between two hues)
+LED_HSV Lighting::animateDecayHue(uint8_t deviceSlot, const AnimationConfig& cfg, uint8_t cycle, uint8_t brightness) {
+  if(dynamicHue[deviceSlot] < cfg.value2 || dynamicHue[deviceSlot] > cfg.value1) {
+    dynamicHue[deviceSlot] = cfg.value1;  // Reset if out of range
+  }
+
+  if(dynamicCounter[deviceSlot] % cycle == 0) {
+    dynamicHue[deviceSlot] -= 1;  // Decay hue downward
+    
+    // Wrap around if we go below minimum
+    if(dynamicHue[deviceSlot] < cfg.value2) {
+      dynamicHue[deviceSlot] = cfg.value1;
+    }
+    
+    dynamicCounter[deviceSlot] = 1;
+  } else {
+    dynamicCounter[deviceSlot]++;
+  }
+
+  return {dynamicHue[deviceSlot], 255, brightness};
 }
 
 // Convert HSV color to RGB color using a standard rainbow algorithm.
@@ -353,7 +450,7 @@ LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
 //
 // This function uses frame counting instead of real-time delays (avoiding timers).
 // Each call to this function = 1 frame. The dynamicCounter[] increments every call.
-// When counter reaches the cycle value (from getCycleValueForColor), the animation advances.
+// When counter reaches the cycle value (calculated from millisecond config), the animation advances.
 // Frames are dependent on the update speed used for "show" of the LEDs.
 //
 // - No dependency on timing libraries (millis(), millisDelay, etc.)
@@ -361,243 +458,54 @@ LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
 // - Self-regulating speed: animation rate = LED update rate
 // - Frame-based timing allows consistent behavior across different update intervals
 //
-// The actual timing for each animation is defined in getCycleValueForColor() lookup table.
+// The actual timing for each animation is defined in ANIMATION_CONFIGS[] lookup table.
+// Configuration is millisecond-based, automatically converted to frame cycles via:
+//   cycle = animationConfig.cycleMs / deviceRefreshMs
 // Call this function every time you update a chain of LEDs.
 LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t brightness, uint8_t saturation) {
   // Validate deviceSlot is within range, default to 0 if out of bounds
   if(deviceSlot >= numDevices) {
-    return getColorHSV(color, brightness, saturation); // Return the color as-is, without regard to device slot.
+    return getColorHSV(color, brightness, saturation);
   }
 
-  // Get cycle rate for this color using centralized lookup table
-  uint8_t cycle = getCycleValueForColor(color);
+  // Handle custom color (special case - not animated)
+  if(color == C_CUSTOM) {
+    return getCustomColorHSV(deviceSlot);
+  }
+
+  // Handle static colors (anything below dynamic color range)
+  if(color < 100) {
+    return getColorHSV(color, brightness, saturation);
+  }
+
+  // Get animation configuration for this dynamic color
+  const AnimationConfig& cfg = getAnimationConfig(color);
   
-  // Variable for dynamic brightness adjustments (used by some animations)
-  uint8_t dynamicBrightness = brightness;
+  // Convert millisecond-based timing to frame cycles based on device refresh rate
+  // Minimum 1 frame to ensure animation progresses
+  uint8_t cycle = (cfg.cycleMs / deviceRefreshMs);
+  if(cycle < 1) cycle = 1;
 
-  switch(color) {
-    case C_REDGREEN:
-      // Alternate between red (0) and dark green (96)
-      if(dynamicHue[deviceSlot] != 0 && dynamicHue[deviceSlot] != 96) {
-        dynamicHue[deviceSlot] = 0; // Reset if out of range
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 96 : 0;
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      // Use darker brightness for green to match C_DARK_GREEN visual weight.
-      dynamicBrightness = (dynamicHue[deviceSlot] == 96) ? (brightness / 2) : brightness;
-      return {dynamicHue[deviceSlot], 255, dynamicBrightness};
-    // END C_REDGREEN
-
-    case C_ORANGEPURPLE:
-      // Alternate between orange (15) and purple (210)
-      if(dynamicHue[deviceSlot] != 15 && dynamicHue[deviceSlot] != 210) {
-        dynamicHue[deviceSlot] = 15; // Reset if out of range
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 15) ? 210 : 15;
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {dynamicHue[deviceSlot], 255, brightness};
-    // END C_ORANGEPURPLE
-
-    case C_BLUEGREEN:
-      // Alternate between blue (145) and green (96)
-      if(dynamicHue[deviceSlot] != 145 && dynamicHue[deviceSlot] != 96) {
-        dynamicHue[deviceSlot] = 145; // Reset if out of range
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 96) ? 145 : 96;
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {dynamicHue[deviceSlot], 255, brightness};
-    // END C_BLUEGREEN
-
-    case C_REDPURPLE:
-      // Alternate between red (0) and purple (210)
-      if(dynamicHue[deviceSlot] != 0 && dynamicHue[deviceSlot] != 210) {
-        dynamicHue[deviceSlot] = 0; // Reset if out of range
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] == 0) ? 210 : 0;
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {dynamicHue[deviceSlot], 255, brightness};
-    // END C_REDPURPLE
-
-    case C_AMBER_PULSE:
-      // Pulse between amber (24) and orange (32)
-      if(dynamicHue[deviceSlot] < 20 || dynamicHue[deviceSlot] > 32) {
-        dynamicHue[deviceSlot] = 24; // Reset if out of range
-        dynamicNextBright[deviceSlot] = 1; // Start incrementing
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        // Let uint8_t overflow/underflow work naturally for hue (circular color wheel)
-        dynamicHue[deviceSlot] += (uint8_t)dynamicNextBright[deviceSlot];
-
-        // Reverse direction at boundaries
-        if(dynamicHue[deviceSlot] >= 32) {
-          dynamicNextBright[deviceSlot] = -1;
-        }
-        else if(dynamicHue[deviceSlot] <= 20) {
-          dynamicNextBright[deviceSlot] = 1;
-        }
-
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {dynamicHue[deviceSlot], 255, brightness};
-    // END C_AMBER_PULSE
-
-    case C_ORANGE_FADE:
-      // Fade brightness on orange hue (28)
-      if(dynamicBright[deviceSlot] == 0) {
-        dynamicBright[deviceSlot] = 50;
-        dynamicNextBright[deviceSlot] = 5; // Start incrementing
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        // Sanity check: use int16_t to prevent overflow, then clamp to valid range
-        int16_t newBright = (int16_t)dynamicBright[deviceSlot] + dynamicNextBright[deviceSlot];
-        if(newBright > 255) newBright = 255;  // Prevent overflow
-        if(newBright < 0) newBright = 0;      // Prevent underflow
-        dynamicBright[deviceSlot] = (uint8_t)newBright;
-
-        // Reverse direction at boundaries
-        if(dynamicBright[deviceSlot] >= 250) {
-          dynamicNextBright[deviceSlot] = -5;
-        }
-        else if(dynamicBright[deviceSlot] <= 50) {
-          dynamicNextBright[deviceSlot] = 5;
-        }
-
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {28, 255, dynamicBright[deviceSlot]};
-    // END C_ORANGE_FADE
-
-    case C_RED_FADE:
-      // Fade brightness on red hue (0)
-      if(dynamicBright[deviceSlot] == 0) {
-        dynamicBright[deviceSlot] = 50;
-        dynamicNextBright[deviceSlot] = 5; // Start incrementing
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        // Sanity check: use int16_t to prevent overflow, then clamp to valid range
-        int16_t newBright = (int16_t)dynamicBright[deviceSlot] + dynamicNextBright[deviceSlot];
-        if(newBright > 255) newBright = 255;  // Prevent overflow
-        if(newBright < 0) newBright = 0;      // Prevent underflow
-        dynamicBright[deviceSlot] = (uint8_t)newBright;
-
-        // Reverse direction at boundaries
-        if(dynamicBright[deviceSlot] >= 250) {
-          dynamicNextBright[deviceSlot] = -5;
-        }
-        else if(dynamicBright[deviceSlot] <= 50) {
-          dynamicNextBright[deviceSlot] = 5;
-        }
-
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {0, 255, dynamicBright[deviceSlot]};
-    // END C_RED_FADE
-
-    case C_BLUE_FADE:
-      // Fade hue from dark blue (160) to light blue (146)
-      // Used by ProtonPack Power Cell (15-LED RGB strip)
-      if(dynamicHue[deviceSlot] < 146 || dynamicHue[deviceSlot] > 160) {
-        dynamicHue[deviceSlot] = 160; // Reset if out of range
-      }
-
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        // Let uint8_t underflow work naturally for hue (circular color wheel)
-        dynamicHue[deviceSlot] -= 1;
-        
-        // Wrap around if we go below minimum
-        if(dynamicHue[deviceSlot] < 146) {
-          dynamicHue[deviceSlot] = 160;
-        }
-        
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {dynamicHue[deviceSlot], 255, brightness};
-    // END C_BLUE_FADE
-
-    case C_PASTEL:
-      // Cycle through all hues (0-255) at half saturation
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + 5) % 256;
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {dynamicHue[deviceSlot], 128, brightness};
-    // END C_PASTEL
-
-    case C_RAINBOW:
-      // Cycle through all hues (0-255) at full saturation
-      if(dynamicCounter[deviceSlot] % cycle == 0) {
-        dynamicHue[deviceSlot] = (dynamicHue[deviceSlot] + 5) % 256;
-        dynamicCounter[deviceSlot] = 1;
-      }
-      else {
-        dynamicCounter[deviceSlot]++;
-      }
-
-      return {dynamicHue[deviceSlot], 255, brightness};
-    // END C_RAINBOW
-
-    case C_CUSTOM:
-      // Return the custom static color stored for this device slot.
-      // The deviceSlot parameter defaults to 0 for single-device projects,
-      // but multi-device projects can specify which slot to retrieve.
-      return getCustomColorHSV(deviceSlot);
-    // END C_CUSTOM
-
+  // Dispatch to animation helper based on mode
+  switch(cfg.mode) {
+    case ANIM_ALTERNATE:
+      return animateAlternate(deviceSlot, cfg, cycle, brightness);
+    
+    case ANIM_FADE:
+      return animateFade(deviceSlot, cfg, cycle, brightness);
+    
+    case ANIM_PULSE:
+      return animatePulse(deviceSlot, cfg, cycle, brightness);
+    
+    case ANIM_CYCLE_HUE:
+      return animateCycleHue(deviceSlot, cfg, cycle, brightness);
+    
+    case ANIM_DECAY_HUE:
+      return animateDecayHue(deviceSlot, cfg, cycle, brightness);
+    
     default:
-      // Unknown color, fall back to static color definition via getColorHSV()
-      // which will safely returns a static color (or defaults to white).
-      return getColorHSV(color, brightness, saturation);
+      // Unknown animation mode, return safe default (white)
+      return getColorHSV(C_WHITE, brightness, saturation);
   }
 }
 

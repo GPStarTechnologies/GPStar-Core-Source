@@ -446,7 +446,7 @@ public:
   LED_RGB getColorRGB(ColorID colorEnum, uint8_t brightness = 255) {
     // Get color as HSV
     LED_HSV hsv;
-    if(isColorDynamic(colorEnum)) {
+    if(Lighting::isColorDynamic(colorEnum)) {
       hsv = lightingLib.getDynamicColorHSV(assignedSlot, colorEnum, brightness);
     } else {
       hsv = lightingLib.getColorHSV(colorEnum, brightness);
@@ -463,7 +463,7 @@ public:
     if(index >= 0 && index < pixels.numPixels()) {
       // Get color as HSV
       LED_HSV hsv;
-      if(isColorDynamic(colorEnum)) {
+      if(Lighting::isColorDynamic(colorEnum)) {
         hsv = lightingLib.getDynamicColorHSV(assignedSlot, colorEnum, brightness);
       } else {
         hsv = lightingLib.getColorHSV(colorEnum, brightness);

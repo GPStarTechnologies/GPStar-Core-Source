@@ -3159,6 +3159,31 @@ void cyclotronIceAnimation() {
   }
 }
 
+/**
+ * cyclotronFade - Manages LED fade animations for cyclotron lid positions (4 w/ variable LED counts).
+ *
+ * PURPOSE:
+ * Updates brightness ramps for LED fade-in and fade-out animations based on theme.
+ * Called every animation frame to progress the fade states.
+ *
+ * SYSTEM_AFTERLIFE / SYSTEM_FROZEN_EMPIRE:
+ *   - Simulated Ring Effect: Rotates a glowing ring around the entire cyclotron
+ *   - Loops through 40 LED positions (OUTER_CYCLOTRON_LED_MAX)
+ *   - Each position manages fade-in (LED brightens as puck approaches) and
+ *     fade-out (LED darkens as puck leaves)
+ *   - Creates continuous rotating light illusion
+ *   - Multiple LEDs illuminated simultaneously at different brightness levels
+ *   - Ring rotation masks animation timing issues (smooth continuous effect
+ *     even if dynamic color frame counter increments heavily)
+ *
+ * SYSTEM_1984 / SYSTEM_1989:
+ *   - Discrete Center LED Effect: Only 1-3 center LEDs light up at a time
+ *   - Puck jumps discretely to next position (doesn't smoothly rotate)
+ *   - Still loops through 13-15 LED positions tracking fade state, but
+ *     only 1 position is actively lit (center) at any moment
+ *   - When puck moves: old position fades out while new position fades in
+ *   - Color can be static (e.g., C_WHITE) or dynamic (e.g., C_RAINBOW)
+ */
 void cyclotronFade() {
   auto& cyclotronLidMgr = LightingManager::getInstance(DEVICE_CYCLOTRON_LID);
   ColorID i_colour_scheme = getDeviceColorID(DEVICE_CYCLOTRON_LID, gpstarPack.getStreamMode(), b_cyclotron_colour_toggle);
@@ -3240,25 +3265,34 @@ void cyclotronFade() {
         }
 
         uint8_t i_new_brightness = getBrightness(i_cyclotron_brightness);
+        
+        // Call getDynamicColorHSV() only per device per frame, not once per LED position.
+        // This effectively "caches" the current color and prevents the animation frame
+        // counter from skipping frames due to repeated calls while on the same puck.
+        LED_RGB i_puck_color_rgb = cyclotronLidMgr.getColorRGB(i_colour_scheme, i_new_brightness);
 
         for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
           if(r_cyclotron_led_fade_in[i].isRunning()) {
             b_cyclotron_led_fading_in[i] = true;
             uint8_t i_curr_brightness = r_cyclotron_led_fade_in[i].update();
 
-            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_curr_brightness);
+            // Use RGB-based setPixelColor to avoid re-invoking getDynamicColorHSV()
+            LED_RGB scaled_color = Lighting::scaleBrightness(i_puck_color_rgb, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, scaled_color);
             i_cyclotron_led_value[i] = i_curr_brightness;
           }
 
           if(r_cyclotron_led_fade_in[i].isFinished() && i_cyclotron_led_value[i] == (i_new_brightness - 1) && b_cyclotron_led_fading_in[i]) {
-            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_new_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_puck_color_rgb);
             i_cyclotron_led_value[i] = i_new_brightness;
           }
 
           if(r_cyclotron_led_fade_out[i].isRunning()) {
             uint8_t i_curr_brightness = r_cyclotron_led_fade_out[i].update();
 
-            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, i_colour_scheme, i_curr_brightness);
+            // Use RGB-based setPixelColor to avoid re-invoking getDynamicColorHSV()
+            LED_RGB scaled_color = Lighting::scaleBrightness(i_puck_color_rgb, i_curr_brightness);
+            cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, scaled_color);
             i_cyclotron_led_value[i] = i_curr_brightness;
             b_cyclotron_led_fading_in[i] = false;
           }
@@ -4497,7 +4531,7 @@ void cyclotronControl() {
   }
 
   if(b_cyclotron_lid_on) {
-    cyclotronFade();
+    cyclotronFade(); // Lid is on, so run the animation logic for the outer cyclotron.
   }
 }
 
