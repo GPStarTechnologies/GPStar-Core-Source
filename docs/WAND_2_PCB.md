@@ -12,13 +12,29 @@ Welcome to the second generation of GPStar Proton Wand controllers, intended for
 - Dedicated sockets for optional components and future expansion.
     - An infrared LED add-on is available to support integration with the Ghost Trap.
 
+**Discontinued Hardware:**
+
+In an effort to make room for the new PCB components, the decision to deprecate several Hasbro-specific devices was made. Please note the following wand-specific devices which should be used or replaced if using the GPStar II Neutrona Wand PCB as a standalone upgrade. If purchasing a new GPStar II kit, all components included with a bundled kit will be fully compatible.
+
+Support for the stock, analog Vent/Top lights has been REMOVED in favor of addressable LED models.
+
+  - ✅ SUPPORTED MODELS:
+    - [GPStar RGB LED Vent Light](https://gpstartechnologies.com/products/gpstar-rgb-vent-lights) 
+  - ❌ NO LONGER COMPATIBLE:
+    - Frutto Technology "high intensity" vent light
+
+Support for the stock, analog 5-LED bargraph has been REMOVED in favor of a true multi-segment bargraph.
+
+  - ✅ SUPPORTED MODELS:
+    - [GPStar Neutrona Wand Bargraph](https://gpstartechnologies.com/products/gpstar-neutrona-wand-bargraph) with a blue PCB color (all light colors supported)
+    - Frutto Technology bargraphs with a black, blue, or purple PCB color; or clearly labelled "v3.0" or later
+  - ❌ NO LONGER COMPATIBLE:
+    - Frutto Technology bargraphs with the green PCB color, possibly labelled with "v2.0" (or earlier)
+
 **Other Hardware Changes:**
 
 - Programming pins were replaced with a USB-C connector for direct connectivity to your computer for firmware updates.
-- Support for the stock Vent/Top lights has been deprecated for the addressable GPStar RGB LED vent light device instead.
-- Support for the stock 5-LED bargraph has been deprecated in favor of a true multi-segment bargraph.
-    - Only i2c bus modules are supported (either Frutto Technology or GPStar bargraph devices).
-    - Older "2.0" Frutto bargraph units are NOT COMPATIBLE and must be upgraded to 3.0 or higher. GPStar bargraph units are already fully compatible.
+- Introduction of the newest GPStar Wand II JST model supports the new GPStar Neutrona Barrel II (more info below).
 
 **IMPORTANT: The GPStar Wand II controller is NOT backwards compatible with the original GPStar Pack controller! DO NOT attempt to mix and match wands as you can potentially damage your devices.**
 
