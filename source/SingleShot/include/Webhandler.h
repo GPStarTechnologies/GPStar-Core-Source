@@ -67,6 +67,9 @@ extern const uint8_t _binary_assets_blaster_html_gz_end[];
 // swaggerui.html
 extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
 extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
+// help.json
+extern const uint8_t _binary_assets_help_json_gz_start[];
+extern const uint8_t _binary_assets_help_json_gz_end[];
 
 // Define standard ports and URI endpoints.
 const uint16_t WS_PORT = 80; // Web Server (+WebSocket) port
@@ -810,6 +813,16 @@ void handleThreeJS(AsyncWebServerRequest *request) {
   request->send(response);
 }
 
+void handleContextHelp(AsyncWebServerRequest *request) {
+  // Serves the contextual help JSON file for web UI field descriptions.
+  debugln(F("Sending -> Help JSON"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_help_json_gz_start, _binary_assets_help_json_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, _binary_assets_help_json_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response);
+}
+
 void handleNetwork(AsyncWebServerRequest *request) {
   // Used for the network page from the web server.
   debugln(F("Sending -> Network HTML"));
@@ -1338,12 +1351,12 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     newSSID = sanitizeSSID(newSSID); // Jacques, clean him!
     bool b_ssid_changed = false;
 
+    // Create Preferences object to handle non-volatile storage (NVS).
+    Preferences preferences;
+
     // Update the private network name ONLY if the new value differs from the current SSID.
     if(newSSID != "" && newSSID != wirelessMgr->getLocalNetworkName()){
       if(newSSID.length() >= 8 && newSSID.length() <= 32) {
-        // Create Preferences object to handle non-volatile storage (NVS).
-        Preferences preferences;
-
         // Accesses namespace in read/write mode.
         if(preferences.begin("credentials", false)) {
           #if defined(DEBUG_SEND_TO_CONSOLE)
@@ -1424,9 +1437,6 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     // Get the track listing from the text field.
     String songList = jsonBody["songList"].as<String>();
     bool b_list_err = false;
-
-    // Create Preferences object to handle non-volatile storage (NVS).
-    Preferences preferences;
 
     // Accesses namespace in read/write mode.
     if(preferences.begin("device", false)) {

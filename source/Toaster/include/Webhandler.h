@@ -629,10 +629,8 @@ void handleFavSvg(AsyncWebServerRequest *request) {
 }
 
 void handleContextHelp(AsyncWebServerRequest *request) {
-  // Used for serving the help.json file from the web server.
+  // Serves the contextual help JSON file for web UI field descriptions.
   debugln(F("Sending -> Help JSON"));
-
-  // Calculate file size from the embedded binary data and serve the file to the requesting client.
   size_t i_file_len = embeddedFileSize(_binary_assets_help_json_gz_start, _binary_assets_help_json_gz_end);
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, _binary_assets_help_json_gz_start, i_file_len);
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);

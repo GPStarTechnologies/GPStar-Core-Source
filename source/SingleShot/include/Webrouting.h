@@ -81,6 +81,7 @@ void registerWebRoutes() {
   addSimpleRoute("/password", HTTP_GET, handlePassword, "Password page", "Serves the password change page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/settings/device", HTTP_GET, handleDeviceSettings, "Device settings page", "Serves the device settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
   addSimpleRoute("/settings/blaster", HTTP_GET, handleBlasterSettings, "Blaster settings page", "Serves the blaster settings configuration page", TAG_PAGES, RESP_HTML_PAGE);
+  addSimpleRoute("/help.json", HTTP_GET, handleContextHelp, "Help JSON", "Serves the help JSON file", TAG_ASSETS, RESP_JSON_OBJECT);
   addSimpleRoute("/geometry.stl", HTTP_GET, handleGeometry, "Equipment STL model", "Serves the equipment model as an STL file", TAG_ASSETS, RESP_STL_FILE);
   addSimpleRoute("/three.js", HTTP_GET, handleThreeJS, "3D visualization library", "Serves the 3D visualization JavaScript library", TAG_ASSETS, RESP_JAVASCRIPT_FILE);
 

@@ -82,6 +82,9 @@ AsyncWebServer httpServer(WS_PORT);
 // Define a websocket endpoint for the async web server.
 AsyncWebSocket ws(WS_URI);
 
+// Create a server-side event source on /events.
+AsyncEventSource events("/events");
+
 // Track the number of connected WebSocket clients.
 uint8_t i_ws_client_count = 0;
 
