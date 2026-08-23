@@ -116,30 +116,11 @@ extern uint8_t i_cyclotron_num_leds;
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for the optimal effect
 
-/**
- * In the case of the Proton Pack we have 2 chains of addressable LEDs:
- *  1) The "pack" lights which consist of the Powercell, Cyclotron, and N-Filter.
- *  2) The inner cyclotron "cake" plus anything beyond that point.
- *
- * So for every 100 LEDs at 30μs each to update, that's 3ms of interrupt disruption. For
- * a microcontroller that's a lot of time so we need to keep those updates to a minimum.
- * The best way to do that while still providing all of the lights desired is to keep those
- * chains of lights to a minimum where possible. Thus, we only support a certain # of LEDs.
- *
- * Total number of LEDs in the standard Proton Pack configuration.
- * Power Cell and Cyclotron Lid LEDs + optional N-Filter NeoPixel.
- *    25 LEDs in the stock HasLab kit: 13 in the Power Cell and 12 in the Cyclotron lid.
- *    Add 7 (now 32 in total) for a NeoPixel jewel that you can put into the N-Filter (optional)
- *    That jewel chains off Cyclotron lens assembly #4 in the lid (top left lens).
- * Max 62 LEDs: 15 for the Power Cell, 40 for the Cyclotron lid, and 7 for the jewel.
- */
-const uint8_t i_max_pack_leds = MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX;
-const uint8_t i_nfilter_jewel_leds = JEWEL_NFILTER_LED_COUNT;
-
 /*
- * Updated count of all the LEDs plus the N-Filter jewel.
+ * Updated count of all the LEDs plus the N-Filter jewel (considered an unchangeable constant).
  * This gets updated by the system if the wand changes the led count in the EEPROM menu system.
  */
+const uint8_t i_nfilter_jewel_leds = JEWEL_NFILTER_LED_COUNT;
 uint8_t i_pack_num_leds = i_powercell_num_leds + i_cyclotron_num_leds + i_nfilter_jewel_leds;
 
 /*
@@ -170,29 +151,17 @@ millisDelay ms_led_driver;
   #define DEVICE_SLOTS 8 // Total segments: 3 (PACK) + 3 (CYCLOTRON) + 2 (EXPANSION) for Lighting library
   #define PACK_LED_COUNT (MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT)  // Max 62 LEDs
   #define CYCLOTRON_LED_COUNT (INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX)  // Max 64 LEDs
-  #define EXP1_LED_COUNT 60  // Default expansion port 1 LED count
-  #define EXP2_LED_COUNT 60  // Default expansion port 2 LED count
+  #define EXP1_LED_COUNT 60 // Default expansion port 1 LED count
+  #define EXP2_LED_COUNT 60 // Default expansion port 2 LED count
+
+  // Set the maximum number of Adafruit_NeoPXL8 LEDs across all chains (plus a buffer for a current library bug).
+  #define PXL8_WORKAROUND_BUFFER 2 // Addresses a current bug which needs the maximum LED count to increase by 2.
+  const uint16_t i_max_pxl8_count = max(max(PACK_LED_COUNT, CYCLOTRON_LED_COUNT), max(EXP1_LED_COUNT, EXP2_LED_COUNT)) + PXL8_WORKAROUND_BUFFER;
 #else
   #define DEVICE_SLOTS 6 // Total segments: 3 (PACK) + 3 (CYCLOTRON) for Lighting library
   #define PACK_LED_COUNT (MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT)  // Max 62 LEDs
   #define CYCLOTRON_LED_COUNT (INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX)  // Max 64 LEDs
 #endif
-
-/*
- * Total number of LEDs in the optional inner cyclotron configuration.
- * Max 64 LEDs is possible before degradation of serial communications!
- * - Up to 8 LEDs for the inner panel by Frutto Technology.
- * - Up to 36 LEDs for the largest ring provided by GPStar kits.
- * - Optionally, up to 20 LEDs for the "sparking" effect in the cavity.
- */
-const uint8_t i_max_inner_cyclotron_leds = CYCLOTRON_LED_COUNT;
-
-/*
- * Set the maximum number of LEDs which may be contained on any chain of pixels.
- * Necessary for the Adafruit_NeoPXL8 library and related calculations for chains.
- */
-#define PXL8_WORKAROUND_BUFFER 2 // Addresses a current bug which needs the LED count to increase by 2.
-const uint16_t i_max_pxl8_count = max(PACK_LED_COUNT, CYCLOTRON_LED_COUNT) + PXL8_WORKAROUND_BUFFER;
 
 /*
  * Addressable LED Chains - Physical lengths of LEDs driven by a hardware pin.
@@ -238,33 +207,61 @@ enum LED_SEGMENT : uint8_t {
 
 /*
  * Lighting Devices - Registry of segments to chains (w/ pin).
+ * Includes pre-calculated buffer offsets and LED counts for efficient runtime access.
+ *
+ *  Chains are considered to be a physical hardware layer on a microcontroller pin.
+ * |================================================================================|
+ *
+ *  Segments are logical groupings of LEDs on a PCB module on the same HW chain.
+ * |====================|==============================|=================|==========|
+ *
+ * For the NeoPXL8 library an array of 8 hardware pins may be used but the count of
+ * LEDs on each must be constant. So we specify a value which is the max of each HW
+ * chain (+ a buffer as a bug workaround):
+ *
+ * Pack Count |==============================================================|
+ * Cyc. Count |================================================================|
+ * Exp1 Count |============================================================|
+ * Exp2 Count |============================================================|
+ * PXL8 Count |==================================================================|
  */
 struct LightingDevice {
   LED_SEGMENT SegmentID; // LED device segment identifier.
-  LED_CHAIN ChainID; // Identifier for the associated chain.
-  uint8_t HWPin; // Hardware pin for the physical LED chain
+  LED_CHAIN ChainID;     // Identifier for the associated chain.
+  uint8_t HWPin;         // Hardware pin for the physical LED chain
+  uint16_t MaxPixels;   // Total LED count for this chain (same for all segments in chain).
+  uint16_t BufferOffset; // Buffer offset in unified NeoPXL8 array (ESP32) or 0 (ATMega).
 };
 
 /*
  * Lighting Registry - source of truth for segment→chain→pin mapping
+ * Includes pre-calculated MaxPixels and BufferOffset for runtime efficiency.
+ * 
+ * ESP32: BufferOffset = chain_id * i_max_pxl8_count
+ *   - CHAIN_PACK (0):      offset 0 (LEDs 0-65)
+ *   - CHAIN_CYCLOTRON (1): offset 66 (LEDs 66-129)
+ *   - CHAIN_EXP1 (2):      offset 132 (LEDs 132-197)
+ *   - CHAIN_EXP2 (3):      offset 198 (LEDs 198-263)
+ * 
+ * ATMega: BufferOffset = 0 (unused, each chain has its own NeoPixel instance)
  */
 static constexpr LightingDevice lighting_devices[DEVICE_SLOTS] = {
 #ifdef ESP32
-  {DEVICE_POWERCELL,     CHAIN_PACK,      PACK_LED_PIN},
-  {DEVICE_CYCLOTRON_LID, CHAIN_PACK,      PACK_LED_PIN},
-  {DEVICE_NFILTER,       CHAIN_PACK,      PACK_LED_PIN},
-  {DEVICE_INNER_PANEL,   CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
-  {DEVICE_INNER_CAKE,    CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
-  {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
-  {DEVICE_EXP1,          CHAIN_EXP1,      EXPANSION1_LED_PIN},
-  {DEVICE_EXP2,          CHAIN_EXP2,      EXPANSION2_LED_PIN}
+  {DEVICE_POWERCELL,     CHAIN_PACK,      PACK_LED_PIN,       PACK_LED_COUNT,      (uint8_t)CHAIN_PACK * i_max_pxl8_count},
+  {DEVICE_CYCLOTRON_LID, CHAIN_PACK,      PACK_LED_PIN,       PACK_LED_COUNT,      (uint8_t)CHAIN_PACK * i_max_pxl8_count},
+  {DEVICE_NFILTER,       CHAIN_PACK,      PACK_LED_PIN,       PACK_LED_COUNT,      (uint8_t)CHAIN_PACK * i_max_pxl8_count},
+  {DEVICE_INNER_PANEL,   CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN,  CYCLOTRON_LED_COUNT, (uint8_t)CHAIN_CYCLOTRON * i_max_pxl8_count},
+  {DEVICE_INNER_CAKE,    CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN,  CYCLOTRON_LED_COUNT, (uint8_t)CHAIN_CYCLOTRON * i_max_pxl8_count},
+  {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN,  CYCLOTRON_LED_COUNT, (uint8_t)CHAIN_CYCLOTRON * i_max_pxl8_count},
+  {DEVICE_EXP1,          CHAIN_EXP1,      EXPANSION1_LED_PIN, EXP1_LED_COUNT,      (uint8_t)CHAIN_EXP1 * i_max_pxl8_count},
+  {DEVICE_EXP2,          CHAIN_EXP2,      EXPANSION2_LED_PIN, EXP2_LED_COUNT,      (uint8_t)CHAIN_EXP2 * i_max_pxl8_count}
 #else
-  {DEVICE_POWERCELL,     CHAIN_PACK,      PACK_LED_PIN},
-  {DEVICE_CYCLOTRON_LID, CHAIN_PACK,      PACK_LED_PIN},
-  {DEVICE_NFILTER,       CHAIN_PACK,      PACK_LED_PIN},
-  {DEVICE_INNER_PANEL,   CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
-  {DEVICE_INNER_CAKE,    CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
-  {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN}
+  {DEVICE_POWERCELL,     CHAIN_PACK,      PACK_LED_PIN,       PACK_LED_COUNT,      0},
+  {DEVICE_CYCLOTRON_LID, CHAIN_PACK,      PACK_LED_PIN,       PACK_LED_COUNT,      0},
+  {DEVICE_NFILTER,       CHAIN_PACK,      PACK_LED_PIN,       PACK_LED_COUNT,      0},
+  {DEVICE_INNER_PANEL,   CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN,  CYCLOTRON_LED_COUNT, 0},
+  {DEVICE_INNER_CAKE,    CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN,  CYCLOTRON_LED_COUNT, 0},
+  {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN,  CYCLOTRON_LED_COUNT, 0}
 #endif
 };
 
@@ -280,13 +277,15 @@ static constexpr LightingDevice lighting_devices[DEVICE_SLOTS] = {
  * - Pin 2: EXPANSION1_LED_PIN (CHAIN_EXP1)
  * - Pin 3: EXPANSION2_LED_PIN (CHAIN_EXP2)
  * - Pins 4-7: Unused (set to -1)
+ *
+ * NOTICE: The order of hardware pins MUST match the order of LED_CHAIN!
  */
 static int8_t pxl8_pins[8] = {
   PACK_LED_PIN,       // Pin 0
   CYCLOTRON_LED_PIN,  // Pin 1
   EXPANSION1_LED_PIN, // Pin 2
   EXPANSION2_LED_PIN, // Pin 3
-  -1, -1, -1, -1      // Pins 4-7 unused
+  -1, -1, -1, -1      // Pins 4-7 are unused (set to -1)
 };
 #endif
 
@@ -359,44 +358,18 @@ private:
     return CHAIN_PACK; // fallback
   }
 
-  // Helper: Returns the LED count for the given segment.
-  // Internally converts the segment to its hardware chain and returns the LED count.
+  // Helper: Look up registry entry for a segment and return its LED count.
   uint16_t getCount(LED_SEGMENT segment) const {
-    LED_CHAIN chain = segmentToChain(segment);
-    switch(chain) {
-      case CHAIN_PACK:
-      default:
-        return PACK_LED_COUNT;
-
-      case CHAIN_CYCLOTRON:
-        return CYCLOTRON_LED_COUNT;
-
-    #ifdef ESP32
-      case CHAIN_EXP1:
-        return EXP1_LED_COUNT;
-
-      case CHAIN_EXP2:
-        return EXP2_LED_COUNT;
-    #endif
-    }
+    return lighting_devices[segment].MaxPixels;
   }
 
 #ifdef ESP32
-  // Helper: Returns the physical strip object for the given segment.
-  // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
+  // Helper: Returns the single NeoPXL8 object for the given segment.
   Adafruit_NeoPXL8& getDevicePixels(LED_SEGMENT segment) {
     return systemLEDs; // Only 1 object instance for this hardware.
   }
-
-  // Helper: Calculate buffer offset for pixel access in NeoPXL8
-  // For ESP32: Each chain gets a reserved section of i_max_pxl8_count LEDs
-  //            Offset = (chain_id * i_max_pxl8_count) + pixel_index
-  uint16_t getBufferOffset(LED_SEGMENT segment, uint16_t pixel_index) const {
-    LED_CHAIN chain = segmentToChain(segment);
-    return ((uint16_t)chain * i_max_pxl8_count) + pixel_index;
-  }
 #else
-  // Helper: Returns the physical strip object for the given segment.
+  // Helper: Returns the correct NeoPixel object for the given segment.
   // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
   Adafruit_NeoPixel& getDevicePixels(LED_SEGMENT segment) {
     LED_CHAIN chain = segmentToChain(segment);
@@ -431,12 +404,16 @@ public:
     pixels.show();
   }
 
-  // Turn off LEDs on the current segment
+  // Turn off LEDs on the chain associated with the current segment.
+  // ESP32: Iterates only over the span of LEDs represented by the PXL8 pin (offset to offset+count).
+  // ATMega: Calls the natural clear() method on the NeoPixel object associated with the chain.
   void lightsOff() {
   #ifdef ESP32
-    uint16_t i_slot_leds = getCount(assignedSlot);
-    for(uint16_t i = 0; i < i_slot_leds; i++) {
-      setPixelColor(i, LED_RGB_BLACK);
+    auto& pixels = getDevicePixels(assignedSlot);
+    uint16_t i_slot_start = lighting_devices[assignedSlot].BufferOffset;
+    uint16_t i_slot_end = i_slot_start + lighting_devices[assignedSlot].MaxPixels;
+    for(uint16_t i = i_slot_start; i < i_slot_end; i++) {
+      pixels.setPixelColor(i, pixels.Color(0, 0, 0));
     }
   #else
     auto& pixels = getDevicePixels(assignedSlot);
@@ -466,7 +443,7 @@ public:
     uint16_t i_slot_leds = getCount(assignedSlot);
     if(index >= 0 && index < i_slot_leds) {
     #ifdef ESP32
-      uint16_t buffer_index = getBufferOffset(assignedSlot, index);
+      uint16_t buffer_index = lighting_devices[assignedSlot].BufferOffset + index;
       return unpackColor(pixels.getPixelColor(buffer_index));
     #else
       return unpackColor(pixels.getPixelColor(index));
@@ -512,7 +489,7 @@ public:
 
       // Set the given LED to the calculated, ordered RGB value.
     #ifdef ESP32
-      uint16_t buffer_index = getBufferOffset(assignedSlot, index);
+      uint16_t buffer_index = lighting_devices[assignedSlot].BufferOffset + index;
       pixels.setPixelColor(buffer_index, pixels.Color(ordered.r, ordered.g, ordered.b));
     #else
       pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
@@ -526,7 +503,7 @@ public:
     uint16_t i_slot_leds = getCount(assignedSlot);
     if(index >= 0 && index < i_slot_leds) {
     #ifdef ESP32
-      uint16_t buffer_index = getBufferOffset(assignedSlot, index);
+      uint16_t buffer_index = lighting_devices[assignedSlot].BufferOffset + index;
       pixels.setPixelColor(buffer_index, pixels.Color(colorRGB.r, colorRGB.g, colorRGB.b));
     #else
       pixels.setPixelColor(index, pixels.Color(colorRGB.r, colorRGB.g, colorRGB.b));
@@ -600,6 +577,7 @@ public:
     // Since multiple devices are used, we must first obtain the correct list of pixels.
     auto& pixels = getDevicePixels(assignedSlot);
     uint16_t i_slot_leds = getCount(assignedSlot);
+    ColorOrder slotColorOrder = lightingLib.getColorOrder(assignedSlot);
 
     // Iterate over the pixels and set the color according to the device's current state.
     for(uint16_t i_curr_led = 0; i_curr_led < i_slot_leds; i_curr_led++) {
@@ -613,13 +591,14 @@ public:
                                                 i_phase); // Calculated interpolation phase for this LED (0-255)
 
       // Apply the device-specific color order for the RGB values.
-      LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
+      LED_RGB ordered = Lighting::applyColorOrder(rgb, slotColorOrder);
 
-      // Set the given LED to the calculated, ordered RGB value.
     #ifdef ESP32
-      uint16_t buffer_index = getBufferOffset(assignedSlot, i_curr_led);
+      // Set the given LED to the calculated and buffer-offset, ordered RGB value.
+      uint16_t buffer_index = lighting_devices[assignedSlot].BufferOffset + i_curr_led;
       pixels.setPixelColor(buffer_index, pixels.Color(ordered.r, ordered.g, ordered.b));
     #else
+      // Set the given LED to the calculated, ordered RGB value.
       pixels.setPixelColor(i_curr_led, pixels.Color(ordered.r, ordered.g, ordered.b));
     #endif
     }

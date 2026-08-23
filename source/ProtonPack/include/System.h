@@ -1905,15 +1905,8 @@ void cyclotronSwitchPlateLEDs() {
 void spectralLightsOff() {
   b_spectral_lights_on = false;
 
-  auto& powercellMgr = LightingManager::getInstance(DEVICE_POWERCELL);
-  for(uint8_t i = 0; i < i_max_pack_leds; i++) {
-    powercellMgr.setPixelColor(i, C_BLACK);
-  }
-
-  auto& innerCakeMgr = LightingManager::getInstance(DEVICE_INNER_CAKE);
-  for(uint8_t i = i_ic_cake_start; i <= i_ic_cake_end; i++) {
-    innerCakeMgr.setPixelColor(i, C_BLACK);
-  }
+  LightingManager::getInstance(DEVICE_POWERCELL).lightsOff();
+  LightingManager::getInstance(DEVICE_INNER_CAKE).lightsOff();
 }
 
 void spectralLightsOn() {
