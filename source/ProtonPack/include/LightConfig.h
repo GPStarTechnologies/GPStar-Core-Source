@@ -20,7 +20,11 @@
 #pragma once
 
 // Include the intended LED driver: Adafruit NeoPixel
-#include <Adafruit_NeoPixel.h>
+#ifdef ESP32
+  #include <Adafruit_NeoPXL8.h>
+#else
+  #include <Adafruit_NeoPixel.h>
+#endif
 
 // Include the generalized Lighting library
 #include <Lighting.h>
@@ -133,15 +137,6 @@ const uint8_t i_max_pack_leds = MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MA
 const uint8_t i_nfilter_jewel_leds = JEWEL_NFILTER_LED_COUNT;
 
 /*
- * Total number of LEDs in the optional inner cyclotron configuration.
- * Max 64 LEDs is possible before degradation of serial communications!
- * - Up to 8 LEDs for the inner panel by Frutto Technology.
- * - Up to 36 LEDs for the largest ring provided by GPStar kits.
- * - Optionally, up to 20 LEDs for the "sparking" effect in the cavity.
- */
-const uint8_t i_max_inner_cyclotron_leds = INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX;
-
-/*
  * Updated count of all the LEDs plus the N-Filter jewel.
  * This gets updated by the system if the wand changes the led count in the EEPROM menu system.
  */
@@ -152,20 +147,6 @@ uint8_t i_pack_num_leds = i_powercell_num_leds + i_cyclotron_num_leds + i_nfilte
  * This gets updated by the system if the wand changes the LED count in the EEPROM menu system.
  */
 uint8_t i_vent_light_start = i_powercell_num_leds + i_cyclotron_num_leds;
-
-/*
- * Legacy LED Buffer: Proton Pack Power Cell and Cyclotron lid LED pin.
- */
-//LED_RGB pack_leds[MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT];
-
-/*
- * Legacy LED Buffer: Inner Cyclotron LEDs (optional).
- * Max number of LEDs supported = 64.
- * Maximum expected LEDs for the Inner Switch Panel is 8.
- * Maximum allowed LEDs for the Inner Cyclotron Cake is 36.
- * Maximum allowed LEDs for the Inner Cyclotron Cavity is 20.
- */
-//LED_RGB cyclotron_leds[INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX];
 
 /*
  * Delay to update the addressable LEDs.
@@ -196,6 +177,22 @@ millisDelay ms_led_driver;
   #define PACK_LED_COUNT (MAX_POWERCELL_LED_COUNT + OUTER_CYCLOTRON_LED_MAX + JEWEL_NFILTER_LED_COUNT)  // Max 62 LEDs
   #define CYCLOTRON_LED_COUNT (INNER_CYCLOTRON_LED_PANEL_MAX + INNER_CYCLOTRON_CAKE_LED_MAX + INNER_CYCLOTRON_CAVITY_LED_MAX)  // Max 64 LEDs
 #endif
+
+/*
+ * Total number of LEDs in the optional inner cyclotron configuration.
+ * Max 64 LEDs is possible before degradation of serial communications!
+ * - Up to 8 LEDs for the inner panel by Frutto Technology.
+ * - Up to 36 LEDs for the largest ring provided by GPStar kits.
+ * - Optionally, up to 20 LEDs for the "sparking" effect in the cavity.
+ */
+const uint8_t i_max_inner_cyclotron_leds = CYCLOTRON_LED_COUNT;
+
+/*
+ * Set the maximum number of LEDs which may be contained on any chain of pixels.
+ * Necessary for the Adafruit_NeoPXL8 library and related calculations for chains.
+ */
+#define PXL8_WORKAROUND_BUFFER 2 // Addresses a current bug which needs the LED count to increase by 2.
+const uint16_t i_max_pxl8_count = max(PACK_LED_COUNT, CYCLOTRON_LED_COUNT) + PXL8_WORKAROUND_BUFFER;
 
 /*
  * Addressable LED Chains - Physical lengths of LEDs driven by a hardware pin.
@@ -259,8 +256,8 @@ static constexpr LightingDevice lighting_devices[DEVICE_SLOTS] = {
   {DEVICE_INNER_PANEL,   CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
   {DEVICE_INNER_CAKE,    CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
   {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN},
-  {DEVICE_EXP1, CHAIN_EXP1, EXPANSION1_LED_PIN},
-  {DEVICE_EXP2, CHAIN_EXP2, EXPANSION2_LED_PIN}
+  {DEVICE_EXP1,          CHAIN_EXP1,      EXPANSION1_LED_PIN},
+  {DEVICE_EXP2,          CHAIN_EXP2,      EXPANSION2_LED_PIN}
 #else
   {DEVICE_POWERCELL,     CHAIN_PACK,      PACK_LED_PIN},
   {DEVICE_CYCLOTRON_LID, CHAIN_PACK,      PACK_LED_PIN},
@@ -270,6 +267,28 @@ static constexpr LightingDevice lighting_devices[DEVICE_SLOTS] = {
   {DEVICE_INNER_CAVITY,  CHAIN_CYCLOTRON, CYCLOTRON_LED_PIN}
 #endif
 };
+
+// ============================================================================
+// NEOPXL8 PIN CONFIGURATION (ESP32 ONLY)
+// ============================================================================
+
+#ifdef ESP32
+/*
+ * NeoPXL8 supports up to 8 hardware pins. Configure pins for GPStar devices:
+ * - Pin 0: PACK_LED_PIN (CHAIN_PACK)
+ * - Pin 1: CYCLOTRON_LED_PIN (CHAIN_CYCLOTRON)
+ * - Pin 2: EXPANSION1_LED_PIN (CHAIN_EXP1)
+ * - Pin 3: EXPANSION2_LED_PIN (CHAIN_EXP2)
+ * - Pins 4-7: Unused (set to -1)
+ */
+static int8_t pxl8_pins[8] = {
+  PACK_LED_PIN,       // Pin 0
+  CYCLOTRON_LED_PIN,  // Pin 1
+  EXPANSION1_LED_PIN, // Pin 2
+  EXPANSION2_LED_PIN, // Pin 3
+  -1, -1, -1, -1      // Pins 4-7 unused
+};
+#endif
 
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
@@ -304,11 +323,11 @@ class LightingManager {
 private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
   static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
+#ifdef ESP32
+  static Adafruit_NeoPXL8 systemLEDs;  // Single NeoPXL8 instance for all 8 pins
+#else
   static Adafruit_NeoPixel packLEDs;
   static Adafruit_NeoPixel cyclotronLEDs;
-#ifdef ESP32
-  static Adafruit_NeoPixel exp1LEDs;
-  static Adafruit_NeoPixel exp2LEDs;
 #endif
   const LED_SEGMENT assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
@@ -333,6 +352,11 @@ private:
 
   // Helper: Returns the physical strip object for the given segment.
   // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
+#ifdef ESP32
+  Adafruit_NeoPXL8& getDevicePixels(LED_SEGMENT segment) {
+    return systemLEDs; // Only 1 object instance for this hardware.
+  }
+#else
   Adafruit_NeoPixel& getDevicePixels(LED_SEGMENT segment) {
     LED_CHAIN chain = segmentToChain(segment);
     switch(chain) {
@@ -342,28 +366,21 @@ private:
       case CHAIN_PACK:
       default:
         return packLEDs;
-
-    #ifdef ESP32
-      case CHAIN_EXP1:
-        return exp1LEDs;
-
-      case CHAIN_EXP2:
-        return exp2LEDs;
-    #endif
     }
   }
+#endif
 
   // Helper: Returns the LED count for the given segment.
   // Internally converts the segment to its hardware chain and returns the LED count.
   uint16_t getCount(LED_SEGMENT segment) const {
     LED_CHAIN chain = segmentToChain(segment);
     switch(chain) {
-      case CHAIN_CYCLOTRON:
-        return CYCLOTRON_LED_COUNT;
-
       case CHAIN_PACK:
       default:
         return PACK_LED_COUNT;
+
+      case CHAIN_CYCLOTRON:
+        return CYCLOTRON_LED_COUNT;
 
     #ifdef ESP32
       case CHAIN_EXP1:
@@ -598,11 +615,13 @@ Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
 /**
  * In order to allow the show() method to be called across segments (devices) the actual pixel
  * chains must be initialized using static class members. This setup step will initialize each
- * Adafruit_NeoPixel object as a static member with the NEO_GBR color order by default.
+ * Adafruit_NeoPixel or Adafruit_NeoPXL8 object as a static member with the NEO_GRB color order by default.
  */
-Adafruit_NeoPixel LightingManager::packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel LightingManager::cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_GRB + NEO_KHZ800);
+
 #ifdef ESP32
-Adafruit_NeoPixel LightingManager::exp1LEDs(EXP1_LED_COUNT, EXPANSION1_LED_PIN, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel LightingManager::exp2LEDs(EXP2_LED_COUNT, EXPANSION2_LED_PIN, NEO_GRB + NEO_KHZ800);
+  // NeoPXL8 driver using 8 pins with max LED count applied per chain.
+  Adafruit_NeoPXL8 LightingManager::systemLEDs(i_max_pxl8_count, pxl8_pins, NEO_GRB + NEO_KHZ800);
+#else
+  Adafruit_NeoPixel LightingManager::packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel LightingManager::cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_GRB + NEO_KHZ800);
 #endif
