@@ -132,6 +132,8 @@ String getDeviceConfig() {
 }
 
 /**
+ * Helper: Builds animation JSON object with current state and timing data.
+ * Used by both SSE events and status responses to ensure consistency.
  * Prepare a JSON object with current animation frame and progress data.
  * Sends real-time updates during recording and playback sessions.
  * 
@@ -147,8 +149,6 @@ String getDeviceConfig() {
  * - frameValue: Actuator firing at current frame (0=none, 1-4=relay ID)
  * - lastActuator: Most recent actuator triggered (0=none, 1-4=relay ID)
  */
-// Shared helper: Builds animation JSON object with current state and timing data
-// Used by both SSE events and status responses to ensure consistency
 void buildAnimationJson(JsonObject& animationObj) {
   const char* stateNames[] = {"IDLE_EMPTY", "RECORDING", "IDLE_PENDING_SAVE", "IDLE_LOADED", "PLAYBACK"};
   

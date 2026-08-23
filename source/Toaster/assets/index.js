@@ -532,4 +532,3 @@ function updateAnimationDisplay(animData) {
     });
   }
 }
-
