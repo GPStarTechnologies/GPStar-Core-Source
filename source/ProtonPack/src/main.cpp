@@ -352,13 +352,13 @@ void setup() {
 void updateLEDs() {
   // Update all LED's when the timer has finished.
   if(ms_led_driver.justFinished()) {
+  #ifdef ESP32
+    // Call show() only on a segment in the first chain to cause all to update.
+    LightingManager::getInstance(DEVICE_POWERCELL).show(); // CHAIN_PACK
+  #else
     // Call show() on a representative segment from each chain.
     LightingManager::getInstance(DEVICE_POWERCELL).show();  // CHAIN_PACK
     LightingManager::getInstance(DEVICE_INNER_CAKE).show(); // CHAIN_CYCLOTRON
-  #ifdef ESP32
-    // TODO: Add expansion port show() calls if/when expansion chains are used
-    // LightingManager::getInstance(DEVICE_EXP1).show();
-    // LightingManager::getInstance(DEVICE_EXP2).show();
   #endif
 
     // Restart the lighting update timer.

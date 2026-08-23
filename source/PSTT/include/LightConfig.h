@@ -65,7 +65,6 @@
  * - initializeDriver() — Sets up the driver library and hardware pins
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
- * - setBrightness(brightness) — Controls global brightness (0-255)
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
  * - getPixelColor(index) — Read a single LED's current color as LED_RGB
  * - setCustomColorHSV(hsv) — Store custom HSV color in the Lighting library
@@ -117,11 +116,6 @@ public:
   // Turn off all LEDs
   void lightsOff() {
     pixels.clear(); // Set all to black (off).
-  }
-
-  // Set brightness
-  void setBrightness(uint8_t brightness) {
-    pixels.setBrightness(brightness);
   }
 
   // Set custom color HSV values in the Lighting library

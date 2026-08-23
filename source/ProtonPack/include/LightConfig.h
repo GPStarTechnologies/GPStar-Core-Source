@@ -312,7 +312,7 @@ static int8_t pxl8_pins[8] = {
  * - initializeDriver() — Sets up the driver library and hardware pins
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs on the current segment
- * - setBrightness(brightness) — Controls global brightness (0-255)
+
  * - setPixelColor(index, ColorID, brightness) — Set LED with automatic color order
  * - getPixelColor(index) — Read a single LED's current color as LED_RGB
  * - setCustomColorHSV(hsv) — Store custom HSV for this segment's custom color slot
@@ -338,6 +338,15 @@ private:
     lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets.
   }
 
+  // Helper: Convert packed uint32_t color to LED_RGB components
+  // Internal utility used by getPixelColor()
+  LED_RGB unpackColor(uint32_t packedColor) {
+    uint8_t r = (packedColor >> 16) & 0xFF;
+    uint8_t g = (packedColor >> 8) & 0xFF;
+    uint8_t b = packedColor & 0xFF;
+    return LED_RGB{r, g, b};
+  }
+
   // Helper: Maps an LED_SEGMENT to its physical hardware CHAIN using the registry
   // Looks up the segment in the lighting_devices registry and returns its associated chain.
   // Falls back to CHAIN_PACK if segment is not found (should not happen in normal operation).
@@ -349,26 +358,6 @@ private:
     }
     return CHAIN_PACK; // fallback
   }
-
-  // Helper: Returns the physical strip object for the given segment.
-  // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
-#ifdef ESP32
-  Adafruit_NeoPXL8& getDevicePixels(LED_SEGMENT segment) {
-    return systemLEDs; // Only 1 object instance for this hardware.
-  }
-#else
-  Adafruit_NeoPixel& getDevicePixels(LED_SEGMENT segment) {
-    LED_CHAIN chain = segmentToChain(segment);
-    switch(chain) {
-      case CHAIN_CYCLOTRON:
-        return cyclotronLEDs;
-
-      case CHAIN_PACK:
-      default:
-        return packLEDs;
-    }
-  }
-#endif
 
   // Helper: Returns the LED count for the given segment.
   // Internally converts the segment to its hardware chain and returns the LED count.
@@ -392,14 +381,35 @@ private:
     }
   }
 
-  // Helper: Convert packed uint32_t color to LED_RGB components
-  // Internal utility used by getPixelColor()
-  LED_RGB unpackColor(uint32_t packedColor) {
-    uint8_t r = (packedColor >> 16) & 0xFF;
-    uint8_t g = (packedColor >> 8) & 0xFF;
-    uint8_t b = packedColor & 0xFF;
-    return LED_RGB{r, g, b};
+#ifdef ESP32
+  // Helper: Returns the physical strip object for the given segment.
+  // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
+  Adafruit_NeoPXL8& getDevicePixels(LED_SEGMENT segment) {
+    return systemLEDs; // Only 1 object instance for this hardware.
   }
+
+  // Helper: Calculate buffer offset for pixel access in NeoPXL8
+  // For ESP32: Each chain gets a reserved section of i_max_pxl8_count LEDs
+  //            Offset = (chain_id * i_max_pxl8_count) + pixel_index
+  uint16_t getBufferOffset(LED_SEGMENT segment, uint16_t pixel_index) const {
+    LED_CHAIN chain = segmentToChain(segment);
+    return ((uint16_t)chain * i_max_pxl8_count) + pixel_index;
+  }
+#else
+  // Helper: Returns the physical strip object for the given segment.
+  // Internally converts the segment to its hardware chain and returns the corresponding pixels object.
+  Adafruit_NeoPixel& getDevicePixels(LED_SEGMENT segment) {
+    LED_CHAIN chain = segmentToChain(segment);
+    switch(chain) {
+      case CHAIN_CYCLOTRON:
+        return cyclotronLEDs;
+
+      case CHAIN_PACK:
+      default:
+        return packLEDs;
+    }
+  }
+#endif
 
 public:
   // Singleton instances per segment/slot
@@ -423,14 +433,15 @@ public:
 
   // Turn off LEDs on the current segment
   void lightsOff() {
+  #ifdef ESP32
+    uint16_t i_slot_leds = getCount(assignedSlot);
+    for(uint16_t i = 0; i < i_slot_leds; i++) {
+      setPixelColor(i, LED_RGB_BLACK);
+    }
+  #else
     auto& pixels = getDevicePixels(assignedSlot);
     pixels.clear(); // Set all to black (off).
-  }
-
-  // Set brightness
-  void setBrightness(uint8_t brightness) {
-    auto& pixels = getDevicePixels(assignedSlot);
-    pixels.setBrightness(brightness);
+  #endif
   }
 
   // Set custom color HSV values in the Lighting library
@@ -452,8 +463,14 @@ public:
   // Returns a pixel's current color as LED_RGB
   LED_RGB getPixelColor(uint16_t index) {
     auto& pixels = getDevicePixels(assignedSlot);
-    if(index >= 0 && index < pixels.numPixels()) {
+    uint16_t i_slot_leds = getCount(assignedSlot);
+    if(index >= 0 && index < i_slot_leds) {
+    #ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot, index);
+      return unpackColor(pixels.getPixelColor(buffer_index));
+    #else
       return unpackColor(pixels.getPixelColor(index));
+    #endif
     }
     return LED_RGB_BLACK; // Return black if index is out of bounds.
   }
@@ -477,7 +494,8 @@ public:
   // Set a pixel color by ColorID and automatically apply stored color order.
   void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
     auto& pixels = getDevicePixels(assignedSlot);
-    if(index >= 0 && index < pixels.numPixels()) {
+    uint16_t i_slot_leds = getCount(assignedSlot);
+    if(index >= 0 && index < i_slot_leds) {
       // Get color as HSV
       LED_HSV hsv;
       if(Lighting::isColorDynamic(colorEnum)) {
@@ -493,15 +511,26 @@ public:
       LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
 
       // Set the given LED to the calculated, ordered RGB value.
+    #ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot, index);
+      pixels.setPixelColor(buffer_index, pixels.Color(ordered.r, ordered.g, ordered.b));
+    #else
       pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
+    #endif
     }
   }
 
   // Set a pixel color direct from an RGB triplet.
   void setPixelColor(uint16_t index, LED_RGB colorRGB) {
     auto& pixels = getDevicePixels(assignedSlot);
-    if(index >= 0 && index < pixels.numPixels()) {
+    uint16_t i_slot_leds = getCount(assignedSlot);
+    if(index >= 0 && index < i_slot_leds) {
+    #ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot, index);
+      pixels.setPixelColor(buffer_index, pixels.Color(colorRGB.r, colorRGB.g, colorRGB.b));
+    #else
       pixels.setPixelColor(index, pixels.Color(colorRGB.r, colorRGB.g, colorRGB.b));
+    #endif
     }
   }
 
@@ -587,7 +616,12 @@ public:
       LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
 
       // Set the given LED to the calculated, ordered RGB value.
+    #ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot, i_curr_led);
+      pixels.setPixelColor(buffer_index, pixels.Color(ordered.r, ordered.g, ordered.b));
+    #else
       pixels.setPixelColor(i_curr_led, pixels.Color(ordered.r, ordered.g, ordered.b));
+    #endif
     }
   }
 };
