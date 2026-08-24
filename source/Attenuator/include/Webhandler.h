@@ -1597,13 +1597,11 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     if(jsonBody["radLensIdle"].is<unsigned char>()) {
       switch(jsonBody["radLensIdle"].as<unsigned char>()) {
         case 0:
+        default:
           RAD_LENS_IDLE = AMBER_PULSE;
         break;
         case 1:
           RAD_LENS_IDLE = ORANGE_FADE;
-        break;
-        case 2:
-          RAD_LENS_IDLE = RED_FADE;
         break;
       }
     }
