@@ -42,12 +42,6 @@
 #define DEVICE_MAX_LEDS 3 // The maximum number of LEDs (Top, Upper, Lower)
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for the optimal effect
 
-/*
- * Delay for LED driver to update the addressable LEDs.
- */
-uint8_t i_led_update_delay = DEVICE_REFRESH_MS;
-millisDelay ms_led_driver;
-
 // ============================================================================
 // LED IDENTIFIERS
 // ============================================================================

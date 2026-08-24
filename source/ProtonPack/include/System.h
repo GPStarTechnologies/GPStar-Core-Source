@@ -25,7 +25,6 @@
 #endif
 
 // Forward function declarations.
-void updateLEDs();
 void executeCommand(uint16_t i_command, uint16_t i_value); // From Command.h
 
 // Brightness utility - converts percentage (0-100) to uint8_t (0-255)
@@ -3421,8 +3420,6 @@ void cyclotron84LightOff(uint8_t i_led) {
 }
 
 void cyclotron1984(uint16_t iRampDelay) {
-  i_led_update_delay = DEVICE_REFRESH_MS;
-
   // Guard against divide-by-zero just in case.
   sanitizeCyclotronMultipliers();
 
@@ -3504,8 +3501,6 @@ void cyclotron2021(uint16_t iRampDelay) {
     uint8_t i_cyclotron_matrix_led = cyclotronLookupTable(i_curr_cyclotron_position);
 
     if(b_ramp_up) {
-      i_led_update_delay = DEVICE_REFRESH_MS;
-
       if(r_outer_cyclotron_ramp.isFinished()) {
         b_ramp_up = false;
         i_outer_current_ramp_speed = iRampDelay;
@@ -3531,8 +3526,6 @@ void cyclotron2021(uint16_t iRampDelay) {
       }
     }
     else if(b_ramp_down) {
-      i_led_update_delay = DEVICE_REFRESH_MS;
-
       if(r_outer_cyclotron_ramp.isFinished()) {
         b_ramp_down = false;
       }
@@ -3569,27 +3562,11 @@ void cyclotron2021(uint16_t iRampDelay) {
             else {
               t_iRampDelay = 0;
             }
-
-            if(b_cyclotron_lid_on) {
-              i_led_update_delay = DEVICE_REFRESH_MS + i_cyclotron_multiplier;
-            }
-            else {
-              i_led_update_delay = DEVICE_REFRESH_MS;
-            }
-          }
-          else {
-            i_led_update_delay = DEVICE_REFRESH_MS;
-          }
-
-          if(i_led_update_delay > 10) {
-            i_led_update_delay = 10;
           }
         break;
 
         case FRUTTO_CYCLOTRON_LED_COUNT:
         case HASLAB_CYCLOTRON_LED_COUNT:
-          i_led_update_delay = DEVICE_REFRESH_MS;
-
           if(i_cyclotron_multiplier > 1) {
             if(t_iRampDelay - i_cyclotron_multiplier > 0) {
               t_iRampDelay = t_iRampDelay - i_cyclotron_multiplier;
@@ -5971,7 +5948,8 @@ void systemPOST() {
       innerCyclotronCakeOff();
 
       b_pack_post_finish = true;
-      updateLEDs();
+      powercellMgr.show();
+      cyclotronLidMgr.show();
       delay(DEVICE_REFRESH_MS); // Delay to give the LEDs a chance to finish updating.
     }
     else {
@@ -5980,7 +5958,8 @@ void systemPOST() {
   }
 
   // Push the update to the LEDs.
-  updateLEDs();
+  powercellMgr.show();
+  cyclotronLidMgr.show();
 }
 
 void resetWifiCommand() {

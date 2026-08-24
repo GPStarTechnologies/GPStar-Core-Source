@@ -50,6 +50,7 @@
   #define RGB_VENT_PIN TOP_LED_PIN // Common name between hardware.
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for the optimal effect
+#define DEVICE_REFRESH_MS 6 // Refresh rate for the addressable LEDs (in milliseconds)
 
 /*
  * Counts for segments of special LED chains
@@ -57,13 +58,6 @@
  */
 #define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar Neutrona Barrel is 48 + 2 Strobe Tips).
 #define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
-
-/**
- * Timings for LED updates
- */
-#define DEVICE_REFRESH_MS 6 // Refresh rate for the addressable LEDs (in milliseconds)
-uint8_t i_led_update_delay = DEVICE_REFRESH_MS;
-millisDelay ms_led_driver;
 
 /*
  * The Hasbro Neutrona Wand has 5 LEDs. 0 = Base, 4 = tip. These are addressable with a single pin and are GRB colour order.

@@ -115,6 +115,7 @@ extern uint8_t i_cyclotron_num_leds;
   #define PACK_LED_PIN 53 // Data pin for the Power Cell and Outer Cyclotron addressable LEDs.
 #endif
 #define DEVICE_MAX_BRIGHTNESS 255 // Use full-brightness for the optimal effect
+#define DEVICE_REFRESH_MS 6 // Refresh rate for the addressable LEDs (in milliseconds)
 
 /*
  * Updated count of all the LEDs plus the N-Filter jewel (considered an unchangeable constant).
@@ -128,20 +129,6 @@ uint8_t i_pack_num_leds = i_powercell_num_leds + i_cyclotron_num_leds + i_nfilte
  * This gets updated by the system if the wand changes the LED count in the EEPROM menu system.
  */
 uint8_t i_vent_light_start = i_powercell_num_leds + i_cyclotron_num_leds;
-
-/*
- * Delay to update the addressable LEDs.
- * We have up to 126 addressable LEDs if using NeoPixel jewel in the N-Filter, a ring
- * for the Inner Cyclotron, and the optional "sparking" cyclotron cavity LEDs.
- * 0.0312 ms to update each LED, then a 0.05 ms resting period once all are updated.
- * So 4 ms should be okay. Let's bump it up to 5 just in case.
- * For cyclotrons with high density LEDs, increase this based on the cyclotron speed multiplier to simulate a faster spinning cyclotron.
- * This works by "skipping frames" in the animation, which can be done up until about 15 ms.
- * After 15ms it will become painfully obvious to most people that the animation is not smooth.
- */
-#define DEVICE_REFRESH_MS 6 // Refresh rate for the addressable LEDs (in milliseconds)
-uint8_t i_led_update_delay = DEVICE_REFRESH_MS;
-millisDelay ms_led_driver;
 
 // ============================================================================
 // LED DEVICE CONFIGURATION

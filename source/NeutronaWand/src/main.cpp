@@ -28,6 +28,18 @@
 // Required for PlatformIO
 #include <Arduino.h>
 
+// Specify all #define statements for task scheduler first
+// See: https://github.com/arkhipenko/TaskScheduler/tree/master/examples
+#define _TASK_SCHEDULING_OPTIONS
+#ifndef ESP32
+  // This only works on ATMEGA; it will crash wifi on ESP32
+  #define _TASK_SLEEP_ON_IDLE_RUN
+#endif
+#define _TASK_TIMECRITICAL
+
+// See: https://github.com/arkhipenko/TaskScheduler/wiki/API-Documentation
+#include <TaskScheduler.h>
+
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
 #define GPSTAR_DEBUG 0
@@ -66,6 +78,15 @@
 
 // Forward declaration for use in all includes.
 void sendDebug(const String& message);
+
+// Forward declaration of scheduler task callback(s).
+void animateTaskCallback();
+#ifdef ESP32
+void motionTaskCallback();
+#endif
+
+// Create the primary task scheduler.
+Scheduler schedule;
 
 // Shared Libraries
 #include <DeviceState.h>
@@ -135,6 +156,16 @@ void sendDebug(const String& message) {
     sendDebugEvent(message.c_str()); // Send message to the events stream.
   #endif
 }
+
+// Create a task to handle all updates for LED animations.
+// 6ms reflects a refresh rate equivalent to ~167fps.
+Task animateTask(6, TASK_FOREVER, &animateTaskCallback);
+
+#ifdef ESP32
+  // Create a task to check for motion via IMU/magnetometer.
+  // We only need to update every 50ms (20Hz).
+  Task motionTask(50, TASK_FOREVER, &motionTaskCallback);
+#endif
 
 void setup() {
   // Initialize LED driver for each hardware chain
@@ -351,9 +382,6 @@ void setup() {
   // Start up some timers for MODE_ORIGINAL.
   ms_slo_blo_blink.start(i_slo_blo_blink_delay);
 
-  // Initialize the LED state update timer.
-  ms_led_driver.start(i_led_update_delay);
-
   // Initialize the timer for initial handshake.
   ms_packsync.start(0);
 
@@ -375,42 +403,59 @@ void setup() {
 #ifdef ESP32
   debugf("Setup complete, free heap: %u bytes\n", ESP.getFreeHeap());
 #endif
+
+  // Set the options for the tasks so that it "catches up" if there is a delay.
+  animateTask.setSchedulingOption(TASK_SCHEDULE);
+
+  // Initialize the task scheduler and enable the core tasks.
+  schedule.init();
+  schedule.addTask(animateTask);
+  animateTask.enable();
+#ifdef ESP32
+  schedule.addTask(motionTask);
+  motionTask.enable();
+#endif
 }
 
-void updateLEDs() {
-  // Update the addressable LEDs and restart the timer.
-  if(ms_led_driver.justFinished()) {
-    auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
-    auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
-    barrelMgr.show();
-    ventMgr.show();
+// Task callback for handling animations.
+void animateTaskCallback() {
+  // Update all LED's when the task runs.
+  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
+  auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
+  barrelMgr.show();
+  ventMgr.show();
 
-    if(b_vent_lights_changed) {
-      if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
-        // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
-	  #ifdef ESP32
-        barrelMgr.show();
-	  #else
-        barrelMgr.show();
-        ventMgr.show();
-	  #endif
+  if(b_vent_lights_changed) {
+    if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
+      // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
+  #ifdef ESP32
+      barrelMgr.show();
+  #else
+      barrelMgr.show();
+      ventMgr.show();
+  #endif
 
-      #ifndef ESP32
-        LED_RGB ventPixel = ventMgr.getPixelColor(1);
-        if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && ventPixel == LED_RGB_BLACK) {
-          // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
-          digitalWriteFast(TOP_LED_PIN, HIGH);
-        }
-      #endif
+    #ifndef ESP32
+      LED_RGB ventPixel = ventMgr.getPixelColor(1);
+      if((WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) && ventPixel == LED_RGB_BLACK) {
+        // Make sure we turn the actual pin back off so the non-addressable LED still blinks.
+        digitalWriteFast(TOP_LED_PIN, HIGH);
       }
-
-      b_vent_lights_changed = false;
+    #endif
     }
 
-    // Restart the lighting update timer.
-    ms_led_driver.start(i_led_update_delay);
+    b_vent_lights_changed = false;
   }
 }
+
+#ifdef ESP32
+// Task callback for handling motion detection.
+void motionTaskCallback() {
+  if(b_mag_found && b_imu_found) {
+    checkMotionSensors();
+  }
+}
+#endif
 
 // Loop logic dedicated to this device which handles all of the standard operations.
 void mainLoop() {
@@ -725,9 +770,6 @@ void loop() {
     break;
   }
 
-  // Update the LEDs.
-  updateLEDs();
-
 #ifdef ESP32
   // The ESP32 uses a dual-core CPU with the loop() executing in Core0 by default.
   // Using vTaskDelay even without core-pinning will allow other tasks to run on Core1.
@@ -736,11 +778,6 @@ void loop() {
 
   // Run checks on web-related tasks.
   webLoops();
-
-  // Check the motion sensors if they are available and the timer has completed.
-  if(b_mag_found && b_imu_found) {
-    checkMotionSensors();
-  }
 
   // Check if the emergency WiFi toggle has been tripped.
   if(WIFI_USER_MODE != WIFI_ENABLED && !switch_activate.on() && !switch_vent.on() && !switch_wand.on() && switch_intensify.on() && switch_mode.longPress()) {
@@ -774,4 +811,7 @@ void loop() {
     break;
   }
 #endif
+
+  // Task execution via the scheduler.
+  schedule.execute();
 }

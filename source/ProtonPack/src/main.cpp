@@ -20,6 +20,18 @@
 // Required for PlatformIO
 #include <Arduino.h>
 
+// Specify all #define statements for task scheduler first
+// See: https://github.com/arkhipenko/TaskScheduler/tree/master/examples
+#define _TASK_SCHEDULING_OPTIONS
+#ifndef ESP32
+  // This only works on ATMEGA; it will crash wifi on ESP32
+  #define _TASK_SLEEP_ON_IDLE_RUN
+#endif
+#define _TASK_TIMECRITICAL
+
+// See: https://github.com/arkhipenko/TaskScheduler/wiki/API-Documentation
+#include <TaskScheduler.h>
+
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
 #define GPSTAR_DEBUG 0
@@ -59,6 +71,12 @@
 
 // Forward declaration for use in all includes.
 void sendDebug(const String& message);
+
+// Forward declaration of scheduler task callback(s).
+void animateTaskCallback();
+
+// Create the primary task scheduler.
+Scheduler schedule;
 
 // Shared Libraries
 #include <DeviceState.h>
@@ -117,6 +135,10 @@ void sendDebug(const String& message) {
     sendDebugEvent(message.c_str()); // Send message to the events stream.
   #endif
 }
+
+// Create a task to handle all updates for LED animations.
+// 6ms reflects a refresh rate equivalent to ~167fps.
+Task animateTask(6, TASK_FOREVER, &animateTaskCallback);
 
 void setup() {
   // Initialize LED driver for each hardware chain
@@ -325,7 +347,6 @@ void setup() {
   packOffReset();
 
   // Start some timers
-  ms_led_driver.start(i_led_update_delay);
   ms_check_music.start(i_music_check_delay);
   ms_attenuator_check.start(i_attenuator_disconnect_delay);
   ms_cyclotron_switch_plate_leds.start(i_cyclotron_switch_plate_leds_delay);
@@ -349,25 +370,35 @@ void setup() {
 #ifdef ESP32
   debugf("Setup complete, free heap: %u bytes\n", ESP.getFreeHeap());
 #endif
+
+  // Set the options for the tasks so that it "catches up" if there is a delay.
+  animateTask.setSchedulingOption(TASK_SCHEDULE);
+
+  // Initialize the task scheduler and enable the core tasks.
+  schedule.init();
+  schedule.addTask(animateTask);
+  animateTask.enable();
 }
 
-void updateLEDs() {
-  // Update all LED's when the timer has finished.
-  if(ms_led_driver.justFinished()) {
-  #ifdef ESP32
-    // Call show() on any segment to cause all to update (parallel update to all HW pins).
-    LightingManager::getInstance(DEVICE_POWERCELL).show(); // CHAIN_PACK
-  #else
-    // Call show() on a representative segment from each chain.
-    LightingManager::getInstance(DEVICE_POWERCELL).show();  // CHAIN_PACK
-    LightingManager::getInstance(DEVICE_INNER_CAKE).show(); // CHAIN_CYCLOTRON
-  #endif
+// Task callback for handling animations.
+void animateTaskCallback() {
+  if(b_pack_post_finish) {
+    if(!b_demo_light_mode || !b_first_boot || 
+       (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || 
+       (b_demo_light_mode && WAND_CONN_STATE != WAND_CONNECTED && WAND_CONN_STATE != WAND_SYNCING && ms_wand_check.remaining() < 1)) {
+      // Update all LED's when the task runs.
+    #ifdef ESP32
+      // Call show() on any segment to cause all to update (parallel update to all HW pins).
+      LightingManager::getInstance(DEVICE_POWERCELL).show(); // CHAIN_PACK
+    #else
+      // Call show() on a representative segment from each chain.
+      LightingManager::getInstance(DEVICE_POWERCELL).show();  // CHAIN_PACK
+      LightingManager::getInstance(DEVICE_INNER_CAKE).show(); // CHAIN_CYCLOTRON
+    #endif
 
-    // Restart the lighting update timer.
-    ms_led_driver.start(i_led_update_delay);
-
-    if(b_powercell_updating) {
-      b_powercell_updating = false;
+      if(b_powercell_updating) {
+        b_powercell_updating = false;
+      }
     }
   }
 }
@@ -626,9 +657,6 @@ void loop() {
     if(!b_demo_light_mode || !b_first_boot || (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || (b_demo_light_mode && WAND_CONN_STATE != WAND_CONNECTED && WAND_CONN_STATE != WAND_SYNCING && ms_wand_check.remaining() < 1)) {
       // Handle any actions after POST event.
       mainLoop();
-
-      // Update the LEDs.
-      updateLEDs();
     }
   }
   else {
@@ -680,4 +708,7 @@ void loop() {
     b_initial_wifi_setup_finished = true;
   }
 #endif
+
+  // Task execution via the scheduler.
+  schedule.execute();
 }
