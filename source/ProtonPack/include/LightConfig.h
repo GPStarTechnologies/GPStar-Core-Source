@@ -311,7 +311,6 @@ static int8_t pxl8_pins[8] = {
  * - initializeDriver() — Sets up the driver library and hardware pins
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs on the current segment
-
  * - setPixelColor(index, ColorID, brightness) — Set LED with automatic color order
  * - getPixelColor(index) — Read a single LED's current color as LED_RGB
  * - setCustomColorHSV(hsv) — Store custom HSV for this segment's custom color slot
@@ -323,10 +322,12 @@ private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
   static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
 #ifdef ESP32
-  static Adafruit_NeoPXL8 systemLEDs;  // Single NeoPXL8 instance for all 8 pins
+  static Adafruit_NeoPXL8 systemLEDs; // Single NeoPXL8 instance for all 8 pins
+  static bool initComplete[1]; // Only 1 hardware object on ESP32
 #else
   static Adafruit_NeoPixel packLEDs;
   static Adafruit_NeoPixel cyclotronLEDs;
+  static bool initComplete[2]; // Track initialization per chain: PACK, CYCLOTRON
 #endif
   const LED_SEGMENT assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
@@ -398,10 +399,26 @@ public:
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
   void initializeDriver() {
-    auto& pixels = getDevicePixels(assignedSlot);
-    pixels.begin();
-    pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
-    pixels.show();
+  #ifdef ESP32
+    // All chains on ESP32 use the single systemLEDs object
+    if(!initComplete[0]) {
+      auto& pixels = getDevicePixels(assignedSlot);
+      pixels.begin();
+      pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+      pixels.show();
+      initComplete[0] = true;
+    }
+  #else
+    // ATMega has separate objects per chain
+    LED_CHAIN chain = segmentToChain(assignedSlot);
+    if(!initComplete[chain]) {
+      auto& pixels = getDevicePixels(assignedSlot);
+      pixels.begin();
+      pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+      pixels.show();
+      initComplete[chain] = true;
+    }
+  #endif
   }
 
   // Turn off LEDs on the chain associated with the current segment.
@@ -444,9 +461,11 @@ public:
     if(index >= 0 && index < i_slot_leds) {
     #ifdef ESP32
       uint16_t buffer_index = lighting_devices[assignedSlot].BufferOffset + index;
-      return unpackColor(pixels.getPixelColor(buffer_index));
+      LED_RGB color = unpackColor(pixels.getPixelColor(buffer_index));
+      return color;
     #else
-      return unpackColor(pixels.getPixelColor(index));
+      LED_RGB color = unpackColor(pixels.getPixelColor(index));
+      return color;
     #endif
     }
     return LED_RGB_BLACK; // Return black if index is out of bounds.
@@ -634,7 +653,9 @@ Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
 #ifdef ESP32
   // NeoPXL8 driver using 8 pins with max LED count applied per chain.
   Adafruit_NeoPXL8 LightingManager::systemLEDs(i_max_pxl8_count, pxl8_pins, NEO_GRB + NEO_KHZ800);
+  bool LightingManager::initComplete[1] = {false}; // Only 1 hardware object
 #else
   Adafruit_NeoPixel LightingManager::packLEDs(PACK_LED_COUNT, PACK_LED_PIN, NEO_GRB + NEO_KHZ800);
   Adafruit_NeoPixel LightingManager::cyclotronLEDs(CYCLOTRON_LED_COUNT, CYCLOTRON_LED_PIN, NEO_GRB + NEO_KHZ800);
+  bool LightingManager::initComplete[2] = {false, false}; // PACK, CYCLOTRON
 #endif

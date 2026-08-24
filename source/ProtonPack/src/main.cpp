@@ -121,12 +121,13 @@ void sendDebug(const String& message) {
 void setup() {
   // Initialize LED driver for each hardware chain
   // Use a representative segment from each chain to initialize hardware.
+#ifdef ESP32
+  // NeoPXL8 is global - initialize once for all pins
+  LightingManager::getInstance(DEVICE_POWERCELL).initializeDriver(); // Initializes all 8 pins
+#else
+  // ATMega has separate chains - initialize each one
   LightingManager::getInstance(DEVICE_POWERCELL).initializeDriver();  // CHAIN_PACK
   LightingManager::getInstance(DEVICE_INNER_CAKE).initializeDriver(); // CHAIN_CYCLOTRON
-#ifdef ESP32
-  // TODO: Add expansion port segments if/when expansion chains are used
-  // LightingManager::getInstance(DEVICE_EXP1).initializeDriver();
-  // LightingManager::getInstance(DEVICE_EXP2).initializeDriver();
 #endif
 
 #ifdef ESP32
@@ -353,7 +354,7 @@ void updateLEDs() {
   // Update all LED's when the timer has finished.
   if(ms_led_driver.justFinished()) {
   #ifdef ESP32
-    // Call show() only on a segment in the first chain to cause all to update.
+    // Call show() on any segment to cause all to update (parallel update to all HW pins).
     LightingManager::getInstance(DEVICE_POWERCELL).show(); // CHAIN_PACK
   #else
     // Call show() on a representative segment from each chain.
