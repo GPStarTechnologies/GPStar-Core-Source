@@ -120,19 +120,20 @@ void sendDebug(const String& message) {
 
 void setup() {
   // Initialize LED driver for each hardware chain
-  // Use a representative segment from each chain to initialize hardware.
 #ifdef ESP32
-  // NeoPXL8 is global - initialize once for all pins
-  LightingManager::getInstance(DEVICE_POWERCELL).initializeDriver(); // Initializes all 8 pins
+  // ESP32: Single shared NeoPXL8 driver manages all pins - initialize once
+  LightingManager::getInstance(DEVICE_POWERCELL).initializeDriver();
 #else
-  // ATMega has separate chains - initialize each one
-  LightingManager::getInstance(DEVICE_POWERCELL).initializeDriver();  // CHAIN_PACK
-  LightingManager::getInstance(DEVICE_INNER_CAKE).initializeDriver(); // CHAIN_CYCLOTRON
+  // ATMega: Separate NeoPixel instance per chain - initialize each
+  // Uses a representative segment from each chain to initialize hardware.
+  LightingManager::getInstance(DEVICE_POWERCELL).initializeDriver();  // for CHAIN_PACK
+  LightingManager::getInstance(DEVICE_INNER_CAKE).initializeDriver(); // for CHAIN_CYCLOTRON
 #endif
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
-  // Do not set below 80 MHz as it will affect WiFi and other peripherals.
+  // Due to the higher serial device count it is not advised to use 80 MHz.
+  // NEVER set below 80 MHz as it will affect WiFi and other peripherals.
   setCpuFrequencyMhz(160);
 
   // This is required in order to make sure the board boots successfully.

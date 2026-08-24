@@ -137,14 +137,20 @@ void sendDebug(const String& message) {
 }
 
 void setup() {
-  // Initialize LED driver for barrel and vent lights
+  // Initialize LED driver for each hardware chain
+#ifdef ESP32
+  // ESP32: Single shared NeoPXL8 driver manages all pins - initialize once
+  LightingManager::getInstance(CHAIN_BARREL).initializeDriver();
+#else
+  // ATMega: Separate NeoPixel instance per chain - initialize each
   LightingManager::getInstance(CHAIN_BARREL).initializeDriver();
   LightingManager::getInstance(CHAIN_VENT).initializeDriver();
+#endif
 
 #ifdef ESP32
   // Reduce CPU frequency to 160 MHz to save ~33% power compared to 240 MHz.
   // Alternatively set CPU to 80 MHz to save ~50% power compared to 240 MHz.
-  // Do not set below 80 MHz as it will affect WiFi and other peripherals.
+  // NEVER set below 80 MHz as it will affect WiFi and other peripherals.
   setCpuFrequencyMhz(80);
 
   // This is required in order to make sure the board boots successfully.
@@ -382,8 +388,12 @@ void updateLEDs() {
     if(b_vent_lights_changed) {
       if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
         // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
+	  #ifdef ESP32
+        barrelMgr.show();
+	  #else
         barrelMgr.show();
         ventMgr.show();
+	  #endif
 
       #ifndef ESP32
         LED_RGB ventPixel = ventMgr.getPixelColor(1);

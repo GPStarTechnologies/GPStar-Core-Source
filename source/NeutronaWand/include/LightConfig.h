@@ -19,8 +19,12 @@
 
 #pragma once
 
-// Include the intended LED driver: Adafruit NeoPixel
-#include <Adafruit_NeoPixel.h>
+// Include the intended LED driver: Adafruit NeoPixel or NeoPXL8
+#ifdef ESP32
+  #include <Adafruit_NeoPXL8.h>
+#else
+  #include <Adafruit_NeoPixel.h>
+#endif
 
 // Include the generalized Lighting library
 #include <Lighting.h>
@@ -85,13 +89,33 @@ bool b_vent_lights_changed = false; // Check for whether there was actually a ch
 // ============================================================================
 
 /*
- * Addressable LED Chains
+ * Addressable LED Chains - Physical hardware pin assignments for LED control.
  */
-#define DEVICE_SLOTS 2 // Number of device slots for the Lighting library
 enum LED_CHAIN {
-  CHAIN_BARREL = 0, // Barrel LEDs Only
-  CHAIN_VENT = 1 // Vent Lights
+  CHAIN_BARREL = 0, // Barrel LEDs
+  CHAIN_VENT = 1    // Vent LEDs
 };
+
+#define DEVICE_SLOTS 2 // Number of LED chains for the Lighting library
+
+// NeoPXL8 Configuration for ESP32
+#ifdef ESP32
+  #define BARREL_BUFFER_SIZE BARREL_LEDS_MAX
+  #define VENT_BUFFER_SIZE VENT_LED_COUNT
+  #define PXL8_WORKAROUND_BUFFER 2  // Addresses a current bug which needs the maximum LED count to increase by 2
+  const uint16_t i_max_pxl8_count = max(BARREL_BUFFER_SIZE, VENT_BUFFER_SIZE) + PXL8_WORKAROUND_BUFFER;
+  const uint16_t BARREL_BUFFER_OFFSET = 0;                    // Barrel LEDs: indices 0-49
+  const uint16_t VENT_BUFFER_OFFSET = BARREL_LEDS_MAX;        // Vent LEDs: indices 50-51
+
+  // NeoPXL8 supports up to 8 hardware pins
+  static int8_t pxl8_pins[8] = {
+    BARREL_LED_PIN, // Pin 0: Barrel
+    RGB_VENT_PIN,   // Pin 1: Vent
+    -1, -1, -1, -1, -1, -1 // Pins 2-7 unused
+  };
+#else
+  #define DEVICE_SLOTS_UNUSED 2 // Placeholder for consistency
+#endif
 
 // ============================================================================
 // LIGHTING LIBRARY CONFIGURATION & INITIALIZATION
@@ -126,38 +150,54 @@ class LightingManager {
 private:
   static LightingManager* instances[DEVICE_SLOTS]; // Array of singleton instances for each device slot.
   static Lighting lightingLib; // Shared Lighting library instance across all slots for animation state.
-  Adafruit_NeoPixel barrelLEDs;
-  Adafruit_NeoPixel ventLEDs;
+#ifdef ESP32
+  static Adafruit_NeoPXL8 systemLEDs;  // Single NeoPXL8 instance for all pins on ESP32
+#else
+  static Adafruit_NeoPixel barrelLEDs;
+  static Adafruit_NeoPixel ventLEDs;
+#endif
   const LED_CHAIN assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
   // Private constructor - called once per slot by getInstance()
-  // Initializes the Lighting library as lightingLib with 1 device slot, and initializes the
-  // Adafruit_NeoPixel object as a variable "pixels" with the NEO_GBR color order by default.
+  // Initializes the Lighting library with color order for this slot.
   LightingManager(LED_CHAIN slot) :
-    barrelLEDs(BARREL_LEDS_MAX, BARREL_LED_PIN, NEO_GRB + NEO_KHZ800),
-    ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_GRB + NEO_KHZ800),
     assignedSlot(slot) {
     lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets. (Hasbro barrels override in System.h)
   }
 
   // Helper: Returns the physical strip object for the given device slot.
+#ifdef ESP32
+  Adafruit_NeoPXL8& getDevicePixels(LED_CHAIN slot) {
+    return systemLEDs;  // Return reference to shared systemLEDs as pixels
+  }
+
+  // Helper: Returns the buffer offset for this slot in the shared NeoPXL8 buffer
+  uint16_t getBufferOffset(LED_CHAIN slot) {
+    switch(slot) {
+      case CHAIN_VENT:
+        return VENT_BUFFER_OFFSET;
+      case CHAIN_BARREL:
+      default:
+        return BARREL_BUFFER_OFFSET;
+    }
+  }
+#else
   Adafruit_NeoPixel& getDevicePixels(LED_CHAIN slot) {
     switch(slot) {
       case CHAIN_VENT:
         return ventLEDs;
-
       case CHAIN_BARREL:
       default:
         return barrelLEDs;
     }
   }
+#endif
 
   // Helper: Returns the LED count for the given device slot.
   uint16_t getCount(LED_CHAIN slot) {
     switch(slot) {
       case CHAIN_VENT:
         return VENT_LED_COUNT;
-
       case CHAIN_BARREL:
       default:
         return BARREL_LEDS_MAX;
@@ -191,10 +231,21 @@ public:
     pixels.show();
   }
 
-  // Turn off LEDs on the current device slot
+  // Turn off LEDs on the chain associated with the current segment.
+  // ESP32: Iterates only over the span of LEDs represented by the PXL8 pin (offset to offset+count).
+  // ATMega: Calls the natural clear() method on the NeoPixel object associated with the chain.
   void lightsOff() {
     auto& pixels = getDevicePixels(assignedSlot);
+  #ifdef ESP32
+    uint16_t i_start = getBufferOffset(assignedSlot);
+    uint16_t i_end = i_start + getCount(assignedSlot);
+    // Clear only this slot's LEDs in the shared buffer
+    for(uint16_t i = i_start; i < i_end; i++) {
+      pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+    }
+  #else
     pixels.clear(); // Set all to black (off).
+  #endif
   }
 
   // Set custom color HSV values in the Lighting library
@@ -231,8 +282,13 @@ public:
   // Returns a pixel's current color as LED_RGB
   LED_RGB getPixelColor(uint16_t index) {
     auto& pixels = getDevicePixels(assignedSlot);
-    if(index >= 0 && index < pixels.numPixels()) {
+    if(index >= 0 && index < getCount(assignedSlot)) {
+	#ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot) + index;
+      return unpackColor(pixels.getPixelColor(buffer_index));
+	#else
       return unpackColor(pixels.getPixelColor(index));
+	#endif
     }
     return LED_RGB_BLACK; // Return black if index is out of bounds.
   }
@@ -240,7 +296,7 @@ public:
   // Set a pixel color by ColorID and automatically apply stored color order.
   void setPixelColor(uint16_t index, ColorID colorEnum, uint8_t brightness = 255) {
     auto& pixels = getDevicePixels(assignedSlot);
-    if(index >= 0 && index < pixels.numPixels()) {
+    if(index >= 0 && index < getCount(assignedSlot)) {
       // Get color as HSV
       LED_HSV hsv;
       if(Lighting::isColorDynamic(colorEnum)) {
@@ -256,15 +312,25 @@ public:
       LED_RGB ordered = Lighting::applyColorOrder(rgb, lightingLib.getColorOrder(assignedSlot));
 
       // Set the given LED to the calculated, ordered RGB value.
+	#ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot) + index;
+      pixels.setPixelColor(buffer_index, pixels.Color(ordered.r, ordered.g, ordered.b));
+	#else
       pixels.setPixelColor(index, pixels.Color(ordered.r, ordered.g, ordered.b));
+	#endif
     }
   }
 
   // Set a pixel color direct from an RGB triplet.
   void setPixelColor(uint16_t index, LED_RGB colorRGB) {
     auto& pixels = getDevicePixels(assignedSlot);
-    if(index >= 0 && index < pixels.numPixels()) {
+    if(index >= 0 && index < getCount(assignedSlot)) {
+	#ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot) + index;
+      pixels.setPixelColor(buffer_index, pixels.Color(colorRGB.r, colorRGB.g, colorRGB.b));
+	#else
       pixels.setPixelColor(index, pixels.Color(colorRGB.r, colorRGB.g, colorRGB.b));
+	#endif
     }
   }
 
@@ -300,7 +366,12 @@ public:
                                                 i_phase); // Calculated interpolation phase for this LED (0-255)
 
       // Set the current LED to the interpolated color.
+#ifdef ESP32
+      uint16_t buffer_index = getBufferOffset(assignedSlot) + i_curr_led;
+      pixels.setPixelColor(buffer_index, pixels.Color(rgb.r, rgb.g, rgb.b));
+#else
       pixels.setPixelColor(i_curr_led, pixels.Color(rgb.r, rgb.g, rgb.b));
+#endif
     }
   }
 };
@@ -316,9 +387,25 @@ public:
  * then returns a reference to it. Subsequent calls for that slot return the same instance.
  *
  * This ensures each slot has exactly ONE LightingManager instance, with no state mutation.
- *
- * Additionally, the Lighting library is shared across all instances so that animation
- * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
+
+/**
+ * The Lighting library is shared across all instances so that animation
+ * state (palette phase, color tracking) is consistent across all LED chains.
+ */
 Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
+
+/**
+ * In order to allow the show() method to be called across segments (devices) the actual pixel
+ * chains must be initialized using static class members. This setup step will initialize each
+ * Adafruit_NeoPixel or Adafruit_NeoPXL8 object as a static member with the NEO_GRB color order by default.
+ */
+
+#ifdef ESP32
+  // NeoPXL8 driver using 8 pins with max LED count applied per chain.
+  Adafruit_NeoPXL8 LightingManager::systemLEDs(i_max_pxl8_count, pxl8_pins, NEO_GRB + NEO_KHZ800);
+#else
+  Adafruit_NeoPixel LightingManager::barrelLEDs(BARREL_LEDS_MAX, BARREL_LED_PIN, NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel LightingManager::ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_GRB + NEO_KHZ800);
+#endif

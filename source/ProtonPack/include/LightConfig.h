@@ -19,7 +19,7 @@
 
 #pragma once
 
-// Include the intended LED driver: Adafruit NeoPixel
+// Include the intended LED driver: Adafruit NeoPixel or NeoPXL8
 #ifdef ESP32
   #include <Adafruit_NeoPXL8.h>
 #else
@@ -204,7 +204,6 @@ enum LED_SEGMENT : uint8_t {
 #endif
 };
 
-
 /*
  * Lighting Devices - Registry of segments to chains (w/ pin).
  * Includes pre-calculated buffer offsets and LED counts for efficient runtime access.
@@ -229,7 +228,7 @@ struct LightingDevice {
   LED_SEGMENT SegmentID; // LED device segment identifier.
   LED_CHAIN ChainID;     // Identifier for the associated chain.
   uint8_t HWPin;         // Hardware pin for the physical LED chain
-  uint16_t MaxPixels;   // Total LED count for this chain (same for all segments in chain).
+  uint16_t MaxPixels;    // Total LED count for this chain (same for all segments in chain).
   uint16_t BufferOffset; // Buffer offset in unified NeoPXL8 array (ESP32) or 0 (ATMega).
 };
 
@@ -425,15 +424,15 @@ public:
   // ESP32: Iterates only over the span of LEDs represented by the PXL8 pin (offset to offset+count).
   // ATMega: Calls the natural clear() method on the NeoPixel object associated with the chain.
   void lightsOff() {
-  #ifdef ESP32
     auto& pixels = getDevicePixels(assignedSlot);
+  #ifdef ESP32
     uint16_t i_slot_start = lighting_devices[assignedSlot].BufferOffset;
     uint16_t i_slot_end = i_slot_start + lighting_devices[assignedSlot].MaxPixels;
+    // Clear only this slot's LEDs in the shared buffer
     for(uint16_t i = i_slot_start; i < i_slot_end; i++) {
       pixels.setPixelColor(i, pixels.Color(0, 0, 0));
     }
   #else
-    auto& pixels = getDevicePixels(assignedSlot);
     pixels.clear(); // Set all to black (off).
   #endif
   }
