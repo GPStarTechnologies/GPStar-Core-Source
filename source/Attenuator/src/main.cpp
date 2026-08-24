@@ -235,13 +235,11 @@ void PreferencesTask(void *parameter) {
 
     switch(preferences.getUChar("radiation_idle", 0)) {
       case 0:
+      default:
         RAD_LENS_IDLE = AMBER_PULSE;
       break;
       case 1:
         RAD_LENS_IDLE = ORANGE_FADE;
-      break;
-      case 2:
-        RAD_LENS_IDLE = RED_FADE;
       break;
     }
 
