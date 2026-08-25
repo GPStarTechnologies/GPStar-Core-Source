@@ -166,16 +166,16 @@ LED_HSV Lighting::getStaticColorDefinition(ColorID color) const {
 //
 static constexpr AnimationMapping ANIMATION_CONFIGS[] = {
 // {colorId,       {cycleMs, mode,          value1, value2, fixedHue, saturation, adjustBright}},
-  {C_REDGREEN,     {250,  ANIM_ALTERNATE,        0,     96,       0,       255,        true}},
-  {C_ORANGEPURPLE, {250,  ANIM_ALTERNATE,       15,    210,       0,       255,       false}},
-  {C_BLUEGREEN,    {250,  ANIM_ALTERNATE,      145,     96,       0,       255,       false}},
-  {C_REDPURPLE,    {250,  ANIM_ALTERNATE,        0,    210,       0,       255,       false}},
-  {C_AMBER_PULSE,  { 30,  ANIM_PULSE,           24,     32,       0,       255,       false}},
-  {C_BLUE_FADE,    {  5,  ANIM_DECAY_HUE,      160,    146,       0,       255,       false}},
-  {C_ORANGE_FADE,  { 50,  ANIM_FADE,            50,    255,      28,       255,       false}},
-  {C_RED_FADE,     { 40,  ANIM_FADE,            50,    255,       0,       255,       false}},
-  {C_PASTEL,       { 30,  ANIM_CYCLE_HUE,        0,      5,       0,       128,       false}},
-  {C_RAINBOW,      { 30,  ANIM_CYCLE_HUE,        0,      5,       0,       255,       false}},
+  {C_REDGREEN,     {240,  ANIM_ALTERNATE,        0,     96,       0,       255,        true}},
+  {C_ORANGEPURPLE, {240,  ANIM_ALTERNATE,       15,    210,       0,       255,       false}},
+  {C_BLUEGREEN,    {240,  ANIM_ALTERNATE,      145,     96,       0,       255,       false}},
+  {C_REDPURPLE,    {240,  ANIM_ALTERNATE,        0,    210,       0,       255,       false}},
+  {C_AMBER_PULSE,  { 48,  ANIM_PULSE,           24,     32,       0,       255,       false}},
+  {C_BLUE_FADE,    {  6,  ANIM_DECAY_HUE,      160,    146,       0,       255,       false}},
+  {C_ORANGE_FADE,  { 48,  ANIM_FADE,            50,    255,      28,       255,       false}},
+  {C_RED_FADE,     { 48,  ANIM_FADE,            50,    255,       0,       255,       false}},
+  {C_PASTEL,       { 48,  ANIM_CYCLE_HUE,        0,      5,       0,       128,       false}},
+  {C_RAINBOW,      { 48,  ANIM_CYCLE_HUE,        0,      5,       0,       255,       false}},
 };
 
 // Helper method: Get animation configuration for a dynamic color
