@@ -98,8 +98,8 @@ enum LED_CHAIN {
   #define VENT_BUFFER_SIZE VENT_LED_COUNT
   #define PXL8_WORKAROUND_BUFFER 2  // Addresses a current bug which needs the maximum LED count to increase by 2
   const uint16_t i_max_pxl8_count = max(BARREL_BUFFER_SIZE, VENT_BUFFER_SIZE) + PXL8_WORKAROUND_BUFFER;
-  const uint16_t BARREL_BUFFER_OFFSET = 0;                    // Barrel LEDs: indices 0-49
-  const uint16_t VENT_BUFFER_OFFSET = BARREL_LEDS_MAX;        // Vent LEDs: indices 50-51
+  const uint16_t BARREL_BUFFER_OFFSET = CHAIN_BARREL * i_max_pxl8_count;  // Barrel LEDs: pin 0 offset
+  const uint16_t VENT_BUFFER_OFFSET = CHAIN_VENT * i_max_pxl8_count;      // Vent LEDs: pin 1 offset
 
   // NeoPXL8 supports up to 8 hardware pins
   static int8_t pxl8_pins[8] = {

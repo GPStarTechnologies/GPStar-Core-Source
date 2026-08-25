@@ -419,21 +419,12 @@ void setup() {
 
 // Task callback for handling animations.
 void animateTaskCallback() {
-  // Update all LED's when the task runs.
   auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
   auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
-  barrelMgr.show();
-  ventMgr.show();
 
   if(b_vent_lights_changed) {
     if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
       // Only commit an update if the addressable LED panel is installed or if the Neutrona Wand can not make a connection to the Proton Pack.
-  #ifdef ESP32
-      barrelMgr.show();
-  #else
-      barrelMgr.show();
-      ventMgr.show();
-  #endif
 
     #ifndef ESP32
       LED_RGB ventPixel = ventMgr.getPixelColor(1);
@@ -446,6 +437,14 @@ void animateTaskCallback() {
 
     b_vent_lights_changed = false;
   }
+
+  // Update all LED's when the task runs.
+#ifdef ESP32
+  barrelMgr.show();
+#else
+  barrelMgr.show();
+  ventMgr.show();
+#endif
 }
 
 #ifdef ESP32
