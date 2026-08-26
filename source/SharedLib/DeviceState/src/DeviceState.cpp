@@ -92,10 +92,6 @@ bool DeviceState::setSystemMode(SYSTEM_MODES mode) {
 
 // Getter for ionArmSwitch (private variable)
 RED_SWITCH_MODES DeviceState::getIonArmSwitch() const {
-  if(systemMode == MODE_SUPER_HERO) {
-    return RED_SWITCH_ON; // For Super Hero mode, always report switch as ON.
-  }
-
   return ionArmSwitch;
 }
 
@@ -605,7 +601,7 @@ void DeviceState::importData(const WandSyncData& syncData) {
   setStreamMode(syncData.streamMode);
 
   // Apply ion arm switch
-  setIonArmSwitch(syncData.ionArmSwitch ? RED_SWITCH_ON : RED_SWITCH_OFF);
+  //setIonArmSwitch(syncData.ionArmSwitch ? RED_SWITCH_ON : RED_SWITCH_OFF);
 
   // Apply power level
   setPowerLevel(syncData.powerLevel);

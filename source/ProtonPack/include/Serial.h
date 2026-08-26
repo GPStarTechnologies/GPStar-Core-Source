@@ -1109,7 +1109,7 @@ void doWandSync() {
   gpstarPack.exportData(wandSyncData);
 
   // Set fields not managed by DeviceState (pack-specific state)
-  wandSyncData.ionArmSwitch = (switch_power.getState() == LOW);
+  wandSyncData.ionArmSwitch = (PACK_STATE == MODE_ON || gpstarPack.isPackActiveModeOriginal());
   wandSyncData.cyclotronLidState = b_cyclotron_lid_on;
   wandSyncData.packOn = (PACK_STATE != MODE_OFF);
   wandSyncData.powerLevel = gpstarPack.getPowerLevel();

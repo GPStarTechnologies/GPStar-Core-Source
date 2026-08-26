@@ -3474,6 +3474,10 @@ void modeActivate() {
   i_bmash_count = 0;
   b_wand_mash_lockout = false;
   b_sound_afterlife_idle_2_fade = true;
+
+  if(ms_power_indicator.isRunning()) {
+    digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+  }
   setPowerOnReminder(false);
 
   switch(gpstarWand.getSystemMode()) {
@@ -10397,10 +10401,12 @@ void checkRotaryEncoder() {
 
 // Function to control all actions relating to the pack's ion arm switch.
 void changeIonArmSwitchState(bool state) {
-  if(state && gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) {
+  if(state && gpstarWand.getIonArmSwitch() != RED_SWITCH_ON) {
     gpstarWand.setIonArmSwitch(RED_SWITCH_ON);
 
-    // Disable the power on reminder.
+    if(ms_power_indicator.isRunning()) {
+      digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+    }
     setPowerOnReminder(false);
 
     // Prep the bargraph for MODE_ORIGINAL. This only preps it when the pack switch is turned on and the wand is still off but all the toggle switches are on for the bargraph to settle at the off position. (0 circle).
@@ -10439,8 +10445,9 @@ void changeIonArmSwitchState(bool state) {
       }
     }
   }
-  else if(!state && gpstarWand.getIonArmSwitch() == RED_SWITCH_ON) {
+  else if(!state && gpstarWand.getIonArmSwitch() != RED_SWITCH_OFF) {
     gpstarWand.setIonArmSwitch(RED_SWITCH_OFF);
+    setPowerOnReminder(true);
 
     switch(gpstarWand.getSystemMode()) {
       case MODE_ORIGINAL:
@@ -10520,7 +10527,7 @@ void wandExitEEPROMMenu() {
 
   if(b_wand_standalone) {
     // Also need to make sure to reset the "ion arm switch" to off if standalone.
-    gpstarWand.setIonArmSwitch(RED_SWITCH_OFF);
+    changeIonArmSwitchState(false);
   }
 
   i_wand_menu = 5;

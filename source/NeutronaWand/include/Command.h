@@ -38,6 +38,9 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       // Pack is on.
       b_pack_on = true;
       b_pack_shutting_down = false;
+
+      // Assume ion arm switch must be on.
+      changeIonArmSwitchState(true);
     break;
 
     case A_PACK_OFF:
@@ -59,6 +62,9 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       // Pack is off.
       b_pack_on = false;
       b_pack_shutting_down = (i_value == 1);
+
+      // Assume ion arm switch must be off.
+      changeIonArmSwitchState(false);
     break;
 
     case A_SOUND_SUPER_HERO:
@@ -214,6 +220,9 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
 
       // If we are fully off we must also make sure to start/stop the power reminder.
       if(b_playing_music && !b_music_paused) {
+        if(ms_power_indicator.isRunning()) {
+          digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+        }
         setPowerOnReminder(false);
       }
       else if(WAND_STATUS == MODE_OFF && WAND_ACTION_STATUS == ACTION_IDLE && ((!b_pack_on && gpstarWand.getSystemMode() == MODE_SUPER_HERO) || gpstarWand.isPackInactiveModeOriginal())) {

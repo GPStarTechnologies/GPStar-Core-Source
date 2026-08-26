@@ -146,18 +146,21 @@ TEST_F(DeviceStateOriginalFixture, ImportFromWandSyncData) {
     syncData.systemMode = MODE_ORIGINAL;
     syncData.systemTheme = SYSTEM_1989;
     syncData.streamMode = PROTON;
-    syncData.ionArmSwitch = false;
+    syncData.ionArmSwitch = true;
     syncData.powerLevel = LEVEL_2;
     syncData.vibrationToggle = true;
 
     // Import into DeviceState
     state.importData(syncData);
 
+    // Wand handles setting ion arm with a dedicated function; simulate this here
+    state.setIonArmSwitch(syncData.ionArmSwitch ? RED_SWITCH_ON : RED_SWITCH_OFF);
+
     // Verify imported values
     EXPECT_EQ(state.getSystemMode(), MODE_ORIGINAL);
     EXPECT_EQ(state.getSystemTheme(), SYSTEM_1989);
     EXPECT_EQ(state.getStreamMode(), PROTON);
-    EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_OFF); // Should convert false to RED_SWITCH_OFF
+    EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_ON); // Should convert true to RED_SWITCH_ON
     EXPECT_EQ(state.getPowerLevel(), LEVEL_2);
     EXPECT_EQ(state.getVibrationMode(), VIBRATION_NEVER); // Expect the default for the state
 }

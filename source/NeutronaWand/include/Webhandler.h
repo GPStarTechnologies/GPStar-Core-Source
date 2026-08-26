@@ -1289,6 +1289,10 @@ void handleMusicStartStop(AsyncWebServerRequest *request) {
   if(b_wand_standalone) {
     if(!b_playing_music && !b_music_paused) {
       playMusic();
+
+      if(ms_power_indicator.isRunning()) {
+        digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+      }
       setPowerOnReminder(false);
     }
     else {
@@ -1313,6 +1317,10 @@ void handleMusicPauseResume(AsyncWebServerRequest *request) {
     if(b_playing_music) {
       if(b_music_paused) {
         resumeMusic();
+
+        if(ms_power_indicator.isRunning()) {
+          digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+        }
         setPowerOnReminder(false);
       }
       else {
@@ -1325,6 +1333,10 @@ void handleMusicPauseResume(AsyncWebServerRequest *request) {
     }
     else {
       playMusic();
+
+      if(ms_power_indicator.isRunning()) {
+        digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+      }
       setPowerOnReminder(false);
     }
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());

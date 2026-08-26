@@ -43,8 +43,9 @@ enum SYSTEM_MODES : uint8_t {
  * The state of this mode is disregarded for the Super Hero mode.
  */
 enum RED_SWITCH_MODES : uint8_t {
-  RED_SWITCH_OFF = 0,
-  RED_SWITCH_ON = 1
+  RED_SWITCH_UNKNOWN = 0,
+  RED_SWITCH_OFF = 1,
+  RED_SWITCH_ON = 2
 };
 
 /**

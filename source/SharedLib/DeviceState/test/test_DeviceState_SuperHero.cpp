@@ -26,7 +26,7 @@ TEST_F(DeviceStateDefaultFixture, CanInstantiate) {
 // Confirms the expected defaults are set for this mode.
 TEST_F(DeviceStateDefaultFixture, ConstructorDefaults) {
     EXPECT_EQ(state.getSystemMode(), MODE_SUPER_HERO);
-    EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_ON); // Always reported ON for Super Hero mode.
+    EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_OFF);
     EXPECT_EQ(state.getSystemTheme(), SYSTEM_AFTERLIFE);
     EXPECT_FALSE(state.isTheme80s());
     EXPECT_TRUE(state.isThemeModern());
@@ -259,12 +259,11 @@ TEST_F(DeviceStateDefaultFixture, FiringModeChecks) {
 
 // Test red switch mode getter/setter
 TEST_F(DeviceStateDefaultFixture, IonArmSwitch) {
-    // Default in SUPER_HERO always reports ON
+    EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_OFF);
+    EXPECT_TRUE(state.setIonArmSwitch(RED_SWITCH_ON));
     EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_ON);
-
-    // Changing red switch mode should have no effect in SUPER_HERO
     EXPECT_TRUE(state.setIonArmSwitch(RED_SWITCH_OFF));
-    EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_ON);
+    EXPECT_EQ(state.getIonArmSwitch(), RED_SWITCH_OFF);
 }
 
 // Test vibration mode getter/setter
@@ -286,6 +285,7 @@ TEST_F(DeviceStateDefaultFixture, ExportToWandSyncData) {
     // Set up DeviceState with specific values
     state.setSystemTheme(SYSTEM_1984);
     state.setStreamMode(SPECTRAL);
+    state.setIonArmSwitch(RED_SWITCH_ON);
     state.setPowerLevel(LEVEL_3);
     state.setVibrationMode(VIBRATION_ALWAYS); // Mode changed, but won't be exported.
 
@@ -333,6 +333,7 @@ TEST_F(DeviceStateDefaultFixture, RoundTripWandSync) {
     state.setSystemTheme(SYSTEM_1984);
     state.setStreamMode(SLIME);
     state.setPowerLevel(LEVEL_3);
+    state.setIonArmSwitch(RED_SWITCH_OFF);
     state.setVibrationMode(VIBRATION_FIRING_ONLY); // Mode changed, but won't be exported.
 
     // Export to sync data
@@ -343,11 +344,14 @@ TEST_F(DeviceStateDefaultFixture, RoundTripWandSync) {
     DeviceState newState;
     newState.importData(syncData);
 
+    // Wand handles setting ion arm with a dedicated function; simulate this here
+    state.setIonArmSwitch(syncData.ionArmSwitch ? RED_SWITCH_ON : RED_SWITCH_OFF);
+
     // Values should match (considering type conversions)
     EXPECT_EQ(newState.getSystemMode(), MODE_SUPER_HERO);
     EXPECT_EQ(newState.getSystemTheme(), SYSTEM_1984);
     EXPECT_EQ(newState.getStreamMode(), SLIME);
-    EXPECT_EQ(newState.getIonArmSwitch(), RED_SWITCH_ON);
+    EXPECT_EQ(newState.getIonArmSwitch(), RED_SWITCH_OFF);
     EXPECT_EQ(newState.getPowerLevel(), LEVEL_3);
     EXPECT_EQ(newState.getVibrationMode(), VIBRATION_NEVER); // Expect the default for the state.
 }
