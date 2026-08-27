@@ -39,3 +39,108 @@ function openTab(evt, tabName) {
   showEl(tabName);
   evt.currentTarget.className += " active";
 }
+
+function getStreamColor(cMode, iTheme, iCustomVal = 200, iCustomSat = 254) {
+  var color = [0, 0, 0];
+
+  // Use this to do our colour-change for spectral streams.
+  var tickSeconds = new Date().getSeconds();
+
+  switch (cMode) {
+    case "Plasm System":
+      if (iTheme == 3) {
+        // Pink
+        color[0] = 200;
+        color[2] = 180;
+      } else {
+        // Dark Green
+        color[1] = 80;
+      }
+      break;
+    case "Dark Matter Gen.":
+      // Light Blue
+      color[1] = 60;
+      color[2] = 255;
+      break;
+    case "Particle System":
+      // Orange
+      color[0] = 255;
+      color[1] = 140;
+      break;
+    case "Settings":
+      // Gray
+      color[0] = 40;
+      color[1] = 40;
+      color[2] = 40;
+      break;
+    case "Halloween":
+      if (tickSeconds % 2) {
+        // Orange
+        color[0] = 255;
+        color[1] = 140;
+      } else {
+        // Purple
+        color[0] = 200;
+        color[2] = 240;
+      }
+      break;
+    case "Christmas":
+      if (tickSeconds % 2) {
+        // Red
+        color[0] = 180;
+      } else {
+        // Green
+        color[1] = 180;
+      }
+      break;
+    case "Spectral Stream":
+      switch (tickSeconds % 8) {
+        case 0:
+        default:
+          // Red
+          color[0] = 180;
+          break;
+        case 1:
+          // Orange
+          color[0] = 255;
+          color[1] = 140;
+          break;
+        case 2:
+          // Yellow
+          color[0] = 240;
+          color[1] = 220;
+          break;
+        case 3:
+          // Green
+          color[1] = 180;
+          break;
+        case 4:
+          // Light Blue
+          color[1] = 60;
+          color[2] = 255;
+          break;
+        case 5:
+          // Blue
+          color[2] = 180;
+          break;
+        case 6:
+          // Indigo
+          color[0] = 90;
+          color[2] = 240;
+          break;
+        case 7:
+          // Purple
+          color[0] = 200;
+          color[2] = 240;
+          break;
+      }
+      break;
+    case "Custom Stream":
+    default:
+      // Proton Stream(s) as Red
+      color[0] = 180;
+      break;
+  }
+
+  return color;
+}

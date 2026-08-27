@@ -182,6 +182,29 @@ String getEquipmentStatus() {
   return equipStatus;
 }
 
+String getNetworkStatus() {
+  // Prepare a JSON object with information we have gleaned from the system.
+  String networkStatus;
+  JsonDocument jsonBody;
+
+  try {
+    // Populate with current network configuration and statistics.
+    JsonObject statusObj = jsonBody.to<JsonObject>();
+    wirelessMgr->getNetworkStatus(statusObj);
+
+    // Add device-specific client connection counts.
+    statusObj["apClients"] = i_ap_client_count; // WiFi AP clients
+    statusObj["wsClients"] = i_ws_client_count; // WebSocket clients
+    statusObj["captivePortalRequests"] = captivePortalRequests; // HTTP captive portal endpoint hits
+  }
+  catch (...) {
+  }
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, networkStatus);
+  return networkStatus;
+}
+
 String getWifiSettings() {
   // Prepare a JSON object with information stored in preferences (or a blank default).
   String wifiSettings;
@@ -307,6 +330,11 @@ void startWebServer() {
   httpServer.addHandler(&ws);
 
   // Configure the Server-Sent Events endpoint.
+  events.onConnect([](AsyncEventSourceClient *client){
+    if(client->lastId()){
+      debugf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+    }
+  });
   httpServer.addHandler(&events);
 
   // Configure the OTA firmware endpoint handler.
@@ -328,6 +356,13 @@ void startWebServer() {
   #endif
 }
 
+void sendNetworkStatus() {
+  if(b_httpd_started) {
+    // Send the latest network status including AP and WS client counts.
+    events.send(getNetworkStatus().c_str(), "network", millis());
+  }
+}
+
 // Perform management if the AP and web server are started.
 void webLoops() {
   if(b_local_ap_started && b_httpd_started) {
@@ -341,7 +376,17 @@ void webLoops() {
 
     if(ms_apclient.remaining() < 1) {
       // Update the current count of AP clients.
+      static uint8_t prev_ap_count = 0;
+      static uint8_t prev_ws_count = 0;
+      
       i_ap_client_count = WiFi.softAPgetStationNum();
+      
+      // Detect if AP or WebSocket client counts changed, and push update if they did.
+      if(i_ap_client_count != prev_ap_count || i_ws_client_count != prev_ws_count) {
+        prev_ap_count = i_ap_client_count;
+        prev_ws_count = i_ws_client_count;
+        sendNetworkStatus();
+      }
 
       // Restart timer for next count.
       ms_apclient.start(i_apClientDelay);
@@ -724,21 +769,7 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
 
 void handleGetNetworkStatus(AsyncWebServerRequest *request) {
   // Return network status and statistics including DNS request count and connected clients.
-  String statusJson;
-  JsonDocument jsonBody;
-  JsonObject statusObj = jsonBody.to<JsonObject>();
-
-  // Populate with current network configuration and statistics.
-  wirelessMgr->getNetworkStatus(statusObj);
-
-  // Add device-specific client connection counts.
-  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
-  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
-  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
-
-  // Serialize JSON object to string.
-  serializeJson(jsonBody, statusJson);
-  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, statusJson);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getNetworkStatus());
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }

@@ -188,6 +188,25 @@ String getWifiSettings() {
   return wifiSettings;
 }
 
+String getNetworkStatus() {
+  // Prepare a JSON object with network configuration and client statistics.
+  String networkStatus;
+  JsonDocument jsonBody;
+  JsonObject statusObj = jsonBody.to<JsonObject>();
+
+  // Populate with current network configuration from wireless manager.
+  wirelessMgr->getNetworkStatus(statusObj);
+
+  // Add device-specific client connection counts.
+  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
+  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
+  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, networkStatus);
+  return networkStatus;
+}
+
 /*
  * Web Handler Functions - Performs actions or returns data for web UI
  */
@@ -315,8 +334,16 @@ void startWebServer() {
   #endif
 }
 
+void sendNetworkStatus() {
+  // Push network status via Server-Sent Events to all connected clients.
+  events.send(getNetworkStatus().c_str(), "network", millis());
+}
+
 // Perform management if the AP and web server are started.
 void webLoops() {
+  static uint8_t prev_ap_count = 0;
+  static uint8_t prev_ws_count = 0;
+
   if(b_local_ap_started && b_httpd_started) {
     if(ms_cleanup.remaining() < 1) {
       // Clean up oldest WebSocket connections.
@@ -332,6 +359,13 @@ void webLoops() {
 
       // Restart timer for next count.
       ms_apclient.start(i_apClientDelay);
+
+      // Send network status if client counts have changed.
+      if(prev_ap_count != i_ap_client_count || prev_ws_count != i_ws_client_count) {
+        prev_ap_count = i_ap_client_count;
+        prev_ws_count = i_ws_client_count;
+        sendNetworkStatus();
+      }
     }
 
     if(ms_otacheck.remaining() < 1) {
@@ -585,22 +619,8 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
 }
 
 void handleGetNetworkStatus(AsyncWebServerRequest *request) {
-  // Return network status and statistics including DNS request count and connected clients.
-  String statusJson;
-  JsonDocument jsonBody;
-  JsonObject statusObj = jsonBody.to<JsonObject>();
-
-  // Populate with current network configuration and statistics.
-  wirelessMgr->getNetworkStatus(statusObj);
-
-  // Add device-specific client connection counts.
-  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
-  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
-  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
-
-  // Serialize JSON object to string.
-  serializeJson(jsonBody, statusJson);
-  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, statusJson);
+  // Return network status and statistics including client connection counts.
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getNetworkStatus());
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }

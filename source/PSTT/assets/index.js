@@ -18,114 +18,36 @@
  *
  */
 
-var websocket;
-var statusInterval;
-var musicTrackStart = 0,
-  musicTrackMax = 0,
-  musicTrackCurrent = 0,
-  musicTrackList = [];
+// Initialize connection wrappers
+const wsClient = new WebSocketClient({
+  onOpen: onWSOpen,
+  onClose: onWSClose,
+  onMessage: onWSMessage
+});
 
-// Target health thresholds (loaded from device config)
-var targetMaxHealth = 1000;
-var targetLowHealth = 440;
-var targetExtremeLowHealth = 220;
-
-window.addEventListener("load", onLoad);
-
-function onLoad(event) {
-  document.getElementsByClassName("tablinks")[0].click();
-  getDevicePrefs(); // Get all preferences.
-  getNetworkInfo(); // Get networking info.
-  initWebSocket(); // Open the WebSocket.
-  getStatus(updateEquipment); // Get status immediately.
-}
-
-function initWebSocket() {
-  console.log("Attempting to open a WebSocket connection...");
-  let gateway = "ws://" + window.location.hostname + "/ws";
-  websocket = new WebSocket(gateway);
-  websocket.onopen = onOpen;
-  websocket.onclose = onClose;
-  websocket.onmessage = onMessage;
-  doHeartbeat();
-}
-
-function doHeartbeat() {
-  if (websocket.readyState == websocket.OPEN) {
-    websocket.send("heartbeat"); // Send a specific message.
-  }
-  getNetworkInfo(); // Refresh network statistics.
-  setTimeout(doHeartbeat, 8000);
-}
-
-function onOpen(event) {
-  console.log("WebSocket connection opened");
-
-  // Clear the automated status interval timer.
-  clearInterval(statusInterval);
-}
-
-function onClose(event) {
-  console.log("WebSocket connection closed");
-  setTimeout(initWebSocket, 1000);
-
-  // Fallback for when WebSocket is unavailable.
-  if (!statusInterval) {
-    statusInterval = setInterval(function () {
-      getStatus(updateEquipment); // Check for status every X seconds
-    }, 1000);
-  }
-}
-
-function onMessage(event) {
+function onWSMessage(event) {
   if (isJsonString(event.data)) {
-    // If JSON, use as status update.
     updateEquipment(JSON.parse(event.data));
   } else {
-    // Anything else gets sent to console.
     console.log(event.data);
   }
 }
 
-if (!!window.EventSource) {
-  // Create events for the sensor readings.
-  var source = new EventSource("/events");
-
-  source.addEventListener(
-    "open",
-    function (e) {
-      console.log("Server-Side Events connected");
+const esManager = new EventSourceManager({
+  eventHandlers: {
+    'debug': (data) => {
+      if (data === undefined) return;
+      console.log("Debug: ", data);
     },
-    false,
-  );
-
-  source.addEventListener(
-    "error",
-    function (e) {
-      if (e.target.readyState != EventSource.OPEN) {
-        console.log("Server-Side Events disconnected");
-      }
+    'network': (data) => {
+      updateNetworkInfo(data);
     },
-    false,
-  );
-
-  source.addEventListener(
-    "debug",
-    function (e) {
-      if (e.data === undefined) return;
-      console.log("Debug: ", e.data);
-    },
-    false,
-  );
-
-  source.addEventListener(
-    "irData",
-    function (e) {
-      if (e.data === undefined) return;
+    'irData': (data) => {
+      if (data === undefined) return;
 
       try {
         // Parse JSON event data
-        const eventData = JSON.parse(e.data);
+        const eventData = JSON.parse(data);
 
         // Update health bar
         updateHealthBar(eventData);
@@ -144,92 +66,68 @@ if (!!window.EventSource) {
         }
 
         if (logContainer.children.length > 0) {
-          logContainer.insertAdjacentHTML("afterbegin", '<div class="hit-entry">' + e.data + "</div>");
+          logContainer.insertAdjacentHTML("afterbegin", '<div class="hit-entry">' + data + "</div>");
         } else {
-          logContainer.innerHTML = '<div class="hit-entry">' + e.data + "</div>";
+          logContainer.innerHTML = '<div class="hit-entry">' + data + "</div>";
         }
         limitConsoleEntries();
       }
-    },
-    false,
-  );
+    }
+  }
+});
+
+window.addEventListener("load", onLoad);
+
+function onLoad(event) {
+  document.getElementsByClassName("tablinks")[0].click();
+  getDevicePrefs(); // Get all preferences.
+  getNetworkInfo(); // Get networking info.
+  getStatus(updateEquipment); // Get status immediately.
+  wsClient.connect(); // Open the WebSocket.
+  esManager.connect(); // Start EventSource connection.
+  
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    wsClient.disconnect();
+    esManager.disconnect();
+  });
 }
+
+
 
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
-      var jObj = JSON.parse(this.responseText);
-      if (jObj) {
-        // Store target health thresholds for health bar calculations
-        if (jObj.maxHealth) targetMaxHealth = jObj.maxHealth;
-        if (jObj.lowHealth) targetLowHealth = jObj.lowHealth;
-        if (jObj.extremeLowHealth) targetExtremeLowHealth = jObj.extremeLowHealth;
+  xhrHelper.get("/config/device", (jObj) => {
+    if (jObj) {
+      // Store target health thresholds for health bar calculations
+      if (jObj.maxHealth) targetMaxHealth = jObj.maxHealth;
+      if (jObj.lowHealth) targetLowHealth = jObj.lowHealth;
+      if (jObj.extremeLowHealth) targetExtremeLowHealth = jObj.extremeLowHealth;
 
-        if (jObj.songList && jObj.songList != "") {
-          musicTrackList = jObj.songList.split("\n");
-          updateTrackListing();
-        }
-
-        // Device Info
-        setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
-
-        switch (jObj.audioVersion ?? 0) {
-          case 0:
-            setHtml("audioInfo", "No Audio Detected");
-            break;
-          case 1:
-            setHtml("audioInfo", "WAV Trigger");
-            break;
-          case 100:
-            setHtml("audioInfo", "GPStar Audio Firmware: v100");
-            break;
-          default:
-            setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
-            break;
-        }
+      if (jObj.songList && jObj.songList != "") {
+        musicTrackList = jObj.songList.split("\n");
+        updateTrackListing();
       }
-    } else if (this.readyState == 4) {
-      // Handle error responses
-      handleStatus(this.responseText);
-    }
-  };
-  xhttp.open("GET", "/config/device", true);
-  xhttp.send();
-}
 
-function getNetworkInfo() {
-  // Fetch network configuration and statistics from dedicated endpoint.
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
-      var jObj = JSON.parse(this.responseText);
-      if (jObj) {
-        // Display local AP network name
-        if (jObj.localAP && jObj.localAP.ssid) {
-          setHtml("wifiName", "Private Network: " + jObj.localAP.ssid);
-        }
+      // Device Info
+      setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
 
-        // Display client counts
-        var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
-        setHtml("clientInfo", clientText);
-
-        // Display external WiFi info if connected
-        if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
-          var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;
-          setHtml("extWifi", extInfo);
-        } else {
-          setHtml("extWifi", ""); // Clear if not connected
-        }
+      switch (jObj.audioVersion ?? 0) {
+        case 0:
+          setHtml("audioInfo", "No Audio Detected");
+          break;
+        case 1:
+          setHtml("audioInfo", "WAV Trigger");
+          break;
+        case 100:
+          setHtml("audioInfo", "GPStar Audio Firmware: v100");
+          break;
+        default:
+          setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
+          break;
       }
-    } else if (this.readyState == 4) {
-      // Handle error responses
-      console.log("Failed to fetch network info:", this.responseText);
     }
-  };
-  xhttp.open("GET", "/wifi/status", true);
-  xhttp.send();
+  });
 }
 
 function updateTrackListing() {

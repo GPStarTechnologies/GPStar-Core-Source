@@ -18,16 +18,40 @@
  *
  */
 
-var websocket;
-var statusInterval;
 var displayType = 1; // Display Preference: 0=Text-Only, 1=Graphical, 2=Both
 var useAnimation = 1; // Enable/Disable special animations on the UI when using graphical display
 var lastCyclotronState = ""; // Track previous cyclotron state to avoid redundant effect updates
 var lastPackState = ""; // Track previous pack power state to differentiate idle updates
 var musicTrackStart = 0,
-  musicTrackMax = 0,
-  musicTrackCurrent = 0,
-  musicTrackList = [];
+    musicTrackMax = 0,
+    musicTrackCurrent = 0,
+    musicTrackList = [];
+
+// Initialize WebSocket client with automatic heartbeat and event handlers
+const wsClient = new WebSocketClient({
+  onMessage: onWSMessage
+});
+
+function onWSMessage(event) {
+  if (isJsonString(event.data)) {
+    updateEquipment(JSON.parse(event.data));
+  } else {
+    console.log(event.data);
+  }
+}
+
+// Initialize EventSource manager for one-way communication
+const esManager = new EventSourceManager({
+  eventHandlers: {
+    'debug': (data) => {
+      if (data === undefined) return;
+      console.log("Debug: ", data);
+    },
+    'network': (data) => {
+      updateNetworkInfo(data);
+    }
+  }
+});
 
 window.addEventListener("load", onLoad);
 
@@ -35,202 +59,83 @@ function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
   setDefaultOverlays(); // Set graphics to defaults.
   getDevicePrefs(); // Get all preferences.
-  getNetworkInfo(); // Get networking info.
-  initWebSocket(); // Open the WebSocket.
+  wsClient.connect(); // Connect WebSocket with automatic heartbeat.
+  esManager.connect(); // Connect Server-Sent Events.
   getStatus(updateEquipment); // Get status immediately.
 }
 
-function initWebSocket() {
-  console.log("Attempting to open a WebSocket connection...");
-  let gateway = "ws://" + window.location.hostname + "/ws";
-  websocket = new WebSocket(gateway);
-  websocket.onopen = onOpen;
-  websocket.onclose = onClose;
-  websocket.onmessage = onMessage;
-  doHeartbeat();
-}
 
-function doHeartbeat() {
-  if (websocket.readyState == websocket.OPEN) {
-    websocket.send("heartbeat"); // Send a specific message.
-  }
-  getNetworkInfo(); // Refresh network statistics.
-  setTimeout(doHeartbeat, 8000);
-}
-
-function onOpen(event) {
-  console.log("WebSocket connection opened");
-
-  // Clear the automated status interval timer.
-  clearInterval(statusInterval);
-}
-
-function onClose(event) {
-  console.log("WebSocket connection closed");
-  setTimeout(initWebSocket, 1000);
-
-  // Fallback for when WebSocket is unavailable.
-  if (!statusInterval) {
-    statusInterval = setInterval(function () {
-      getStatus(updateEquipment); // Check for status every X seconds
-    }, 1000);
-  }
-}
-
-function onMessage(event) {
-  if (isJsonString(event.data)) {
-    // If JSON, use as status update.
-    updateEquipment(JSON.parse(event.data));
-  } else {
-    // Anything else gets sent to console.
-    console.log(event.data);
-  }
-}
-
-if (!!window.EventSource) {
-  // Create events for one-way communication.
-  var source = new EventSource("/events");
-
-  source.addEventListener(
-    "open",
-    function (e) {
-      console.log("Server-Side Events connected");
-    },
-    false,
-  );
-
-  source.addEventListener(
-    "error",
-    function (e) {
-      if (e.target.readyState != EventSource.OPEN) {
-        console.log("Server-Side Events disconnected");
-      }
-    },
-    false,
-  );
-
-  source.addEventListener(
-    "debug",
-    function (e) {
-      if (e.data === undefined) return;
-      console.log("Debug: ", e.data);
-    },
-    false,
-  );
-}
 
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
-      var jObj = JSON.parse(this.responseText);
-      if (jObj) {
-        if (jObj.songList && jObj.songList != "") {
-          musicTrackList = jObj.songList.split("\n");
-          updateTrackListing();
-        }
-
-        // Device Info
-        setHtml("buildDate", "Build: " + (jObj.buildDate || "") + " [" + (jObj.deviceProtocol || "-") + "]");
-
-        switch (jObj.audioVersion ?? 0) {
-          case 0:
-            setHtml("audioInfo", "No Audio Detected");
-            break;
-          case 1:
-            setHtml("audioInfo", "WAV Trigger");
-            break;
-          case 100:
-            setHtml("audioInfo", "GPStar Audio Firmware: v100");
-            break;
-          default:
-            setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
-            break;
-        }
-
-        // Display Preference
-        displayType = jObj.displayType ?? 1;
-        switch (displayType) {
-          case 0:
-          default:
-            // Text-Only Display
-            hideEl("equipCRT");
-            showEl("equipTXT");
-            break;
-          case 1:
-            // Graphical Display (Default)
-            showEl("equipCRT");
-            hideEl("equipTXT");
-            break;
-          case 2:
-            // Both graphical and text
-            showEl("equipCRT");
-            showEl("equipTXT");
-            break;
-        }
-        useAnimation = jObj.useAnimation ?? 1;
-
-        // Update stream mode dropdown if available
-        if (jObj.streamModes && Array.isArray(jObj.streamModes)) {
-          updateStreamModeListing(jObj.streamModes);
-        }
-
-        // microSD Warnings
-        if (Boolean(jObj.audioCorrupt)) {
-          alert("Corruption has been detected on the microSD card. Please reformat the card as FAT32 and reload audio files.");
-        } else if (Boolean(jObj.audioOutdated)) {
-          // The file count on the microSD card does not match firmware; alert the user.
-          alert("Contents of microSD card do not match current firmware. Please make sure to update your microSD cards after updating firmware.");
-        }
-
-        // Firmware mismatch warnings
-        if (jObj.packConn === "Version Mismatch") {
-          alert("The firmware on the Attenuator/Wireless Module does not match that of the Proton Pack. Please make sure all devices are on the same firmware.");
-        } else if (Boolean(jObj.wandMismatch)) {
-          alert("The firmware on the Proton Pack does not match that of the Neutrona Wand. Please make sure all devices are on the same firmware.")
-        }
+  xhrHelper.get("/config/device", function (jObj) {
+    if (jObj) {
+      if (jObj.songList && jObj.songList != "") {
+        musicTrackList = jObj.songList.split("\n");
+        updateTrackListing();
       }
-    } else if (this.readyState == 4) {
-      // Handle error responses
-      handleStatus(this.responseText);
-    }
-  };
-  xhttp.open("GET", "/config/device", true);
-  xhttp.send();
-}
 
-function getNetworkInfo() {
-  // Fetch network configuration and statistics from dedicated endpoint.
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
-      var jObj = JSON.parse(this.responseText);
-      if (jObj) {
-        // Display local AP network name
-        if (jObj.localAP && jObj.localAP.ssid) {
-          setHtml("wifiName", "Private Network: " + jObj.localAP.ssid);
-        }
+      // Device Info
+      setHtml("buildDate", "Build: " + (jObj.buildDate || "") + " [" + (jObj.deviceProtocol || "-") + "]");
 
-        // Display client counts
-        var clientText = "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0);
-        setHtml("clientInfo", clientText);
-
-        // Display external WiFi info if connected
-        if (jObj.extWifi && jObj.extWifi.enabled && jObj.extWifi.connected) {
-          var extInfo = jObj.extWifi.ssid + ": " + jObj.extWifi.address + " / " + jObj.extWifi.subnet;
-          setHtml("extWifi", extInfo);
-        } else {
-          setHtml("extWifi", ""); // Clear if not connected
-        }
+      switch (jObj.audioVersion ?? 0) {
+        case 0:
+          setHtml("audioInfo", "No Audio Detected");
+          break;
+        case 1:
+          setHtml("audioInfo", "WAV Trigger");
+          break;
+        case 100:
+          setHtml("audioInfo", "GPStar Audio Firmware: v100");
+          break;
+        default:
+          setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
+          break;
       }
-    } else if (this.readyState == 4) {
-      // Handle error responses
-      console.log("Failed to fetch network info:", this.responseText);
+
+      // Display Preference
+      displayType = jObj.displayType ?? 1;
+      switch (displayType) {
+        case 0:
+        default:
+          // Text-Only Display
+          hideEl("equipCRT");
+          showEl("equipTXT");
+          break;
+        case 1:
+          // Graphical Display (Default)
+          showEl("equipCRT");
+          hideEl("equipTXT");
+          break;
+        case 2:
+          // Both graphical and text
+          showEl("equipCRT");
+          showEl("equipTXT");
+          break;
+      }
+      useAnimation = jObj.useAnimation ?? 1;
+
+      // Update stream mode dropdown if available
+      if (jObj.streamModes && Array.isArray(jObj.streamModes)) {
+        updateStreamModeListing(jObj.streamModes);
+      }
+
+      // microSD Warnings
+      if (Boolean(jObj.audioCorrupt)) {
+        alert("Corruption has been detected on the microSD card. Please reformat the card as FAT32 and reload audio files.");
+      } else if (Boolean(jObj.audioOutdated)) {
+        // The file count on the microSD card does not match firmware; alert the user.
+        alert("Contents of microSD card do not match current firmware. Please make sure to update your microSD cards after updating firmware.");
+      }
+
+      // Firmware mismatch warnings
+      if (jObj.packConn === "Version Mismatch") {
+        alert("The firmware on the Attenuator/Wireless Module does not match that of the Proton Pack. Please make sure all devices are on the same firmware.");
+      } else if (Boolean(jObj.wandMismatch)) {
+        alert("The firmware on the Proton Pack does not match that of the Neutrona Wand. Please make sure all devices are on the same firmware.")
+      }
     }
-  };
-  xhttp.open("GET", "/wifi/status", true);
-  xhttp.send();
+  }, handleStatus);
 }
 
 function removeOptions(selectElement) {
@@ -446,111 +351,6 @@ function setButtonStates(statusObj) {
     // Can only attenuate if cyclotron is in the pre-overheat (Warning, Critical) states.
     enableEl("btnAttenuate");
   }
-}
-
-function getStreamColor(cMode, iTheme, iCustomVal = 200, iCustomSat = 254) {
-  var color = [0, 0, 0];
-
-  // Use this to do our colour-change for spectral streams.
-  var tickSeconds = new Date().getSeconds();
-
-  switch (cMode) {
-    case "Plasm System":
-      if (iTheme == 3) {
-        // Pink
-        color[0] = 200;
-        color[2] = 180;
-      } else {
-        // Dark Green
-        color[1] = 80;
-      }
-      break;
-    case "Dark Matter Gen.":
-      // Light Blue
-      color[1] = 60;
-      color[2] = 255;
-      break;
-    case "Particle System":
-      // Orange
-      color[0] = 255;
-      color[1] = 140;
-      break;
-    case "Settings":
-      // Gray
-      color[0] = 40;
-      color[1] = 40;
-      color[2] = 40;
-      break;
-    case "Halloween":
-      if (tickSeconds % 2) {
-        // Orange
-        color[0] = 255;
-        color[1] = 140;
-      } else {
-        // Purple
-        color[0] = 200;
-        color[2] = 240;
-      }
-      break;
-    case "Christmas":
-      if (tickSeconds % 2) {
-        // Red
-        color[0] = 180;
-      } else {
-        // Green
-        color[1] = 180;
-      }
-      break;
-    case "Spectral Stream":
-      switch (tickSeconds % 8) {
-        case 0:
-        default:
-          // Red
-          color[0] = 180;
-          break;
-        case 1:
-          // Orange
-          color[0] = 255;
-          color[1] = 140;
-          break;
-        case 2:
-          // Yellow
-          color[0] = 240;
-          color[1] = 220;
-          break;
-        case 3:
-          // Green
-          color[1] = 180;
-          break;
-        case 4:
-          // Light Blue
-          color[1] = 60;
-          color[2] = 255;
-          break;
-        case 5:
-          // Blue
-          color[2] = 180;
-          break;
-        case 6:
-          // Indigo
-          color[0] = 90;
-          color[2] = 240;
-          break;
-        case 7:
-          // Purple
-          color[0] = 200;
-          color[2] = 240;
-          break;
-      }
-      break;
-    case "Custom Stream":
-    default:
-      // Proton Stream(s) as Red
-      color[0] = 180;
-      break;
-  }
-
-  return color;
 }
 
 function updateBars(iPower, cMode, iTheme) {

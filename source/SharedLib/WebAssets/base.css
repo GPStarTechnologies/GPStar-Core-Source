@@ -625,3 +625,43 @@ input[type="text"] {
 .help-modal-close:focus {
   color: #000;
 }
+
+/* Connection Status Overlay - Blocks interaction when device is disconnected */
+.connection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: none;
+  pointer-events: all;
+  align-items: center;
+  justify-content: center;
+}
+
+.connection-overlay.active {
+  display: flex;
+}
+
+.connection-overlay-content {
+  background-color: rgba(50, 50, 50, 0.95);
+  border-radius: 12px;
+  padding: 20px 40px;
+  text-align: center;
+  color: #fff;
+  font-size: 1.1rem;
+  min-width: 280px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.connection-overlay-content p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.connection-overlay-attempt {
+  font-size: 0.95rem;
+  color: #ccc;
+}

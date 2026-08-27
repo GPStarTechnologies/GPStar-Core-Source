@@ -9,19 +9,10 @@ function loadHelpData(callback) {
     return;
   }
 
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
-      try {
-        helpData = JSON.parse(this.responseText);
-        if (callback) callback();
-      } catch (e) {
-        console.error("Failed to parse help.json:", e);
-      }
-    }
-  };
-  xhttp.open("GET", "/help.json", true);
-  xhttp.send();
+  xhrHelper.get("/help.json", function(data) {
+    helpData = data;
+    if (callback) callback();
+  });
 }
 
 function showHelpModal(title, text) {
