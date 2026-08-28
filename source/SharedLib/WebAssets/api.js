@@ -16,10 +16,10 @@ function initConnectionOverlay() {
     
     // Prevent any events from bubbling through
     overlay.addEventListener('click', (e) => e.stopPropagation(), true);
-    overlay.addEventListener('touchstart', (e) => e.stopPropagation(), true);
+    overlay.addEventListener('touchstart', (e) => e.stopPropagation(), { capture: true, passive: true, });
     overlay.addEventListener('touchend', (e) => e.stopPropagation(), true);
     overlay.addEventListener('pointerdown', (e) => e.stopPropagation(), true);
-    overlay.addEventListener('wheel', (e) => e.stopPropagation(), true);
+    overlay.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true, passive: true, });
     
     document.body.appendChild(overlay);
   }
