@@ -60,7 +60,7 @@ void Lighting::resetDynamicColors() {
   for(uint8_t i = 0; i < numDevices; i++) {
     customColorHSV[i] = {0, 0, 0};  // Default custom color: black
     deviceColorOrder[i] = ORDER_RGB;  // Default color order: RGB (for 3-wire WS2811/WS2812)
-    dynamicCounter[i] = 1;  // Frame counter starts at 1 (animations set on first call)
+    dynamicCounter[i] = 0;  // Frame counter starts at 0 (animations advance on first call)
     dynamicHue[i] = 0;  // Default hue: red (0) (animations set on first call)
     dynamicBright[i] = 0;  // Default brightness: none (animations set on first call)
     dynamicNextBright[i] = -1;  // Direction for brightness fading: uninitialized

@@ -1,0 +1,145 @@
+Collected 1 tests (*)
+
+Processing * in test environment
+--------------------------------------------------------------------------------
+Building...
+
+
+Testing...
+[==========] Running 52 tests from 4 test suites.
+[----------] Global test environment set-up.
+[----------] 7 tests from LightingAnimationsFixture
+[ RUN      ] LightingAnimationsFixture.DynamicColor_Rainbow_ChangesHueOverTime
+[       OK ] LightingAnimationsFixture.DynamicColor_Rainbow_ChangesHueOverTime (0 ms)
+[ RUN      ] LightingAnimationsFixture.DynamicColor_RedGreen_AlternatesBetweenTwoHues
+[       OK ] LightingAnimationsFixture.DynamicColor_RedGreen_AlternatesBetweenTwoHues (0 ms)
+[ RUN      ] LightingAnimationsFixture.DynamicColor_OrangeFade_PulsesHueSlightly
+[       OK ] LightingAnimationsFixture.DynamicColor_OrangeFade_PulsesHueSlightly (0 ms)
+[ RUN      ] LightingAnimationsFixture.DynamicColor_MultipleDevices_IndependentState
+test/test_Lighting_Animations.cpp:99: Failure
+Expected: (device0_color1.h) != (device0_color2.h), actual: '\0' vs '\0'
+
+[  FAILED  ] LightingAnimationsFixture.DynamicColor_MultipleDevices_IndependentState (0 ms)
+[ RUN      ] LightingAnimationsFixture.DynamicColor_ResetClearsState
+[       OK ] LightingAnimationsFixture.DynamicColor_ResetClearsState (0 ms)
+[ RUN      ] LightingAnimationsFixture.DynamicColor_BlueFade_DecrementHueWithinRange
+[       OK ] LightingAnimationsFixture.DynamicColor_BlueFade_DecrementHueWithinRange (0 ms)
+[ RUN      ] LightingAnimationsFixture.RGB_AllValuesInValidRange
+[       OK ] LightingAnimationsFixture.RGB_AllValuesInValidRange (0 ms)
+[----------] 7 tests from LightingAnimationsFixture (0 ms total)
+
+[----------] 16 tests from LightingBrightnessFixture
+[ RUN      ] LightingBrightnessFixture.BrightnessPercent_0_Returns0
+[       OK ] LightingBrightnessFixture.BrightnessPercent_0_Returns0 (0 ms)
+[ RUN      ] LightingBrightnessFixture.BrightnessPercent_100_Returns255
+[       OK ] LightingBrightnessFixture.BrightnessPercent_100_Returns255 (0 ms)
+[ RUN      ] LightingBrightnessFixture.BrightnessPercent_50_Returns127or128
+[       OK ] LightingBrightnessFixture.BrightnessPercent_50_Returns127or128 (0 ms)
+[ RUN      ] LightingBrightnessFixture.BrightnessPercent_Over100_Clamped
+[       OK ] LightingBrightnessFixture.BrightnessPercent_Over100_Clamped (0 ms)
+[ RUN      ] LightingBrightnessFixture.ScaleBrightness_Full_NoChange
+[       OK ] LightingBrightnessFixture.ScaleBrightness_Full_NoChange (0 ms)
+[ RUN      ] LightingBrightnessFixture.ScaleBrightness_Half_ReducesAllChannels
+[       OK ] LightingBrightnessFixture.ScaleBrightness_Half_ReducesAllChannels (0 ms)
+[ RUN      ] LightingBrightnessFixture.ScaleBrightness_Zero_ReturnsBlack
+[       OK ] LightingBrightnessFixture.ScaleBrightness_Zero_ReturnsBlack (0 ms)
+[ RUN      ] LightingBrightnessFixture.Nscale8_Scale0_ReturnsZero
+[       OK ] LightingBrightnessFixture.Nscale8_Scale0_ReturnsZero (0 ms)
+[ RUN      ] LightingBrightnessFixture.Nscale8_Scale255_ReturnsValue
+[       OK ] LightingBrightnessFixture.Nscale8_Scale255_ReturnsValue (0 ms)
+[ RUN      ] LightingBrightnessFixture.Nscale8_Scale128_ApproximatelyHalf
+[       OK ] LightingBrightnessFixture.Nscale8_Scale128_ApproximatelyHalf (0 ms)
+[ RUN      ] LightingBrightnessFixture.Nscale8_Scale255_FullRange
+[       OK ] LightingBrightnessFixture.Nscale8_Scale255_FullRange (0 ms)
+[ RUN      ] LightingBrightnessFixture.Scale8Video_Scale0_ReturnsZero
+[       OK ] LightingBrightnessFixture.Scale8Video_Scale0_ReturnsZero (0 ms)
+[ RUN      ] LightingBrightnessFixture.Scale8Video_Value0_AlwaysReturnsZero
+[       OK ] LightingBrightnessFixture.Scale8Video_Value0_AlwaysReturnsZero (0 ms)
+[ RUN      ] LightingBrightnessFixture.Scale8Video_Scale255_ReturnsValue
+[       OK ] LightingBrightnessFixture.Scale8Video_Scale255_ReturnsValue (0 ms)
+[ RUN      ] LightingBrightnessFixture.Scale8Video_NonZeroScale_AddsOne
+[       OK ] LightingBrightnessFixture.Scale8Video_NonZeroScale_AddsOne (0 ms)
+[ RUN      ] LightingBrightnessFixture.Scale8Video_PreventsFadeToBlack
+[       OK ] LightingBrightnessFixture.Scale8Video_PreventsFadeToBlack (0 ms)
+[----------] 16 tests from LightingBrightnessFixture (0 ms total)
+
+[----------] 8 tests from LightingColorsFixture
+[ RUN      ] LightingColorsFixture.StaticColor_Red_HasCorrectHSV
+[       OK ] LightingColorsFixture.StaticColor_Red_HasCorrectHSV (0 ms)
+[ RUN      ] LightingColorsFixture.StaticColor_Green_HasCorrectHSV
+[       OK ] LightingColorsFixture.StaticColor_Green_HasCorrectHSV (0 ms)
+[ RUN      ] LightingColorsFixture.StaticColor_Blue_HasCorrectHSV
+[       OK ] LightingColorsFixture.StaticColor_Blue_HasCorrectHSV (0 ms)
+[ RUN      ] LightingColorsFixture.StaticColor_Black_HasZeroValues
+[       OK ] LightingColorsFixture.StaticColor_Black_HasZeroValues (0 ms)
+[ RUN      ] LightingColorsFixture.StaticColor_White_HasZeroSaturation
+[       OK ] LightingColorsFixture.StaticColor_White_HasZeroSaturation (0 ms)
+[ RUN      ] LightingColorsFixture.StaticColor_BrightnessParameterApplied
+[       OK ] LightingColorsFixture.StaticColor_BrightnessParameterApplied (0 ms)
+[ RUN      ] LightingColorsFixture.StaticColor_SaturationParameterApplied
+[       OK ] LightingColorsFixture.StaticColor_SaturationParameterApplied (0 ms)
+[ RUN      ] LightingColorsFixture.AllStaticColors_ReturnValidHSV
+[       OK ] LightingColorsFixture.AllStaticColors_ReturnValidHSV (0 ms)
+[----------] 8 tests from LightingColorsFixture (0 ms total)
+
+[----------] 21 tests from LightingConversionFixture
+[ RUN      ] LightingConversionFixture.HSV_Red_ConvertToRGB
+[       OK ] LightingConversionFixture.HSV_Red_ConvertToRGB (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_Green_ConvertToRGB
+[       OK ] LightingConversionFixture.HSV_Green_ConvertToRGB (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_Blue_ConvertToRGB
+[       OK ] LightingConversionFixture.HSV_Blue_ConvertToRGB (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_Yellow_ConvertToRGB
+[       OK ] LightingConversionFixture.HSV_Yellow_ConvertToRGB (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_Cyan_ConvertToRGB
+[       OK ] LightingConversionFixture.HSV_Cyan_ConvertToRGB (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_Magenta_ConvertToRGB
+[       OK ] LightingConversionFixture.HSV_Magenta_ConvertToRGB (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_ZeroSaturation_ReturnsGray
+[       OK ] LightingConversionFixture.HSV_ZeroSaturation_ReturnsGray (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_ZeroValue_ReturnsBlack
+[       OK ] LightingConversionFixture.HSV_ZeroValue_ReturnsBlack (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_ReducedBrightness_ScalesAllChannels
+[       OK ] LightingConversionFixture.HSV_ReducedBrightness_ScalesAllChannels (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_HueSectorBoundary_43_RedGreen
+[       OK ] LightingConversionFixture.HSV_HueSectorBoundary_43_RedGreen (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_HueSectorBoundary_85_GreenBlue
+[       OK ] LightingConversionFixture.HSV_HueSectorBoundary_85_GreenBlue (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_HueSectorBoundary_170_BlueRed
+[       OK ] LightingConversionFixture.HSV_HueSectorBoundary_170_BlueRed (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_MidRangeSaturation_DesaturatedRed
+[       OK ] LightingConversionFixture.HSV_MidRangeSaturation_DesaturatedRed (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_White_AnyHueFullValueZeroSaturation
+[       OK ] LightingConversionFixture.HSV_White_AnyHueFullValueZeroSaturation (0 ms)
+[ RUN      ] LightingConversionFixture.HSV_LowValue_DimColor
+[       OK ] LightingConversionFixture.HSV_LowValue_DimColor (0 ms)
+[ RUN      ] LightingConversionFixture.ColorOrder_RGB_NoChange
+[       OK ] LightingConversionFixture.ColorOrder_RGB_NoChange (0 ms)
+[ RUN      ] LightingConversionFixture.ColorOrder_GRB_SwapsRG
+[       OK ] LightingConversionFixture.ColorOrder_GRB_SwapsRG (0 ms)
+[ RUN      ] LightingConversionFixture.ColorOrder_GBR_RotatesChannels
+[       OK ] LightingConversionFixture.ColorOrder_GBR_RotatesChannels (0 ms)
+[ RUN      ] LightingConversionFixture.ColorOrder_RBG_SwapsBG
+[       OK ] LightingConversionFixture.ColorOrder_RBG_SwapsBG (0 ms)
+[ RUN      ] LightingConversionFixture.ColorOrder_BRG_RotatesChannels2
+[       OK ] LightingConversionFixture.ColorOrder_BRG_RotatesChannels2 (0 ms)
+[ RUN      ] LightingConversionFixture.ColorOrder_BGR_ReversesChannels
+[       OK ] LightingConversionFixture.ColorOrder_BGR_ReversesChannels (0 ms)
+[----------] 21 tests from LightingConversionFixture (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 52 tests from 4 test suites ran. (0 ms total)
+[  PASSED  ] 51 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] LightingAnimationsFixture.DynamicColor_MultipleDevices_IndependentState
+
+ 1 FAILED TEST
+Program received signal SIGHUP (Hangup: 1)
+---------------------- test:* [ERRORED] Took 0.81 seconds ----------------------
+
+=================================== SUMMARY ===================================
+Environment    Test    Status    Duration
+-------------  ------  --------  ------------
+test           *       ERRORED   00:00:00.814
+
+============ 53 test cases: 1 failed, 51 succeeded in 00:00:00.814 ============

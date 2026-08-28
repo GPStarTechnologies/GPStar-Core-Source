@@ -32,6 +32,9 @@ echo "Neutrona Wand Binary [ATMega] - Building..."
 # Clean the project before building
 pio run -e atmega2560 --project-dir "$PROJECT_DIR" --target clean
 
+# Also clear the build cache to force complete rebuild
+#rm -rf "$PROJECT_DIR/.pio/buildcache"
+
 # Compile the PlatformIO project
 pio run -e atmega2560 --project-dir "$PROJECT_DIR" --jobs 4
 
@@ -54,6 +57,9 @@ echo "Neutrona Wand Binary [ESP32] - Building..."
 
 # Clean the project before building
 pio run -e esp32s3 --project-dir "$PROJECT_DIR" --target clean
+
+# Also clear the build cache to force complete rebuild
+#rm -rf "$PROJECT_DIR/.pio/buildcache"
 
 # Compile the PlatformIO project
 pio run -e esp32s3 --project-dir "$PROJECT_DIR" --jobs 4

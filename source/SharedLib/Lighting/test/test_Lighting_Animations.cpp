@@ -81,9 +81,9 @@ TEST_F(LightingAnimationsFixture, DynamicColor_MultipleDevices_IndependentState)
     Lighting multiDevice(2);
     multiDevice.resetDynamicColors();
     
-    // Device 0: Get initial color and advance through one cycle (6 frames for C_RAINBOW)
+    // Device 0: Get initial color and advance through one cycle (8 frames for C_RAINBOW with 6ms refresh)
     LED_HSV device0_color1 = multiDevice.getDynamicColorHSV(0, C_RAINBOW, 255);
-    for(int i = 0; i < 5; i++) {
+    for(int i = 0; i < 8; i++) {
         multiDevice.getDynamicColorHSV(0, C_RAINBOW, 255);
     }
     LED_HSV device0_color2 = multiDevice.getDynamicColorHSV(0, C_RAINBOW, 255);
@@ -95,10 +95,10 @@ TEST_F(LightingAnimationsFixture, DynamicColor_MultipleDevices_IndependentState)
     }
     
     // Verify each device slot maintains independent animation state
-    // Device 0 should have changed after 6 calls
+    // Device 0 should have changed after completing one cycle (9 total calls: 1 initial + 8 loop)
     EXPECT_NE(device0_color1.h, device0_color2.h);
     
-    // Device 1 (called 21 times) should be at a different animation frame than device 0 (called 6 times)
+    // Device 1 (called 21 times) should be at a different animation frame than device 0 (called 9 times)
     LED_HSV device1_final = multiDevice.getDynamicColorHSV(1, C_RAINBOW, 255);
     EXPECT_NE(device0_color2.h, device1_final.h);
 }

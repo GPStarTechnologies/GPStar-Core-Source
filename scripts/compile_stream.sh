@@ -31,8 +31,11 @@ echo "StreamEffects Binary [ESP32] - Building..."
 # Clean the project before building
 pio run --project-dir "$PROJECT_DIR" --target clean
 
+# Also clear the build cache to force complete rebuild
+rm -rf "$PROJECT_DIR/.pio/buildcache"
+
 # Compile the PlatformIO project
-pio run --project-dir "$PROJECT_DIR" --jobs 4
+pio run --project-dir "$PROJECT_DIR" --jobs 4 -vv > build.log 2>&1
 
 # Check if the build was successful
 if [ $? -eq 0 ]; then

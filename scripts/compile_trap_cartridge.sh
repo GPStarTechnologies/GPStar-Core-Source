@@ -18,6 +18,9 @@ echo "GhostTrap Cartridge Binary (ATtiny) - Building..."
 # Clean the project before building
 pio run --project-dir "$PROJECT_DIR" --target clean
 
+# Also clear the build cache to force complete rebuild
+#rm -rf "$PROJECT_DIR/.pio/buildcache"
+
 # Compile the PlatformIO project
 pio run --project-dir "$PROJECT_DIR" --jobs 4
 

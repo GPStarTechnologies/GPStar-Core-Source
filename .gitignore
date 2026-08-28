@@ -7,6 +7,9 @@
 # But do not ignore the .vscode directories themselves
 !**/.vscode/
 
+# Ignore generated web assets
+#source/*/assets/*.gz
+
 **/*.log
 *.bootloader.*
 *.partitions.*

@@ -25,15 +25,11 @@
 #include <WebSocketsClient.h>
 
 // Declare the external binary data markers for embedded files.
+// Common Assets
+#include "../../SharedLib/WebAssets/CommonAssets.h"
 // common.js
 extern const uint8_t _binary_assets_common_js_gz_start[];
 extern const uint8_t _binary_assets_common_js_gz_end[];
-// favicon.ico
-extern const uint8_t _binary_assets_favicon_ico_gz_start[];
-extern const uint8_t _binary_assets_favicon_ico_gz_end[];
-// favicon.svg
-extern const uint8_t _binary_assets_favicon_svg_gz_start[];
-extern const uint8_t _binary_assets_favicon_svg_gz_end[];
 // style.css
 extern const uint8_t _binary_assets_style_css_gz_start[];
 extern const uint8_t _binary_assets_style_css_gz_end[];
@@ -52,12 +48,6 @@ extern const uint8_t _binary_assets_network_html_gz_end[];
 // password.html
 extern const uint8_t _binary_assets_password_html_gz_start[];
 extern const uint8_t _binary_assets_password_html_gz_end[];
-// swaggerui.html
-extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
-extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
-// help.json
-extern const uint8_t _binary_assets_help_json_gz_start[];
-extern const uint8_t _binary_assets_help_json_gz_end[];
 
 // Define standard ports and URI endpoints.
 const uint16_t WS_PORT = 80; // Web Server (+WebSocket) port
