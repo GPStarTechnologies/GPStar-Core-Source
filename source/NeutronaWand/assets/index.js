@@ -138,6 +138,9 @@ const esManager = new EventSourceManager({
           Math.cos(yawRads) * radius,
         );
       }
+    },
+    'network': (data) => {
+      updateNetworkInfo(data);
     }
   }
 });
@@ -154,7 +157,7 @@ function onLoad(event) {
   init3D(); // Initialize 3D representations.
   wsClient.connect(); // Open the WebSocket.
   esManager.connect(); // Start EventSource connection.
-  
+
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
     wsClient.disconnect();
@@ -680,8 +683,6 @@ function formatFloat(value) {
 }
 
 let lastCoverage = 0;
-
-
 
 // Instances for each visualization
 let telemetry3D, calibration3D;

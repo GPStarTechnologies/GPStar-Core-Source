@@ -23,7 +23,7 @@ var musicTrackStart = 0,
     musicTrackCurrent = 0,
     musicTrackList = [];
 
-// Initialize WebSocket client with automatic heartbeat and event handlers
+// Initialize connection wrappers
 const wsClient = new WebSocketClient({
   onMessage: onWSMessage
 });
@@ -36,7 +36,6 @@ function onWSMessage(event) {
   }
 }
 
-// Initialize EventSource manager for one-way communication
 const esManager = new EventSourceManager({
   eventHandlers: {
     'debug': (data) => {
@@ -51,6 +50,7 @@ const esManager = new EventSourceManager({
         calData = JSON.parse(data);
       } catch (e) {}
 
+      // Update the calibration time remaining.
       timeRemaining = parseFloat(calData.t ?? 0).toFixed(2);
       getEl("gyroCounter").innerHTML = timeRemaining + "s remaining";
     },
@@ -62,21 +62,25 @@ const esManager = new EventSourceManager({
         calData = JSON.parse(data);
       } catch (e) {}
 
+      // Update the calibration coverage percentage.
       lastCoverage = parseFloat(calData.c ?? 0);
       if (lastCoverage > 0) {
         setHtml("coverage", formatFloat(lastCoverage) + "%");
       }
 
+      // Report any status messages sent from the calibration process.
       if (calData.s && calData.s != "") {
         setHtml("deviceStatus", calData.s || "");
       }
 
+      // Display the last added sample for reference.
       if (calData.v && (calData.v || []).length == 3) {
         setHtml("magX", formatFloat(calData.v[0] ?? 0) + "&micro;T");
         setHtml("magY", formatFloat(calData.v[1] ?? 0) + "&micro;T");
         setHtml("magZ", formatFloat(calData.v[2] ?? 0) + "&micro;T");
       }
 
+      // Process enhanced bin distribution data for coverage analysis
       if (calData.e && calData.a) {
         updateElevationChart(calData.e);
         updateAzimuthChart(calData.a);
@@ -84,6 +88,7 @@ const esManager = new EventSourceManager({
         updateUserFeedback(calData.e, calData.a, lastCoverage);
       }
 
+      // Update existing 3D visualization with coordinate points, when available.
       if (calibration3D && (calData.p || []).length > 0) {
         calibration3D.setPoints(calData.p);
       }
@@ -94,6 +99,7 @@ const esManager = new EventSourceManager({
         obj = JSON.parse(data);
       } catch (e) {}
 
+      // Update the HTML elements with the telemetry data
       setHtml("gyroX", formatFloat(obj.gX ?? 0) + "&deg;/s");
       setHtml("gyroY", formatFloat(obj.gY ?? 0) + "&deg;/s");
       setHtml("gyroZ", formatFloat(obj.gZ ?? 0) + "&deg;/s");
@@ -110,14 +116,19 @@ const esManager = new EventSourceManager({
       setHtml("magY", formatFloat(obj.mY ?? 0) + "&micro;T");
       setHtml("magZ", formatFloat(obj.mZ ?? 0) + "&micro;T");
 
+      // Proceed with updating the rendered scene if all objects are present.
       if (telemetry3D && telemetry3D.mesh) {
+        // Use quaternion (x,y,z,w) calculations for more accurate orientation and avoid gimbal lock.
+        // Map accordingly from device to view: Pitch (Y) -> X, Yaw (Z) -> Y, Roll (X) -> Z.
         telemetry3D.setQuaternion(-obj.qY, -obj.qZ, obj.qX, obj.qW);
 
+        // Convert roll, pitch, and yaw from degrees to radians for Three.js
         var rollRads = ((obj.roll ?? 0) * Math.PI) / 180;
         var pitchRads = ((obj.pitch ?? 0) * Math.PI) / 180;
         var yawRads = ((obj.yaw ?? 0) * Math.PI) / 180;
 
-        const radius = 200;
+        // Move camera behind the object based on yaw
+        const radius = 200; // Distance from object, adjust as needed
         telemetry3D.setCameraPosition(
           Math.sin(yawRads) * radius,
           Math.sin(pitchRads) * radius,
@@ -138,17 +149,22 @@ function onLoad(event) {
   hideEl("calInfo"); // Hide the calibration coverage info.
   disableSensorButtons(); // Set button states by default.
   getDevicePrefs(); // Get all preferences.
-  wsClient.connect(); // Connect WebSocket with automatic heartbeat.
-  esManager.connect(); // Connect Server-Sent Events.
+  getNetworkInfo(); // Get networking info.
   getStatus(updateEquipment); // Get status immediately.
   init3D(); // Initialize 3D representations.
+  wsClient.connect(); // Open the WebSocket.
+  esManager.connect(); // Start EventSource connection.
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    wsClient.disconnect();
+    esManager.disconnect();
+  });
 }
-
-
 
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
-  xhrHelper.get("/config/device", function (jObj) {
+  xhrHelper.get("/config/device", (jObj) => {
     if (jObj) {
       if (jObj.songList && jObj.songList != "") {
         musicTrackList = jObj.songList.split("\n");
@@ -181,7 +197,7 @@ function getDevicePrefs() {
         alert("Contents of microSD card do not match current firmware. Please make sure to update your microSD cards after updating firmware.");
       }
     }
-  }, handleStatus);
+  });
 }
 
 function removeOptions(selectElement) {

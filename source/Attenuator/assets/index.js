@@ -27,7 +27,7 @@ var musicTrackStart = 0,
     musicTrackCurrent = 0,
     musicTrackList = [];
 
-// Initialize WebSocket client with automatic heartbeat and event handlers
+// Initialize connection wrappers
 const wsClient = new WebSocketClient({
   onMessage: onWSMessage
 });
@@ -40,7 +40,6 @@ function onWSMessage(event) {
   }
 }
 
-// Initialize EventSource manager for one-way communication
 const esManager = new EventSourceManager({
   eventHandlers: {
     'debug': (data) => {
@@ -59,16 +58,21 @@ function onLoad(event) {
   document.getElementsByClassName("tablinks")[0].click();
   setDefaultOverlays(); // Set graphics to defaults.
   getDevicePrefs(); // Get all preferences.
-  wsClient.connect(); // Connect WebSocket with automatic heartbeat.
-  esManager.connect(); // Connect Server-Sent Events.
+  getNetworkInfo(); // Get networking info.
   getStatus(updateEquipment); // Get status immediately.
+  wsClient.connect(); // Open the WebSocket.
+  esManager.connect(); // Start EventSource connection.
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    wsClient.disconnect();
+    esManager.disconnect();
+  });
 }
-
-
 
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
-  xhrHelper.get("/config/device", function (jObj) {
+  xhrHelper.get("/config/device", (jObj) => {
     if (jObj) {
       if (jObj.songList && jObj.songList != "") {
         musicTrackList = jObj.songList.split("\n");
@@ -135,7 +139,7 @@ function getDevicePrefs() {
         alert("The firmware on the Proton Pack does not match that of the Neutrona Wand. Please make sure all devices are on the same firmware.")
       }
     }
-  }, handleStatus);
+  });
 }
 
 function removeOptions(selectElement) {

@@ -33,6 +33,7 @@ function onWSMessage(event) {
 const esManager = new EventSourceManager({
   eventHandlers: {
     'debug': (data) => {
+      if (data === undefined) return;
       console.log("Debug: ", data);
     },
     'network': (data) => {

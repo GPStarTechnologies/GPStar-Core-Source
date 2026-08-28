@@ -20,8 +20,6 @@
 
 // Initialize connection wrappers
 const wsClient = new WebSocketClient({
-  onOpen: onWSOpen,
-  onClose: onWSClose,
   onMessage: onWSMessage
 });
 
@@ -92,8 +90,6 @@ function onLoad(event) {
     esManager.disconnect();
   });
 }
-
-
 
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.

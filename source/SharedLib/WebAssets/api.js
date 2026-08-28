@@ -48,58 +48,54 @@ function hideConnectionOverlay() {
   }
 }
 
-/** Global Heartbeat Timing Configuration - Default values, can be overridden per instance **/
-var heartbeatIntervalConnected = 8000;       // Heartbeat interval when connected (ms)
-var heartbeatIntervalDisconnected = 30000;   // Heartbeat interval when disconnected (ms)
-
-/** WebSocket Client - Handles WebSocket connections with exponential backoff and timeout **/
+/** WebSocket Client - Handles WebSocket connections with exponential backoff and timeout */
 class WebSocketClient {
   // Private fields
-  #websocket = null;
-  #isConnected = false;
-  #hasEverConnected = false;
-  #wsHeartbeatTimer = null;
-  #apiHeartbeatTimer = null;
-  #wsConnectionAttempts = 0;
-  #wsReconnectDelay = 1000;
-  #wsReconnectDelayMax = 30000;
-  #websocketReconnectTimeout = null;
-  #heartbeatIntervalConnected = heartbeatIntervalConnected;
-  #heartbeatIntervalDisconnected = heartbeatIntervalDisconnected;
+  #websocket = null;                      // WebSocket instance
+  #isConnected = false;                   // True if WebSocket is open and ready
+  #hasEverConnected = false;              // Track if connection ever succeeded (for overlay)
+  #wsHeartbeatTimer = null;               // Periodic heartbeat send timer
+  #heartbeatMissCount = 0;                // Count consecutive missed pongs (reconnect on 2nd)
+  #wsConnectionAttempts = 0;              // Track attempts for exponential backoff
+  #wsReconnectDelay = 1000;               // Initial delay before reconnect (ms)
+  #wsReconnectDelayMax = 30000;           // Max reconnect delay cap (ms)
+  #wsReconnectTimer = null;               // Timer for scheduled reconnection attempt
+  #heartbeatIntervalConnected = 3000;     // Heartbeat frequency when connected (3s)
+  #heartbeatIntervalDisconnected = 30000; // Heartbeat frequency when disconnected (30s)
+  #heartbeatResponseTimer = null;         // Timer waiting for pong response
+  #heartbeatResponseWaitTime = 2000;      // Time to wait for pong before miss (2s)
   
   /**
    * Initialize WebSocket client
    * @param {Object} config - Configuration object
    * @param {string} config.hostname - Device hostname (default: window.location.hostname)
    * @param {string} config.wsPath - WebSocket path (default: '/ws')
-   * @param {number} config.connectionTimeout - Connection timeout in ms (default: 5000)
+   * @param {number} config.connectionTimeout - Connection timeout in ms
+   * @param {number} config.heartbeatIntervalConnected - Heartbeat interval when connected (ms)
+   * @param {number} config.heartbeatIntervalDisconnected - Heartbeat interval when disconnected (ms)
+   * @param {number} config.wsReconnectDelay - Initial reconnect delay in ms
+   * @param {number} config.wsReconnectDelayMax - Max reconnect delay in ms
+   * @param {number} config.heartbeatResponseWaitTime - Time to wait for heartbeat response in ms
    * @param {Function} config.onOpen - Called when connection opens
    * @param {Function} config.onClose - Called when connection closes
    * @param {Function} config.onError - Called when connection error occurs
    * @param {Function} config.onMessage - Called when message received (receives event)
-   * @param {string} config.heartbeatEndpoint - Endpoint for heartbeat status
-   * @param {Function} config.heartbeatCallback - Called with heartbeat response data
-   * @param {number} config.heartbeatIntervalConnected - Heartbeat interval when connected (ms) (default: 8000)
-   * @param {number} config.heartbeatIntervalDisconnected - Heartbeat interval when disconnected (ms) (default: 30000)
-   * @param {number} config.wsReconnectDelay - Initial reconnect delay in ms (default: 1000)
-   * @param {number} config.wsReconnectDelayMax - Max reconnect delay in ms (default: 30000)
    */
   constructor(config = {}) {
     this.hostname = config.hostname || window.location.hostname;
     this.wsPath = config.wsPath || '/ws';
-    this.connectionTimeout = config.connectionTimeout || 5000;
     this.onOpen = config.onOpen || (() => {});
     this.onClose = config.onClose || (() => {});
     this.onError = config.onError || (() => {});
     this.onMessage = config.onMessage || (() => {});
-    this.heartbeatEndpoint = config.heartbeatEndpoint || null;
-    this.heartbeatCallback = config.heartbeatCallback || null;
+    this.connectionTimeout = config.connectionTimeout || 5000;
     
     // Private field initialization with optional config overrides
     this.#wsReconnectDelay = config.wsReconnectDelay || 1000;
     this.#wsReconnectDelayMax = config.wsReconnectDelayMax || 30000;
-    this.#heartbeatIntervalConnected = config.heartbeatIntervalConnected || heartbeatIntervalConnected;
-    this.#heartbeatIntervalDisconnected = config.heartbeatIntervalDisconnected || heartbeatIntervalDisconnected;
+    this.#heartbeatIntervalConnected = config.heartbeatIntervalConnected || 3000;
+    this.#heartbeatIntervalDisconnected = config.heartbeatIntervalDisconnected || 30000;
+    this.#heartbeatResponseWaitTime = config.heartbeatResponseWaitTime || 2000;
   }
   
   /**
@@ -115,8 +111,8 @@ class WebSocketClient {
    */
   connect() {
     // Clear any pending reconnection attempt
-    if (this.#websocketReconnectTimeout) {
-      clearTimeout(this.#websocketReconnectTimeout);
+    if (this.#wsReconnectTimer) {
+      clearTimeout(this.#wsReconnectTimer);
     }
     
     console.log("WebSocket: Attempting connection... (attempt " + (this.#wsConnectionAttempts + 1) + ")");
@@ -132,7 +128,7 @@ class WebSocketClient {
       this.#wsConnectionAttempts++;
       
       // Timeout connection attempt after configured duration
-      this.#websocketReconnectTimeout = setTimeout(() => {
+      this.#wsReconnectTimer = setTimeout(() => {
         if (this.#websocket && this.#websocket.readyState === WebSocket.CONNECTING) {
           console.log("WebSocket: Connection timeout - closing attempt");
           this.#websocket.close();
@@ -165,17 +161,17 @@ class WebSocketClient {
       this.#websocket.close();
       this.#websocket = null;
     }
-    if (this.#websocketReconnectTimeout) {
-      clearTimeout(this.#websocketReconnectTimeout);
-      this.#websocketReconnectTimeout = null;
+    if (this.#wsReconnectTimer) {
+      clearTimeout(this.#wsReconnectTimer);
+      this.#wsReconnectTimer = null;
     }
     if (this.#wsHeartbeatTimer) {
       clearTimeout(this.#wsHeartbeatTimer);
       this.#wsHeartbeatTimer = null;
     }
-    if (this.#apiHeartbeatTimer) {
-      clearTimeout(this.#apiHeartbeatTimer);
-      this.#apiHeartbeatTimer = null;
+    if (this.#heartbeatResponseTimer) {
+      clearTimeout(this.#heartbeatResponseTimer);
+      this.#heartbeatResponseTimer = null;
     }
   }
   
@@ -184,14 +180,15 @@ class WebSocketClient {
    */
   _handleOpen(event) {
     console.log("WebSocket: Connection opened");
-    if (this.#websocketReconnectTimeout) {
-      clearTimeout(this.#websocketReconnectTimeout);
-      this.#websocketReconnectTimeout = null;
+    if (this.#wsReconnectTimer) {
+      clearTimeout(this.#wsReconnectTimer);
+      this.#wsReconnectTimer = null;
     }
     this.#isConnected = true;
     this.#hasEverConnected = true;
     this.#wsConnectionAttempts = 0;
     this.#wsReconnectDelay = 1000;
+    this.#heartbeatMissCount = 0;
     hideConnectionOverlay();
     this._startHeartbeat();
     this.onOpen(event);
@@ -203,8 +200,8 @@ class WebSocketClient {
   _handleClose(event) {
     console.log("WebSocket: Connection closed");
     this.#isConnected = false;
-    if (this.#websocketReconnectTimeout) {
-      clearTimeout(this.#websocketReconnectTimeout);
+    if (this.#wsReconnectTimer) {
+      clearTimeout(this.#wsReconnectTimer);
     }
     if (this.#hasEverConnected) {
       showConnectionOverlay(this.#wsConnectionAttempts + 1);
@@ -225,6 +222,16 @@ class WebSocketClient {
    * Internal: Handle incoming message
    */
   _handleMessage(event) {
+    // Clear heartbeat response timer if we receive a pong
+    if (event.data === "pong") {
+      if (this.#heartbeatResponseTimer) {
+        clearTimeout(this.#heartbeatResponseTimer);
+        this.#heartbeatResponseTimer = null;
+      }
+      this.#heartbeatMissCount = 0; // Reset miss counter on successful pong
+      //console.log("WebSocket: Heartbeat acknowledged");
+      return; // Don't pass pong to application handlers
+    }
     this.onMessage(event);
   }
   
@@ -232,8 +239,8 @@ class WebSocketClient {
    * Internal: Schedule reconnection with exponential backoff
    */
   _scheduleReconnect() {
-    if (this.#websocketReconnectTimeout) {
-      clearTimeout(this.#websocketReconnectTimeout);
+    if (this.#wsReconnectTimer) {
+      clearTimeout(this.#wsReconnectTimer);
     }
     
     const delayMs = Math.min(
@@ -244,50 +251,52 @@ class WebSocketClient {
     const totalDelay = Math.floor(delayMs + jitter);
     
     console.log("WebSocket: Reconnect scheduled in " + totalDelay + "ms (attempt " + (this.#wsConnectionAttempts + 1) + ")");
-    this.#websocketReconnectTimeout = setTimeout(() => this.connect(), totalDelay);
+    this.#wsReconnectTimer = setTimeout(() => this.connect(), totalDelay);
   }
   
   /**
    * Internal: Start heartbeat timers (called on connection open)
-   * Starts WebSocket heartbeat (always) and API heartbeat (if endpoint configured)
+   * Starts WebSocket heartbeat to keep connection alive
    */
   _startHeartbeat() {
     if (this.#wsHeartbeatTimer) {
       clearTimeout(this.#wsHeartbeatTimer);
     }
-    if (this.#apiHeartbeatTimer) {
-      clearTimeout(this.#apiHeartbeatTimer);
-    }
     this._doWsHeartbeat();
-    if (this.heartbeatEndpoint) {
-      this._doApiHeartbeat();
-    }
   }
   
   /**
    * Internal: Send periodic WebSocket heartbeat to keep connection alive
-   * Runs independently of API heartbeat
    */
   _doWsHeartbeat() {
-    this.send("heartbeat");
+    if (this.send("heartbeat")) {
+      // Heartbeat sent successfully, start timer waiting for response
+      if (this.#heartbeatResponseTimer) {
+        clearTimeout(this.#heartbeatResponseTimer);
+      }
+      this.#heartbeatResponseTimer = setTimeout(() => this._checkHeartbeatResponse(), this.#heartbeatResponseWaitTime);
+    }
     const interval = this.#isConnected ? this.#heartbeatIntervalConnected : this.#heartbeatIntervalDisconnected;
     this.#wsHeartbeatTimer = setTimeout(() => this._doWsHeartbeat(), interval);
   }
   
   /**
-   * Internal: Send periodic API heartbeat request (optional, if endpoint configured)
-   * Runs independently of WebSocket heartbeat
+   * Internal: Check if heartbeat response was received (called on timeout)
+   * Increments miss counter; closes connection and reconnects on 2nd miss
    */
-  _doApiHeartbeat() {
-    if (this.#isConnected && this.heartbeatEndpoint) {
-      xhrHelper.get(this.heartbeatEndpoint, (data) => {
-        if (this.heartbeatCallback && typeof this.heartbeatCallback === "function") {
-          this.heartbeatCallback(data);
-        }
-      });
+  _checkHeartbeatResponse() {
+    this.#heartbeatMissCount++;
+    console.log("WebSocket: Heartbeat response timeout (miss #" + this.#heartbeatMissCount + ")");
+    
+    if (this.#heartbeatMissCount >= 2) {
+      console.log("WebSocket: 2nd heartbeat miss - closing connection and reconnecting");
+      this.#heartbeatResponseTimer = null;
+      if (this.#websocket) {
+        this.#websocket.close();
+      }
+    } else {
+      this.#heartbeatResponseTimer = null;
     }
-    const interval = this.#isConnected ? this.#heartbeatIntervalConnected : this.#heartbeatIntervalDisconnected;
-    this.#apiHeartbeatTimer = setTimeout(() => this._doApiHeartbeat(), interval);
   }
 }
 

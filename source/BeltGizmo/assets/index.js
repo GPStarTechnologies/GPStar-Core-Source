@@ -59,8 +59,6 @@ function onLoad(event) {
   });
 }
 
-
-
 function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
   xhrHelper.get("/config/device", (jObj) => {

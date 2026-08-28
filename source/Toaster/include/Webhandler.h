@@ -320,6 +320,29 @@ String getEquipmentStatus() {
   return equipStatus;
 }
 
+String getNetworkStatus() {
+  // Prepare a JSON object with network configuration and client statistics.
+  String networkStatus;
+  JsonDocument jsonBody;
+
+  try {
+    // Populate with current network configuration and statistics.
+    JsonObject statusObj = jsonBody.to<JsonObject>();
+    wirelessMgr->getNetworkStatus(statusObj);
+
+    // Add device-specific client connection counts.
+    statusObj["apClients"] = i_ap_client_count; // WiFi AP clients
+    statusObj["wsClients"] = i_ws_client_count; // WebSocket clients
+    statusObj["captivePortalRequests"] = captivePortalRequests; // HTTP captive portal endpoint hits
+  }
+  catch (...) {
+  }
+
+  // Serialize JSON object to string.
+  serializeJson(jsonBody, networkStatus);
+  return networkStatus;
+}
+
 String getWifiSettings() {
   // Prepare a JSON object with information stored in preferences (or a blank default).
   String wifiSettings;
@@ -345,25 +368,6 @@ String getWifiSettings() {
   // Serialize JSON object to string.
   serializeJson(jsonBody, wifiSettings);
   return wifiSettings;
-}
-
-String getNetworkStatus() {
-  // Prepare a JSON object with network configuration and client statistics.
-  String networkStatus;
-  JsonDocument jsonBody;
-  JsonObject statusObj = jsonBody.to<JsonObject>();
-
-  // Populate with current network configuration from wireless manager.
-  wirelessMgr->getNetworkStatus(statusObj);
-
-  // Add device-specific client connection counts.
-  statusObj["apClients"] = i_ap_client_count;  // WiFi AP clients
-  statusObj["wsClients"] = i_ws_client_count;  // WebSocket clients
-  statusObj["captivePortalRequests"] = captivePortalRequests;  // HTTP captive portal endpoint hits
-
-  // Serialize JSON object to string.
-  serializeJson(jsonBody, networkStatus);
-  return networkStatus;
 }
 
 /*
@@ -414,6 +418,14 @@ void onWebSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketClient *clien
       #if defined(DEBUG_SEND_TO_CONSOLE)
         debugf("WebSocket[%s][C:%lu] Data[L:%u]: %s\n", server->url(), client->id(), len, (len)?(char*)data:"");
       #endif
+      // Handle heartbeat request from browser client
+      if(len > 0 && data) {
+        String message((char*)data, len);
+        if(message == "heartbeat") {
+          // Send heartbeat acknowledgment
+          client->text("pong");
+        }
+      }
     break;
   }
 }
@@ -466,7 +478,7 @@ void startWebServer() {
   ws.onEvent(onWebSocketEventHandler);
   httpServer.addHandler(&ws);
 
-  // Handle web server Events for telemetry data.
+  // Configure the Server-Sent Events endpoint.
   events.onConnect([](AsyncEventSourceClient *client){
     if(client->lastId()){
       debugf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
@@ -494,20 +506,15 @@ void startWebServer() {
 }
 
 void sendNetworkStatus() {
-  // Push network status via Server-Sent Events to all connected clients.
-  events.send(getNetworkStatus().c_str(), "network", millis());
+  if(b_httpd_started) {
+    // Push network status via Server-Sent Events to all connected clients.
+    events.send(getNetworkStatus().c_str(), "network", millis());
+  }
 }
 
 // Perform management if the AP and web server are started.
 void webLoops() {
-  static uint8_t prev_ap_count = 0;
-  static uint8_t prev_ws_count = 0;
-
   if(b_local_ap_started && b_httpd_started) {
-    // Process DNS requests for captive portal detection via WirelessManager.
-    // This must be called frequently to handle incoming DNS queries.
-    wirelessMgr->handleDNS();
-
     if(ms_cleanup.remaining() < 1) {
       // Clean up oldest WebSocket connections.
       ws.cleanupClients();
@@ -518,17 +525,20 @@ void webLoops() {
 
     if(ms_apclient.remaining() < 1) {
       // Update the current count of AP clients.
+      static uint8_t prev_ap_count = 0;
+      static uint8_t prev_ws_count = 0;
+      
       i_ap_client_count = WiFi.softAPgetStationNum();
-
-      // Restart timer for next count.
-      ms_apclient.start(i_apClientDelay);
-
-      // Send network status if client counts have changed.
-      if(prev_ap_count != i_ap_client_count || prev_ws_count != i_ws_client_count) {
+      
+      // Detect if AP or WebSocket client counts changed, and push update if they did.
+      if(i_ap_client_count != prev_ap_count || i_ws_client_count != prev_ws_count) {
         prev_ap_count = i_ap_client_count;
         prev_ws_count = i_ws_client_count;
         sendNetworkStatus();
       }
+
+      // Restart timer for next count.
+      ms_apclient.start(i_apClientDelay);
     }
 
     if(ms_otacheck.remaining() < 1) {
@@ -1265,12 +1275,12 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     newSSID = sanitizeSSID(newSSID); // Jacques, clean him!
     bool b_ssid_changed = false;
 
+    // Create Preferences object to handle non-volatile storage (NVS).
+    Preferences preferences;
+
     // Update the private network name ONLY if the new value differs from the current SSID.
     if(newSSID != "" && newSSID != wirelessMgr->getLocalNetworkName()){
       if(newSSID.length() >= 8 && newSSID.length() <= 32) {
-        // Create Preferences object to handle non-volatile storage (NVS).
-        Preferences preferences;
-
         // Accesses namespace in read/write mode.
         if(preferences.begin("credentials", false)) {
           #if defined(DEBUG_SEND_TO_CONSOLE)
@@ -1286,11 +1296,9 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       else {
         // Immediately return an error if the network name was invalid.
         request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Error: Network name must be between 8 and 32 characters in length.")); // 400 Bad Request
+        return;
       }
     }
-
-    // Create Preferences object to handle non-volatile storage (NVS).
-    Preferences preferences;
 
     // Accesses namespace in read/write mode.
     // if(preferences.begin("device", false)) {
@@ -1299,8 +1307,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
 
     if(b_ssid_changed) {
       request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required. Please use the new network name to connect to your device."));
-    }
-    else {
+    } else {
       request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated."));
     }
   }

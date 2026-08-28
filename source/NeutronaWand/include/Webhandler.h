@@ -463,10 +463,9 @@ String getEquipmentStatus() {
 }
 
 String getNetworkStatus() {
-  // Prepare a JSON object with information we have gleaned from the system.
+  // Prepare a JSON object with network configuration and client statistics.
   String networkStatus;
   JsonDocument jsonBody;
-
 
   try {
     // Populate with current network configuration and statistics.
@@ -712,6 +711,14 @@ void onWebSocketEventHandler(AsyncWebSocket *server, AsyncWebSocketClient *clien
       #if defined(DEBUG_SEND_TO_CONSOLE)
         debugf("WebSocket[%s][C:%lu] Data[L:%u]: %s\n", server->url(), client->id(), len, (len)?(char*)data:"");
       #endif
+      // Handle heartbeat request from browser client
+      if(len > 0 && data) {
+        String message((char*)data, len);
+        if(message == "heartbeat") {
+          // Send heartbeat acknowledgment
+          client->text("pong");
+        }
+      }
     break;
   }
 }
@@ -825,7 +832,7 @@ void sendTelemetryData() {
 
 void sendNetworkStatus() {
   if(b_httpd_started) {
-    // Send the latest network status including AP and WS client counts.
+    // Push network status via Server-Sent Events to all connected clients.
     events.send(getNetworkStatus().c_str(), "network", millis());
   }
 }
@@ -1160,7 +1167,7 @@ void handleGetSSIDs(AsyncWebServerRequest *request) {
 }
 
 void handleGetNetworkStatus(AsyncWebServerRequest *request) {
-  // Return network status and statistics including DNS request count and connected clients.
+  // Return network status and statistics including client connection counts.
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getNetworkStatus());
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
@@ -1717,12 +1724,12 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       newSSID = sanitizeSSID(newSSID); // Jacques, clean him!
       bool b_ssid_changed = false;
 
+      // Create Preferences object to handle non-volatile storage (NVS).
+      Preferences preferences;
+
       // Update the private network name ONLY if the new value differs from the current SSID.
       if(newSSID != "" && newSSID != wirelessMgr->getLocalNetworkName()){
         if(newSSID.length() >= 8 && newSSID.length() <= 32) {
-          // Create Preferences object to handle non-volatile storage (NVS).
-          Preferences preferences;
-
           // Accesses namespace in read/write mode.
           if(preferences.begin("credentials", false)) {
             #if defined(DEBUG_SEND_TO_CONSOLE)
@@ -1738,6 +1745,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
         else {
           // Immediately return an error if the network name was invalid.
           request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Error: Network name must be between 8 and 32 characters in length.")); // 400 Bad Request
+          return;
         }
       }
 
@@ -1815,9 +1823,6 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       String songList = jsonBody["songList"].as<String>();
       bool b_list_err = false;
 
-      // Create Preferences object to handle non-volatile storage (NVS).
-      Preferences preferences;
-
       // Accesses namespace in read/write mode.
       if(preferences.begin("device", false)) {
         // Store the standalone mode setting to preferences.
@@ -1882,8 +1887,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required. Please use the new network name to connect to your device."));
       } else if(b_restart_required) {
         request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required to disable Standalone Mode."));
-      }
-      else {
+      } else {
         request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated."));
       }
     }
