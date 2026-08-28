@@ -11,7 +11,13 @@ function isJsonString(str) {
 
 function handleStatus(response) {
   // Generic handler for a JSON response with a "status" field.
-  // If a response is not JSON then the full text is displayed.
+  if (!response) {
+    // No response provided - typically indicates a network or server error
+    console.warn("handleStatus: No response data");
+    return; // Error already logged by XHRHelper
+  }
+
+  // If a response is not JSON then the original text is displayed.
   if (isJsonString(response || "")) {
     var jObj = JSON.parse(response || "");
     if (jObj.status && jObj.status != "success") {

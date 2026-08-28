@@ -14,12 +14,12 @@ function initConnectionOverlay() {
     
     overlay.appendChild(content);
     
-    // Prevent any events from bubbling through
-    overlay.addEventListener('click', (e) => e.stopPropagation(), true);
-    overlay.addEventListener('touchstart', (e) => e.stopPropagation(), { capture: true, passive: true, });
-    overlay.addEventListener('touchend', (e) => e.stopPropagation(), true);
-    overlay.addEventListener('pointerdown', (e) => e.stopPropagation(), true);
-    overlay.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true, passive: true, });
+    // Prevent any events from bubbling through and block default actions
+    overlay.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
+    overlay.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
+    overlay.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
+    overlay.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
+    overlay.addEventListener('wheel', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
     
     document.body.appendChild(overlay);
   }
@@ -35,7 +35,7 @@ function showConnectionOverlay(attemptNumber = null) {
   } else {
     content.innerHTML = '<p>Reconnecting...</p>';
   }
-  
+
   if (overlay) {
     overlay.classList.add('active');
   }
@@ -51,20 +51,27 @@ function hideConnectionOverlay() {
 /** WebSocket Client - Handles WebSocket connections with exponential backoff and timeout */
 class WebSocketClient {
   // Private fields
-  #websocket = null;                      // WebSocket instance
-  #isConnected = false;                   // True if WebSocket is open and ready
-  #hasEverConnected = false;              // Track if connection ever succeeded (for overlay)
-  #wsHeartbeatTimer = null;               // Periodic heartbeat send timer
-  #heartbeatMissCount = 0;                // Count consecutive missed pongs (reconnect on 2nd)
-  #wsConnectionAttempts = 0;              // Track attempts for exponential backoff
-  #wsReconnectDelay = 1000;               // Initial delay before reconnect (ms)
-  #wsReconnectDelayMax = 30000;           // Max reconnect delay cap (ms)
-  #wsReconnectTimer = null;               // Timer for scheduled reconnection attempt
-  #heartbeatIntervalConnected = 3000;     // Heartbeat frequency when connected (3s)
-  #heartbeatIntervalDisconnected = 30000; // Heartbeat frequency when disconnected (30s)
-  #heartbeatResponseTimer = null;         // Timer waiting for pong response
-  #heartbeatResponseWaitTime = 2000;      // Time to wait for pong before miss (2s)
-  
+  #hostname;                      // Device hostname
+  #wsPath;                        // WebSocket path
+  #connectionTimeout;             // Connection timeout in ms
+  #onOpen;                        // Callback when connection opens
+  #onClose;                       // Callback when connection closes
+  #onError;                       // Callback on connection error
+  #onMessage;                     // Callback when message received
+  #websocket = null;              // WebSocket instance
+  #isConnected = false;           // True if WebSocket is open and ready
+  #hasEverConnected = false;      // Track if connection ever succeeded (for overlay)
+  #wsHeartbeatTimer = null;       // Periodic heartbeat send timer
+  #heartbeatMissCount = 0;        // Count consecutive missed pongs (reconnect on 2nd)
+  #wsConnectionAttempts = 0;      // Track attempts for exponential backoff
+  #wsReconnectDelay;              // Initial delay before reconnect (ms)
+  #wsReconnectDelayMax;           // Max reconnect delay cap (ms)
+  #wsReconnectTimer = null;       // Timer for scheduled reconnection attempt
+  #heartbeatIntervalConnected;    // Heartbeat frequency when connected
+  #heartbeatIntervalDisconnected; // Heartbeat frequency when disconnected
+  #heartbeatResponseTimer = null; // Timer waiting for pong response
+  #heartbeatResponseWaitTime;     // Time to wait for pong before miss
+
   /**
    * Initialize WebSocket client
    * @param {Object} config - Configuration object
@@ -82,20 +89,18 @@ class WebSocketClient {
    * @param {Function} config.onMessage - Called when message received (receives event)
    */
   constructor(config = {}) {
-    this.hostname = config.hostname || window.location.hostname;
-    this.wsPath = config.wsPath || '/ws';
-    this.onOpen = config.onOpen || (() => {});
-    this.onClose = config.onClose || (() => {});
-    this.onError = config.onError || (() => {});
-    this.onMessage = config.onMessage || (() => {});
-    this.connectionTimeout = config.connectionTimeout || 5000;
-    
-    // Private field initialization with optional config overrides
-    this.#wsReconnectDelay = config.wsReconnectDelay || 1000;
-    this.#wsReconnectDelayMax = config.wsReconnectDelayMax || 30000;
-    this.#heartbeatIntervalConnected = config.heartbeatIntervalConnected || 3000;
-    this.#heartbeatIntervalDisconnected = config.heartbeatIntervalDisconnected || 30000;
-    this.#heartbeatResponseWaitTime = config.heartbeatResponseWaitTime || 2000;
+    this.#hostname = config.hostname || window.location.hostname;
+    this.#wsPath = config.wsPath || '/ws';
+    this.#onOpen = config.onOpen || (() => {});
+    this.#onClose = config.onClose || (() => {});
+    this.#onError = config.onError || (() => {});
+    this.#onMessage = config.onMessage || (() => {});
+    this.#connectionTimeout = config.connectionTimeout || 5000; // Default 5s
+    this.#wsReconnectDelay = config.wsReconnectDelay || 1000; // Default 1s
+    this.#wsReconnectDelayMax = config.wsReconnectDelayMax || 30000; // Default 30s
+    this.#heartbeatIntervalConnected = config.heartbeatIntervalConnected || 4000; // Default s
+    this.#heartbeatIntervalDisconnected = config.heartbeatIntervalDisconnected || 30000; // Default 30s
+    this.#heartbeatResponseWaitTime = config.heartbeatResponseWaitTime || 2000; // Default 2s
   }
   
   /**
@@ -116,7 +121,7 @@ class WebSocketClient {
     }
     
     console.log("WebSocket: Attempting connection... (attempt " + (this.#wsConnectionAttempts + 1) + ")");
-    const gateway = "ws://" + this.hostname + this.wsPath;
+    const gateway = "ws://" + this.#hostname + this.#wsPath;
     
     try {
       this.#websocket = new WebSocket(gateway);
@@ -133,7 +138,7 @@ class WebSocketClient {
           console.log("WebSocket: Connection timeout - closing attempt");
           this.#websocket.close();
         }
-      }, this.connectionTimeout);
+      }, this.#connectionTimeout);
     } catch (error) {
       console.error("WebSocket: Failed to create:", error);
       this._scheduleReconnect();
@@ -191,7 +196,7 @@ class WebSocketClient {
     this.#heartbeatMissCount = 0;
     hideConnectionOverlay();
     this._startHeartbeat();
-    this.onOpen(event);
+    this.#onOpen(event);
   }
   
   /**
@@ -207,7 +212,7 @@ class WebSocketClient {
       showConnectionOverlay(this.#wsConnectionAttempts + 1);
     }
     this._scheduleReconnect();
-    this.onClose(event);
+    this.#onClose(event);
   }
   
   /**
@@ -215,7 +220,7 @@ class WebSocketClient {
    */
   _handleError(event) {
     console.error("WebSocket: Error:", event);
-    this.onError(event);
+    this.#onError(event);
   }
   
   /**
@@ -232,7 +237,7 @@ class WebSocketClient {
       //console.log("WebSocket: Heartbeat acknowledged");
       return; // Don't pass pong to application handlers
     }
-    this.onMessage(event);
+    this.#onMessage(event);
   }
   
   /**
@@ -466,10 +471,11 @@ class XHRHelper {
     xhttp.timeout = this.timeout;
     xhttp.onreadystatechange = () => {
       if (xhttp.readyState == 4) {
-        if (callback && typeof callback === "function") {
-          callback(xhttp.responseText);
-        }
-        if (!(xhttp.status >= 200 && xhttp.status < 300)) {
+        if (xhttp.status >= 200 && xhttp.status < 300) {
+          if (callback && typeof callback === "function") {
+            callback(xhttp.responseText);
+          }
+        } else {
           console.warn("XHR: PUT " + url + " failed with status " + xhttp.status);
           this.onError(xhttp);
         }
@@ -495,10 +501,11 @@ class XHRHelper {
     xhttp.timeout = this.timeout;
     xhttp.onreadystatechange = () => {
       if (xhttp.readyState == 4) {
-        if (callback && typeof callback === "function") {
-          callback(xhttp.responseText);
-        }
-        if (!(xhttp.status >= 200 && xhttp.status < 300)) {
+        if (xhttp.status >= 200 && xhttp.status < 300) {
+          if (callback && typeof callback === "function") {
+            callback(xhttp.responseText);
+          }
+        } else {
           console.warn("XHR: POST " + url + " failed with status " + xhttp.status);
           this.onError(xhttp);
         }
@@ -523,10 +530,11 @@ class XHRHelper {
     xhttp.timeout = this.timeout;
     xhttp.onreadystatechange = () => {
       if (xhttp.readyState == 4) {
-        if (callback && typeof callback === "function") {
-          callback(xhttp.responseText);
-        }
-        if (!(xhttp.status >= 200 && xhttp.status < 300)) {
+        if (xhttp.status >= 200 && xhttp.status < 300) {
+          if (callback && typeof callback === "function") {
+            callback(xhttp.responseText);
+          }
+        } else {
           console.warn("XHR: DELETE " + url + " failed with status " + xhttp.status);
           this.onError(xhttp);
         }

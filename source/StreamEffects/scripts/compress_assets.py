@@ -201,11 +201,13 @@ def compress_assets():
     """
     Function: compress_assets
     Purpose: Compress all web assets in the assets directory using gzip compression.
-             Only compresses files if source is newer than existing compressed version.
+             Only compresses files if source is newer than existing compressed version,
+             or if any dependencies (shared libraries) are newer.
     Inputs: uncompressed files in assets/
     Outputs: creates .gz files)
     """
     assets_dir = Path("assets")
+    shared_dir = Path("../SharedLib/WebAssets")
 
     # Early return if assets directory doesn't exist
     if not assets_dir.exists():
@@ -244,6 +246,19 @@ def compress_assets():
     # Note: Most .css and .js files are combined above, but we must allow for special checks (eg. index.js)
     compress_extensions = ['.html', '.svg', '.ico', '.stl']
     compress_files = ['index.js', 'three.min.js']
+    
+    # Define shared library dependencies for dependency checking
+    shared_js_libs = [
+        shared_dir / 'api.js',
+        shared_dir / 'dom.js',
+        shared_dir / 'help.js',
+        shared_dir / 'utils.js'
+    ]
+    shared_css_libs = [
+        shared_dir / 'base.css',
+        shared_dir / 'controls.css',
+        shared_dir / 'animations.css'
+    ]
 
     # Process each file in the assets directory
     for file_path in assets_dir.iterdir():

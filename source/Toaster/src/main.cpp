@@ -337,14 +337,6 @@ void WiFiManagementTask(void *parameter) {
         ms_cleanup.start(i_websocketCleanup);
       }
 
-      if(ms_apclient.remaining() < 1) {
-        // Update the current count of AP clients.
-        i_ap_client_count = WiFi.softAPgetStationNum();
-
-        // Restart timer for next count.
-        ms_apclient.start(i_apClientDelay);
-      }
-
       if(WiFi.status() == WL_CONNECTED && b_ext_wifi_started) {
         b_ext_wifi_paused = false; // Resume WiFi retries when needed.
       }
