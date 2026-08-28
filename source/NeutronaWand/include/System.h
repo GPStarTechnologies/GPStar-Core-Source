@@ -188,8 +188,11 @@ void wandHeatUp() {
   wandBarrelPreHeatUp();
 }
 
-void streamModeCheck() {
-  packSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
+void streamModeCheck(bool reportChange = true) {
+  if(reportChange) {
+    // Only report back to the pack if the pack wasn't the one that told us to change stream modes.
+    packSerialSend(A_SET_STREAM_MODE, gpstarWand.getStreamModeByte());
+  }
 
   if(WAND_ACTION_STATUS != ACTION_SETTINGS && WAND_ACTION_STATUS != ACTION_CONFIG_EEPROM_MENU && WAND_ACTION_STATUS != ACTION_LED_EEPROM_MENU && WAND_STATUS == MODE_ON) {
     wandHeatUp();

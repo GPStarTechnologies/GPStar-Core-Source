@@ -523,8 +523,8 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
         // Only change our stream mode if VG mode is actually enabled.
         gpstarWand.setStreamMode((STREAM_MODES)i_value);
 
-        // Apply the change immediately.
-        streamModeCheck();
+        // Apply the change immediately, without reporting back to the pack.
+        streamModeCheck(false);
       }
     break;
 
