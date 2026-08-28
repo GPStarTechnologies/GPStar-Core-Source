@@ -11,9 +11,9 @@ function initConnectionOverlay() {
     content.className = 'connection-overlay-content';
     content.id = 'connectionOverlayContent';
     content.innerHTML = '<p>Reconnecting...</p>';
-    
+
     overlay.appendChild(content);
-    
+
     // Prevent any events from bubbling through and block default actions
     overlay.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
     overlay.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });

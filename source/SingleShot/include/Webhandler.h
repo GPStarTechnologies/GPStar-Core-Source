@@ -28,12 +28,14 @@
 extern InfraredManager* irManager;
 
 // Declare the external binary data markers for embedded files.
-// common.js
-extern const uint8_t _binary_assets_common_js_gz_start[];
-extern const uint8_t _binary_assets_common_js_gz_end[];
+// Common Assets
+#include "../../SharedLib/WebAssets/CommonAssets.h"
 // geometry.stl
 extern const uint8_t _binary_assets_geometry_stl_gz_start[];
 extern const uint8_t _binary_assets_geometry_stl_gz_end[];
+// common.js
+extern const uint8_t _binary_assets_common_js_gz_start[];
+extern const uint8_t _binary_assets_common_js_gz_end[];
 // style.css
 extern const uint8_t _binary_assets_style_css_gz_start[];
 extern const uint8_t _binary_assets_style_css_gz_end[];
@@ -58,9 +60,6 @@ extern const uint8_t _binary_assets_password_html_gz_end[];
 // blaster.html
 extern const uint8_t _binary_assets_blaster_html_gz_start[];
 extern const uint8_t _binary_assets_blaster_html_gz_end[];
-// swaggerui.html
-extern const uint8_t _binary_assets_swaggerui_html_gz_start[];
-extern const uint8_t _binary_assets_swaggerui_html_gz_end[];
 
 // Define standard ports and URI endpoints.
 const uint16_t WS_PORT = 80; // Web Server (+WebSocket) port

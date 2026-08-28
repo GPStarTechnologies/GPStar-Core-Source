@@ -13,8 +13,8 @@ It handles:
     5. Build cache invalidation if .gz files change
 
 Verbosity Control:
-    Set environment variable: ASSET_PREP_VERBOSE=1 for detailed output
-    Default: minimal output (errors and warnings only)
+    Set VERBOSE = True in the script for detailed output
+    Default: VERBOSE = False (minimal output, errors and warnings only)
 """
 
 import os
@@ -33,7 +33,7 @@ except NameError:
     IN_SCONS_CONTEXT = False
 
 # Configuration
-VERBOSE = os.environ.get('ASSET_PREP_VERBOSE', '0') == '1'
+VERBOSE = False  # Set to True for detailed output during development/debugging
 GZIP_LEVEL = 9  # Maximum compression
 
 def log(msg, level='INFO'):
@@ -46,7 +46,7 @@ def log(msg, level='INFO'):
 def get_shared_dir():
     """Get path to SharedLib/WebAssets directory."""
     # This script is at: source/SharedLib/WebAssets/prepare_assets.py
-    # Current working directory during pre-build: the project directory (e.g., source/StreamEffects)
+    # Current working directory during pre-build: the project directory (e.g., source/ProtonPack)
     # So SharedLib/WebAssets is at: ../SharedLib/WebAssets
     return Path("../SharedLib/WebAssets")
 
@@ -107,11 +107,11 @@ def combine_and_compress_javascript():
     Combine project-specific and shared JavaScript files, then compress.
     
     Order:
-        1. assets/common.js (project-specific)
-        2. ../SharedLib/WebAssets/JavaScript/api.js (shared)
-        3. ../SharedLib/WebAssets/JavaScript/dom.js (shared)
-        4. ../SharedLib/WebAssets/JavaScript/help.js (shared)
-        5. ../SharedLib/WebAssets/JavaScript/utils.js (shared)
+        1. ../SharedLib/WebAssets/JavaScript/api.js (shared)
+        2. ../SharedLib/WebAssets/JavaScript/dom.js (shared)
+        3. ../SharedLib/WebAssets/JavaScript/help.js (shared)
+        4. ../SharedLib/WebAssets/JavaScript/utils.js (shared)
+        5. assets/common.js (project-specific)
     
     Output: assets/common.js.gz
     """
@@ -123,11 +123,11 @@ def combine_and_compress_javascript():
     final_gz = assets_dir / "common.js.gz"
     
     js_sources = [
-        device_js,
         shared_dir / "JavaScript" / "api.js",
         shared_dir / "JavaScript" / "dom.js",
         shared_dir / "JavaScript" / "help.js",
-        shared_dir / "JavaScript" / "utils.js"
+        shared_dir / "JavaScript" / "utils.js",
+        device_js  # Project-specific code last
     ]
     
     # Check which files exist
@@ -300,10 +300,10 @@ def compress_direct_files():
             SCONS_ENV.Depends(str(output), str(source))
     
     if any(results):
-        log("Direct files: updated")
+        log("Direct Files: updated")
         return True
     else:
-        log("Direct files: up-to-date")
+        log("Direct Files: up-to-date")
         return False
 
 def compress_project_files():
@@ -374,10 +374,10 @@ def compress_project_files():
             log(f"Up-to-date: {output_path.name}", 'INFO')
     
     if any(results):
-        log("Project files: updated")
+        log("Project Files: updated")
         return True
     else:
-        log("Project files: up-to-date")
+        log("Project Files: up-to-date")
         return False
 
 def clear_build_cache():
@@ -404,11 +404,11 @@ def clear_build_cache():
 def main():
     """Execute all asset preparation steps."""
     log("=" * 60)
-    log("Starting asset preparation")
-    log(f"Project directory: {Path.cwd().absolute()}")
-    log(f"Shared assets directory: {get_shared_dir().absolute()}")
-    log(f"Project assets directory: {get_assets_dir().absolute()}")
-    log(f"Verbose mode: {'ON' if VERBOSE else 'OFF'}")
+    log("Starting Asset Preparation")
+    log(f"Target Project Directory: {Path.cwd().absolute()}")
+    log(f"Project Assets Directory: {get_assets_dir().absolute()}")
+    log(f" Shared Assets Directory: {get_shared_dir().absolute()}")
+    log(f"            Verbose Mode: {'ON' if VERBOSE else 'OFF'}")
     log("=" * 60)
     
     # Ensure assets directory exists
@@ -416,10 +416,10 @@ def main():
     
     # Execute preparation steps (order matters: standalone files first, then combined files overwrite them)
     results = []
-    results.append(("Project files", compress_project_files()))
-    results.append(("Direct files", compress_direct_files()))
-    results.append(("JavaScript", combine_and_compress_javascript()))
-    results.append(("CSS", combine_and_compress_css()))
+    results.append(("Project Files", compress_project_files()))
+    results.append((" Direct Files", compress_direct_files()))
+    results.append(("   JavaScript", combine_and_compress_javascript()))
+    results.append(("   StyleSheet", combine_and_compress_css()))
     
     # If anything changed, clear build cache
     if any(result[1] for result in results):
@@ -435,9 +435,11 @@ def main():
 
 # Run if in SCons context
 if IN_SCONS_CONTEXT:
-    main()
+    # Skip during clean target, only run during actual builds
+    if not SCONS_ENV.GetOption('clean'):
+        main()
 else:
     # Standalone execution for testing
     print("Running standalone (not in PlatformIO context)")
-    print("Set ASSET_PREP_VERBOSE=1 for detailed output")
+    print("Set VERBOSE = True in script for detailed output")
     main()
