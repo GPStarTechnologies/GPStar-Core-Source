@@ -29,9 +29,9 @@ const wsClient = new WebSocketClient({
 });
 
 function onWSMessage(event) {
-  if (isJsonString(event.data)) {
+  try {
     updateEquipment(JSON.parse(event.data));
-  } else {
+  } catch (e) {
     console.log(event.data);
   }
 }
@@ -43,7 +43,9 @@ const esManager = new EventSourceManager({
       console.log("Debug: ", data);
     },
     'network': (data) => {
-      updateNetworkInfo(data);
+      try {
+        updateNetworkInfo(JSON.parse(data));
+      } catch (e) {}
     },
     'gyroCal': (data) => {
       if (data === undefined) return;
@@ -94,6 +96,9 @@ const esManager = new EventSourceManager({
       // Update existing 3D visualization with coordinate points, when available.
       if (calibration3D && (calData.p || []).length > 0) {
         calibration3D.setPoints(calData.p);
+      } else if (!calibration3D && (calData.p || []).length > 0) {
+        console.info("[magCal] calibration3D not initialized, attempting initialization...");
+        init3D();
       }
     },
     'telemetry': (data) => {
@@ -137,10 +142,12 @@ const esManager = new EventSourceManager({
           Math.sin(pitchRads) * radius,
           Math.cos(yawRads) * radius,
         );
+      } else if (!telemetry3D) {
+        console.info("[telemetry] telemetry3D not initialized, attempting initialization...");
+        init3D();
+      } else if (!telemetry3D.mesh) {
+        console.debug("[telemetry] telemetry3D.mesh not yet loaded (STL geometry still loading)");
       }
-    },
-    'network': (data) => {
-      updateNetworkInfo(data);
     }
   }
 });
@@ -310,7 +317,7 @@ function setButtonStates(sensorState) {
 
 function updateEquipment(jObj) {
   // Update display if we have the expected data (containing mode and theme at a minimum).
-  if (jObj && jObj.mode && jObj.theme) {
+  if (jObj && jObj.sensors && jObj.mode && jObj.theme) {
     // Enable/Disable Music Controls
     if (jObj.standalone) {
       enableEl("btnVolMusicUp");
@@ -391,9 +398,12 @@ function parentHeight(elem) {
 class Telemetry3DView {
   constructor(domId, geometryUrl) {
     this.el = document.getElementById(domId);
+    console.debug("[Telemetry3DView] DOM element found:", this.el);
+    
     this.width = parentWidth(this.el);
     this.height = parentHeight(this.el);
     this.aspect = this.width / this.height;
+    console.debug("[Telemetry3DView] Canvas size:", this.width + "x" + this.height);
 
     // Create the scene with a transparent background.
     this.scene = new THREE.Scene();
@@ -402,7 +412,9 @@ class Telemetry3DView {
     // Set up renderer with a transparent background
     this.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
     this.renderer.setSize(this.width, this.height);
+    console.debug("[Telemetry3DView] WebGL renderer created, canvas appending to DOM...");
     this.el.appendChild(this.renderer.domElement);
+    console.debug("[Telemetry3DView] Canvas appended to DOM");
 
     // Add lights to the scene for realistic shading and visibility.
     // HemisphereLight simulates ambient light from the sky and ground, providing soft global illumination.
@@ -420,11 +432,17 @@ class Telemetry3DView {
     // this.scene.add(axesHelper);
 
     // Load geometry from raw (binary) STL file via fetch.
+    console.debug("[Telemetry3DView] Starting STL fetch from:", geometryUrl);
     fetch(geometryUrl)
-      .then((res) => res.arrayBuffer())
+      .then((res) => {
+        console.debug("[Telemetry3DView] STL fetch response received, status:", res.status);
+        return res.arrayBuffer();
+      })
       .then((buffer) => {
+        console.debug("[Telemetry3DView] STL buffer loaded, size:", buffer.byteLength, "bytes");
         const loader = new THREE.STLLoader();
         const geometry = loader.parse(buffer);
+        console.debug("[Telemetry3DView] STL parsed successfully");
 
         // Center the geometry itself so the mesh rotates around its center
         geometry.computeBoundingBox();
@@ -439,6 +457,7 @@ class Telemetry3DView {
         const material = new THREE.MeshLambertMaterial({color: 0x00a000});
         this.mesh = new THREE.Mesh(geometry, material);
         this.scene.add(this.mesh);
+        console.debug("[Telemetry3DView] Mesh created and added to scene");
 
         // Calculate the frustum (conical viewing volume) and scale to fit the mesh comfortably.
         // This volume is shaped like a truncated pyramid with its apex at the camera's position.
@@ -468,6 +487,9 @@ class Telemetry3DView {
         // Camera positioning using the center of the mesh as the focal point
         this.camera.lookAt(new THREE.Vector3());
         this.render();
+      })
+      .catch((error) => {
+        console.error("[Telemetry3DView] Failed to load STL geometry:", error);
       });
   }
 
@@ -480,6 +502,8 @@ class Telemetry3DView {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(this.width, this.height);
       this.renderer.render(this.scene, this.camera);
+    } else {
+      console.warn("[Telemetry3DView.render] Cannot render - scene:", !!this.scene, "camera:", !!this.camera);
     }
   }
 
@@ -488,6 +512,8 @@ class Telemetry3DView {
     if (this.mesh) {
       this.mesh.quaternion.set(qx, qy, qz, qw);
       this.render();
+    } else {
+      console.warn("[Telemetry3DView.setQuaternion] Mesh not available yet");
     }
   }
 
@@ -497,6 +523,8 @@ class Telemetry3DView {
       this.camera.position.set(x, y, z);
       this.camera.lookAt(0, 0, 0);
       this.render();
+    } else {
+      console.warn("[Telemetry3DView.setCameraPosition] Camera not available");
     }
   }
 }
@@ -504,9 +532,12 @@ class Telemetry3DView {
 class Calibration3DView {
   constructor(domId) {
     this.el = document.getElementById(domId);
+    console.debug("[Calibration3DView] DOM element found:", this.el);
+    
     this.width = parentWidth(this.el);
     this.height = parentHeight(this.el);
     this.aspect = this.width / this.height;
+    console.debug("[Calibration3DView] Canvas size:", this.width + "x" + this.height);
 
     // Create the scene with a transparent background.
     this.scene = new THREE.Scene();
@@ -515,7 +546,9 @@ class Calibration3DView {
     // Set up renderer with antialiasing and alpha for transparency
     this.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
     this.renderer.setSize(this.width, this.height);
+    console.debug("[Calibration3DView] WebGL renderer created, canvas appending to DOM...");
     this.el.appendChild(this.renderer.domElement);
+    console.debug("[Calibration3DView] Canvas appended to DOM");
 
     // Add lights to the scene for realistic shading and visibility.
     // HemisphereLight simulates ambient light from the sky and ground, providing soft global illumination.
@@ -565,7 +598,10 @@ class Calibration3DView {
       this.camera.aspect = this.aspect;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(this.width, this.height);
+      console.debug("[Calibration3DView.render] Rendering frame");
       this.renderer.render(this.scene, this.camera);
+    } else {
+      console.warn("[Calibration3DView.render] Cannot render - scene:", !!this.scene, "camera:", !!this.camera);
     }
   }
 
@@ -616,6 +652,7 @@ class Calibration3DView {
       }
     }
 
+    console.debug("[Calibration3DView.setPoints] Calling render");
     this.render();
   }
 
@@ -687,10 +724,39 @@ let lastCoverage = 0;
 // Instances for each visualization
 let telemetry3D, calibration3D;
 
+// Semaphore to prevent concurrent init3D calls
+let init3DInProgress = false;
+
 // Initialize both visualizations
 function init3D() {
-  telemetry3D = new Telemetry3DView("3Dtelemetry", "/geometry.stl");
-  calibration3D = new Calibration3DView("3Dcalibration");
+  // Prevent concurrent initialization attempts
+  if (init3DInProgress) {
+    return;
+  }
+
+  console.debug("[init3D] Starting 3D visualization initialization...");
+
+  // Verify Three.js is available
+  if (typeof THREE === "undefined") {
+    console.warn("[init3D] Waiting for Three.js library to load...");
+    return;
+  }
+  
+  // Verify DOM elements exist
+  const telemetryEl = document.getElementById("vizTelemetry");
+  const calibrationEl = document.getElementById("vizCalibration");
+
+  if (!telemetryEl || !calibrationEl) {
+    console.warn("[init3D] Waiting for DOM elements...");
+    return;
+  } 
+
+  // All prerequisites met, set the flag to indicate object creation in progress.
+  init3DInProgress = true;
+  telemetry3D = new Telemetry3DView("vizTelemetry", "/geometry.stl");
+  calibration3D = new Calibration3DView("vizCalibration");
+  init3DInProgress = false;
+  console.debug("[init3D] Both 3D visualizations initialized");
 }
 
 // Delay the onLoad event until all necessary JS has been loaded

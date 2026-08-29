@@ -4,6 +4,12 @@
 }
 
 /* 3D Visualizations and Calibration Displays */
+#vizTelemetry,
+#vizCalibration {
+  width: 100%;
+  height: 400px;
+}
+
 .viz-content {
   height: 400px;
   margin: auto;

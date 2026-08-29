@@ -348,19 +348,8 @@ class EventSourceManager {
     Object.keys(this.eventHandlers).forEach((eventName) => {
       this.#eventSource.addEventListener(eventName, (e) => {
         try {
-          const data = e.data;
-          if (data && data !== "") {
-            // Attempt to parse as JSON, fall back to raw string if it fails
-            let parsedData = data;
-            try {
-              parsedData = JSON.parse(data);
-            } catch (parseError) {
-              // If JSON parsing fails, use raw string data
-              console.debug("EventSource: Handler '" + eventName + "' received non-JSON data");
-            }
-            this.eventHandlers[eventName](parsedData);
-          } else {
-            console.debug("EventSource: Event '" + eventName + "' received without data");
+          if (e.data && e.data !== "") {
+            this.eventHandlers[eventName](e.data); // Pass through the original data.
           }
         } catch (error) {
           console.error("EventSource: Handler error for '" + eventName + "':", error);
@@ -382,19 +371,8 @@ class EventSourceManager {
     if (this.#eventSource) {
       this.#eventSource.addEventListener(eventName, (e) => {
         try {
-          const data = e.data;
-          if (data && data !== "") {
-            // Attempt to parse as JSON, fall back to raw string if it fails
-            let parsedData = data;
-            try {
-              parsedData = JSON.parse(data);
-            } catch (parseError) {
-              // If JSON parsing fails, use raw string data
-              console.debug("EventSource: Handler '" + eventName + "' received non-JSON data");
-            }
-            handler(parsedData);
-          } else {
-            console.debug("EventSource: Event '" + eventName + "' received without data");
+          if (e.data && e.data !== "") {
+            handler(e.data); // Pass through the original data.
           }
         } catch (error) {
           console.error("EventSource: Handler error for '" + eventName + "':", error);

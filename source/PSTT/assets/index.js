@@ -24,9 +24,9 @@ const wsClient = new WebSocketClient({
 });
 
 function onWSMessage(event) {
-  if (isJsonString(event.data)) {
+  try {
     updateEquipment(JSON.parse(event.data));
-  } else {
+  } catch (e) {
     console.log(event.data);
   }
 }
@@ -38,7 +38,9 @@ const esManager = new EventSourceManager({
       console.log("Debug: ", data);
     },
     'network': (data) => {
-      updateNetworkInfo(data);
+      try {
+        updateNetworkInfo(JSON.parse(data));
+      } catch (e) {}
     },
     'irData': (data) => {
       if (data === undefined) return;

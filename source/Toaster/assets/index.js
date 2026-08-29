@@ -40,7 +40,9 @@ const esManager = new EventSourceManager({
       console.log("Debug: ", data);
     },
     'network': (data) => {
-      updateNetworkInfo(data);
+      try {
+        updateNetworkInfo(JSON.parse(data));
+      } catch (e) {}
     },
     'animation': (data) => {
       if (data === undefined) return;
