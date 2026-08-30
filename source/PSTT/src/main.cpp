@@ -140,6 +140,11 @@ void AnimationTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
+    // Update LED mapping if the user's LED invert preference has changed.
+    // The manager only applies changes to the LED mapping only when the
+    // state differs from last call, avoiding redundant modifications.
+    LightingManager::getInstance().updateLEDMapping(b_invert_leds);
+
     // Update the addressable LEDs to reflect any changes.
     LightingManager::getInstance().show();
 

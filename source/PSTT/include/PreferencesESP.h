@@ -30,6 +30,8 @@ void getSpecialPreferences() {
   bool b_config_loaded = false;
 
   if(preferences.begin("device", true)) {
+    b_invert_leds = preferences.getBool("invert_led", false);
+
     if(preferences.isKey("targetConfig")) {
       // Validate stored size matches current struct size
       size_t i_stored_size = preferences.getBytesLength("targetConfig");
@@ -48,6 +50,7 @@ void getSpecialPreferences() {
   if(!b_config_loaded) {
     if(preferences.begin("device", false)) {
       // Save default target configuration on first boot
+      preferences.putBool("invert_led", b_invert_leds);
       preferences.putBytes("targetConfig", &targetConfig, sizeof(targetConfig));
       preferences.end();
     }

@@ -1527,12 +1527,12 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     newSSID = sanitizeSSID(newSSID); // Jacques, clean him!
     bool b_ssid_changed = false;
 
+    // Create Preferences object to handle non-volatile storage (NVS).
+    Preferences preferences;
+
     // Update the private network name ONLY if the new value differs from the current SSID.
     if(newSSID != "" && newSSID != wirelessMgr->getLocalNetworkName()){
       if(newSSID.length() >= 8 && newSSID.length() <= 32) {
-        // Create Preferences object to handle non-volatile storage (NVS).
-        Preferences preferences;
-
         // Accesses namespace in read/write mode.
         if(preferences.begin("credentials", false)) {
           #if defined(DEBUG_SEND_TO_CONSOLE)
@@ -1667,9 +1667,6 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     // Get the track listing from the text field.
     String songList = jsonBody["songList"].as<String>();
     bool b_list_err = false;
-
-    // Create Preferences object to handle non-volatile storage (NVS).
-    Preferences preferences;
 
     // Accesses namespace in read/write mode.
     if(preferences.begin("device", false)) {

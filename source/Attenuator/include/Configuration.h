@@ -67,7 +67,7 @@ bool b_firing_feedback = false; // Enable/disable vibration when throwing a stre
 bool b_enable_bargraph = true; // Enable/disable bargraph display
 bool b_enable_device_leds = true; // Enable/disable device LEDs display
 bool b_enable_ui_animations = true; // Enable/disable UI animation effects
-bool b_invert_leds = false; // Denotes whether the order should be reversed.
+bool b_invert_leds = false; // Denotes whether the LED jewel order should be reversed.
 bool b_grb_leds = false; // Denotes whether to use GRB ordering for LEDs.
 
 /*

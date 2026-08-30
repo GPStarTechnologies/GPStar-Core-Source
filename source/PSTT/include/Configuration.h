@@ -40,3 +40,8 @@
  * the software which has this line commented out.
  */
 //#define RESET_AP_SETTINGS
+
+/*
+ * LED Settings
+ */
+bool b_invert_leds = false; // Denotes whether the LED jewel order should be reversed.

@@ -105,8 +105,10 @@ String getDeviceConfig() {
 
   // Provide current values for the device.
   jsonBody["buildDate"] = build_date;
+  jsonBody["resetWifiPassword"] = false;
   jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
+  jsonBody["invertLEDs"] = b_invert_leds;
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -758,6 +760,19 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       }
     }
 
+    // General Options - Returned as unsigned integers
+    if(jsonBody["resetWifiPassword"].is<bool>()) {
+      // Reset the WiFi password if set by the user.
+      if(jsonBody["resetWifiPassword"].as<bool>()) {
+        wirelessMgr->resetWifiPassword();
+      }
+    }
+
+    if(jsonBody["invertLEDs"].is<bool>()) {
+      // Inverts the order of the LEDs as seen by the device.
+      b_invert_leds = jsonBody["invertLEDs"].as<bool>();
+    }
+
     // Target Health Settings
     if(jsonBody["maxHealth"].is<uint16_t>()) {
       targetConfig.maxHealth = jsonBody["maxHealth"].as<uint16_t>();
@@ -796,6 +811,7 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
 
     if(preferences.begin("device", false)) {
       preferences.putBytes("targetConfig", &targetConfig, sizeof(targetConfig));
+      preferences.putBool("invert_led", b_invert_leds);
       preferences.end();
     }
 

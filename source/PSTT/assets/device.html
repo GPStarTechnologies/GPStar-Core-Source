@@ -22,18 +22,44 @@
       <br />
     </div>
 
-    <h1>General Options</h1>
+    <h1>Device Identification</h1>
     <div class="block left">
       <div class="setting">
-        <b>Private Network:</b>
+        <b>Custom Name:</b>
         <input
           type="text"
           id="wifiName"
-          size="60"
+          size="40"
           maxlength="32"
           placeholder="Custom SSID"
           title="Only letters, numbers, hyphens, and underscores are allowed, up to 32 characters."
         />
+      </div>
+    </div>
+
+    <h1>General Options</h1>
+    <div class="block left">
+      <div class="setting">
+        <label class="toggle-switchy" data-text="yesno" data-label="left">
+          <input id="resetWifiPassword" name="resetWifiPassword" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">Reset WiFi Password:</span>
+        </label>
+      </div>
+    </div>
+
+    <h1>LED Options</h1>
+    <div class="block left">
+      <div class="setting">
+        <label class="toggle-switchy" data-text="yesno" data-label="left">
+          <input id="invertLEDs" name="invertLEDs" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">Invert Device LED Order:</span>
+        </label>
       </div>
     </div>
 
@@ -175,6 +201,10 @@
             if (settings) {
               // WiFi Settings
               setValue("wifiName", settings.wifiName || "");
+              setToggle("resetWifiPassword", settings.resetWifiPassword);
+
+              // LED Settings
+              setToggle("invertLEDs", settings.invertLEDs);
 
               // Target Health Settings
               setSliderValue("maxHealth", settings.maxHealth || 1000);
@@ -233,6 +263,8 @@
         // Prepare all settings (WiFi + target configuration)
         var allSettings = {
           wifiName: wifiName,
+          resetWifiPassword: getToggle("resetWifiPassword"),
+          invertLEDs: getToggle("invertLEDs"),
           maxHealth: maxHealth,
           lowHealth: lowHealth,
           extremeLowHealth: extremeLowHealth,

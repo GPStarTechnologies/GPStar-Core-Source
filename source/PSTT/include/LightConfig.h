@@ -63,6 +63,8 @@
  *
  * INTERFACE:
  * - initializeDriver() — Sets up the driver library and hardware pins
+ * - getMappedIndex(logicalDeviceId) — Get physical index for a logical LED ID
+ * - updateLEDMapping(invert) — Apply LED mapping based on inversion preference
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
@@ -78,6 +80,15 @@ private:
   Adafruit_NeoPixel pixels;
   const uint8_t assignedSlot; // The device slot assigned to this instance of the LightingManager.
 
+  /**
+   * LED Device Ordering - Top, Upper, and Lower
+   * Creates a simple byte array of N elements for the ID of each of the 3 LEDs.
+   * Due to space constraints, users may have had to install the LEDs in reverse.
+   * Therefore, the order of this list may change depending on user preference.
+   */
+  uint8_t mappedLEDs[DEVICE_MAX_LEDS] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}; // Default Order
+  bool lastInvertState = false; // Track last invert state to detect changes
+
   // Private constructor - called only once per slot by getInstance()
   // Initializes the Lighting library as lightingLib with 1 device slot, and initializes the
   // Adafruit_NeoPixel object as a variable "pixels" with the NEO_GBR color order by default.
@@ -85,6 +96,43 @@ private:
     pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_GRB + NEO_KHZ800),
     assignedSlot(0) {
     lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets.
+  }
+
+  // Helper: Apply a mapping of LED names based on invert flag.
+  void applyMapping(bool invert) {
+    if(invert) {
+      // Flip the identification of the LEDs
+      mappedLEDs[0] = 7; // Second
+      mappedLEDs[1] = 8; // Second
+      mappedLEDs[2] = 9; // Second
+      mappedLEDs[3] = 10; // Second
+      mappedLEDs[4] = 11; // Second
+      mappedLEDs[5] = 12; // Second
+      mappedLEDs[6] = 13; // Second
+      mappedLEDs[7] = 0; // First
+      mappedLEDs[8] = 1; // First
+      mappedLEDs[9] = 2; // First
+      mappedLEDs[10] = 3; // First
+      mappedLEDs[11] = 4; // First
+      mappedLEDs[12] = 5; // First
+      mappedLEDs[13] = 6; // First
+    } else {
+      // Use the expected order for the LEDs
+      mappedLEDs[0] = 0; // First
+      mappedLEDs[1] = 1; // First
+      mappedLEDs[2] = 2; // First
+      mappedLEDs[3] = 3; // First
+      mappedLEDs[4] = 4; // First
+      mappedLEDs[5] = 5; // First
+      mappedLEDs[6] = 6; // First
+      mappedLEDs[7] = 7; // Second
+      mappedLEDs[8] = 8; // Second
+      mappedLEDs[9] = 9; // Second
+      mappedLEDs[10] = 10; // Second
+      mappedLEDs[11] = 11; // Second
+      mappedLEDs[12] = 12; // Second
+      mappedLEDs[13] = 13; // Second
+    }
   }
 
   // Helper: Convert packed uint32_t color to LED_RGB components
@@ -111,6 +159,21 @@ public:
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
     pixels.show();
+  }
+
+  // Get the physical index for a logical device ID
+  uint8_t getMappedIndex(uint8_t logicalDeviceId) {
+    return mappedLEDs[logicalDeviceId];
+  }
+
+  // Update LED mapping based on invert preference
+  // Only applies changes if the invert state differs from last call
+  // This eliminates redundant recalculation in tight loops
+  void updateLEDMapping(bool invert) {
+    if(invert != lastInvertState) {
+      applyMapping(invert);
+      lastInvertState = invert;
+    }
   }
 
   // Turn off all LEDs
