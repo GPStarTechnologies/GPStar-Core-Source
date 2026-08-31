@@ -472,6 +472,7 @@ void setup() {
   delay(200); // Delay before configuring and running tasks.
 
   setMasterVolumePercentage(100); // Set master volume to 100%.
+  toggleAudioBoost(true); // Boost audio by 10dB.
 
   /**
    * By default the WiFi will run on core0, while the standard loop() runs on core1.
