@@ -54,6 +54,17 @@ const esManager = new EventSourceManager({
 
       // Listen for and update on animation frame information.
       updateAnimationDisplay(animData);
+    },
+    'device': (data) => {
+      if (data === undefined) return;
+
+      var deviceData = {}; // Always begin with an empty object.
+      try {
+        deviceData = JSON.parse(data); // JSON with RF button and relay states
+      } catch (e) {}
+
+      // Log device state changes at verbose debug level
+      console.debug("Device States:", deviceData);
     }
   }
 });
@@ -363,40 +374,45 @@ function updatePlaySlots() {
 
 /** Animation Visualizations **/
 
-
-
 function buildAnimationProgressHTML(animData) {
   // Initialize display strings with default values for IDLE mode
+  let animationSlot = "-";
   let progressBar = "-";
   let elapsedTime = "-";
   let lastActuator = "-";
   
   // Only populate progress info when actively recording or playing back
   if (animData.state === "RECORDING" || animData.state === "PLAYBACK") {
+    if (animData.state === "PLAYBACK") {
+      animationSlot = `Slot ${animData.sourceSlot ?? "-"} (${animData.triggerSource ?? "-"})`;
+    }
+
     // Calculate frame progress: percentage completion with visual progress bar
     const current = animData.currentFrame || 0;
     const total = animData.totalFrames || 0;
     const percentage = total > 0 ? ((current / total) * 100).toFixed(1) : 0;
-    progressBar = percentage + "% <progress class=\"animationProgressBar\" value=\"" + percentage + "\" max=\"100\"></progress>";
+    progressBar = `${percentage}% <progress class="animationProgressBar" value="${percentage}" max="100"></progress>`;
     
     // Calculate elapsed time: current elapsed time vs total animation duration
     const elapsed = (animData.elapsedSeconds || 0).toFixed(1);
     const duration = (animData.totalTime || 0).toFixed(1);
-    elapsedTime = elapsed + " / " + duration + "s";
+    elapsedTime = `${elapsed} / ${duration}s`;
     
     // Display which actuator was last triggered (backend provides lastActuator, fall back to frameValue if needed)
     if (animData.lastActuator && animData.lastActuator > 0 && animData.lastActuator <= 4) {
-      lastActuator = "Actuator " + animData.lastActuator;
+      lastActuator = `Actuator ${animData.lastActuator}`;
     } else if (animData.frameValue && animData.frameValue > 0 && animData.frameValue <= 4) {
-      lastActuator = "Actuator " + animData.frameValue;
+      lastActuator = `Actuator ${animData.frameValue}`;
     }
   }
 
   // Build HTML string with progress bar, time elapsed, and last actuator triggered
-  const html = 
-    "<p><span class=\"infoLabel\">Progress:</span> <span class=\"infoState\">" + progressBar + "</span></p>" +
-    "<p><span class=\"infoLabel\">Elapsed Time:</span> <span class=\"infoState\">" + elapsedTime + "</span></p>" +
-    "<p><span class=\"infoLabel\">Last Actuator:</span> <span class=\"infoState\">" + lastActuator + "</span></p>";
+  const html = `
+    <p><span class="infoLabel">Animation:</span> <span class="infoState">${animationSlot}</span></p>
+    <p><span class="infoLabel">Progress:</span> <span class="infoState">${progressBar}</span></p>
+    <p><span class="infoLabel">Elapsed Time:</span> <span class="infoState">${elapsedTime}</span></p>
+    <p><span class="infoLabel">Last Actuator:</span> <span class="infoState">${lastActuator}</span></p>
+  `;
 
   return html;
 }

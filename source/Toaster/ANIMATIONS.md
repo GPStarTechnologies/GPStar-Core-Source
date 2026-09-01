@@ -37,29 +37,36 @@ Time:  0ms   100ms 200ms 300ms 400ms 500ms 600ms 700ms 800ms 900ms
 
 ## Runtime State
 
+**AnimationState Enum (5 Explicit States):**
+
+| Value | Name                  | Meaning                                  |
+| ----- | --------------------- | ---------------------------------------- |
+| 0     | ANIM_IDLE_EMPTY       | No buffer data, no loaded animation      |
+| 1     | ANIM_RECORDING        | Recording in progress                    |
+| 2     | ANIM_IDLE_PENDING_SAVE| Recording stopped, data unsaved          |
+| 3     | ANIM_IDLE_LOADED      | Animation loaded from NVS, ready to play |
+| 4     | ANIM_PLAYBACK         | Playback in progress                     |
+
+**AnimationSession Struct (Runtime State):**
+
+| Field        | Type     | Purpose                                          |
+| ------------ | -------- | ------------------------------------------------ |
+| buffer[600]  | uint8_t  | Current animation being recorded or played       |
+| keyFrames    | uint16_t | Count of frames containing non-zero values       |
+| totalFrames  | uint16_t | Timeline span from 0 to last frame               |
+| wallTime     | uint32_t | millis() timestamp when recording/playback began |
+| state        | uint8_t  | Current state (one of 5 AnimationState values)   |
+| sourceSlot   | int8_t   | Context: -1=fresh recording, 0-3=loaded from NVS |
+| data         | AnimationData | Persistent data (keyFrames, totalFrames, frames) |
+| triggerSource| uint8_t  | Playback trigger: NONE, RF, or WEB              |
+
+**Global Instance:**
+
 ```cpp
-enum AnimationState : uint8_t {
-  ANIM_IDLE_EMPTY = 0,       // No buffer data, no loaded animation
-  ANIM_RECORDING = 1,        // Recording in progress
-  ANIM_IDLE_PENDING_SAVE = 2,// Recording stopped, data unsaved (user can save/discard)
-  ANIM_IDLE_LOADED = 3,      // Animation loaded from NVS, ready to play
-  ANIM_PLAYBACK = 4          // Playback in progress
-};
-
-// In-memory runtime state (used during recording/playback)
-struct AnimationSession {
-  uint8_t buffer[600];       // Current animation being recorded or played
-  uint16_t keyFrames;        // Count of frames containing non-zero values (trigger events)
-  uint16_t totalFrames;      // Timeline span from 0 to last frame (0-ANIM_MAX_FRAMES)
-  uint32_t wallTime;         // millis() timestamp when recording/playback began
-  uint8_t state;             // Current state (5 explicit states, see AnimationState enum)
-  int8_t sourceSlot;         // Source context: -1=fresh recording, 0-3=loaded from slot
-};
-
-AnimationSession currentAnimation;
+AnimationSession currentAnimation;  // Declared in main.cpp, extern in Animation.h
 ```
 
-When saved to NVS, `keyFrames`, `totalFrames`, and `buffer` are stored (as AnimationData struct). The `wallTime`, `mode`, and `sourceSlot` are runtime-only (recalculated on each session).
+When saved to NVS, `keyFrames`, `totalFrames`, and `buffer` are stored (as AnimationData struct). The `wallTime`, `state`, `sourceSlot`, and `triggerSource` are runtime-only (recalculated on each session).
 
 **keyFrames vs totalFrames:**
 
@@ -140,43 +147,29 @@ PLAYBACK ──stopPlayback()/auto-complete──→ IDLE_LOADED (preserves data
 
 ## Constants (Header.h)
 
+**AnimationData Struct (Persistent in NVS):**
+
+| Field     | Type     | Purpose                                    |
+| --------- | -------- | ------------------------------------------ |
+| keyFrames | uint16_t | Count of frames with relay activity        |
+| totalFrames | uint16_t | Timeline span (0 to last frame when stopped) |
+| checksum  | uint16_t | CRC16 of frames[] for validation           |
+| frames[600] | uint8_t | The recorded frame data (0=none, 1-4=relay ID) |
+
+**Configuration Constants:**
+
+| Constant            | Value | Purpose                              |
+| ------------------- | ----- | ------------------------------------ |
+| ANIM_MAX_FRAMES     | 600   | Maximum frames per animation (1 min @ 100ms) |
+| ANIM_TIME_UNIT_MS   | 100   | Frame duration in milliseconds       |
+| ANIM_MAX_STORED     | 4     | Number of animation slots (one per RF button) |
+| ANIMATION_NAMES[4]  | "anim1"-"anim4" | NVS storage keys for each slot |
+
+**External Global:**
+
 ```cpp
-// Persistent animation data (stored in NVS)
-struct AnimationData {
-  uint16_t keyFrames;       // Count of frames with relay activity (trigger events)
-  uint16_t totalFrames;     // Timeline span (0 to last frame when user pressed stop)
-  uint16_t checksum;        // CRC16 of frames[] for optional validation against NVS
-  uint8_t frames[600];      // The recorded frame data (0 = no action, 1-4 = relay ID)
-};
-
-// Runtime state (NOT persisted) - 5 explicit states
-enum AnimationState : uint8_t {
-  ANIM_IDLE_EMPTY = 0,       // No buffer data, no loaded animation
-  ANIM_RECORDING = 1,        // Recording in progress
-  ANIM_IDLE_PENDING_SAVE = 2,// Recording stopped, data unsaved
-  ANIM_IDLE_LOADED = 3,      // Animation loaded from NVS
-  ANIM_PLAYBACK = 4          // Playback in progress
-};
-
-struct AnimationSession {
-  uint8_t buffer[600];      // Current animation being recorded or played
-  uint16_t keyFrames;       // Count of frames containing non-zero values
-  uint16_t totalFrames;     // Timeline span from 0 to last frame
-  uint32_t wallTime;        // millis() timestamp when recording/playback began
-  uint8_t mode;             // Current mode (IDLE, RECORDING, PLAYBACK)
-  int8_t sourceSlot;        // Source context: -1=fresh recording, 0-3=loaded from slot
-};
-
-
-const uint16_t ANIM_MAX_FRAMES = 600;        // 1 minute @ 100ms
-const uint16_t ANIM_TIME_UNIT_MS = 100;      // Frame duration in milliseconds
-const uint8_t ANIM_MAX_STORED = 4;           // One per RF button
-const char* ANIMATION_NAMES[4] = {"anim1", "anim2", "anim3", "anim4"};
-
-extern AnimationSession currentAnimation;  // Global animation session state
+extern AnimationSession currentAnimation;  // Runtime state, defined in main.cpp
 ```
-
----
 
 ---
 
@@ -201,57 +194,11 @@ Size:          AnimationData struct (2 + 2 + 2 + 600 = 606 bytes per animation)
 Total:         4 animations × 606 bytes = ~2.4KB (16KB NVS available ✅)
 ```
 
-**NVS Access Pattern (from Animation.cpp):**
+**Access Patterns:**
 
-```cpp
-nvs_handle_t handle;
-nvs_open("animations", NVS_READWRITE, &handle);
-
-// Write animation to NVS
-AnimationData data = {...};
-nvs_set_blob(handle, ANIMATION_NAMES[animIndex], &data, sizeof(data));
-nvs_commit(handle);
-
-// Read animation from NVS
-AnimationData data;
-size_t size = sizeof(data);
-nvs_get_blob(handle, ANIMATION_NAMES[animIndex], &data, &size);
-
-nvs_close(handle);
-```
-
-**Checksum Validation (optional):**
-
-```cpp
-// When loading from NVS, optionally verify data integrity
-uint16_t computed = computeChecksum(data.frames);
-if (computed != data.checksum) {
-  // Checksum mismatch—data corrupted or load failed
-  // Skip this animation or alert user
-}
-```
-
-**Example: Storing a 5-frame animation**
-
-What was recorded:
-
-```
-Frame 0 (t=0ms):    Trigger Relay 1
-Frame 1 (t=100ms):  (nothing)
-Frame 2 (t=200ms):  Trigger Relay 2
-Frame 3 (t=300ms):  (nothing)
-Frame 4 (t=400ms):  Trigger Relay 3
-```
-
-Stored as AnimationData:
-
-```cpp
-AnimationData animData = {
-  .keyFrames = 5,
-  .checksum = computeChecksum(animData.frames),  // Computed when saving
-  .frames = {1, 0, 2, 0, 3, 0, 0, 0, ...}  // Rest is zero-filled
-};
-```
+- **Write:** Use NVS C API `nvs_set_blob()` with namespace "animations", key `ANIMATION_NAMES[slot]`, and AnimationData struct
+- **Read:** Use NVS C API `nvs_get_blob()` with same namespace and key
+- **Validation:** Compute checksum of `frames[]` and compare to stored value to detect NVS corruption
 
 ---
 
@@ -271,173 +218,78 @@ RF buttons are **playback control only**. With 5-state model:
 
 ## Core Functions (Animation Class)
 
-**`void startRecording()`**
+**Recording Functions:**
 
-- Clear buffer, set mode = ANIM_RECORDING, capture wallTime, set keyFrames = 0, totalFrames = 0
-- File: [src/Animation.cpp](src/Animation.cpp)
+| Function | Purpose |
+| -------- | ------- |
+| `void startRecording()` | Initialize buffer and state for new recording session |
+| `void recordRelayAtCurrentFrame(uint8_t actuatorID)` | Record relay trigger at current frame position |
+| `void updateRecordingElapsedTime()` | Update totalFrames to reflect elapsed time (called continuously during recording) |
+| `uint16_t stopRecording()` | Freeze timeline and return final totalFrames |
 
-**`void recordRelayAtCurrentFrame(uint8_t actuatorID)`**
+**Save/Load Functions:**
 
-- Calculate frame index: `(millis() - wallTime) / ANIM_TIME_UNIT_MS`
-- Write actuatorID to `buffer[frame]` (values 1-4 for ACTUATOR_1 through ACTUATOR_4)
-- Increment `keyFrames` (count of relay events)
-- Update `totalFrames` to track timeline span
-- Bound frame to `[0, ANIM_MAX_FRAMES-1]` to prevent buffer overflow
+| Function | Purpose |
+| -------- | ------- |
+| `bool saveRecordingToNVS(uint8_t slot)` | Persist current animation to NVS (validates keyFrames > 0) |
+| `bool loadAnimationFromNVS(uint8_t slot)` | Load animation from NVS into buffer (validates keyFrames and totalFrames) |
 
-**`void updateRecordingElapsedTime()`** (NEW - called continuously during recording)
+**Playback Functions:**
 
-- If mode != ANIM_RECORDING, return immediately
-- Calculate elapsed time: `(millis() - wallTime) / ANIM_TIME_UNIT_MS`
-- Update `totalFrames` to track timeline span continuously (not just when keyFrames recorded)
-- Bound to `[0, ANIM_MAX_FRAMES-1]` to prevent overflow
-- **Purpose:** Ensure totalFrames always reflects true elapsed time, not locked to last keyFrame position
-- **Called from:** AnimationTask every ~10ms during recording, and from `recordRelayAtCurrentFrame()` before each trigger
-- File: [include/Animation.h](include/Animation.h)
+| Function | Purpose |
+| -------- | ------- |
+| `bool startPlayback(uint8_t slot)` | Load animation from NVS and begin playback |
+| `void updatePlayback()` | Advance playback frame counter and trigger relays at proper times (called every ~10ms) |
+| `void stopPlayback()` | Stop playback and clear state |
 
-**`uint16_t stopRecording()`**
+**Helper Functions:**
 
-- Call `updateRecordingElapsedTime()` for final update
-- Set mode = ANIM_IDLE
-- Return totalFrames (timeline span frozen at true duration)
-
-**`bool saveRecordingToNVS(uint8_t animIndex)`**
-
-- Validate `keyFrames > 0` (must have at least one relay event to save)
-- Validate `animIndex` is in range `[0, ANIM_MAX_STORED-1]`
-- Compute checksum of buffer
-- Create AnimationData struct with keyFrames, totalFrames, checksum, and frames
-- Write to NVS under key `ANIMATION_NAMES[animIndex]`
-- Return true if successful
-
-**`bool loadAnimationFromNVS(uint8_t animIndex)`**
-
-- Validate `animIndex` is in range
-- Read AnimationData from NVS
-- Validate `keyFrames > 0 && totalFrames > 0 && totalFrames <= ANIM_MAX_FRAMES`
-- Optionally validate checksum (warn if mismatch)
-- Copy frames, keyFrames, and totalFrames into runtime buffer
-- Clear mode (leave as IDLE)
-- Return true if successful
-
-**`bool startPlayback(uint8_t animIndex)`**
-
-- Call loadAnimationFromNVS(animIndex)
-- If load fails, return false
-- Set mode = ANIM_PLAYBACK, capture wallTime = millis()
-- Return true
-
-**`void stopPlayback()`**
-
-- Set mode = ANIM_IDLE
-- Clear buffer, keyFrames, totalFrames, wallTime
-
-**`void updatePlayback()`** (called each AnimationTask cycle ~10ms)
-
-- If mode != ANIM_PLAYBACK, return immediately
-- Calculate current frame: `(millis() - wallTime) / ANIM_TIME_UNIT_MS`
-- If `currentFrame >= totalFrames`: playback complete → stopPlayback()
-- Else if `buffer[currentFrame] != 0`: trigger the relay via `triggerActuator()`
-- File: [src/Animation.cpp](src/Animation.cpp)
-  - Note: Only trigger once per frame (use previous frame tracking to avoid repeat triggers)
-- File: [src/Animation.cpp](src/Animation.cpp)
+| Function | Purpose |
+| -------- | ------- |
+| `uint16_t computeChecksum()` | Calculate CRC16 of frames[] array |
+| `void clearAnimationBuffer()` | Zero-fill buffer and reset counters |
 
 ---
 
 ## Integration
 
-**Global Animation Instance (main.cpp):**
+**Global Animation Instance:**
 
+Declared in main.cpp, extern in Animation.h:
 ```cpp
-// Near top of main.cpp, after includes
-AnimationSession currentAnimation = {};  // Initialize to all zeros (IDLE mode)
+AnimationSession currentAnimation = {};  // Initialized to all zeros (IDLE_EMPTY state)
 ```
 
-**AnimationTask (main.cpp, line ~122):**
+**AnimationTask (Core Loop):**
 
-Calls two critical functions:
-1. `updatePlayback()` - Advances playback frame counter and triggers relays at proper times
-2. `sendAnimationFrameData()` - **Controlling point** for all animation state updates:
-   - Calls `updateRecordingElapsedTime()` internally for recording timeline tracking
-   - Sends SSE events during RECORDING, PLAYBACK, or IDLE_PENDING_SAVE states
-   - Ensures frontend receives consistent snapshots of animation state every ~10ms
+Runs every ~10ms on Core 1. Calls:
+1. `updatePlayback()` - Advances playback frame and triggers relays at proper times
+2. `sendAnimationFrameData()` - **Controlling point** for state updates
+   - Calls `updateRecordingElapsedTime()` internally before building frame data
+   - Ensures timeline tracking is atomic with data transmission
 
-```cpp
-void AnimationTask(void *parameter) {
-  while(true) {
-    // ... relay cleanup logic ...
+**UserInputTask (RF Button Handler):**
 
-    updatePlayback(); // Update animation playback if currently playing
-    // Send animation data during active recording/playback, or on transition to unsaved state
-    if(currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK || currentAnimation.state == ANIM_IDLE_PENDING_SAVE) {
-      sendAnimationFrameData(); // Send real-time frame data to connected clients via SSE
-    }
+RF buttons are playback control only. State-driven logic:
+- State != PLAYBACK: Button press starts animation
+- State == PLAYBACK (same button): Stop playback
+- State == PLAYBACK (different button): Stop current, start new
 
-    updateAudio();
-    checkMusic();
-    vTaskDelay(10 / portTICK_PERIOD_MS);
-  }
-}
-```
+Track `currentPlayingAnim` (0-3) to differentiate button behavior.
 
-**Key Points:**
-- `sendAnimationFrameData()` is the **controlling point** for all animation state updates
-- It calls `updateRecordingElapsedTime()` internally before building frame data
-- This ensures timeline tracking happens atomically with data transmission
-- Atomic updates prevent frontend from seeing stale or inconsistent state
+**Web API Endpoints:**
 
-**UserInputTask (main.cpp, RF Button Handler):**
+All animation operations exposed via REST:
 
-RF buttons are **playback control only**. The 5-state model simplifies button logic:
-- If NOT in PLAYBACK state: start animation
-- If IN PLAYBACK state: same button = stop, different button = switch
-
-```cpp
-// Track which animation is currently playing
-static int8_t currentPlayingAnim = -1;  // -1 = no animation playing
-
-// When RF button triggers (after debounce detection):
-if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
-  uint8_t buttonIndex = i;  // 0-3 maps to anim 0-3
-
-  // Handle animation playback control based on current state
-  // RF buttons only trigger playback when not in active playback mode
-  if (currentAnimation.state != ANIM_PLAYBACK) {
-    // Not playing - start this animation
-    if (startPlayback(buttonIndex)) {
-      currentPlayingAnim = buttonIndex;
-      notifyWSClients();
-    }
-  } else if (currentAnimation.state == ANIM_PLAYBACK) {
-    // Currently playing - handle same or different button
-    if (buttonIndex == currentPlayingAnim) {
-      // Same button pressed - stop playback
-      stopPlayback();
-      currentPlayingAnim = -1;
-      notifyWSClients();
-    } else {
-      // Different button - stop current, play new
-      stopPlayback();
-      if (startPlayback(buttonIndex)) {
-        currentPlayingAnim = buttonIndex;
-        notifyWSClients();
-      }
-    }
-  }
-}
-```
-
-**Web Endpoints (Webrouting.h & Webhandler.h):**
-
-```
-POST   /api/animations/record/start           → Start recording
-POST   /api/animations/record/relay?id=N      → Record relay trigger at current frame
-POST   /api/animations/record/stop            → Stop recording, return frame count
-POST   /api/animations/record/save?index=N    → Save to NVS under slot N (0-3)
-POST   /api/animations/play?index=N           → Load & play animation N
-POST   /api/animations/stop                   → Stop playback immediately
-GET    /api/animations/status                 → Get current mode & animation info
-GET    /api/status                            → Device status (includes animationSlots array)
-```
+| Method | Endpoint | Purpose |
+| ------ | -------- | ------- |
+| POST | `/animations/record/start` | Begin recording |
+| POST | `/animations/record/relay?id=N` | Record relay trigger at current frame |
+| POST | `/animations/record/stop` | Freeze timeline, return frame count |
+| POST | `/animations/record/save/{slot}` | Persist to NVS (validate keyFrames > 0) |
+| POST | `/animations/play/{slot}` | Load and start playback |
+| POST | `/animations/stop` | Stop playback immediately |
+| GET | `/status` | Device status (includes animationSlots array) |
 
 ---
 
@@ -445,194 +297,96 @@ GET    /api/status                            → Device status (includes animat
 
 ## Server-Sent Events (SSE) Animation Stream
 
-**Purpose:** Send animation frame updates to frontend in real-time during recording and playback. This is the **single source of truth** for frontend state synchronization.
+**Purpose:** Send animation frame updates to frontend in real-time during recording and playback via SSE "animation" event.
 
-**Function: `String getAnimationFrame()`** (Webhandler.h)
+**JSON Fields (sent every ~10ms during RECORDING, PLAYBACK, or IDLE_PENDING_SAVE):**
 
-Serializes current animation state as JSON object with these fields:
+| Field | Type | Purpose |
+| ----- | ---- | ------- |
+| `state` | string | Animation state name (IDLE_EMPTY, RECORDING, IDLE_PENDING_SAVE, IDLE_LOADED, PLAYBACK) |
+| `sourceSlot` | int | Animation origin (-1=fresh recording, 0-3=loaded from NVS) |
+| `totalFrames` | uint16 | Timeline span (0-600) |
+| `currentFrame` | uint16 | Current frame position |
+| `keyFrames` | uint16 | Count of relay trigger events |
+| `elapsedSeconds` | float | Human-readable elapsed time (seconds, 2 decimals) |
+| `totalTime` | float | Total animation duration (seconds, 2 decimals) |
+| `progress` | float | Percentage completion (0-100, 2 decimals) |
+| `frameValue` | uint8 | Relay ID at current frame (0=none, 1-4=relay triggering now) |
+| `lastActuator` | uint8 | Most recent relay triggered (0=none, 1-4=relay ID) |
+| `triggerSource` | string | Playback source (NONE, RF, WEB) |
 
-```json
-{
-  "mode": "RECORDING|PLAYBACK|IDLE",
-  "sourceSlot": -1 to 3,
-  "totalFrames": 600,
-  "currentFrame": 0-600,
-  "keyFrames": 0-600,
-  "elapsedSeconds": 0.0-60.0,
-  "totalTime": 0.0-60.0,
-  "progress": 0.0-100.0,
-  "frameValue": 0-4,
-  "lastActuator": 0-4
-}
-```
+**Transmission Rules:**
 
-**Field Descriptions:**
+- Send SSE "animation" event every ~10ms when state is RECORDING or PLAYBACK
+- Send final SSE "animation" event on transition to IDLE_PENDING_SAVE (recording stopped with captured frames)
+- Stop sending when state transitions to IDLE_EMPTY or IDLE_LOADED (no active operation)
 
-- `mode`: Current state (string for UI display)
-- `sourceSlot`: Context indicator (-1=fresh recording, 0-3=loaded slot, -1 again on idle)
-- `totalFrames`: Timeline capacity (always 600 for now)
-- `currentFrame`: Frame position based on elapsed time since wallTime
-- `keyFrames`: Count of non-zero frames (keyFrames) - used to validate save was captured
-- `elapsedSeconds`: Human-readable elapsed time (currentFrame × 0.1s), rounded to 2 decimals
-- `totalTime`: Total duration of animation (totalFrames × 0.1s), rounded to 2 decimals
-- `progress`: Percentage completion (currentFrame / totalFrames × 100), rounded to 2 decimals
-- `frameValue`: Actuator ID at current frame (0=idle, 1-4=relay triggering now)
-- `lastActuator`: Most recent actuator triggered (backward search from totalFrames-1), always shows recent activity
+**Device State SSE Event:**
 
-**Function: `void sendAnimationFrameData()`** (Webhandler.h)
-
-- **Controlling point for all animation state updates**
-- Calls `updateRecordingElapsedTime()` first (before building frame data)
-- Builds current animation state via `getAnimationFrame()`
-- Sends SSE "animation" event if:
-  - Mode is RECORDING or PLAYBACK (active modes), OR
-  - Mode is IDLE **AND** keyFrames > 0 (transition event with recorded data)
-- **Purpose:** Atomically update and transmit animation state every AnimationTask cycle (~10ms)
-- Ensures frontend sees consistent snapshot of state (timestamps sync'd to single moment)
-
-**SSE Event Flow:**
-
-1. **During RECORDING:**
-   - `sendAnimationFrameData()` called every ~10ms from AnimationTask
-   - Sends frame position, elapsed time, lastActuator to frontend
-   - Frontend updates progress display in real-time
-   - **When user presses Stop:**
-     - `stopRecording()` called, mode set to IDLE
-     - Next `sendAnimationFrameData()` detects IDLE with keyFrames > 0
-     - Sends **final event** with recorded state
-     - Frontend receives it, transitions UI to show save selector
-
-2. **During PLAYBACK:**
-   - `sendAnimationFrameData()` called every ~10ms from AnimationTask
-   - Sends current frame, elapsed time, triggered actuator
-   - Frontend updates progress display in real-time
-   - **When animation finishes:**
-     - `updatePlayback()` detects currentFrame >= totalFrames
-     - Calls `stopPlayback()`, mode set to IDLE
-     - Next `sendAnimationFrameData()` sees IDLE with keyFrames == 0 (after stopPlayback cleared it)
-     - No event sent (IDLE with no keyFrames = not a "recordable" state)
-
-3. **Idle State:**
-   - SSE events stop being sent (mode = IDLE with keyFrames = 0)
-   - Frontend continues displaying last known state
-   - Ready for next recording or playback start
+Additionally, a "device" SSE event sends RF button and relay states on every state change, independent of animation state. This provides real-time hardware monitoring without animation-specific context.
 
 ## Animation Slot Cache
 
 **Purpose:** Track which NVS animation slots have valid recordings so the UI can display available animations and disable empty slots in the play dropdown.
 
-**Cache Structure (Webhandler.h):**
+**Cache Structure:**
 
-```cpp
-struct AnimationSlot {
-  uint8_t id;           // Slot ID (0-3)
-  bool hasAnimation;    // Whether this slot has a valid recording
-  uint16_t keyFrames;  // Frame count if hasAnimation=true, 0 otherwise
-};
+| Field | Type | Purpose |
+| ----- | ---- | ------- |
+| id | uint8 | Slot ID (0-3) |
+| hasAnimation | bool | Whether this slot has a valid recording |
+| keyFrames | uint16 | Frame count if hasAnimation=true, 0 otherwise |
 
-AnimationSlot animationSlots[4] = {};  // Global cache array
-```
+Global cache array: `animationSlot animationSlots[4]`
 
-**Cache Initialization:**
+**Lifecycle:**
 
-- `refreshAnimationSlotCache()` is called on startup in `startWebServer()`
-- Scans NVS for each animation slot (0-3)
-- Validates AnimationData structure and keyFrames
-- Populates cache with slot availability and frame count
+1. **Initialization:** `refreshAnimationSlotCache()` called on startup in `startWebServer()`, scans all 4 NVS slots
+2. **On Save:** Cache refreshed after successful `saveRecordingToNVS()`, then WebSocket notifies clients
+3. **UI Updates:** Dropdowns automatically refresh when status endpoint returns animationSlots array
 
-**Cache Updates:**
+**Status API Response:**
 
-- `refreshAnimationSlotCache()` is called after every successful save via `saveRecordingToNVS()`
-- Client notified via WebSocket that slots have changed
-- UI dropdowns update to reflect current slot availability
-
-**API Response (GET /api/status):**
-
-The device status endpoint now includes `animationSlots` array:
-
-```json
-{
-  "equipmentType": "Toaster",
-  "systemUptime": 12345,
-  "buttons": [...],
-  "relays": [...],
-  "animationSlots": [
-    {
-      "id": 0,
-      "hasAnimation": true,
-      "keyFrames": 120
-    },
-    {
-      "id": 1,
-      "hasAnimation": false,
-      "keyFrames": 0
-    },
-    {
-      "id": 2,
-      "hasAnimation": true,
-      "keyFrames": 300
-    },
-    {
-      "id": 3,
-      "hasAnimation": false,
-      "keyFrames": 0
-    }
-  ]
-}
-```
+GET `/status` includes `animationSlots` array with id, hasAnimation, and keyFrames for each slot.
 
 ---
 
 ## Frontend UI (index.html & index.js)
 
-**Simplified Direct Slot Selection:**
+**Animation State Machine (5 States):**
 
-Removed redundant trigger buttons (`btnSaveButton`, `btnPlayButton`). Slot selectors now show/hide directly based on animation state:
+The frontend maintains state parity with backend via:
+1. WebSocket bulk status (includes animation state)
+2. SSE "animation" event (real-time frame updates during RECORDING/PLAYBACK)
+3. SSE "device" event (RF button and relay state changes)
 
-- **Save Selector:** Hidden by default. Shows directly when recording stops with captured frames (SSE event with `mode=IDLE, keyFrames>0`)
-- **Play Selector:** Hidden by default. Shows when user clicks would-be "Play" button (future feature)
+**UI State Mapping:**
 
-**Recording UI Flow:**
+Each animation state (IDLE_EMPTY, RECORDING, IDLE_PENDING_SAVE, IDLE_LOADED, PLAYBACK) controls which buttons/selectors are enabled:
 
-1. User clicks "Start" → progress displays show, selectors hide
-2. User triggers actuators → progress updates in real-time via SSE
-3. User clicks "Stop" → progress hides, **save selector appears directly**
-4. User selects slot and clicks "Save" → animation persisted to NVS
-5. UI refreshes slot cache, Play dropdown updates to show saved animation
+| State | Start/Stop Visible | Save Selector | Play Selector | Progress Display |
+| ----- | ------------------ | ------------- | ------------- | ---------------- |
+| IDLE_EMPTY | Start only | Hidden | Show (if slots viable) | Hidden |
+| RECORDING | Stop only | Hidden | Hidden | Show |
+| IDLE_PENDING_SAVE | Hidden | Show | Hidden | Hidden |
+| IDLE_LOADED | Start only | Hidden | Show (if slots viable) | Hidden |
+| PLAYBACK | Stop only | Hidden | Hidden | Show |
 
 **Frontend Functions (index.js):**
 
-- `recordingStart()` - Hide selectors, show progress during active recording
-- `recordingStop()` - Hide progress, wait for SSE final event
-- `updateAnimationDisplay(animData)` - Main state handler:
-  - If transitioning RECORDING→IDLE with keyFrames>0: `showEl("saveSlotSelector")`
-  - If transitioning RECORDING→IDLE with no keyFrames: `hideEl("saveSlotSelector")`
-  - During active modes: update progress HTML from animData fields
-- `cancelSaveSlot()` - Hide save selector
-- `saveToSlot()` - POST to /animations/record/save/{slot}, hide selector on complete
+| Function | Purpose |
+| -------- | ------- |
+| `updateAnimationDisplay(animData)` | Main state handler - applies button states and updates progress from SSE data |
+| `applyButtonStates(state)` | Atomically enable/disable all animation UI controls for given state |
+| `buildAnimationProgressHTML(animData)` | Build progress display with slot, percentage, elapsed time, last actuator |
+| `updateSaveSlots()` | Refresh save dropdown labels to show animation duration |
+| `updatePlaySlots()` | Refresh play dropdown, disable empty slots, set hasAnyViableSlots flag |
 
-**Key UI Simplification:** No intermediate button clicks needed. Recording→Stop triggers direct save UI appearance via SSE event. One-click path to save.
+**Integration with Backend:**
 
-**JavaScript Functions (index.js):**
-
-`updateSaveSlots(slots)` - Updates save dropdown (all slots always enabled for overwriting):
-
-- Takes animationSlots array from status API
-- Updates each option label to show frame count if slot has data
-- All options remain enabled (user can save to any slot)
-
-`updatePlaySlots(slots)` - Updates play dropdown (only enables slots with animations):
-
-- Takes animationSlots array from status API
-- Updates option labels with frame count and "(empty)" indicator
-- Disables options where `hasAnimation=false`
-- Disables Play button if no slots have animations
-
-**UI Integration:**
-
-- Both functions called automatically when status is received via WebSocket
-- Dropdowns refresh whenever `updateEquipment()` processes a status update
-- Play button remains disabled until at least one animation is saved
+- SSE "animation" event handler passes data to `updateAnimationDisplay()`
+- SSE "device" event handler logs RF button/relay state changes to console
+- WebSocket status includes animation state on initial page load
 
 ---
 

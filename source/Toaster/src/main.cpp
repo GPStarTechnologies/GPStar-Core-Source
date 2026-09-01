@@ -141,6 +141,7 @@ void AnimationTask(void *parameter) {
       if(relays[i]->state.relayActive && b_expired){
         relays[i]->state.relayActive = false;
         digitalWrite(relayPins[i], LOW);
+        sendDeviceStateEvent(); // Notify clients of relay state change
       }
 
       // If this relay is still active, ensure the relay output remains
@@ -218,9 +219,6 @@ void PreferencesTask(void *parameter) {
 
 // User Input Task (Loop)
 void UserInputTask(void *parameter) {
-  // Track which animation is currently playing (-1 = no animation playing)
-  static int8_t currentPlayingAnim = -1;
-
   while(true) {
     #if defined(DEBUG_TASK_TO_CONSOLE)
       // Confirm the core in use for this task, and when it runs.
@@ -258,6 +256,11 @@ void UserInputTask(void *parameter) {
         buttons[i]->state.debounceCount = 0;
       }
 
+      // Send device state update whenever any RF button state changes (press or release)
+      if (stateChanged) {
+        sendDeviceStateEvent();
+      }
+
       // Detect rising edge ONLY on the iteration where state actually changed
       // RF buttons control animation playback
       if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
@@ -267,51 +270,40 @@ void UserInputTask(void *parameter) {
         // RF buttons only trigger playback when not in active playback mode
         if (currentAnimation.state != ANIM_PLAYBACK) {
           // Not playing - start this animation
-          if (startPlayback(buttonIndex)) {
-            currentPlayingAnim = buttonIndex;
-
+          if (startPlayback(buttonIndex, TRIGGER_SOURCE_RF)) {
             #if defined(DEBUG_SEND_TO_CONSOLE)
               debug(F("RF"));
               debug(buttonIndex + 1);
               debugln(F(" started animation playback"));
             #endif
-
-            notifyWSClients();
           }
         } else if (currentAnimation.state == ANIM_PLAYBACK) {
           // Currently playing - handle same or different button
-          if (buttonIndex == currentPlayingAnim) {
+          if (buttonIndex == currentAnimation.sourceSlot) {
             // Same button pressed - stop playback
             stopPlayback();
-            currentPlayingAnim = -1;
 
             #if defined(DEBUG_SEND_TO_CONSOLE)
               debug(F("RF"));
               debug(buttonIndex + 1);
               debugln(F(" stopped animation playback"));
             #endif
-
-            notifyWSClients();
           } else {
             // Different button - stop current, play new animation
             stopPlayback();
-            if (startPlayback(buttonIndex)) {
-              currentPlayingAnim = buttonIndex;
-
+            if (startPlayback(buttonIndex, TRIGGER_SOURCE_RF)) {
               #if defined(DEBUG_SEND_TO_CONSOLE)
                 debug(F("RF"));
                 debug(buttonIndex + 1);
                 debugln(F(" switched to new animation"));
               #endif
-
-              notifyWSClients();
             }
           }
         }
       }
     }
 
-    vTaskDelay(14 / portTICK_PERIOD_MS); // 14ms delay
+    vTaskDelay(5 / portTICK_PERIOD_MS); // 5ms delay
   }
 }
 

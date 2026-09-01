@@ -15,6 +15,12 @@
   gap: 5px;
 }
 
+/* Right-align the labels for consistency */
+.animationProgress .infoLabel {
+  flex: 0 0 100px;
+  text-align: right;
+}
+
 /* Make infoState spans flex to hold progress bar inline with percentage */
 .animationProgress .infoState {
   align-items: center;

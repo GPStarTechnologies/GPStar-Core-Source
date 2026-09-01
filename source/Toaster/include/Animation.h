@@ -96,6 +96,12 @@ enum AnimationState : uint8_t {
   ANIM_PLAYBACK = 4                 // Playback in progress (stop button enabled)
 };
 
+enum TriggerSource : uint8_t {
+  TRIGGER_SOURCE_NONE = 0,
+  TRIGGER_SOURCE_RF,
+  TRIGGER_SOURCE_WEB
+};
+
 // Animation Constants
 #define ANIM_MAX_FRAMES 600             // 1 minute @ 100ms = 600 frames
 const uint16_t ANIM_TIME_UNIT_MS = 100; // Frame duration in milliseconds
@@ -119,10 +125,11 @@ struct AnimationData {
  * Single source of truth: 'state' field determines all UI button enabled/disabled states.
  */
 struct AnimationSession {
-  uint8_t state;      // Current AnimationState (single source of truth for UI)
-  int8_t sourceSlot;  // Metadata: -1=no slot, 0-3=loaded from slot (only meaningful in IDLE_LOADED)
-  uint32_t wallTime;  // Metadata: millis() timestamp when recording/playback began
-  AnimationData data; // Frame buffer and metadata (frames, keyFrames, totalFrames, checksum)
+  uint8_t state;               // Current AnimationState (single source of truth for UI)
+  int8_t sourceSlot;           // Metadata: -1=no slot, 0-3=loaded from slot (only meaningful in IDLE_LOADED)
+  TriggerSource triggerSource; // Metadata: source that initiated the active playback
+  uint32_t wallTime;           // Metadata: millis() timestamp when recording/playback began
+  AnimationData data;          // Frame buffer and metadata (frames, keyFrames, totalFrames, checksum)
 };
 AnimationSession currentAnimation = {};
 
@@ -141,6 +148,7 @@ AnimationSlot animationSlots[ANIMATION_SLOTS_COUNT] = {};
 inline void clearAnimationBuffer() {
   currentAnimation.state = ANIM_IDLE_EMPTY;
   currentAnimation.sourceSlot = -1;
+  currentAnimation.triggerSource = TRIGGER_SOURCE_NONE;
   currentAnimation.wallTime = 0;
   currentAnimation.data.totalFrames = 0;
   currentAnimation.data.keyFrames = 0;
@@ -395,13 +403,14 @@ inline bool loadAnimationFromNVS(uint8_t animIndex) {
  * Start playback of a recorded animation
  * Loads from NVS, sets state to PLAYBACK, captures wall time
  */
-inline bool startPlayback(uint8_t animIndex) {
+inline bool startPlayback(uint8_t animIndex, TriggerSource triggerSource) {
   if (!loadAnimationFromNVS(animIndex)) {
     return false;
   }
 
-  currentAnimation.state = ANIM_PLAYBACK; // Transition to playback to run the animation
-  currentAnimation.wallTime = millis();   // Capture the time that playback began
+  currentAnimation.state = ANIM_PLAYBACK;       // Transition to playback to run the animation
+  currentAnimation.triggerSource = triggerSource;
+  currentAnimation.wallTime = millis();         // Capture the time that playback began
 
   return true;
 }
@@ -414,9 +423,10 @@ inline bool startPlayback(uint8_t animIndex) {
  * Sends event to notify client that playback has ended and system returned to IDLE_LOADED.
  */
 inline void stopPlayback() {
-  currentAnimation.state = ANIM_IDLE_LOADED; // Return to loaded state (preserves data)
-  currentAnimation.wallTime = 0;             // Clear the timer to prevent further updates
-  sendAnimationFrameData();                  // Send one final update to notify client of state change
+  currentAnimation.state = ANIM_IDLE_LOADED;            // Return to loaded state (preserves data)
+  currentAnimation.triggerSource = TRIGGER_SOURCE_NONE; // Reset to an unknown trigger source
+  currentAnimation.wallTime = 0;                        // Clear the timer to prevent further updates
+  sendAnimationFrameData();                             // Send one final update to notify client of state change
 }
 
 /**

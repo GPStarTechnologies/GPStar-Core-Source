@@ -90,6 +90,46 @@ float roundFloat(float value) {
   return roundf(value * 100.0f) / 100.0f;
 }
 
+// Helper: Builds RF button state array from current button states.
+// Reusable for both SSE device events and other status responses.
+void buildButtonStateArray(JsonArray& buttonsArray) {
+  JsonObject button1Obj = buttonsArray.add<JsonObject>();
+  button1Obj["id"] = 1;
+  button1Obj["state"] = devices.button1.state.currentState;
+
+  JsonObject button2Obj = buttonsArray.add<JsonObject>();
+  button2Obj["id"] = 2;
+  button2Obj["state"] = devices.button2.state.currentState;
+
+  JsonObject button3Obj = buttonsArray.add<JsonObject>();
+  button3Obj["id"] = 3;
+  button3Obj["state"] = devices.button3.state.currentState;
+
+  JsonObject button4Obj = buttonsArray.add<JsonObject>();
+  button4Obj["id"] = 4;
+  button4Obj["state"] = devices.button4.state.currentState;
+}
+
+// Helper: Builds relay state array from current relay active states.
+// Reusable for both SSE device events and other status responses.
+void buildRelayStateArray(JsonArray& relaysArray) {
+  JsonObject relay1Obj = relaysArray.add<JsonObject>();
+  relay1Obj["id"] = 1;
+  relay1Obj["active"] = devices.relay1.state.relayActive;
+
+  JsonObject relay2Obj = relaysArray.add<JsonObject>();
+  relay2Obj["id"] = 2;
+  relay2Obj["active"] = devices.relay2.state.relayActive;
+
+  JsonObject relay3Obj = relaysArray.add<JsonObject>();
+  relay3Obj["id"] = 3;
+  relay3Obj["active"] = devices.relay3.state.relayActive;
+
+  JsonObject relay4Obj = relaysArray.add<JsonObject>();
+  relay4Obj["id"] = 4;
+  relay4Obj["active"] = devices.relay4.state.relayActive;
+}
+
 /**
  * JSON Body Helpers - Creates stringified JSON representations of device configurations
  */
@@ -131,6 +171,7 @@ String getDeviceConfig() {
  * - state: Explicit 5-state value (0=IDLE_EMPTY, 1=RECORDING, 2=IDLE_PENDING_SAVE, 3=IDLE_LOADED, 4=PLAYBACK)
  * - stateName: Human-readable state name
  * - sourceSlot: -1=fresh recording, 0-3=loaded from slot
+ * - triggerSource: NONE=no active playback, RF=RF input, WEB=web request
  * - keyFrames: Count of relay trigger events recorded
  * - currentFrame: Current frame index based on elapsed time
  * - elapsedSeconds: Human-readable elapsed time
@@ -141,11 +182,13 @@ String getDeviceConfig() {
  */
 void buildAnimationJson(JsonObject& animationObj) {
   const char* stateNames[] = {"IDLE_EMPTY", "RECORDING", "IDLE_PENDING_SAVE", "IDLE_LOADED", "PLAYBACK"};
+  const char* triggerSourceNames[] = {"NONE", "RF", "WEB"};
   
   // Send only the state name string, not the integer enum value
   animationObj["state"] = stateNames[currentAnimation.state];
   
   animationObj["sourceSlot"] = currentAnimation.sourceSlot;
+  animationObj["triggerSource"] = triggerSourceNames[currentAnimation.triggerSource];
   animationObj["keyFrames"] = currentAnimation.data.keyFrames;  // Frames with relay activity
   animationObj["totalFrames"] = currentAnimation.data.totalFrames;
   animationObj["totalTime"] = roundFloat((float)currentAnimation.data.totalFrames * ANIM_TIME_UNIT_MS / 1000.0f);
@@ -220,51 +263,13 @@ String getEquipmentStatus() {
   catch (...) {
   }
 
-  // Report on the state of each relay/actuator
-  JsonArray relayArray = jsonBody["relays"].to<JsonArray>();
-
-  JsonObject relay1Obj = relayArray.add<JsonObject>();
-  relay1Obj["id"] = 1;
-  relay1Obj["pin"] = devices.relay1.pin;
-  relay1Obj["active"] = devices.relay1.state.relayActive;
-
-  JsonObject relay2Obj = relayArray.add<JsonObject>();
-  relay2Obj["id"] = 2;
-  relay2Obj["pin"] = devices.relay2.pin;
-  relay2Obj["active"] = devices.relay2.state.relayActive;
-
-  JsonObject relay3Obj = relayArray.add<JsonObject>();
-  relay3Obj["id"] = 3;
-  relay3Obj["pin"] = devices.relay3.pin;
-  relay3Obj["active"] = devices.relay3.state.relayActive;
-
-  JsonObject relay4Obj = relayArray.add<JsonObject>();
-  relay4Obj["id"] = 4;
-  relay4Obj["pin"] = devices.relay4.pin;
-  relay4Obj["active"] = devices.relay4.state.relayActive;
-
   // Report on the state of each RF input button
   JsonArray buttonArray = jsonBody["buttons"].to<JsonArray>();
+  buildButtonStateArray(buttonArray);
 
-  JsonObject button1Obj = buttonArray.add<JsonObject>();
-  button1Obj["id"] = 1;
-  button1Obj["pin"] = devices.button1.pin;
-  button1Obj["state"] = devices.button1.state.currentState;
-
-  JsonObject button2Obj = buttonArray.add<JsonObject>();
-  button2Obj["id"] = 2;
-  button2Obj["pin"] = devices.button2.pin;
-  button2Obj["state"] = devices.button2.state.currentState;
-
-  JsonObject button3Obj = buttonArray.add<JsonObject>();
-  button3Obj["id"] = 3;
-  button3Obj["pin"] = devices.button3.pin;
-  button3Obj["state"] = devices.button3.state.currentState;
-
-  JsonObject button4Obj = buttonArray.add<JsonObject>();
-  button4Obj["id"] = 4;
-  button4Obj["pin"] = devices.button4.pin;
-  button4Obj["state"] = devices.button4.state.currentState;
+  // Report on the state of each relay/actuator
+  JsonArray relayArray = jsonBody["relays"].to<JsonArray>();
+  buildRelayStateArray(relayArray);
 
   // Report on animation slot availability (for playback selection)
   JsonArray slotArray = jsonBody["animationSlots"].to<JsonArray>();
@@ -596,6 +601,25 @@ void sendAnimationFrameData() {
     // Calling programs should provide adequate filtering to prevent spamming events.
     events.send(getAnimationFrame().c_str(), "animation", millis());
   }
+}
+
+void sendDeviceStateEvent() {
+  // Send minimal RF button and relay state updates via SSE.
+  if(!b_httpd_started) return;
+
+  String deviceStatus;
+  JsonDocument jsonDevice;
+
+  // RF button states using shared helper
+  JsonArray buttonsArray = jsonDevice["buttons"].to<JsonArray>();
+  buildButtonStateArray(buttonsArray);
+
+  // Relay states using shared helper
+  JsonArray relaysArray = jsonDevice["relays"].to<JsonArray>();
+  buildRelayStateArray(relaysArray);
+
+  serializeJson(jsonDevice, deviceStatus);
+  events.send(deviceStatus.c_str(), "device", millis());
 }
 
 /**
@@ -1197,7 +1221,7 @@ void handlePlayAnimation(AsyncWebServerRequest *request) {
           return;
         }
 
-        if (startPlayback(animIndex)) {
+        if (startPlayback(animIndex, TRIGGER_SOURCE_WEB)) {
           // Send state update to notify UI that playback started and state is now PLAYBACK
           sendAnimationFrameData();
           
