@@ -219,15 +219,6 @@ function updateDisplay(jObj) {
       setHtml("musicVolume", "Min");
     }
 
-    // Update RF Input Button States
-    if (jObj.buttons && Array.isArray(jObj.buttons)) {
-      for (let i = 0; i < jObj.buttons.length; i++) {
-        const btn = jObj.buttons[i];
-        const stateText = btn.state ? "HIGH" : "LOW";
-        setHtml("button" + btn.id, stateText);
-      }
-    }
-
     // Update animation slot availability for save and play dropdowns
     if (jObj.animationSlots && Array.isArray(jObj.animationSlots)) {
       animationSlots = jObj.animationSlots; // Cache in global variable.
@@ -411,7 +402,7 @@ function buildAnimationProgressHTML(animData) {
     <p><span class="infoLabel">Animation:</span> <span class="infoState">${animationSlot}</span></p>
     <p><span class="infoLabel">Progress:</span> <span class="infoState">${progressBar}</span></p>
     <p><span class="infoLabel">Elapsed Time:</span> <span class="infoState">${elapsedTime}</span></p>
-    <p><span class="infoLabel">Last Actuator:</span> <span class="infoState">${lastActuator}</span></p>
+    <p><span class="infoLabel">Last Relay:</span> <span class="infoState">${lastActuator}</span></p>
   `;
 
   return html;

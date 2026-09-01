@@ -91,43 +91,27 @@ float roundFloat(float value) {
 }
 
 // Helper: Builds RF button state array from current button states.
+// Creates "buttons" property with compact array: [button1, button2, button3, button4]
+// Array index corresponds to button ID (0-3 maps to buttons 1-4).
 // Reusable for both SSE device events and other status responses.
-void buildButtonStateArray(JsonArray& buttonsArray) {
-  JsonObject button1Obj = buttonsArray.add<JsonObject>();
-  button1Obj["id"] = 1;
-  button1Obj["state"] = devices.button1.state.currentState;
-
-  JsonObject button2Obj = buttonsArray.add<JsonObject>();
-  button2Obj["id"] = 2;
-  button2Obj["state"] = devices.button2.state.currentState;
-
-  JsonObject button3Obj = buttonsArray.add<JsonObject>();
-  button3Obj["id"] = 3;
-  button3Obj["state"] = devices.button3.state.currentState;
-
-  JsonObject button4Obj = buttonsArray.add<JsonObject>();
-  button4Obj["id"] = 4;
-  button4Obj["state"] = devices.button4.state.currentState;
+void buildButtonStateArray(JsonVariant parentObj) {
+  JsonArray buttonsArray = parentObj["buttons"].to<JsonArray>();
+  buttonsArray.add(devices.button1.state.currentState);
+  buttonsArray.add(devices.button2.state.currentState);
+  buttonsArray.add(devices.button3.state.currentState);
+  buttonsArray.add(devices.button4.state.currentState);
 }
 
 // Helper: Builds relay state array from current relay active states.
+// Creates "relays" property with compact array: [relay1, relay2, relay3, relay4]
+// Array index corresponds to relay ID (0-3 maps to relays 1-4).
 // Reusable for both SSE device events and other status responses.
-void buildRelayStateArray(JsonArray& relaysArray) {
-  JsonObject relay1Obj = relaysArray.add<JsonObject>();
-  relay1Obj["id"] = 1;
-  relay1Obj["active"] = devices.relay1.state.relayActive;
-
-  JsonObject relay2Obj = relaysArray.add<JsonObject>();
-  relay2Obj["id"] = 2;
-  relay2Obj["active"] = devices.relay2.state.relayActive;
-
-  JsonObject relay3Obj = relaysArray.add<JsonObject>();
-  relay3Obj["id"] = 3;
-  relay3Obj["active"] = devices.relay3.state.relayActive;
-
-  JsonObject relay4Obj = relaysArray.add<JsonObject>();
-  relay4Obj["id"] = 4;
-  relay4Obj["active"] = devices.relay4.state.relayActive;
+void buildRelayStateArray(JsonVariant parentObj) {
+  JsonArray relaysArray = parentObj["relays"].to<JsonArray>();
+  relaysArray.add(devices.relay1.state.relayActive);
+  relaysArray.add(devices.relay2.state.relayActive);
+  relaysArray.add(devices.relay3.state.relayActive);
+  relaysArray.add(devices.relay4.state.relayActive);
 }
 
 /**
@@ -263,13 +247,9 @@ String getEquipmentStatus() {
   catch (...) {
   }
 
-  // Report on the state of each RF input button
-  JsonArray buttonArray = jsonBody["buttons"].to<JsonArray>();
-  buildButtonStateArray(buttonArray);
-
-  // Report on the state of each relay/actuator
-  JsonArray relayArray = jsonBody["relays"].to<JsonArray>();
-  buildRelayStateArray(relayArray);
+  // Report on the state of each RF input button and relay/actuator
+  buildButtonStateArray(jsonBody);
+  buildRelayStateArray(jsonBody);
 
   // Report on animation slot availability (for playback selection)
   JsonArray slotArray = jsonBody["animationSlots"].to<JsonArray>();
@@ -610,13 +590,9 @@ void sendDeviceStateEvent() {
   String deviceStatus;
   JsonDocument jsonDevice;
 
-  // RF button states using shared helper
-  JsonArray buttonsArray = jsonDevice["buttons"].to<JsonArray>();
-  buildButtonStateArray(buttonsArray);
-
-  // Relay states using shared helper
-  JsonArray relaysArray = jsonDevice["relays"].to<JsonArray>();
-  buildRelayStateArray(relaysArray);
+  // Build button and relay state arrays
+  buildButtonStateArray(jsonDevice);
+  buildRelayStateArray(jsonDevice);
 
   serializeJson(jsonDevice, deviceStatus);
   events.send(deviceStatus.c_str(), "device", millis());

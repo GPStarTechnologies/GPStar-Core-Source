@@ -256,11 +256,6 @@ void UserInputTask(void *parameter) {
         buttons[i]->state.debounceCount = 0;
       }
 
-      // Send device state update whenever any RF button state changes (press or release)
-      if (stateChanged) {
-        sendDeviceStateEvent();
-      }
-
       // Detect rising edge ONLY on the iteration where state actually changed
       // RF buttons control animation playback
       if (stateChanged && buttons[i]->state.currentState && !buttons[i]->state.previousState) {
@@ -269,7 +264,7 @@ void UserInputTask(void *parameter) {
         // Handle animation playback control based on current state
         // RF buttons only trigger playback when not in active playback mode
         if (currentAnimation.state != ANIM_PLAYBACK) {
-          // Not playing - start this animation
+          // Not playing, start this animation
           if (startPlayback(buttonIndex, TRIGGER_SOURCE_RF)) {
             #if defined(DEBUG_SEND_TO_CONSOLE)
               debug(F("RF"));
@@ -278,7 +273,7 @@ void UserInputTask(void *parameter) {
             #endif
           }
         } else if (currentAnimation.state == ANIM_PLAYBACK) {
-          // Currently playing - handle same or different button
+          // Currently playing, handle same or different button
           if (buttonIndex == currentAnimation.sourceSlot) {
             // Same button pressed - stop playback
             stopPlayback();
@@ -291,6 +286,8 @@ void UserInputTask(void *parameter) {
           } else {
             // Different button - stop current, play new animation
             stopPlayback();
+
+            // Start the new animation
             if (startPlayback(buttonIndex, TRIGGER_SOURCE_RF)) {
               #if defined(DEBUG_SEND_TO_CONSOLE)
                 debug(F("RF"));
@@ -300,6 +297,14 @@ void UserInputTask(void *parameter) {
             }
           }
         }
+      }
+
+      // Send device state update after animation control logic completes.
+      // This ensures the device event captures the RF button state change AND
+      // any resulting animation state changes in a temporally coherent message.
+      // Applies to both rising edge (animation trigger) and falling edge (button release).
+      if (stateChanged) {
+        sendDeviceStateEvent();
       }
     }
 
