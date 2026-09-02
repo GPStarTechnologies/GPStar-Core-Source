@@ -249,6 +249,7 @@ String getEquipmentStatus() {
     jsonBody["volMaster"] = i_volume_master_percentage;
     jsonBody["volEffects"] = i_volume_effects_percentage;
     jsonBody["volMusic"] = i_volume_music_percentage;
+    jsonBody["volMuted"] = (i_volume_master == i_volume_abs_min);
   }
   catch (...) {
   }

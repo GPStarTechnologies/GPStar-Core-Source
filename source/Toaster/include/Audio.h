@@ -619,10 +619,14 @@ void updateMasterVolume(bool startup) {
       // Nothing.
     break;
   }
+
+  if(!startup) {
+    i_volume_master_percentage = getVolumePercentage(i_volume_master); // Sync percentage
+  }
 }
 
 void increaseVolumeEEPROM() {
-  if(i_volume_master_eeprom == i_volume_abs_max) {
+  if(i_volume_master == i_volume_abs_max) {
     // Cannot go any higher.
   }
   else {
@@ -634,15 +638,15 @@ void increaseVolumeEEPROM() {
     }
 
     i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
-    i_volume_master = i_volume_master_eeprom;
-    i_volume_revert = i_volume_master_eeprom;
+    i_volume_master = getGainValue(i_volume_master_percentage);
+    i_volume_revert = i_volume_master;
 
     updateMasterVolume();
   }
 }
 
 void decreaseVolumeEEPROM() {
-  if(i_volume_master_eeprom == MINIMUM_VOLUME) {
+  if(i_volume_master == MINIMUM_VOLUME) {
     // Cannot go any lower.
   }
   else {
@@ -654,16 +658,16 @@ void decreaseVolumeEEPROM() {
     }
 
     i_volume_master_eeprom = getGainValue(i_volume_master_percentage);
-    i_volume_master = i_volume_master_eeprom;
-    i_volume_revert = i_volume_master_eeprom;
+    i_volume_master = getGainValue(i_volume_master_percentage);
+    i_volume_revert = i_volume_master;
 
     updateMasterVolume();
   }
 }
 
 void increaseVolume() {
-  if(i_volume_master_percentage >= 100) {
-    // Cannot go any higher (at or past 100%).
+  if(i_volume_master == i_volume_abs_max) {
+    // Cannot go any higher.
   }
   else {
     if(i_volume_master_percentage + VOLUME_MULTIPLIER > 100) {
@@ -681,8 +685,8 @@ void increaseVolume() {
 }
 
 void decreaseVolume() {
-  if(i_volume_master_percentage <= 0) {
-    // Cannot go any lower (at or below 0%).
+  if(i_volume_master == MINIMUM_VOLUME) {
+    // Cannot go any lower.
   }
   else {
     if(i_volume_master_percentage - VOLUME_MULTIPLIER < 0) {
@@ -785,6 +789,7 @@ void toggleMute(bool enable) {
     if(enable) {
       i_volume_revert = i_volume_master;
       i_volume_master = i_volume_abs_min;
+      i_volume_master_percentage = 0; // Sync percentage when muting
 
       updateMasterVolume(true); // set to true to stop sound playback
     }

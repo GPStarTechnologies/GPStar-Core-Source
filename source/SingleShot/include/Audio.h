@@ -646,6 +646,8 @@ void updateMasterVolume(bool startup) {
   }
 
   if(!startup) {
+    i_volume_master_percentage = getVolumePercentage(i_volume_master); // Sync percentage
+
     // If this isn't being called at boot, provide audio feedback and report the change.
     if(DEVICE_STATUS == MODE_OFF && !(b_playing_music && !b_music_paused)) {
       // Provide feedback when the Single Shot Blaster is not running.
@@ -819,6 +821,7 @@ void toggleMute(bool enable) {
     if(enable) {
       i_volume_revert = i_volume_master;
       i_volume_master = i_volume_abs_min;
+      i_volume_master_percentage = 0; // Sync percentage when muting
 
       updateMasterVolume(true); // set to true to stop sound playback
     }

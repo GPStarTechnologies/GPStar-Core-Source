@@ -602,6 +602,8 @@ void updateMasterVolume(bool startup) {
   }
 
   if(!startup) {
+    i_volume_master_percentage = getVolumePercentage(i_volume_master); // Sync percentage
+
     // If this isn't being called at boot, provide audio feedback and report the change.
     if((TRAP_STATE == TRAP_IDLE || TRAP_STATE == TRAP_SERVICE || TRAP_STATE == TRAP_NO_CARTRIDGE) && !(b_playing_music && !b_music_paused)) {
       if(i_volume_master_percentage == 50) {
@@ -782,6 +784,7 @@ void toggleMute(bool enable) {
     if(enable) {
       i_volume_revert = i_volume_master;
       i_volume_master = i_volume_abs_min;
+      i_volume_master_percentage = 0; // Sync percentage when muting
 
       updateMasterVolume(true); // set to true to stop sound playback
     }

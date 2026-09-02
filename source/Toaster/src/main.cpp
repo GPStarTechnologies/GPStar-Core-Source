@@ -229,6 +229,12 @@ void UserInputTask(void *parameter) {
       debugln(uxTaskGetStackHighWaterMark(NULL));
     #endif
 
+    // Update the state of the audio device.
+    updateAudio();
+
+    // Perform music control and check for track advancement.
+    checkMusic();
+
     // Check each RF input pin for triggers.
     RFButtonChannel* buttons[] = {&devices.button1, &devices.button2, &devices.button3, &devices.button4};
     uint8_t buttonPins[] = {devices.button1.pin, devices.button2.pin, devices.button3.pin, devices.button4.pin};
