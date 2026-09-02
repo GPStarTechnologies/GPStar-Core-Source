@@ -1,6 +1,6 @@
 /**
  *   GPStar Toaster - Ghostbusters Proton Pack & Neutrona Wand.
-*   Copyright (C) 2026 Dustin Grau <dustin.grau@gmail.com>
+ *   Copyright (C) 2026 Dustin Grau <dustin.grau@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -29,10 +29,11 @@ enum sound_fx {
   S_PING1,
   S_PING2,
   S_PING3,
-  S_PING4
+  S_PING4,
+  S_DEVICE_READY
 };
 
 /*
  * Need to keep track which is the last sound effect, so we can iterate over the effects to adjust the volume gain on them.
  */
-const uint16_t i_last_effects_track = S_PING4;
+const uint16_t i_last_effects_track = S_DEVICE_READY;

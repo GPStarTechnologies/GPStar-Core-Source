@@ -61,19 +61,48 @@
         </div>
       </div>
 
+      <div id="audio-toggles" class="card">
+        <div style="display: inline-block">
+          <h3>Master Mute</h3>
+          <label class="toggle-switchy">
+            <input id="toggleMute" name="toggleMute" type="checkbox" onchange="toggleMute(this)" />
+            <span class="toggle">
+              <span class="switch"></span>
+            </span>
+          </label>
+        </div>
+        <div style="display: inline-block">
+          <h3>Music Repeat</h3>
+          <label class="toggle-switchy" data-text="repeat">
+            <input id="toggleLoop" name="toggleLoop" type="checkbox" onchange="musicLoop(this)" />
+            <span class="toggle">
+              <span class="switch"></span>
+            </span>
+          </label>
+        </div>
+        <div style="display: inline-block">
+          <h3>Music Shuffle</h3>
+          <label class="toggle-switchy">
+            <input id="toggleShuffle" name="toggleShuffle" type="checkbox" onchange="musicShuffle(this)" />
+            <span class="toggle">
+              <span class="switch"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
       <div class="card">
-        <h3 class="centered">Music Controls</h3>
-        <div class="music-navigation compact">
+        <h3 class="centered">Music Navigation</h3>
+        <div class="music-navigation">
+          <button type="button" id="btnMusicPrev" onclick="musicPrev()" title="Previous Track">&#9664;&#9664;</button>
           <button type="button" id="btnMusicStartStop" onclick="musicStartStop()" title="Start/Stop">&#9634;&nbsp;&#9654;</button>
           <button type="button" id="btnMusicPauseResume" onclick="musicPauseResume()" title="Play/Pause">&#9646;&#9646;&nbsp;&#9654;</button>
+          <button type="button" id="btnMusicNext" onclick="musicNext()" title="Next Track">&#9654;&#9654;</button>
         </div>
         <div class="music-playback">
-          <button type="button" class="blue" onclick="selectMusic1()" id="btnMusic1">Track 1</button>
-          &nbsp;&nbsp;
-          <button type="button" class="blue" onclick="selectMusic2()" id="btnMusic2">Track 2</button>
-          <br />
-          <br />
+          <span id="playbackStatus" class="infoLabel">&mdash;</span>
         </div>
+        <select id="tracks" class="custom-select" onchange="musicSelect(this)"></select>
       </div>
     </div>
 

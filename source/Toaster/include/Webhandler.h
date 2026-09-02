@@ -124,6 +124,12 @@ String getDeviceConfig() {
   JsonDocument jsonBody;
 
   // Provide current values for the device.
+  if(s_track_listing != "" && s_track_listing != "null") {
+    jsonBody["songList"] = s_track_listing;
+  }
+  else {
+    jsonBody["songList"] = "";
+  }
   jsonBody["buildDate"] = build_date;
   jsonBody["audioVersion"] = i_audio_version;
   jsonBody["audioCorrupt"] = b_microsd_corrupt;
@@ -480,6 +486,11 @@ void startWebServer() {
   #endif
 }
 
+// Send a debug event to connected clients via Server-Sent Events (SSE).
+void sendDebugEvent(const char* message) {
+  events.send(message, "debug", millis());
+}
+
 void sendNetworkStatus() {
   if(b_httpd_started) {
     // Push network status via Server-Sent Events to all connected clients.
@@ -524,11 +535,6 @@ void webLoops() {
       ms_otacheck.start(i_otaCheck);
     }
   }
-}
-
-// Send a debug event to connected clients via Server-Sent Events (SSE).
-void sendDebugEvent(const char* message) {
-  events.send(message, "debug", millis());
 }
 
 void handleConnectivityCheck(AsyncWebServerRequest *request) {
@@ -969,28 +975,27 @@ void handleMusicVolumeDown(AsyncWebServerRequest *request) {
 
 void handleMusicStartStop(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Start/Stop"));
-  if(b_playing_music) {
-    stopMusic();
-  }
-  else {
+  if(!b_playing_music && !b_music_paused) {
     playMusic();
   }
+  else {
+    stopMusic();
+  }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
+  notifyWSClients();
 }
 
 void handleMusicPauseResume(AsyncWebServerRequest *request) {
   debugln(F("Web: Music Pause/Resume"));
   if(b_playing_music) {
-    // If last playing music, either pause or resume.
-    if(!b_music_paused) {
-      pauseMusic();
+    if(b_music_paused) {
+      resumeMusic();
     }
     else {
-      resumeMusic();
+      pauseMusic();
     }
   }
   else {
-    // if not playing music, start playing the current track.
     playMusic();
   }
   request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
@@ -1074,28 +1079,28 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
   }
 
   if(c_music_track.toInt() != 0 && c_music_track.toInt() >= i_music_track_start) {
-    uint16_t i_music_track = c_music_track.toInt();
-    debugln(String(F("Web: Selected Music Track: ")) + String(i_music_track));
-    if(i_music_track_count > 0 && i_music_track >= i_music_track_start) {
-      if(b_playing_music) {
-        stopMusic(); // Stops current track before change.
+    if(b_playing_music) {
+      stopMusic(); // Stops current track before change.
 
-        // Only update after the music is stopped.
-        i_current_music_track = i_music_track;
+      // Only update after the music is stopped.
+      i_current_music_track = c_music_track.toInt();
 
-        // Play the appropriate track on pack and wand, and notify the Attenuator.
-        playMusic();
-      }
-      else {
-        i_current_music_track = i_music_track;
-      }
+      // Play the requested track.
+      playMusic();
     }
+    else {
+      i_current_music_track = c_music_track.toInt();
+    }
+
+    debugln(String(F("Web: Selected Music Track: ")) + String(i_current_music_track));
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }
   else {
     // Tell the user why the requested action failed.
     request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus("Invalid track number requested")); // 400 Bad Request
   }
+
+  notifyWSClients();
 }
 
 /**
@@ -1290,12 +1295,38 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
       }
     }
 
-    // Accesses namespace in read/write mode.
-    // if(preferences.begin("device", false)) {
-    //   preferences.end();
-    // }
+    // Get the track listing from the text field.
+    String songList = jsonBody["songList"].as<String>();
+    bool b_list_err = false;
 
-    if(b_ssid_changed) {
+    // Accesses namespace in read/write mode.
+    if(preferences.begin("device", false)) {
+      // Store the song list to preferences.
+      if(songList.length() <= 2000) {
+        if(songList == "null") {
+          songList = "";
+        }
+
+        // Update song lists if contents are under 2000 bytes.
+        #if defined(DEBUG_SEND_TO_CONSOLE)
+          debugln(F("Song List Bytes: "));
+          debugln(songList.length());
+        #endif
+        preferences.putString("track_list", songList);
+        s_track_listing = songList;
+      }
+      else {
+        // Max size for preferences is 4KB so we need to make reserve space for other items.
+        // Also, there is a 2KB limit for a single item which is what we're storing here.
+        b_list_err = true;
+      }
+
+      preferences.end();
+    }
+
+    if(b_list_err) {
+      request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated, but song list exceeds the 2,000 bytes maximum and was not saved."));
+    } else if(b_ssid_changed) {
       request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus("Settings updated, restart required. Please use the new network name to connect to your device."));
     } else {
       request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus("Settings updated."));

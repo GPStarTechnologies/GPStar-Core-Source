@@ -19,6 +19,10 @@
 
 var animationSlots = []; // Cache of animation slot metadata from server
 var hasAnyViableSlots = false; // Track if there are any slots with saved animations
+var musicTrackStart = 0,
+    musicTrackMax = 0,
+    musicTrackCurrent = 0,
+    musicTrackList = [];
 
 // Initialize connection wrappers
 const wsClient = new WebSocketClient({
@@ -26,9 +30,9 @@ const wsClient = new WebSocketClient({
 });
 
 function onWSMessage(event) {
-  if (isJsonString(event.data)) {
+  try {
     updateDisplay(JSON.parse(event.data));
-  } else {
+  } catch (e) {
     console.log(event.data);
   }
 }
@@ -138,6 +142,11 @@ function getDevicePrefs() {
   // This is updated once per page load as it is not subject to frequent changes.
   xhrHelper.get("/config/device", (jObj) => {
     if (jObj) {
+      if (jObj.songList && jObj.songList != "") {
+        musicTrackList = jObj.songList.split("\n");
+        updateTrackListing();
+      }
+
       // Device Info
       setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
 
@@ -162,6 +171,48 @@ function getDevicePrefs() {
       }
     }
   });
+}
+
+function removeOptions(selectElement) {
+  var i,
+    len = selectElement.options.length - 1;
+  for (i = len; i >= 0; i--) {
+    selectElement.remove(i);
+  }
+}
+
+function updateTrackListing() {
+  // Continue if start/end values are sane and something actually changed.
+  if (musicTrackStart >= 500 && musicTrackMax < 4596 && musicTrackMax >= musicTrackStart) {
+    // Prepare for track names, if available.
+    var trackNum = 0;
+    var trackName = "";
+
+    // Update the list of options for track selection.
+    var trackList = getEl("tracks");
+    if (trackList) {
+      removeOptions(trackList); // Clear previous options.
+
+      // Generate an option for each track in the selection field.
+      for (var i = musicTrackStart; i <= musicTrackMax; i++) {
+        var opt = document.createElement("option");
+        opt.setAttribute("value", i);
+        if (i == musicTrackCurrent) {
+          opt.setAttribute("selected", true);
+        }
+
+        trackName = musicTrackList[trackNum] || "";
+        if (trackName != "") {
+          opt.appendChild(document.createTextNode("#" + i + " " + trackName));
+        } else {
+          opt.appendChild(document.createTextNode("Track #" + i));
+        }
+
+        trackList.appendChild(opt); // Add the option.
+        trackNum++; // Advance for the track name array.
+      }
+    }
+  }
 }
 
 function setControlDefaults() {
@@ -218,6 +269,21 @@ function updateDisplay(jObj) {
     if ((jObj.volMusic ?? 0) == 0) {
       setHtml("musicVolume", "Min");
     }
+    setToggle("toggleMute", jObj.volMuted);
+
+    // Music Playback Status
+    if (jObj.musicPlaying && !jObj.musicPaused) {
+      // If music is playing (but not paused), show that status.
+      setHtml("playbackStatus", "Music Playing");
+    } else if (jObj.musicPaused) {
+      // If music is playing AND paused, show that status.
+      setHtml("playbackStatus", "Music Paused");
+    } else {
+      // If no music is playing or paused, show a default message.
+      setHtml("playbackStatus", "No Music Playing");
+    }
+    setToggle("toggleLoop", jObj.musicLooping);
+    setToggle("toggleShuffle", jObj.musicShuffled);
 
     // Update animation slot availability for save and play dropdowns
     if (jObj.animationSlots && Array.isArray(jObj.animationSlots)) {
@@ -229,6 +295,14 @@ function updateDisplay(jObj) {
     // Handle animation state from status response (ensures UI updates on page load)
     if (jObj.animation) {
       updateAnimationDisplay(jObj.animation);
+    }
+
+    // Update the current track info.
+    musicTrackStart = jObj.musicStart || 0;
+    musicTrackMax = jObj.musicEnd || 0;
+    if (musicTrackCurrent != (jObj.musicCurrent ?? 0)) {
+      musicTrackCurrent = jObj.musicCurrent || 0;
+      updateTrackListing();
     }
   }
 }

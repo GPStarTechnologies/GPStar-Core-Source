@@ -62,14 +62,14 @@ uint16_t i_current_music_track = 0; // Sets the ID number for the music track to
 uint16_t i_audio_version = 0; // Contains the firmware version for GPStar Audio (if applicable).
 const uint16_t i_music_track_start = 500; // Music tracks start on file named 500_ and higher.
 const int8_t i_volume_abs_min = -70; // System (absolute) minimum volume possible.
-int8_t i_volume_abs_max = 0; // System (absolute) maximum volume possible. 0 dB for WAV Trigger, +10 dB for GPStar Audio (when not in standalone mode).
+int8_t i_volume_abs_max = 0; // System (absolute) maximum volume possible. 0 dB for WAV Trigger, +10 dB for GPStar Audio.
 const int8_t i_track_volume_abs_max = 0; // Maximum gain for effects/music is 0 dB (unity gain).
 bool b_playing_music = false; // Sets whether a music track is currently playing or not.
 bool b_music_paused = false; // Sets whether a music track is currently paused or not.
 bool b_repeat_track = false; // Sets whether to repeat one music track or loop through all music tracks.
 bool b_shuffle_tracks = false; // Sets whether to shuffle all music tracks or not.
 bool b_preload_tracks = false; // Sets whether to add a 50ms delay before playing any file to allow slower SD cards more time to fill the buffer.
-bool b_audio_boost = true; // Sets whether or not to use the +10dB boosted audio range or not.
+bool b_audio_boost = false; // Sets whether or not to use the +10dB boosted audio range or not.
 bool b_microsd_outdated = false; // Sets whether the microSD card sound effect contents are out of date for the current firmware version.
 bool b_microsd_corrupt = false; // Sets whether the microSD card appears to be corrupt.
 String s_track_listing = ""; // Utilized only for the web UI to display the music track listing.
@@ -81,7 +81,6 @@ String s_track_listing = ""; // Utilized only for the web UI to display the musi
 
 /*
  * Music Control/Checking
- * Only for bench test mode. When bench test mode is disabled, the Pack controls the music checking and playback.
  */
 StatelessShuffle shuffleSystem;
 const uint16_t i_music_check_delay = 2000;
@@ -337,7 +336,7 @@ void playMusic() {
       break;
     }
 
-    // Keep track of music playback.
+    // Keep track of music playback on the device directly.
     ms_music_status_check.start(i_music_check_delay * 5);
   }
 }
@@ -368,7 +367,7 @@ void pauseMusic() {
     // Stop the music check timer.
     ms_music_status_check.stop();
 
-    // Pause music playback on the Neutrona Wand
+    // Pause music playback on the device
     switch(AUDIO_DEVICE) {
       case AUDIO_GPSTAR:
       case AUDIO_GPSTAR_ADV:
@@ -407,7 +406,7 @@ void resumeMusic() {
     // Reset the music check timer.
     ms_music_status_check.start(i_music_check_delay * 4);
 
-    // Resume music playback on the Neutrona Wand
+    // Resume music playback on the device
     switch(AUDIO_DEVICE) {
       case AUDIO_GPSTAR:
       case AUDIO_GPSTAR_ADV:
@@ -891,8 +890,6 @@ void decreaseVolumeMusic() {
 void buildMusicCount(uint16_t i_num_tracks) {
   // Build the music track count.
   i_music_track_count = i_num_tracks - i_last_effects_track;
-
-  // Build the music track count.
   int16_t i_max_music_tracks = i_max_track_count - i_last_effects_track;
 
   if(i_music_track_count == 0) {
@@ -1034,7 +1031,7 @@ void checkMusic() {
     ms_music_next_track.stop();
     ms_check_music.start(i_music_check_delay);
 
-    // Play the appropriate track on the wand.
+    // Play the appropriate track on the device.
     playMusic();
   }
 }
@@ -1123,13 +1120,6 @@ bool setupAudioDevice() {
       AUDIO_DEVICE = AUDIO_GPSTAR;
       i_audio_version = 100; // Set to 100 to indicate old version.
     }
-
-    b_audio_boost = true; // Allow GPStar Audio to use +10dB if on external power.
-
-    // Recalculate our volume parameters based on the boosted curve.
-    i_volume_master = getGainValue(i_volume_master_percentage); // Master overall volume.
-    i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup.
-    i_volume_revert = i_volume_master; // Used to restore volume level from a muted state.
 
     sendDebug(String(F("Using GPStar Audio Version: ")) + String(audio.getVersionNumber()));
 

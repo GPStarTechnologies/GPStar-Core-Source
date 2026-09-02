@@ -1248,7 +1248,7 @@ void handleSelectMusicTrack(AsyncWebServerRequest *request) {
       i_current_music_track = c_music_track.toInt();
     }
 
-    debugln(F("Web: Selected Music Track: ") + String(i_current_music_track));
+    debugln(String(F("Web: Selected Music Track: ")) + String(i_current_music_track));
     request->send(HTTP_STATUS_200, MIME_JSON, returnJsonStatus());
   }
   else {

@@ -4,25 +4,25 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Cache-control" content="public" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Device Settings</title>
+    <title>Special Device Settings</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <h1 id="top">Device Settings</h1>
+    <h1 id="top">Special Device Settings</h1>
     <div class="block left">
       <p>
         Change system configuration options using the available toggles and selectors. Use this screen to customize the private network used by the built-in WiFi network.
         <br />
         You may also use
         <b>http://[CUSTOM_NAME].local</b>
-        to access this device via your browser. Use the "Update Settings" button to save values to the Attenuator/Wireless controller.
+        to access this device via your browser. Use the "Update Settings" button to save values to the controller.
       </p>
       <br />
     </div>
 
-    <h1>Device Identification</h1>
+    <h1>General Options</h1>
     <div class="block left">
       <div class="setting">
         <b>Custom Name:</b>
@@ -34,6 +34,23 @@
           placeholder="Custom SSID"
           title="Only letters, numbers, hyphens, and underscores are allowed, up to 32 characters."
         />
+      </div>
+    </div>
+
+    <h1>Music Track Listing</h1>
+    <div class="block left">
+      <div class="setting">
+        <span id="byteCount"></span>
+        <br />
+        <textarea
+          id="songList"
+          name="songList"
+          rows="40"
+          cols="38"
+          style="text-align: left"
+          oninput="updateByteCount()"
+          placeholder="Add a list of track names, 1 per line, up to 2000 Bytes in total"
+        ></textarea>
       </div>
     </div>
 
@@ -49,13 +66,19 @@
     <script type="application/javascript" src="/common.js"></script>
     <script type="application/javascript">
       window.addEventListener("load", onLoad);
-
       function onLoad(event) {
         // Wait 0.1s for page to fully load.
         setTimeout(getSettings, 100);
 
         // Initialize contextual help system
         initializeHelp("device");
+      }
+
+      function updateByteCount() {
+        var songList = getEl("songList");
+        var byteCount = getEl("byteCount");
+        var byteLength = new TextEncoder().encode(songList.value).length;
+        byteCount.innerHTML = byteLength + "/2000 Bytes";
       }
 
       function getSettings() {
@@ -66,6 +89,9 @@
             if (settings) {
               // Update fields with the current values, or supply an expected default as necessary.
               setValue("wifiName", settings.wifiName || "");
+
+              setValue("songList", settings.songList || "");
+              updateByteCount();
             }
           } else if (this.readyState == 4) {
             // Handle error responses
@@ -77,6 +103,12 @@
       }
 
       function saveSettings() {
+        // Do not allow saving if track list is too large for allowed storage space.
+        if (getValue("songList").length > 2000) {
+          alert("Error: Unable to save track listing (exceeds allowed bytes).");
+          return;
+        }
+
         // Do not allow saving if the new SSID is too short/long, or illegal.
         var wifiName = getText("wifiName");
         if (wifiName.length < 8) {
@@ -97,7 +129,8 @@
 
         // Saves current settings to attenuator, updating runtime variables and making changes immediately effective.
         var settings = {
-          wifiName: wifiName
+          wifiName: wifiName,
+          songList: getText("songList"),
         };
         var body = JSON.stringify(settings);
 
