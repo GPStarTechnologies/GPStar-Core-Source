@@ -18,7 +18,7 @@
  *
  */
 
-var musicTrackStart = 0,
+let musicTrackStart = 0,
     musicTrackMax = 0,
     musicTrackCurrent = 0,
     musicTrackList = [];
@@ -70,7 +70,7 @@ const esManager = new EventSourceManager({
       // Update the calibration coverage percentage.
       lastCoverage = parseFloat(calData.c ?? 0);
       if (lastCoverage > 0) {
-        setHtml("coverage", formatFloat(lastCoverage) + "%");
+        setHtml("coverage", `${formatFloat(lastCoverage)}%`);
       }
 
       // Report any status messages sent from the calibration process.
@@ -80,9 +80,9 @@ const esManager = new EventSourceManager({
 
       // Display the last added sample for reference.
       if (calData.v && (calData.v || []).length == 3) {
-        setHtml("magX", formatFloat(calData.v[0] ?? 0) + "&micro;T");
-        setHtml("magY", formatFloat(calData.v[1] ?? 0) + "&micro;T");
-        setHtml("magZ", formatFloat(calData.v[2] ?? 0) + "&micro;T");
+        setHtml("magX", `${formatFloat(calData.v[0] ?? 0)}&micro;T`);
+        setHtml("magY", `${formatFloat(calData.v[1] ?? 0)}&micro;T`);
+        setHtml("magZ", `${formatFloat(calData.v[2] ?? 0)}&micro;T`);
       }
 
       // Process enhanced bin distribution data for coverage analysis
@@ -108,21 +108,21 @@ const esManager = new EventSourceManager({
       } catch (e) {}
 
       // Update the HTML elements with the telemetry data
-      setHtml("gyroX", formatFloat(obj.gX ?? 0) + "&deg;/s");
-      setHtml("gyroY", formatFloat(obj.gY ?? 0) + "&deg;/s");
-      setHtml("gyroZ", formatFloat(obj.gZ ?? 0) + "&deg;/s");
-      setHtml("accelX", formatFloat(obj.aX ?? 0) + "m/s<sup>2</sup>");
-      setHtml("accelY", formatFloat(obj.aY ?? 0) + "m/s<sup>2</sup>");
-      setHtml("accelZ", formatFloat(obj.aZ ?? 0) + "m/s<sup>2</sup>");
-      setHtml("roll", formatFloat(obj.roll ?? 0) + "&deg;");
-      setHtml("pitch", formatFloat(obj.pitch ?? 0) + "&deg;");
+      setHtml("gyroX", `${formatFloat(obj.gX ?? 0)}&deg;/s`);
+      setHtml("gyroY", `${formatFloat(obj.gY ?? 0)}&deg;/s`);
+      setHtml("gyroZ", `${formatFloat(obj.gZ ?? 0)}&deg;/s`);
+      setHtml("accelX", `${formatFloat(obj.aX ?? 0)}m/s<sup>2</sup>`);
+      setHtml("accelY", `${formatFloat(obj.aY ?? 0)}m/s<sup>2</sup>`);
+      setHtml("accelZ", `${formatFloat(obj.aZ ?? 0)}m/s<sup>2</sup>`);
+      setHtml("roll", `${formatFloat(obj.roll ?? 0)}&deg;`);
+      setHtml("pitch", `${formatFloat(obj.pitch ?? 0)}&deg;`);
       setHtml("yaw", formatFloat(obj.yaw ?? 0) + "&deg;");
-      setHtml("gForce", formatFloat(obj.gForce ?? 0) + "");
-      setHtml("angVel", formatFloat(obj.angVel ?? 0) + "&deg;/s");
-      setHtml("shaken", "&nbsp;&nbsp;&nbsp;" + (obj.shaken ? "&oplus;" : "&mdash;"));
-      setHtml("magX", formatFloat(obj.mX ?? 0) + "&micro;T");
-      setHtml("magY", formatFloat(obj.mY ?? 0) + "&micro;T");
-      setHtml("magZ", formatFloat(obj.mZ ?? 0) + "&micro;T");
+      setHtml("gForce", `${formatFloat(obj.gForce ?? 0)}`);
+      setHtml("angVel", `${formatFloat(obj.angVel ?? 0)}&deg;/s`);
+      setHtml("shaken", `&nbsp;&nbsp;&nbsp;${obj.shaken ? "&oplus;" : "&mdash;"}`);
+      setHtml("magX", `${formatFloat(obj.mX ?? 0)}&micro;T`);
+      setHtml("magY", `${formatFloat(obj.mY ?? 0)}&micro;T`);
+      setHtml("magZ", `${formatFloat(obj.mZ ?? 0)}&micro;T`);
 
       // Proceed with updating the rendered scene if all objects are present.
       if (telemetry3D && telemetry3D.mesh) {
@@ -182,7 +182,7 @@ function getDevicePrefs() {
       }
 
       // Device Info
-      setHtml("buildDate", "Build: " + (jObj.buildDate || "") + " [" + (jObj.deviceProtocol || "-") + "]");
+      setHtml("buildDate", `Build: ${jObj.buildDate || ""} [${jObj.deviceProtocol || "-"}]`);
 
       switch (jObj.audioVersion ?? 0) {
         case 0:
@@ -195,7 +195,7 @@ function getDevicePrefs() {
           setHtml("audioInfo", "GPStar Audio Firmware: v100");
           break;
         default:
-          setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
+          setHtml("audioInfo", `GPStar Audio Firmware: v${jObj.audioVersion || ""}`);
           break;
       }
 
@@ -216,8 +216,7 @@ function getDevicePrefs() {
 }
 
 function removeOptions(selectElement) {
-  var i,
-    len = selectElement.options.length - 1;
+  var i, len = selectElement.options.length - 1;
   for (i = len; i >= 0; i--) {
     selectElement.remove(i);
   }
@@ -245,9 +244,9 @@ function updateTrackListing() {
 
         trackName = musicTrackList[trackNum] || "";
         if (trackName != "") {
-          opt.appendChild(document.createTextNode("#" + i + " " + trackName));
+          opt.appendChild(document.createTextNode(`#${i} ${trackName}`));
         } else {
-          opt.appendChild(document.createTextNode("Track #" + i));
+          opt.appendChild(document.createTextNode(`Track #${i}`));
         }
 
         trackList.appendChild(opt); // Add the option.

@@ -68,7 +68,7 @@ function getDevicePrefs() {
   xhrHelper.get("/config/device", (jObj) => {
     if (jObj) {
       // Device Info
-      setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
+      setHtml("buildDate", `Build: ${jObj.buildDate || ""}`);
 
       switch (jObj.audioVersion ?? 0) {
         case 0:
@@ -79,7 +79,7 @@ function getDevicePrefs() {
           setHtml("audioInfo", "GPStar Audio Firmware: v100");
           break;
         default:
-          setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
+          setHtml("audioInfo", `GPStar Audio Firmware: v${jObj.audioVersion || ""}`);
           break;
       }
 
@@ -159,7 +159,7 @@ function updateEquipment(jObj) {
 }
 
 function getStatus() {
-  var xhttp = new XMLHttpRequest();
+  const xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
       // Update the equipment (text) display, which will also update graphical elements.
@@ -175,7 +175,7 @@ function getStatus() {
 
 function doRestart() {
   if (confirm("Are you sure you wish to restart the serial device?")) {
-    var xhttp = new XMLHttpRequest();
+    const xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function () {
       if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
         // Reload the page after 2 seconds.
@@ -190,7 +190,7 @@ function doRestart() {
 }
 
 function sendCommand(apiUri) {
-  var xhttp = new XMLHttpRequest();
+  const xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4) {
       handleStatus(this.responseText);

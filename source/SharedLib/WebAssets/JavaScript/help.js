@@ -1,6 +1,6 @@
 /** Contextual Help System - Relies on a local help.json file **/
 
-var helpData = null; // Cached help data from /help.json
+let helpData = null; // Cached help data from /help.json
 
 function loadHelpData(callback) {
   // Fetch and cache the help.json file
@@ -17,7 +17,7 @@ function loadHelpData(callback) {
 
 function showHelpModal(title, text) {
   // Create or show the help modal with the provided text
-  var modal = getEl("helpModal");
+  let modal = getEl("helpModal");
   if (!modal) {
     // Create modal structure
     modal = document.createElement("div");
@@ -52,7 +52,7 @@ function showHelpModal(title, text) {
 
 function createHelpIcon(labelText, helpText) {
   // Create an info icon that shows help when clicked
-  var icon = document.createElement("span");
+  const icon = document.createElement("span");
   icon.className = "help-icon";
   icon.innerHTML = "&#9432;"; // Unicode info symbol (i in circle)
   icon.title = "Click for help";
@@ -71,12 +71,12 @@ function initializeHelp(section) {
       return;
     }
 
-    var sectionHelp = helpData[section];
-    for (var fieldId in sectionHelp) {
+    const sectionHelp = helpData[section];
+    for (const fieldId in sectionHelp) {
       if (sectionHelp.hasOwnProperty(fieldId)) {
-        var element = getEl(fieldId);
+        const element = getEl(fieldId);
         if (element) {
-          var helpText = sectionHelp[fieldId];
+          const helpText = sectionHelp[fieldId];
 
           // Skip if helpText is null or empty (no help available)
           if (!helpText) {
@@ -84,11 +84,11 @@ function initializeHelp(section) {
           }
 
           // Find the parent setting div or label to insert the icon
-          var parent = element.closest(".setting");
+          const parent = element.closest(".setting");
           if (parent) {
             // Find the label text
-            var label = parent.querySelector("b, .label");
-            var labelText = fieldId; // Fallback to field ID
+            const label = parent.querySelector("b, .label");
+            let labelText = fieldId; // Fallback to field ID
 
             if (label) {
               // Extract and clean the label text
@@ -96,17 +96,17 @@ function initializeHelp(section) {
               labelText = labelText.trim().replace(/:$/, ""); // Remove trailing colon
 
               // Create and add the help icon
-              var helpIcon = createHelpIcon(labelText, helpText);
+              const helpIcon = createHelpIcon(labelText, helpText);
               label.appendChild(document.createTextNode(" "));
               label.appendChild(helpIcon);
             } else {
               // For toggle switches, find the label span
-              var toggleLabel = parent.querySelector("label .label");
+              const toggleLabel = parent.querySelector("label .label");
               if (toggleLabel) {
                 labelText = toggleLabel.textContent || toggleLabel.innerText || fieldId;
                 labelText = labelText.trim().replace(/:$/, "");
 
-                var helpIcon = createHelpIcon(labelText, helpText);
+                const helpIcon = createHelpIcon(labelText, helpText);
                 toggleLabel.appendChild(document.createTextNode(" "));
                 toggleLabel.appendChild(helpIcon);
               }

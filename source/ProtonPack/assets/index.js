@@ -18,10 +18,10 @@
  *
  */
 
-var displayType = 1; // Display Preference: 0=Text-Only, 1=Graphical, 2=Both
-var useAnimation = 1; // Enable/Disable special animations on the UI when using graphical display
-var lastCyclotronState = ""; // Track previous cyclotron state to avoid redundant effect updates
-var lastPackState = ""; // Track previous pack power state to differentiate idle updates
+let displayType = 1; // Display Preference: 0=Text-Only, 1=Graphical, 2=Both
+let useAnimation = 1; // Enable/Disable special animations on the UI when using graphical display
+let lastCyclotronState = ""; // Track previous cyclotron state to avoid redundant effect updates
+let lastPackState = ""; // Track previous pack power state to differentiate idle updates
 var musicTrackStart = 0,
     musicTrackMax = 0,
     musicTrackCurrent = 0,
@@ -82,7 +82,7 @@ function getDevicePrefs() {
       }
 
       // Device Info
-      setHtml("buildDate", "Build: " + (jObj.buildDate || "") + " [" + (jObj.deviceProtocol || "-") + "]");
+      setHtml("buildDate", `Build: ${jObj.buildDate || ""} [${jObj.deviceProtocol || "-"}]`);
 
       switch (jObj.audioVersion ?? 0) {
         case 0:
@@ -145,8 +145,7 @@ function getDevicePrefs() {
 }
 
 function removeOptions(selectElement) {
-  var i,
-    len = selectElement.options.length - 1;
+  var i, len = selectElement.options.length - 1;
   for (i = len; i >= 0; i--) {
     selectElement.remove(i);
   }
@@ -359,6 +358,26 @@ function setButtonStates(statusObj) {
   }
 }
 
+function updateCyclotronLensAnimation(direction, active) {
+  // Apply animation class to all 4 lens elements based on rotation direction.
+  // Show/hide based on animation state for performance (display:none stops animations).
+  // direction: true = CW (clockwise, 1→2→3→4), false = CCW (counter-clockwise, 4→3→2→1)
+  for (let i = 1; i <= 4; i++) {
+    const lensId = `cycLens${i}`;
+    const lens = getEl(lensId);
+    if (lens) {
+      if (active) {
+        showEl(lensId);
+        lens.classList.remove('cyc-lens-animate-cw', 'cyc-lens-animate-ccw');
+        lens.classList.add(direction ? 'cyc-lens-animate-cw' : 'cyc-lens-animate-ccw');
+      } else {
+        hideEl(lensId);
+        lens.classList.remove('cyc-lens-animate-cw', 'cyc-lens-animate-ccw');
+      }
+    }
+  }
+}
+
 function updateBars(iPower, cMode, iTheme) {
   var color = getStreamColor(cMode, iTheme);
   var powerBars = getEl("powerBars");
@@ -512,6 +531,17 @@ function updateGraphics(jObj) {
         break;
     }
     setHtml("equipTitle", header);
+
+    // Set CSS custom properties for lens color and update animation direction
+    var equipCRT = getEl("equipCRT");
+    if (equipCRT) {
+      equipCRT.style.setProperty("--lens-color-r", color[0]);
+      equipCRT.style.setProperty("--lens-color-g", color[1]);
+      equipCRT.style.setProperty("--lens-color-b", color[2]);
+    }
+    // Animate lenses when pack is powered OR ramping is active
+    const isActive = jObj.pack === "Powered" || jObj.ramping;
+    updateCyclotronLensAnimation(jObj.direction, isActive);
 
     if (jObj.switch == "Ready") {
       colorEl("ionOverlay", 0, 150, 0);

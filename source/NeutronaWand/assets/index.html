@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Cache-control" content="public" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Neutrona Wand" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-title" content="Neutrona Wand" />
     <title>Neutrona Wand</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
@@ -99,7 +99,7 @@
       </div>
 
       <div id="audio-toggles" class="card">
-        <div style="display: inline-block">
+        <div class="control-group">
           <h3>Master Mute</h3>
           <label class="toggle-switchy">
             <input id="toggleMute" name="toggleMute" type="checkbox" onchange="toggleMute(this)" />
@@ -108,7 +108,7 @@
             </span>
           </label>
         </div>
-        <div style="display: inline-block">
+        <div class="control-group">
           <h3>Music Repeat</h3>
           <label class="toggle-switchy" data-text="repeat">
             <input id="toggleLoop" name="toggleLoop" type="checkbox" onchange="musicLoop(this)" />
@@ -117,7 +117,7 @@
             </span>
           </label>
         </div>
-        <div style="display: inline-block">
+        <div class="control-group">
           <h3>Music Shuffle</h3>
           <label class="toggle-switchy">
             <input id="toggleShuffle" name="toggleShuffle" type="checkbox" onchange="musicShuffle(this)" />

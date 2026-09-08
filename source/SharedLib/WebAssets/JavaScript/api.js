@@ -411,7 +411,7 @@ class XHRHelper {
    * @param {Function} callback - Called with parsed JSON response
    */
   get(url, callback) {
-    var xhttp = new XMLHttpRequest();
+    const xhttp = new XMLHttpRequest();
     xhttp.timeout = this.timeout;
     xhttp.onreadystatechange = () => {
       if (xhttp.readyState == 4) {
@@ -445,7 +445,7 @@ class XHRHelper {
    * @param {Function} callback - Called with response (optional)
    */
   put(url, data, callback) {
-    var xhttp = new XMLHttpRequest();
+    const xhttp = new XMLHttpRequest();
     xhttp.timeout = this.timeout;
     xhttp.onreadystatechange = () => {
       if (xhttp.readyState == 4) {
@@ -475,7 +475,7 @@ class XHRHelper {
    * @param {Function} callback - Called with response (optional)
    */
   post(url, data, callback) {
-    var xhttp = new XMLHttpRequest();
+    const xhttp = new XMLHttpRequest();
     xhttp.timeout = this.timeout;
     xhttp.onreadystatechange = () => {
       if (xhttp.readyState == 4) {
@@ -504,7 +504,7 @@ class XHRHelper {
    * @param {Function} callback - Called with response (optional)
    */
   delete(url, callback) {
-    var xhttp = new XMLHttpRequest();
+    const xhttp = new XMLHttpRequest();
     xhttp.timeout = this.timeout;
     xhttp.onreadystatechange = () => {
       if (xhttp.readyState == 4) {

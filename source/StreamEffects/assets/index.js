@@ -66,22 +66,22 @@ function getDevicePrefs() {
   xhrHelper.get("/config/device", (jObj) => {
     if (jObj) {
       // Device Info
-      setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
+      setHtml("buildDate", `Build: ${jObj.buildDate || ""}`);
     }
   });
 }
 
 function updateBars(iPower, cMode, iTheme) {
-  var color = getStreamColor(cMode, iTheme);
-  var powerBars = getEl("powerBars");
+  const color = getStreamColor(cMode, iTheme);
+  const powerBars = getEl("powerBars");
   if (powerBars) {
     powerBars.innerHTML = ""; // Clear previous bars if any
 
     if (iPower > 0) {
-      for (var i = 1; i <= iPower; i++) {
-        var bar = document.createElement("div");
+      for (let i = 1; i <= iPower; i++) {
+        const bar = document.createElement("div");
         bar.className = "bar";
-        bar.style.backgroundColor = "rgba(" + color[0] + ", " + color[1] + ", " + color[2] + ", 0." + Math.round(i * 1.8, 10) + ")";
+        bar.style.backgroundColor = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.${Math.round(i * 1.8, 10)})`;
         powerBars.appendChild(bar);
       }
     }
@@ -135,7 +135,7 @@ function updateEquipment(jObj) {
     setHtml("wsMessage", jObj.extWebSocketMessage || "");
 
     // Connected Wifi Clients - Private AP vs. WebSocket
-    setHtml("clientInfo", "AP Clients: " + (jObj.apClients ?? 0) + " / WebSocket Clients: " + (jObj.wsClients ?? 0));
+    setHtml("clientInfo", `AP Clients: ${jObj.apClients ?? 0} / WebSocket Clients: ${jObj.wsClients ?? 0}`);
   }
 }
 

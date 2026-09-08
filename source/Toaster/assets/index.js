@@ -17,9 +17,9 @@
  *
  */
 
-var animationSlots = []; // Cache of animation slot metadata from server
-var hasAnyViableSlots = false; // Track if there are any slots with saved animations
-var musicTrackStart = 0,
+let animationSlots = []; // Cache of animation slot metadata from server
+let hasAnyViableSlots = false; // Track if there are any slots with saved animations
+let musicTrackStart = 0,
     musicTrackMax = 0,
     musicTrackCurrent = 0,
     musicTrackList = [];
@@ -51,7 +51,7 @@ const esManager = new EventSourceManager({
     'animation': (data) => {
       if (data === undefined) return;
 
-      var animData = {}; // Always begin with an empty object.
+      let animData = {}; // Always begin with an empty object.
       try {
         animData = JSON.parse(data); // JSON with frame position, timings
       } catch (e) {}
@@ -62,7 +62,7 @@ const esManager = new EventSourceManager({
     'device': (data) => {
       if (data === undefined) return;
 
-      var deviceData = {}; // Always begin with an empty object.
+      let deviceData = {}; // Always begin with an empty object.
       try {
         deviceData = JSON.parse(data); // JSON with RF button and relay states
       } catch (e) {}
@@ -82,7 +82,7 @@ const esManager = new EventSourceManager({
  *   ANIM_IDLE_LOADED = 3        (animation loaded from NVS)
  *   ANIM_PLAYBACK = 4           (playback active)
  */
-var currentAnimationState = "IDLE_EMPTY";
+let currentAnimationState = "IDLE_EMPTY";
 
 /**
  * Button State Mapping -  Maps each animation state to the buttons that should be enabled/disabled.
@@ -148,7 +148,7 @@ function getDevicePrefs() {
       }
 
       // Device Info
-      setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
+      setHtml("buildDate", `Build: ${jObj.buildDate || ""}`);
 
       switch (jObj.audioVersion ?? 0) {
         case 0:
@@ -158,7 +158,7 @@ function getDevicePrefs() {
           setHtml("audioInfo", "GPStar Audio Firmware: v100");
           break;
         default:
-          setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
+          setHtml("audioInfo", `GPStar Audio Firmware: v${jObj.audioVersion || ""}`);
           break;
       }
 
@@ -174,8 +174,7 @@ function getDevicePrefs() {
 }
 
 function removeOptions(selectElement) {
-  var i,
-    len = selectElement.options.length - 1;
+  var i, len = selectElement.options.length - 1;
   for (i = len; i >= 0; i--) {
     selectElement.remove(i);
   }
@@ -203,9 +202,9 @@ function updateTrackListing() {
 
         trackName = musicTrackList[trackNum] || "";
         if (trackName != "") {
-          opt.appendChild(document.createTextNode("#" + i + " " + trackName));
+          opt.appendChild(document.createTextNode(`#${i} ${trackName}`));
         } else {
-          opt.appendChild(document.createTextNode("Track #" + i));
+          opt.appendChild(document.createTextNode(`Track #${i}`));
         }
 
         trackList.appendChild(opt); // Add the option.
@@ -355,7 +354,7 @@ function saveToSlot() {
   const slotInfo = animationSlots.find((s) => s.id === slot);
   if (slotInfo && slotInfo.hasAnimation) {
     // Confirm before overwriting - display duration in seconds
-    const confirmMsg = "Slot " + slot + " already has an animation (" + slotInfo.animationSeconds.toFixed(1) + " seconds). Overwrite?";
+    const confirmMsg = `Slot ${slot} already has an animation (${slotInfo.animationSeconds.toFixed(1)} seconds). Overwrite?`;
     if (!confirm(confirmMsg)) {
       return; // User cancelled
     }
@@ -373,7 +372,7 @@ function playFromSlot() {
   // Verify selected slot contains animation data
   const slotInfo = animationSlots.find((s) => s.id === slotIndex);
   if (!slotInfo || !slotInfo.hasAnimation || !slotInfo.keyFrames) {
-    alert("Slot " + slotIndex + " does not contain a saved animation.");
+    alert(`Slot ${slotIndex} does not contain a saved animation.`);
     return;
   }
   
@@ -400,7 +399,7 @@ function updateSaveSlots() {
     const option = saveSelect.options[i];
     if (option) {
       // Update option label to show animation duration in seconds if it has data
-      const label = slot.hasAnimation ? "Slot " + slot.id + " (" + slot.animationSeconds.toFixed(1) + "s)" : "Slot " + slot.id;
+      const label = slot.hasAnimation ? `Slot ${slot.id} (${slot.animationSeconds.toFixed(1)}s)` : `Slot ${slot.id}`;
       option.text = label;
       option.disabled = false; // All slots available for saving
     }
@@ -427,7 +426,7 @@ function updatePlaySlots() {
     const option = playSelect.options[i];
     if (option) {
       // Show animation duration in seconds and enable only if has animation
-      const label = "Slot " + slot.id + (slot.hasAnimation ? " (" + slot.animationSeconds.toFixed(1) + "s)" : " (empty)");
+      const label = `Slot ${slot.id}${slot.hasAnimation ? ` (${slot.animationSeconds.toFixed(1)}s)` : " (empty)"}`;
       option.text = label;
       option.disabled = !slot.hasAnimation;
     }

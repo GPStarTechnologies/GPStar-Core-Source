@@ -57,9 +57,9 @@
 
 .barrel-box {
   border-radius: 5px;
-  left: 268px;
+  left: 267px;
   height: 60px;
-  top: 338px;
+  top: 337px;
   width: 20px;
   z-index: 2;
 }
@@ -75,9 +75,9 @@
 
 .cyc-circle {
   border-radius: 50%;
-  left: 77.5px;
+  left: 76.5px;
   height: 140px;
-  top: 277px;
+  top: 276px;
   width: 140px;
   z-index: 2;
 }
@@ -85,7 +85,7 @@
 .cyc-circle::before {
   background-color: #fff;
   border-radius: 50%;
-  bottom: -5.5px;
+  bottom: -4.5px;
   content: "";
   height: 39px;
   left: 74.5px;
@@ -93,11 +93,63 @@
   width: 40px;
 }
 
+/* Cyclotron lens illumination animation */
+@keyframes lens-illuminate {
+  0%, 100% { opacity: 0; }
+  5%, 20% { opacity: 1; }
+  25% { opacity: 0; }
+}
+
+/* Cyclotron Lens */
+.cyc-lens-1,
+.cyc-lens-2,
+.cyc-lens-3,
+.cyc-lens-4 {
+  background-color: rgba(var(--lens-color-r), var(--lens-color-g), var(--lens-color-b), 1);
+  border-radius: 50%;
+  height: 2px;
+  width: 2px;
+  z-index: 3;
+  box-shadow: 0 0 4px 8px rgba(var(--lens-color-r), var(--lens-color-g), var(--lens-color-b), 0.8);
+}
+
+.cyc-lens-1 {
+  left: 173px;
+  top: 317px;
+}
+
+.cyc-lens-2 {
+  left: 167px;
+  top: 363px;
+}
+
+.cyc-lens-3 {
+  left: 124px;
+  top: 363px;
+}
+
+.cyc-lens-4 {
+  left: 119px;
+  top: 317px;
+}
+
+/* CW Animation: 1 → 2 → 3 → 4 */
+.cyc-lens-4.cyc-lens-animate-cw { animation: lens-illuminate 2s -0s infinite linear; }
+.cyc-lens-3.cyc-lens-animate-cw { animation: lens-illuminate 2s -0.5s infinite linear; }
+.cyc-lens-2.cyc-lens-animate-cw { animation: lens-illuminate 2s -1s infinite linear; }
+.cyc-lens-1.cyc-lens-animate-cw { animation: lens-illuminate 2s -1.5s infinite linear; }
+
+/* CCW Animation: 4 → 3 → 2 → 1 */
+.cyc-lens-1.cyc-lens-animate-ccw { animation: lens-illuminate 2s -0s infinite linear; }
+.cyc-lens-2.cyc-lens-animate-ccw { animation: lens-illuminate 2s -0.5s infinite linear; }
+.cyc-lens-3.cyc-lens-animate-ccw { animation: lens-illuminate 2s -1s infinite linear; }
+.cyc-lens-4.cyc-lens-animate-ccw { animation: lens-illuminate 2s -1.5s infinite linear; }
+
 .filter-circle {
   border-radius: 50%;
-  left: 152px;
+  left: 151px;
   height: 41px;
-  top: 382.8px;
+  top: 381px;
   width: 40px;
   z-index: 3;
 }
@@ -122,8 +174,8 @@
 
 .safety-box {
   border-radius: 5px;
-  left: 305px;
-  height: 32px;
+  left: 303px;
+  height: 31px;
   top: 156px;
   width: 16px;
   z-index: 2;

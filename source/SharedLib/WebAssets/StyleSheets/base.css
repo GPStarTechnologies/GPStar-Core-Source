@@ -506,7 +506,7 @@ input[type="text"] {
 /* CRT Equipment Display */
 .equipment {
   background-color: #000;
-  border: 1px solid #009600;
+  border: 2px solid #009600;
   border-radius: 12px;
   box-sizing: border-box;
   box-shadow: 0 2px 18px -4px rgba(0, 0, 0, 0.75);

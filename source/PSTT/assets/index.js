@@ -108,7 +108,7 @@ function getDevicePrefs() {
       }
 
       // Device Info
-      setHtml("buildDate", "Build: " + (jObj.buildDate || ""));
+      setHtml("buildDate", `Build: ${jObj.buildDate || ""}`);
 
       switch (jObj.audioVersion ?? 0) {
         case 0:
@@ -121,7 +121,7 @@ function getDevicePrefs() {
           setHtml("audioInfo", "GPStar Audio Firmware: v100");
           break;
         default:
-          setHtml("audioInfo", "GPStar Audio Firmware: v" + (jObj.audioVersion || ""));
+          setHtml("audioInfo", `GPStar Audio Firmware: v${jObj.audioVersion || ""}`);
           break;
       }
     }
@@ -150,9 +150,9 @@ function updateTrackListing() {
 
         trackName = musicTrackList[trackNum] || "";
         if (trackName != "") {
-          opt.appendChild(document.createTextNode("#" + i + " " + trackName));
+          opt.appendChild(document.createTextNode(`#${i} ${trackName}`));
         } else {
-          opt.appendChild(document.createTextNode("Track #" + i));
+          opt.appendChild(document.createTextNode(`Track #${i}`));
         }
 
         trackList.appendChild(opt); // Add the option.
