@@ -1073,7 +1073,6 @@ void checkWand() {
 #ifdef ESP32
   else if(b_ble_rx_ready) {
     // No serial data so check for BLE data instead
-    debugln(F("[PACK-MAIN] BLE flag ready, processing"));
     processBLENotification();
   }
 #endif

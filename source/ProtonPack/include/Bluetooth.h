@@ -292,9 +292,7 @@ void processBLENotification() {
   if(!b_ble_rx_ready || g_ble_rx_length == 0) {
     return;  // No notification queued
   }
-  
-  debugln(F("[PACK-PROCESS] Processing BLE notification"));
-  
+
   // Clear the ready flag
   b_ble_rx_ready = false;
   
@@ -529,10 +527,4 @@ void bleSendData(const uint8_t* pData, size_t length) {
   
   g_pStatusCharacteristic->setValue((uint8_t*)pData, length);
   g_pStatusCharacteristic->notify();
-  
-  #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE-TX] Sent "));
-    debug(length);
-    debugln(F(" bytes via BLE"));
-  #endif
 }

@@ -537,14 +537,7 @@ void handleBLEWandConnection() {
 
   // Check if already connected
   if(b_ble_connected) {
-    #if defined(DEBUG_BLUETOOTH)
-      static unsigned long lastStatusTime = 0;
-      if(millis() - lastStatusTime > 10000) {
-        debugln(F("[BLE] *** BLE CONNECTED to Pack ***"));
-        lastStatusTime = millis();
-      }
-    #endif
-    return;
+    return;  // Already connected, nothing to do
   }
 
   // Check if scan found a Pack (set by scan callback)
@@ -661,12 +654,6 @@ void bleSendData(const uint8_t* pData, size_t length) {
   // Now send the data
   if(g_pRemoteCommandChar && g_pRemoteCommandChar->canWrite()) {
     g_pRemoteCommandChar->writeValue((uint8_t*)pData, length, false);  // false = write without response
-    
-    #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE-TX] Sent "));
-      debug(length);
-      debugln(F(" bytes via BLE"));
-    #endif
   }
 }
 
