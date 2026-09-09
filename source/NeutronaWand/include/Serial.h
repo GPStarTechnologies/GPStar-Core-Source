@@ -641,12 +641,20 @@ void checkPack() {
       handlePacket(i_packet_id);
     }
   }
-  #ifdef ESP32
+#ifdef ESP32
   else if(b_ble_notification_ready) {
-    // No serial data; check for BLE data instead
+    // No serial data so check for BLE data instead
+    debugln(F("[SERIAL] checkPack(): Processing BLE notification"));
     processBLENotification();
+  } else {
+    // Debug: both conditions false
+    static unsigned long lastDbg = 0;
+    if(millis() - lastDbg > 10000) {
+      debugln(F("[SERIAL] checkPack(): No serial or BLE data available"));
+      lastDbg = millis();
+    }
   }
-  #endif
+#endif
 }
 
 void handlePacket(uint8_t i_packet_type) {
@@ -658,7 +666,7 @@ void handlePacket(uint8_t i_packet_type) {
         // The user shorted the Tx/Rx pins on the Neutrona Wand, creating a loopback (echo) of the request to start synchronization.
         // This is a special case where the wand is not connected to a Proton Pack, but the user wants to use it in standalone mode.
         toggleStandaloneMode(true);
-
+debugln(F("toggleStandaloneMode"));
         // Immediately exit the serial data functions because there is no true hardware serial connection.
         return;
       }

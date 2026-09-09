@@ -1059,12 +1059,12 @@ void checkWand() {
       handleWandPacket(i_packet_id);
     }
   }
-  #ifdef ESP32
+#ifdef ESP32
   else if(b_ble_command_ready) {
-    // No serial data; check for BLE data instead
+    // No serial data so check for BLE data instead
     processBLECommand();
   }
-  #endif
+#endif
 }
 
 void handleWandPacket(uint8_t i_packet_type) {
@@ -1203,6 +1203,7 @@ void handleWandCommand(uint16_t i_command, uint16_t i_value) {
     // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
     if(i_command != A_SYNC_WAND && i_command != A_HANDSHAKE && i_command != A_SYNCHRONIZED) {
       // This applies for any action other than those responsible for sync operations.
+      sendDebug(F("Wand disconnected!"));
       return;
     }
   }

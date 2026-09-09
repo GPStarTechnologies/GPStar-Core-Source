@@ -20,7 +20,7 @@
 #pragma once
 
 #ifdef ESP32
-  #include "BuildInfo.h"
+#include "BuildInfo.h"
 
 /*
  * Control debug messages for various actions during normal operation.
@@ -31,7 +31,7 @@
  */
 //#define DEBUG_WIRELESS_SETUP    // Output debugs related to the WiFi/network setup.
 #define DEBUG_BLUETOOTH         // Output debugs related to BLE init and data.
-//#define DEBUG_SEND_TO_CONSOLE   // Send any general messages to the serial (USB) console.
+#define DEBUG_SEND_TO_CONSOLE   // Send any general messages to the serial (USB) console.
 //#define DEBUG_SEND_TO_WEBSOCKET // Send any messages to connected WebSocket clients.
 //#define DEBUG_SEND_TO_EVENTS    // Send any messages to the server-side events stream.
 //#define DEBUG_TELEMETRY_DATA    // Output debugs related to the motion sensors.
