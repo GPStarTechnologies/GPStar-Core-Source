@@ -24,8 +24,8 @@
 void restartWireless(); // From Webhandler.h
 void shutdownWireless(); // From Webhandler.h
 void bleSendData(const uint8_t* pData, size_t length); // From Bluetooth.h - send serialized data via BLE
-void processBLECommand(); // From Bluetooth.h - process queued BLE command bytes
-extern bool b_ble_command_ready; // From Bluetooth.h - flag indicating BLE command is queued
+void processBLENotification(); // From Bluetooth.h - process queued BLE command bytes
+extern bool b_ble_rx_ready; // From Bluetooth.h - flag indicating BLE data is queued
 #endif
 void handleWandPacket(uint8_t i_packet_type);
 
@@ -484,6 +484,8 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = wandComs.txObj(wandSyncData);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
 
+      debugln(F("[PACK-TX] SYNC_DATA"));
+
     #ifdef ESP32
       bleSendData(wandComs.packet.txBuff, i_send_size);
     #endif
@@ -493,6 +495,8 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = wandComs.txObj(wandConfig);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
 
+      debugln(F("[PACK-TX] SAVE_PREFERENCES_WAND"));
+
     #ifdef ESP32
       bleSendData(wandComs.packet.txBuff, i_send_size);
     #endif
@@ -501,6 +505,8 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
     case A_SAVE_PREFERENCES_SMOKE:
       i_send_size = wandComs.txObj(smokeConfig);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
+
+      debugln(F("[PACK-TX] SAVE_PREFERENCES_SMOKE"));
 
     #ifdef ESP32
       bleSendData(wandComs.packet.txBuff, i_send_size);
@@ -515,6 +521,11 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
 
       i_send_size = wandComs.txObj(sendCmdW);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
+
+      debug(F("[PACK-TX] CMD "));
+      debug(i_command);
+      debug(F(" VAL "));
+      debugln(i_value);
 
     #ifdef ESP32
       bleSendData(wandComs.packet.txBuff, i_send_size);
@@ -1060,9 +1071,10 @@ void checkWand() {
     }
   }
 #ifdef ESP32
-  else if(b_ble_command_ready) {
+  else if(b_ble_rx_ready) {
     // No serial data so check for BLE data instead
-    processBLECommand();
+    debugln(F("[PACK-MAIN] BLE flag ready, processing"));
+    processBLENotification();
   }
 #endif
 }

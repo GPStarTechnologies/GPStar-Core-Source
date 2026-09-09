@@ -40,21 +40,19 @@ NimBLERemoteCharacteristic *g_pRemoteStatusChar = nullptr;
 bool b_ble_enabled = true; // Master enable/disable flag; set to false to turn off all BLE scanning and connection
 bool b_ble_initialized = false; // NimBLE device initialized and scan configured
 bool b_ble_connected = false; // Currently connected and bonded with Pack
-bool b_ble_scanning = false; // Scan is actively running (reserved for future use)
 uint16_t i_target_pack_id = 0; // Pack device ID extracted from advertisement (reserved for future use)
-
-// Global callback objects (must persist for lifetime of BLE client)
-NimBLEClientCallbacks *g_pWandClientCallbacks = nullptr;
-NimBLEScanCallbacks *g_pWandScanCallbacks = nullptr;
 
 // Pack discovery info (stored by scan callback, used by main thread to connect)
 NimBLEAddress g_packAddress;  // MAC address of discovered Pack
 bool b_pack_found = false;    // Set by scan callback, cleared by main thread after connecting
 
 // BLE notification queue (store incoming Pack notifications for main loop processing)
-uint8_t g_ble_notification_buffer[32] = {0};  // Buffer for received BLE notification bytes
-size_t g_ble_notification_length = 0;         // Number of bytes in buffer
-bool b_ble_notification_ready = false;        // Flag: notification ready to process
+uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
+size_t g_ble_rx_length = 0;         // Number of bytes in buffer
+
+// Global callback objects (must persist for lifetime of BLE client)
+NimBLEClientCallbacks *g_pWandClientCallbacks = nullptr;
+NimBLEScanCallbacks *g_pWandScanCallbacks = nullptr;
 
 /*
  * BLE UUIDs (custom 128-bit UUIDs for GPStar peer-to-peer protocol)
@@ -89,9 +87,6 @@ const char* GPSTAR_STATUS_CHAR_UUID = "0000ffe2-0000-1000-8000-00805f9b34fb";
 
 // Forward declaration of characteristic discovery function (defined after callbacks)
 void discoverRemoteCharacteristics();
-
-// Forward declaration of notification callback (defined later in file)
-static void wandNotifyCallback(NimBLERemoteCharacteristic* pRemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify);
 
 /*
  * Bluetooth LE Management Functions
@@ -271,46 +266,101 @@ BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
 }
 
 
-// Notification callback for Pack status updates received via BLE
-// This is a function-based callback (not class-based) as required by NimBLE's remote characteristic API
-// INVOKED BY: NimBLE notification task when Pack sends status data
-// NOT CALLED MANUALLY - NimBLE handles this asynchronously when notified
-static void wandNotifyCallback(NimBLERemoteCharacteristic* pRemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
-  // FIRED WHEN: Pack sends a BLE notification on status characteristic
-  // PARAM pData: Raw bytes of serialized Pack status (same format as UART)
-  // PARAM length: Size of status data in bytes
-  // NOTE: This runs in NimBLE task context, not main loop - queue the data for main loop processing
+// Check and process incoming BLE notifications from Pack
+// Called every main loop iteration to poll for new status characteristic data
+// Uses value change detection (compares with last known value) to detect notifications
+void processBLENotification() {
+  if(!b_ble_connected || !g_pRemoteStatusChar) {
+    return;
+  }
   
-  debugln(F("[BLE-RX] CALLBACK FIRED"));
-  debug(F("[BLE-RX] length="));
-  debug(length);
-  debug(F(" pData="));
-  debug((uint32_t)pData);
-  debugln();
+  // Get current characteristic value
+  NimBLEAttValue value = g_pRemoteStatusChar->getValue();
   
-  if(length > 0 && pData != nullptr && length <= 32) {
-    // Queue notification for main loop processing (same approach as Pack's onWrite callback)
-    memcpy(g_ble_notification_buffer, pData, length);
-    g_ble_notification_length = length;
-    b_ble_notification_ready = true;
+  // Only process if we have data
+  if(value.length() > 0 && value.length() <= 32) {
+    // Simple change detection: compare length and first byte
+    static size_t lastLength = 0;
+    static uint8_t lastFirstByte = 0;
     
-    #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE-RX] Queued notification ("));
-      debug(length);
-      debugln(F(" bytes)"));
-    #endif
-  } else {
-    debug(F("[BLE-RX] REJECTED: length="));
-    debug(length);
-    debug(F(" pData="));
-    debug((uint32_t)pData);
-    debugln();
+    bool changed = (value.length() != lastLength) || 
+                   (value.length() > 0 && value.data()[0] != lastFirstByte);
+    
+    if(changed) {
+      // Copy to buffer
+      memcpy(g_ble_rx_buffer, value.c_str(), value.length());
+      g_ble_rx_length = value.length();
+      
+      lastLength = value.length();
+      lastFirstByte = (value.length() > 0) ? value.data()[0] : 0;
+      
+      // Parse the packet
+      BLEPacket packet = bleHandleData(g_ble_rx_buffer, g_ble_rx_length);
+      
+      if(packet.packetType == PACKET_COMMAND) {
+        debug(F("[BLE-RX] CMD "));
+        debugln(packet.cmd);
+      } else if(packet.packetType == PACKET_SYNC) {
+        debugln(F("[BLE-RX] SYNC_DATA"));
+      } else {
+        debug(F("[BLE-RX] Packet type "));
+        debugln(packet.packetType);
+      }
+      
+      // Deserialize BLE buffer into global structs (same as UART path)
+      if(packet.packetType > 0) {
+        switch(packet.packetType) {
+          case PACKET_COMMAND:
+            if(packet.cmd > 0) {
+              recvCmd.s = packet.start;
+              recvCmd.c = packet.cmd;
+              recvCmd.d1 = packet.d1;
+              recvCmd.e = packet.end;
+            }
+            break;
+            
+          case PACKET_DATA:
+            if(packet.cmd > 0) {
+              recvData.s = packet.start;
+              recvData.c = packet.cmd;
+              recvData.d[0] = packet.d[0];
+              recvData.d[1] = packet.d[1];
+              recvData.d[2] = packet.d[2];
+              recvData.e = packet.end;
+            }
+            break;
+            
+          case PACKET_WAND:
+            memcpy(&wandConfig, g_ble_rx_buffer, g_ble_rx_length);
+            break;
+            
+          case PACKET_SMOKE:
+            memcpy(&smokeConfig, g_ble_rx_buffer, g_ble_rx_length);
+            break;
+            
+          case PACKET_SYNC:
+            memcpy(&wandSyncData, g_ble_rx_buffer, g_ble_rx_length);
+            break;
+        }
+        
+        // Sync connection state for BLE (UART does this via handshake)
+        if(WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) {
+          WAND_CONN_STATE = PACK_CONNECTED;
+        }
+        
+        // Route to main packet handler (same dispatcher as UART)
+        handlePacket(packet.packetType);
+      }
+      
+      // Clear the buffer
+      g_ble_rx_length = 0;
+    }
   }
 }
 
-// Discover remote Pack service and characteristics, then register notification callback
+// Discover remote Pack service and characteristics
 // CALLED AFTER: Pairing completes (from onAuthenticationComplete)
-// ACTION: Retrieve remote service UUID, find command and status characteristics, register for notifications
+// ACTION: Retrieve remote service UUID, find command and status characteristics, subscribe for notifications
 void discoverRemoteCharacteristics() {
   if(!g_pBLEClient) {
     #if defined(DEBUG_BLUETOOTH)
@@ -366,9 +416,10 @@ void discoverRemoteCharacteristics() {
   #endif
 
   // Enable notifications for status characteristic
-  // Note: NimBLE delivers notifications through client-level callbacks or by value updates
-  // We subscribe to enable them, and wandNotifyCallback will be triggered by the BLE stack
+  // Note: NimBLE delivers notifications automatically; we poll the characteristic value in processBLENotification()
   if(g_pRemoteStatusChar->canNotify()) {
+    // Subscribe to enable notifications
+    // We poll g_pRemoteStatusChar->getValue() in processBLENotification() to read new data
     g_pRemoteStatusChar->subscribe();
     
     #if defined(DEBUG_BLUETOOTH)
@@ -382,98 +433,14 @@ void discoverRemoteCharacteristics() {
   }
 }
 
-// Process incoming BLE notifications from Pack
-// Called from main loop to parse and handle queued BLE notification bytes
-void processBLENotification() {
-  static unsigned long lastDebug = 0;
-  if(millis() - lastDebug > 5000) {
-    debugln(F("[BLE] processBLENotification() called (checking for queued notifications)"));
-    lastDebug = millis();
-  }
-  
-  if(!b_ble_notification_ready || g_ble_notification_length == 0) {
-    return;  // No notification queued
-  }
-  
-  debugln(F("[BLE] *** PROCESSING QUEUED NOTIFICATION ***"));
-  
-  // Clear the ready flag
-  b_ble_notification_ready = false;
-  
-  // Parse the queued notification
-  BLEPacket packet = bleHandleData(g_ble_notification_buffer, g_ble_notification_length);
-  
-  #if defined(DEBUG_BLUETOOTH)
-    // Parsed packet structure
-    debug(F("[BLE-RX] Parsed: type="));
-    switch(packet.packetType) {
-      case PACKET_COMMAND: debug(F("COMMAND(1)")); break;
-      case PACKET_DATA: debug(F("DATA(2)")); break;
-      case PACKET_WAND: debug(F("WAND(3)")); break;
-      case PACKET_SMOKE: debug(F("SMOKE(4)")); break;
-      default: debug(F("UNKNOWN(0)")); break;
-    }
-    debug(F(" | cmd="));
-    debug(packet.cmd);
-    debug(F(" d1="));
-    debug(packet.d1);
-    debug(F(" | start="));
-    debug(packet.start);
-    debug(F(" end="));
-    debugln(packet.end);
-  #endif
-
-  // Deserialize BLE notification into same global structs used by UART
-  if(packet.packetType > 0) {
-    switch(packet.packetType) {
-      case PACKET_COMMAND:
-        if(packet.cmd > 0) {
-          recvCmd.s = packet.start;
-          recvCmd.c = packet.cmd;
-          recvCmd.d1 = packet.d1;
-          recvCmd.e = packet.end;
-        }
-        break;
-        
-      case PACKET_DATA:
-        if(packet.cmd > 0) {
-          recvData.s = packet.start;
-          recvData.c = packet.cmd;
-          recvData.d[0] = packet.d[0];
-          recvData.d[1] = packet.d[1];
-          recvData.d[2] = packet.d[2];
-          recvData.e = packet.end;
-        }
-        break;
-        
-      case PACKET_WAND:
-        memcpy(&wandConfig, g_ble_notification_buffer, g_ble_notification_length);
-        break;
-        
-      case PACKET_SMOKE:
-        memcpy(&smokeConfig, g_ble_notification_buffer, g_ble_notification_length);
-        break;
-        
-      case PACKET_SYNC:
-        memcpy(&wandSyncData, g_ble_notification_buffer, g_ble_notification_length);
-        break;
-    }
-    
-    // Ensure BLE connection state is synchronized (UART does this via serial handshake)
-    // BLE bypass: directly update state to allow handlers to process commands
-    if(WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) {
-      WAND_CONN_STATE = PACK_CONNECTED;
-    }
-    
-    // Route to central packet handler (same dispatcher as UART)
-    handlePacket(packet.packetType);
-  }
-  
-  // Clear the buffer
-  g_ble_notification_length = 0;
-}
-
 bool startBluetooth() {
+  if(!b_ble_enabled) {
+    #if defined(DEBUG_BLUETOOTH)
+      debugln(F("[BLE] BLE disabled, startup skipped"));
+    #endif
+    return false;
+  }
+
   if(b_ble_initialized) {
     #if defined(DEBUG_BLUETOOTH)
       debugln(F("[BLE] Already initialized"));
@@ -499,7 +466,7 @@ bool startBluetooth() {
 
     // Configure automatic pairing with LE Secure Connections
     NimBLEDevice::setSecurityAuth(true, true, false);  // bonding, MITM, passkey pairing (not SC)
-    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_KEYBOARD_ONLY);  // Enter passkey via keyboard
+    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_KEYBOARD_ONLY); // Enter passkey via keyboard
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_YESNO); // Numeric comparison
     
     #if defined(DEBUG_BLUETOOTH)
@@ -644,10 +611,9 @@ void handleBLEWandConnection() {
 }
 
 // Send serialized data via BLE characteristic (receives same buffer that was sent via UART)
-// This is called after packComs.txObj() serializes and packComs.sendData() sends via UART
 // The function checks BLE state and sends the same bytes via characteristic
 void bleSendData(const uint8_t* pData, size_t length) {
-  if(!b_ble_connected || !g_pBLEClient) {
+  if(!b_ble_enabled || !b_ble_connected || !g_pBLEClient) {
     return;  // BLE not ready, function decides silently
   }
   
@@ -674,9 +640,11 @@ void bleSendData(const uint8_t* pData, size_t length) {
           debugln(F("[BLE] OK: Got remote status characteristic"));
           if(g_pRemoteStatusChar->canNotify()) {
             debugln(F("[BLE] Status characteristic supports notifications, subscribing..."));
-            bool subResult = g_pRemoteStatusChar->subscribe(wandNotifyCallback);
+            // Subscribe to enable notifications
+            // We poll g_pRemoteStatusChar->getValue() in processBLENotification() to read new data
+            bool subResult = g_pRemoteStatusChar->subscribe();
             debug(F("[BLE] Subscribe result: "));
-            debugln(subResult ? "SUCCESS" : "FAILED");
+            debugln(subResult ? F("SUCCESS") : F("FAILED"));
           } else {
             debugln(F("[BLE] ERROR: Status characteristic does NOT support notifications"));
           }

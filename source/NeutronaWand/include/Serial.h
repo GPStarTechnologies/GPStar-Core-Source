@@ -24,8 +24,7 @@
 void restartWireless(); // From Webhandler.h
 void shutdownWireless(); // From Webhandler.h
 void bleSendData(const uint8_t* pData, size_t length); // From Bluetooth.h - send serialized data via BLE
-void processBLENotification(); // From Bluetooth.h - process queued BLE notification bytes
-extern bool b_ble_notification_ready; // From Bluetooth.h - flag indicating BLE notification is queued
+void processBLENotification(); // From Bluetooth.h - check and process BLE notification data
 #endif
 void handlePacket(uint8_t i_packet_type);
 void toggleStandaloneMode(bool); // From System.h
@@ -260,6 +259,8 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = packComs.txObj(wandConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
 
+      debugln(F("[WAND-TX] SEND_PREFERENCES_WAND"));
+
     #ifdef ESP32
       bleSendData(packComs.packet.txBuff, i_send_size);
     #endif
@@ -269,6 +270,8 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       getSmokePrefsObject(); // Call common function (also used by local web UI)
       i_send_size = packComs.txObj(smokeConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
+
+      debugln(F("[WAND-TX] SEND_PREFERENCES_SMOKE"));
 
     #ifdef ESP32
       bleSendData(packComs.packet.txBuff, i_send_size);
@@ -288,6 +291,11 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
 
       i_send_size = packComs.txObj(sendCmd);
       packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
+
+      debug(F("[WAND-TX] CMD "));
+      debug(i_command);
+      debug(F(" VAL "));
+      debugln(i_value);
 
     #ifdef ESP32
       bleSendData(packComs.packet.txBuff, i_send_size);
@@ -614,6 +622,11 @@ void checkPack() {
     return;
   }
 
+  // Check for BLE notifications from Pack (includes detection of value changes)
+  #ifdef ESP32
+  processBLENotification();
+  #endif
+
   if(packComs.available() > 0) {
     uint8_t i_packet_id = packComs.currentPacketID();
     // sendDebug(String(F("PacketID: ")) + String(i_packet_id));
@@ -641,20 +654,6 @@ void checkPack() {
       handlePacket(i_packet_id);
     }
   }
-#ifdef ESP32
-  else if(b_ble_notification_ready) {
-    // No serial data so check for BLE data instead
-    debugln(F("[SERIAL] checkPack(): Processing BLE notification"));
-    processBLENotification();
-  } else {
-    // Debug: both conditions false
-    static unsigned long lastDbg = 0;
-    if(millis() - lastDbg > 10000) {
-      debugln(F("[SERIAL] checkPack(): No serial or BLE data available"));
-      lastDbg = millis();
-    }
-  }
-#endif
 }
 
 void handlePacket(uint8_t i_packet_type) {
@@ -666,7 +665,7 @@ void handlePacket(uint8_t i_packet_type) {
         // The user shorted the Tx/Rx pins on the Neutrona Wand, creating a loopback (echo) of the request to start synchronization.
         // This is a special case where the wand is not connected to a Proton Pack, but the user wants to use it in standalone mode.
         toggleStandaloneMode(true);
-debugln(F("toggleStandaloneMode"));
+
         // Immediately exit the serial data functions because there is no true hardware serial connection.
         return;
       }

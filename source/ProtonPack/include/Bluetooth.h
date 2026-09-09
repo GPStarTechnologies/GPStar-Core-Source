@@ -37,13 +37,14 @@ NimBLEServer *g_pBLEServer = nullptr;
 NimBLEService *g_pGPStarService = nullptr;
 NimBLECharacteristic *g_pCommandCharacteristic = nullptr;
 NimBLECharacteristic *g_pStatusCharacteristic = nullptr;
+bool b_ble_enabled = true; // Master enable/disable flag; set to false to turn off all BLE scanning and connection
 bool b_ble_initialized = false; // NimBLE device initialized, service/characteristics created, advertising started
 bool b_ble_connected = false; // Indicates when the Wand has successfully connected and bonded with this Pack
 
 // BLE command queue (store incoming BLE commands for processing)
-uint8_t g_ble_command_buffer[32] = {0};  // Buffer for received BLE command bytes
-size_t g_ble_command_length = 0;         // Number of bytes in buffer
-bool b_ble_command_ready = false;        // Flag: command ready to process
+uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
+size_t g_ble_rx_length = 0;         // Number of bytes in buffer
+bool b_ble_rx_ready = false;        // Flag: data ready to process
 
 // Global callback objects (must persist for lifetime of BLE server)
 NimBLEServerCallbacks *g_pPackServerCallbacks = nullptr;
@@ -222,19 +223,158 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       
       // Queue the command for processing by checkWand() in main loop
       if(rxValue.length() <= 32) {
-        memcpy(g_ble_command_buffer, rxValue.c_str(), rxValue.length());
-        g_ble_command_length = rxValue.length();
-        b_ble_command_ready = true;
-      } else {
-        #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[BLE] ERROR: Command too large to queue"));
-        #endif
+        debugln(F("[PACK-CALLBACK] Write callback fired"));
+        memcpy(g_ble_rx_buffer, rxValue.c_str(), rxValue.length());
+        g_ble_rx_length = rxValue.length();
+        b_ble_rx_ready = true;
       }
     }
   }
 };
 
+// Parsed BLE packet structure
+struct BLEPacket {
+  uint8_t packetType;  // PACKET_COMMAND, PACKET_DATA, PACKET_WAND, PACKET_SMOKE, or PACKET_UNKNOWN
+  uint8_t start;       // Frame start marker
+  uint16_t cmd;        // Command ID (for PACKET_COMMAND and PACKET_DATA)
+  uint16_t d1;         // Data value 1 (for PACKET_COMMAND)
+  uint8_t d[3];        // Data array (for PACKET_DATA)
+  uint8_t end;         // Frame end marker
+  size_t length;       // Total packet length
+};
+
+// Parse raw BLE bytes into structured packet
+// Returns packet with packetType = PACKET_UNKNOWN if parse fails
+BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
+  BLEPacket packet = {PACKET_UNKNOWN, 0, 0, 0, {0, 0, 0}, 0, length};
+  
+  if(length < 4) {
+    return packet;
+  }
+  
+  packet.start = pData[0];
+  packet.end = pData[length - 1];
+  
+  // Validate frame markers
+  if(packet.start != A_COM_START || packet.end != A_COM_END) {
+    return packet;
+  }
+  
+  // Determine packet type based on length
+  if(length == 6) {
+    // PACKET_COMMAND: (s, c:2, d1:2, e)
+    packet.packetType = PACKET_COMMAND;
+    packet.cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
+    packet.d1 = (uint16_t)pData[3] | ((uint16_t)pData[4] << 8);
+  } 
+  else if(length == 7) {
+    // PACKET_DATA: (s, c:2, d[3], e)
+    packet.packetType = PACKET_DATA;
+    packet.cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
+    packet.d[0] = pData[3];
+    packet.d[1] = pData[4];
+    packet.d[2] = pData[5];
+  }
+  else if(length > 7) {
+    // Could be PACKET_WAND or PACKET_SMOKE (preference structs)
+    // Just mark as data, don't try to validate size
+    if(length > 10) {
+      packet.packetType = PACKET_WAND;  // Assume WAND if larger
+    }
+  }
+  
+  return packet;
+}
+
+// Process incoming BLE notifications from Wand
+// Called from main loop to parse and handle queued BLE command bytes
+void processBLENotification() {
+  if(!b_ble_rx_ready || g_ble_rx_length == 0) {
+    return;  // No notification queued
+  }
+  
+  debugln(F("[PACK-PROCESS] Processing BLE notification"));
+  
+  // Clear the ready flag
+  b_ble_rx_ready = false;
+  
+  // Parse the queued notification
+  BLEPacket packet = bleHandleData(g_ble_rx_buffer, g_ble_rx_length);
+  
+  #if defined(DEBUG_BLUETOOTH)
+    // Parsed packet structure
+    debug(F("[BLE-RX] Parsed: type="));
+    switch(packet.packetType) {
+      case PACKET_COMMAND: debug(F("COMMAND(1)")); break;
+      case PACKET_DATA: debug(F("DATA(2)")); break;
+      case PACKET_WAND: debug(F("WAND(3)")); break;
+      case PACKET_SMOKE: debug(F("SMOKE(4)")); break;
+      default: debug(F("UNKNOWN(0)")); break;
+    }
+    debug(F(" | cmd="));
+    debug(packet.cmd);
+    debug(F(" d1="));
+    debug(packet.d1);
+    debug(F(" | start="));
+    debug(packet.start);
+    debug(F(" end="));
+    debugln(packet.end);
+  #endif
+
+  // Deserialize BLE buffer into same global structs used by UART
+  if(packet.packetType > 0) {
+    switch(packet.packetType) {
+      case PACKET_COMMAND:
+        if(packet.cmd > 0) {
+          recvCmdW.s = packet.start;
+          recvCmdW.c = packet.cmd;
+          recvCmdW.d1 = packet.d1;
+          recvCmdW.e = packet.end;
+        }
+        break;
+        
+      case PACKET_DATA:
+        if(packet.cmd > 0) {
+          recvDataW.s = packet.start;
+          recvDataW.c = packet.cmd;
+          recvDataW.d[0] = packet.d[0];
+          recvDataW.d[1] = packet.d[1];
+          recvDataW.d[2] = packet.d[2];
+          recvDataW.e = packet.end;
+        }
+        break;
+        
+      case PACKET_WAND:
+        memcpy(&wandConfig, g_ble_rx_buffer, g_ble_rx_length);
+        break;
+        
+      case PACKET_SMOKE:
+        memcpy(&smokeConfig, g_ble_rx_buffer, g_ble_rx_length);
+        break;
+    }
+    
+    // Ensure BLE connection state is synchronized (UART does this via serial handshake)
+    // BLE bypass: directly update state to allow handlers to process commands
+    if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
+      WAND_CONN_STATE = WAND_CONNECTED;
+    }
+    
+    // Route to central packet handler (same dispatcher as UART)
+    handleWandPacket(packet.packetType);
+  }
+  
+  // Clear the buffer
+  g_ble_rx_length = 0;
+}
+
 bool startBluetooth() {
+  if(!b_ble_enabled) {
+    #if defined(DEBUG_BLUETOOTH)
+      debugln(F("[BLE] BLE disabled, startup skipped"));
+    #endif
+    return false;
+  }
+
   if(b_ble_initialized) {
     #if defined(DEBUG_BLUETOOTH)
       debugln(F("[BLE] Already initialized"));
@@ -261,8 +401,8 @@ bool startBluetooth() {
     // Configure automatic pairing with LE Secure Connections
     // This enables automatic bonding when a Wand connects
     NimBLEDevice::setSecurityAuth(true, true, false);  // bonding, MITM, passkey pairing (not SC)
-    NimBLEDevice::setSecurityPasskey(BLE_PAIRING_PASSKEY);  // Set passkey (must match Wand)
-    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);  // Display passkey only
+    NimBLEDevice::setSecurityPasskey(BLE_PAIRING_PASSKEY); // Set passkey (must match Wand)
+    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY); // Display passkey only
     
     #if defined(DEBUG_BLUETOOTH)
       debugln(F("[BLE] Security: LE Secure Connections with bonding enabled (MITM disabled for testing)"));
@@ -380,157 +520,10 @@ bool startBluetooth() {
   }
 }
 
-// Parsed BLE packet structure
-struct BLEPacket {
-  uint8_t packetType;  // PACKET_COMMAND, PACKET_DATA, PACKET_WAND, PACKET_SMOKE, or PACKET_UNKNOWN
-  uint8_t start;       // Frame start marker
-  uint16_t cmd;        // Command ID (for PACKET_COMMAND and PACKET_DATA)
-  uint16_t d1;         // Data value 1 (for PACKET_COMMAND)
-  uint8_t d[3];        // Data array (for PACKET_DATA)
-  uint8_t end;         // Frame end marker
-  size_t length;       // Total packet length
-};
-
-// Parse raw BLE bytes into structured packet
-// Returns packet with packetType = PACKET_UNKNOWN if parse fails
-BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
-  BLEPacket packet = {PACKET_UNKNOWN, 0, 0, 0, {0, 0, 0}, 0, length};
-  
-  if(length < 4) {
-    return packet;
-  }
-  
-  packet.start = pData[0];
-  packet.end = pData[length - 1];
-  
-  // Validate frame markers
-  if(packet.start != A_COM_START || packet.end != A_COM_END) {
-    return packet;
-  }
-  
-  // Determine packet type based on length
-  if(length == 6) {
-    // PACKET_COMMAND: (s, c:2, d1:2, e)
-    packet.packetType = PACKET_COMMAND;
-    packet.cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
-    packet.d1 = (uint16_t)pData[3] | ((uint16_t)pData[4] << 8);
-  } 
-  else if(length == 7) {
-    // PACKET_DATA: (s, c:2, d[3], e)
-    packet.packetType = PACKET_DATA;
-    packet.cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
-    packet.d[0] = pData[3];
-    packet.d[1] = pData[4];
-    packet.d[2] = pData[5];
-  }
-  else if(length > 7) {
-    // Could be PACKET_WAND or PACKET_SMOKE (preference structs)
-    // Just mark as data, don't try to validate size
-    if(length > 10) {
-      packet.packetType = PACKET_WAND;  // Assume WAND if larger
-    }
-  }
-  
-  return packet;
-}
-
-// Process incoming BLE commands from Wand
-// Called from main loop to parse and handle queued BLE command bytes
-// This function just parses and logs - doesn't call handlers (leaves that to checkWand in Serial.h)
-void processBLECommand() {
-  if(!b_ble_command_ready || g_ble_command_length == 0) {
-    return;  // No command queued
-  }
-  
-  // Clear the ready flag
-  b_ble_command_ready = false;
-  
-  // Parse the queued command
-  BLEPacket packet = bleHandleData(g_ble_command_buffer, g_ble_command_length);
-  
-  #if defined(DEBUG_BLUETOOTH)
-    // Hex dump of raw bytes
-    // debug(F("[BLE-RX] Raw ("));
-    // debug(g_ble_command_length);
-    // debug(F(" bytes): "));
-    // for(size_t i = 0; i < g_ble_command_length; i++) {
-    //   debug(F("0x"));
-    //   if(g_ble_command_buffer[i] < 0x10) debug(F("0"));
-    //   debug(g_ble_command_buffer[i], HEX);
-    //   if(i < g_ble_command_length - 1) debug(F(" "));
-    // }
-    // debugln();
-    
-    // Parsed packet structure
-    debug(F("[BLE-RX] Parsed: type="));
-    switch(packet.packetType) {
-      case PACKET_COMMAND: debug(F("COMMAND(1)")); break;
-      case PACKET_DATA: debug(F("DATA(2)")); break;
-      case PACKET_WAND: debug(F("WAND(3)")); break;
-      case PACKET_SMOKE: debug(F("SMOKE(4)")); break;
-      default: debug(F("UNKNOWN(0)")); break;
-    }
-    debug(F(" | cmd="));
-    debug(packet.cmd);
-    debug(F(" d1="));
-    debug(packet.d1);
-    debug(F(" | start="));
-    debug(packet.start);
-    debug(F(" end="));
-    debugln(packet.end);
-  #endif
-
-  // Deserialize BLE buffer into same global structs used by UART
-  if(packet.packetType > 0) {
-    switch(packet.packetType) {
-      case PACKET_COMMAND:
-        if(packet.cmd > 0) {
-          recvCmdW.s = packet.start;
-          recvCmdW.c = packet.cmd;
-          recvCmdW.d1 = packet.d1;
-          recvCmdW.e = packet.end;
-        }
-        break;
-        
-      case PACKET_DATA:
-        if(packet.cmd > 0) {
-          recvDataW.s = packet.start;
-          recvDataW.c = packet.cmd;
-          recvDataW.d[0] = packet.d[0];
-          recvDataW.d[1] = packet.d[1];
-          recvDataW.d[2] = packet.d[2];
-          recvDataW.e = packet.end;
-        }
-        break;
-        
-      case PACKET_WAND:
-        memcpy(&packConfig, g_ble_command_buffer, g_ble_command_length);
-        break;
-        
-      case PACKET_SMOKE:
-        memcpy(&smokeConfig, g_ble_command_buffer, g_ble_command_length);
-        break;
-    }
-    
-    // Ensure BLE connection state is synchronized (UART does this via serial handshake)
-    // BLE bypass: directly update state to allow handlers to process commands
-    if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
-      WAND_CONN_STATE = WAND_CONNECTED;
-    }
-    
-    // Route to central packet handler (same dispatcher as UART)
-    handleWandPacket(packet.packetType);
-  }
-  
-  // Clear the buffer
-  g_ble_command_length = 0;
-}
-
 // Send serialized data via BLE characteristic (receives same buffer that was sent via UART)
-// This is called after wandComs.txObj() serializes and wandComs.sendData() sends via UART
 // The function checks BLE state and sends the same bytes via characteristic
 void bleSendData(const uint8_t* pData, size_t length) {
-  if(!b_ble_connected || !g_pStatusCharacteristic) {
+  if(!b_ble_enabled || !b_ble_connected || !g_pStatusCharacteristic) {
     return;  // BLE not ready, function decides silently
   }
   
@@ -538,7 +531,7 @@ void bleSendData(const uint8_t* pData, size_t length) {
   g_pStatusCharacteristic->notify();
   
   #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE] Sent "));
+    debug(F("[BLE-TX] Sent "));
     debug(length);
     debugln(F(" bytes via BLE"));
   #endif
