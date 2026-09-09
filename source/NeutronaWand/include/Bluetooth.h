@@ -647,15 +647,16 @@ void bleSendData(const uint8_t* pData, size_t length) {
         g_pRemoteStatusChar = pService->getCharacteristic("0000ffe2-0000-1000-8000-00805f9b34fb");
         if(g_pRemoteStatusChar) {
           debugln(F("[BLE] OK: Got remote status characteristic"));
-          if(g_pRemoteStatusChar->canNotify()) {
-            debugln(F("[BLE] Status characteristic supports notifications, subscribing..."));
-            // Subscribe to enable notifications
+          if(g_pRemoteStatusChar->canIndicate()) {
+            debugln(F("[BLE] Status characteristic supports indications (with ACK), subscribing..."));
+            // Subscribe to enable indications (with acknowledgment)
+            // Indications require client ACK, preventing packet loss from rapid sends
             // We poll g_pRemoteStatusChar->getValue() in processBLENotification() to read new data
             bool subResult = g_pRemoteStatusChar->subscribe();
             debug(F("[BLE] Subscribe result: "));
             debugln(subResult ? F("SUCCESS") : F("FAILED"));
           } else {
-            debugln(F("[BLE] ERROR: Status characteristic does NOT support notifications"));
+            debugln(F("[BLE] ERROR: Status characteristic does NOT support indications"));
           }
         } else {
           debugln(F("[BLE] ERROR: Could not get status characteristic"));

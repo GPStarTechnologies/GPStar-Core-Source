@@ -466,10 +466,10 @@ bool startBluetooth() {
       debugln(F("[BLE] Command characteristic created (Wand → Pack)"));
     #endif
 
-    // Create status characteristic (Pack notifies Wand of state changes)
+    // Create status characteristic (Pack sends status updates via indications)
     g_pStatusCharacteristic = g_pGPStarService->createCharacteristic(
       GPSTAR_STATUS_CHAR_UUID,
-      NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ
+      NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE
     );
     
     if(!g_pStatusCharacteristic) {
@@ -481,6 +481,7 @@ bool startBluetooth() {
 
     #if defined(DEBUG_BLUETOOTH)
       debugln(F("[BLE] Status characteristic created (Pack → Wand)"));
+      debugln(F("[BLE] Status char properties: INDICATE + READ + WRITE"));
     #endif
 
     // Set up advertising
@@ -520,7 +521,8 @@ bool startBluetooth() {
 }
 
 // Send serialized data via BLE characteristic (receives same buffer that was sent via UART)
-// Prepends a sequence number byte to detect lost packets from fast sends
+// Uses indications (with acknowledgment) to queue commands and prevent loss from rapid sends
+// Each indicate() call blocks until client sends confirmation, naturally serializing sends
 void bleSendData(const uint8_t* pData, size_t length) {
   if(!b_ble_enabled || !b_ble_connected || !g_pStatusCharacteristic) {
     return;  // BLE not ready, function decides silently
@@ -531,6 +533,17 @@ void bleSendData(const uint8_t* pData, size_t length) {
   ble_buffer[0] = g_ble_tx_sequence++;  // Increment after use (0, 1, 2, ...)
   memcpy(&ble_buffer[1], pData, length);
   
+  // Use indicate() instead of notify() - requires client ACK
+  // This blocks until Wand confirms receipt, preventing packet loss from rapid sends
   g_pStatusCharacteristic->setValue(ble_buffer, length + 1);
-  g_pStatusCharacteristic->notify();
+  
+  #if defined(DEBUG_BLUETOOTH)
+    debug(F("[BLE-TX] Sending indication (seq "));
+    debug(ble_buffer[0]);
+    debug(F(", len "));
+    debug(length);
+    debugln(F(")"));
+  #endif
+  
+  g_pStatusCharacteristic->indicate();
 }
