@@ -23,7 +23,11 @@
 #ifdef ESP32
 void restartWireless(); // From Webhandler.h
 void shutdownWireless(); // From Webhandler.h
+void bleSendData(const uint8_t* pData, size_t length); // From Bluetooth.h - send serialized data via BLE
+void processBLENotification(); // From Bluetooth.h - process queued BLE notification bytes
+extern bool b_ble_notification_ready; // From Bluetooth.h - flag indicating BLE notification is queued
 #endif
+void handlePacket(uint8_t i_packet_type);
 void toggleStandaloneMode(bool); // From System.h
 
 /*
@@ -255,12 +259,20 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       getWandPrefsObject(); // Call common function (also used by local web UI)
       i_send_size = packComs.txObj(wandConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
+
+    #ifdef ESP32
+      bleSendData(packComs.packet.txBuff, i_send_size);
+    #endif
     break;
 
     case A_SEND_PREFERENCES_SMOKE:
       getSmokePrefsObject(); // Call common function (also used by local web UI)
       i_send_size = packComs.txObj(smokeConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
+
+    #ifdef ESP32
+      bleSendData(packComs.packet.txBuff, i_send_size);
+    #endif
     break;
 
     default:
@@ -276,6 +288,10 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
 
       i_send_size = packComs.txObj(sendCmd);
       packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
+
+    #ifdef ESP32
+      bleSendData(packComs.packet.txBuff, i_send_size);
+    #endif
     break;
   }
 }
@@ -607,191 +623,214 @@ void checkPack() {
       switch(i_packet_id) {
         case PACKET_COMMAND:
           packComs.rxObj(recvCmd);
-
-          // Immediately and always check for a loopback echo FIRST before general command handler, and assuming it came from the Proton Pack.
-          if(recvCmd.s == A_COM_START && recvCmd.c == A_SYNC_WAND && recvCmd.d1 == PROTOCOL_SIGNATURE && recvCmd.e == A_COM_END) {
-            // The user shorted the Tx/Rx pins on the Neutrona Wand, creating a loopback (echo) of the request to start synchronization.
-            // This is a special case where the wand is not connected to a Proton Pack, but the user wants to use it in standalone mode.
-            toggleStandaloneMode(true);
-
-            // Immediately exit the serial data functions because there is no true hardware serial connection.
-            return;
-          }
-          // Handle all other commands from the pack which are a non-zero value.
-          else if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
-            sendDebug(String(F("Recv. Command: ")) + String(recvCmd.c));
-            if(handlePackCommand(recvCmd.c, recvCmd.d1)) {
-              // Begin timer for future keepalive handshakes from the wand.
-              ms_handshake.start(i_heartbeat_delay);
-
-              // Turn off the sync indicator LED as the sync is completed.
-              ventTopLightControl(false);
-              digitalWriteFast(WAND_STATUS_LED_PIN, LOW);
-
-              // Indicate that a pack is now connected.
-              WAND_CONN_STATE = PACK_CONNECTED;
-
-              // Set the first boot variable to 10 to make sure this doesn't run twice.
-              i_boot_connection_count = 10;
-
-              // Disable the built-in wifi as the pack now handles it.
-              #ifdef ESP32
-              if(WIFI_USER_MODE == WIFI_DEFAULT) {
-                WIFI_USER_MODE = WIFI_DISABLED; // Disable WiFi as the Pack handles it.
-              }
-              #endif
-            }
-          }
         break;
-
         case PACKET_DATA:
           packComs.rxObj(recvData);
-          if(recvData.c > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
-            sendDebug(String(F("Recv. Message: ")) + String(recvData.c));
-
-            switch(recvData.c) {
-              default:
-                // Nothing here yet.
-              break;
-            }
-          }
         break;
-
         case PACKET_WAND:
           packComs.rxObj(wandConfig);
-          sendDebug(F("Recv. Wand Config"));
-
-          // Writes new preferences back to runtime variables.
-          // This action does not save changes to the EEPROM!
-          handleWandPrefsUpdate();
         break;
-
         case PACKET_SMOKE:
           packComs.rxObj(smokeConfig);
-          sendDebug(F("Recv. Smoke Config"));
-
-          // Writes new preferences back to runtime variables.
-          // This action does not save changes to the EEPROM!
-          b_overheat_level_5 = smokeConfig.overheatLevel5;
-          b_overheat_level_4 = smokeConfig.overheatLevel4;
-          b_overheat_level_3 = smokeConfig.overheatLevel3;
-          b_overheat_level_2 = smokeConfig.overheatLevel2;
-          b_overheat_level_1 = smokeConfig.overheatLevel1;
-
-          // Values are sent as seconds, must convert to milliseconds.
-          i_ms_overheat_initiate_level_5 = smokeConfig.overheatDelay5 * 1000;
-          i_ms_overheat_initiate_level_4 = smokeConfig.overheatDelay4 * 1000;
-          i_ms_overheat_initiate_level_3 = smokeConfig.overheatDelay3 * 1000;
-          i_ms_overheat_initiate_level_2 = smokeConfig.overheatDelay2 * 1000;
-          i_ms_overheat_initiate_level_1 = smokeConfig.overheatDelay1 * 1000;
-
-          // Update and reset wand components.
-          updateOverheatLevels();
         break;
-
         case PACKET_SYNC:
           packComs.rxObj(wandSyncData);
-          sendDebug(F("Recv. Sync Payload"));
-
-          // Set whether the Proton Pack is currently on or off.
-          if(wandSyncData.packOn) {
-            // Pack is on.
-            b_pack_on = true;
-          }
-          else {
-            // Pack is off.
-            if(b_pack_on) {
-              // Turn wand off.
-              if(WAND_STATUS != MODE_OFF) {
-                if(WAND_STATUS == MODE_ERROR) {
-                  b_wand_mash_lockout = false;
-                  wandOff();
-                }
-                else {
-                  b_wand_mash_lockout = false;
-                  WAND_ACTION_STATUS = ACTION_OFF;
-                }
-              }
-            }
-
-            // Reset our power-on indicator in case it is currently blinking.
-            if(ms_power_indicator.isRunning()) {
-              digitalWriteFast(CLIPPARD_LED_PIN, LOW);
-            }
-            setPowerOnReminder(true);
-            b_pack_on = false;
-          }
-
-          // Import sync data into DeviceState using centralized method
-          gpstarWand.importData(wandSyncData);
-
-          vgModeCheck(); // Re-check VG/CTS mode.
-
-          // Set whether the switch under the ion arm is on or off.
-          changeIonArmSwitchState(wandSyncData.ionArmSwitch);
-
-          // Reset the bargraph now that we have our gpstarWand.systemMode and gpstarWand.systemTheme set.
-          bargraphYearModeUpdate();
-
-          // Reset the white LED blink rate in case we changed wand year.
-          resetWhiteLEDBlinkRate();
-
-          // Set up master vibration switch if not configured to override it.
-          if(VIBRATION_MODE_EEPROM == VIBRATION_DEFAULT) {
-            b_vibration_switch_on = wandSyncData.vibrationToggle;
-          }
-
-          // Update cyclotron lid status.
-          b_pack_cyclotron_lid_on = wandSyncData.cyclotronLidState;
-
-          // Update pack board audio revision.
-          i_pack_audio_version = wandSyncData.packAudioVersion;
-
-          // Update music status.
-          b_repeat_track = wandSyncData.repeatMusicTrack;
-          b_shuffle_tracks = wandSyncData.shuffleMusicTracks;
-          switch(wandSyncData.musicStatus) {
-            case 1:
-            default:
-              // Music stopped.
-              b_playing_music = false;
-              b_music_paused = false;
-            break;
-            case 2:
-              // Music started.
-              b_playing_music = true;
-              b_music_paused = false;
-            break;
-            case 3:
-              // Music resumed.
-              b_playing_music = true;
-              b_music_paused = false;
-            break;
-            case 4:
-              // Music paused.
-              b_playing_music = true;
-              b_music_paused = true;
-            break;
-          }
-
-          // Set the percentage volume.
-          i_volume_effects_percentage = wandSyncData.effectsVolume;
-
-          // Set the decibel volume.
-          i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
-          updateEffectsVolume();
-
-          if(wandSyncData.masterMuted) {
-            // Remember the current master volume level.
-            i_volume_revert = i_volume_master;
-
-            // The pack is telling us to be silent.
-            i_volume_master = i_volume_abs_min;
-            updateMasterVolume();
-          }
         break;
       }
+
+      handlePacket(i_packet_id);
     }
+  }
+  #ifdef ESP32
+  else if(b_ble_notification_ready) {
+    // No serial data; check for BLE data instead
+    processBLENotification();
+  }
+  #endif
+}
+
+void handlePacket(uint8_t i_packet_type) {
+  // Take action based on the packet type and extracted data object.
+  switch(i_packet_type) {
+    case PACKET_COMMAND:
+      // Immediately and always check for a loopback echo FIRST before general command handler, and assuming it came from the Proton Pack.
+      if(recvCmd.s == A_COM_START && recvCmd.c == A_SYNC_WAND && recvCmd.d1 == PROTOCOL_SIGNATURE && recvCmd.e == A_COM_END) {
+        // The user shorted the Tx/Rx pins on the Neutrona Wand, creating a loopback (echo) of the request to start synchronization.
+        // This is a special case where the wand is not connected to a Proton Pack, but the user wants to use it in standalone mode.
+        toggleStandaloneMode(true);
+
+        // Immediately exit the serial data functions because there is no true hardware serial connection.
+        return;
+      }
+      // Handle all other commands from the pack which are a non-zero value.
+      else if(recvCmd.c > 0 && recvCmd.s == A_COM_START && recvCmd.e == A_COM_END) {
+        sendDebug(String(F("Recv. Command: ")) + String(recvCmd.c));
+        if(handlePackCommand(recvCmd.c, recvCmd.d1)) {
+          // Begin timer for future keepalive handshakes from the wand.
+          ms_handshake.start(i_heartbeat_delay);
+
+          // Turn off the sync indicator LED as the sync is completed.
+          ventTopLightControl(false);
+          digitalWriteFast(WAND_STATUS_LED_PIN, LOW);
+
+          // Indicate that a pack is now connected.
+          WAND_CONN_STATE = PACK_CONNECTED;
+
+          // Set the first boot variable to 10 to make sure this doesn't run twice.
+          i_boot_connection_count = 10;
+
+          // Disable the built-in wifi as the pack now handles it.
+          #ifdef ESP32
+          if(WIFI_USER_MODE == WIFI_DEFAULT) {
+            WIFI_USER_MODE = WIFI_DISABLED; // Disable WiFi as the Pack handles it.
+          }
+          #endif
+        }
+      }
+    break;
+
+    case PACKET_DATA:
+      if(recvData.c > 0 && recvData.s == A_COM_START && recvData.e == A_COM_END) {
+        sendDebug(String(F("Recv. Message: ")) + String(recvData.c));
+
+        switch(recvData.c) {
+          default:
+            // Nothing here yet.
+          break;
+        }
+      }
+    break;
+
+    case PACKET_WAND:
+      sendDebug(F("Recv. Wand Config"));
+
+      // Writes new preferences back to runtime variables.
+      // This action does not save changes to the EEPROM!
+      handleWandPrefsUpdate();
+    break;
+
+    case PACKET_SMOKE:
+      sendDebug(F("Recv. Smoke Config"));
+
+      // Writes new preferences back to runtime variables.
+      // This action does not save changes to the EEPROM!
+      b_overheat_level_5 = smokeConfig.overheatLevel5;
+      b_overheat_level_4 = smokeConfig.overheatLevel4;
+      b_overheat_level_3 = smokeConfig.overheatLevel3;
+      b_overheat_level_2 = smokeConfig.overheatLevel2;
+      b_overheat_level_1 = smokeConfig.overheatLevel1;
+
+      // Values are sent as seconds, must convert to milliseconds.
+      i_ms_overheat_initiate_level_5 = smokeConfig.overheatDelay5 * 1000;
+      i_ms_overheat_initiate_level_4 = smokeConfig.overheatDelay4 * 1000;
+      i_ms_overheat_initiate_level_3 = smokeConfig.overheatDelay3 * 1000;
+      i_ms_overheat_initiate_level_2 = smokeConfig.overheatDelay2 * 1000;
+      i_ms_overheat_initiate_level_1 = smokeConfig.overheatDelay1 * 1000;
+
+      // Update and reset wand components.
+      updateOverheatLevels();
+    break;
+
+    case PACKET_SYNC:
+      sendDebug(F("Recv. Sync Payload"));
+
+      // Set whether the Proton Pack is currently on or off.
+      if(wandSyncData.packOn) {
+        // Pack is on.
+        b_pack_on = true;
+      }
+      else {
+        // Pack is off.
+        if(b_pack_on) {
+          // Turn wand off.
+          if(WAND_STATUS != MODE_OFF) {
+            if(WAND_STATUS == MODE_ERROR) {
+              b_wand_mash_lockout = false;
+              wandOff();
+            }
+            else {
+              b_wand_mash_lockout = false;
+              WAND_ACTION_STATUS = ACTION_OFF;
+            }
+          }
+        }
+
+        // Reset our power-on indicator in case it is currently blinking.
+        if(ms_power_indicator.isRunning()) {
+          digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+        }
+        setPowerOnReminder(true);
+        b_pack_on = false;
+      }
+
+      // Import sync data into DeviceState using centralized method
+      gpstarWand.importData(wandSyncData);
+
+      vgModeCheck(); // Re-check VG/CTS mode.
+
+      // Set whether the switch under the ion arm is on or off.
+      changeIonArmSwitchState(wandSyncData.ionArmSwitch);
+
+      // Reset the bargraph now that we have our gpstarWand.systemMode and gpstarWand.systemTheme set.
+      bargraphYearModeUpdate();
+
+      // Reset the white LED blink rate in case we changed wand year.
+      resetWhiteLEDBlinkRate();
+
+      // Set up master vibration switch if not configured to override it.
+      if(VIBRATION_MODE_EEPROM == VIBRATION_DEFAULT) {
+        b_vibration_switch_on = wandSyncData.vibrationToggle;
+      }
+
+      // Update cyclotron lid status.
+      b_pack_cyclotron_lid_on = wandSyncData.cyclotronLidState;
+
+      // Update pack board audio revision.
+      i_pack_audio_version = wandSyncData.packAudioVersion;
+
+      // Update music status.
+      b_repeat_track = wandSyncData.repeatMusicTrack;
+      b_shuffle_tracks = wandSyncData.shuffleMusicTracks;
+      switch(wandSyncData.musicStatus) {
+        case 1:
+        default:
+          // Music stopped.
+          b_playing_music = false;
+          b_music_paused = false;
+        break;
+        case 2:
+          // Music started.
+          b_playing_music = true;
+          b_music_paused = false;
+        break;
+        case 3:
+          // Music resumed.
+          b_playing_music = true;
+          b_music_paused = false;
+        break;
+        case 4:
+          // Music paused.
+          b_playing_music = true;
+          b_music_paused = true;
+        break;
+      }
+
+      // Set the percentage volume.
+      i_volume_effects_percentage = wandSyncData.effectsVolume;
+
+      // Set the decibel volume.
+      i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
+      updateEffectsVolume();
+
+      if(wandSyncData.masterMuted) {
+        // Remember the current master volume level.
+        i_volume_revert = i_volume_master;
+
+        // The pack is telling us to be silent.
+        i_volume_master = i_volume_abs_min;
+        updateMasterVolume();
+      }
+    break;
   }
 }
 

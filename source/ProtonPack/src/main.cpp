@@ -34,7 +34,7 @@
 
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
-#define GPSTAR_DEBUG 0
+#define GPSTAR_DEBUG 1
 
 // Debug macros
 #if GPSTAR_DEBUG == 1
@@ -117,6 +117,7 @@ extern AttenuatorSyncData attenuatorSyncData;
 #include "Serial.h"
 #ifdef ESP32
   #include "Wireless.h"
+  #include "Bluetooth.h"
   #include "Webhandler.h"
   #include "Webrouting.h"
 #endif
@@ -282,7 +283,10 @@ void setup() {
   pinModeFast(NFILTER_LED_PIN, OUTPUT);
 
 #ifdef ESP32
-  // Reserved.
+  // Initialize Bluetooth LE (Pack as server/peripheral)
+  if(!startBluetooth()) {
+    debugln(F("BLE initialization failed"));
+  }
 #else
   // Cyclotron Switch Panel LEDs [Deprecated for the PackII board]
   pinModeFast(CYCLOTRON_SWITCH_LED_R1_PIN, OUTPUT);
@@ -635,9 +639,10 @@ void mainLoop() {
 
 // The main loop of the program which manages all system operations which must occur on every loop.
 void loop() {
-  #ifdef ESP32
+#ifdef ESP32
   if(b_initial_wifi_setup_finished) {
-  #endif
+#endif
+
   // Update the available audio device.
   updateAudio();
 

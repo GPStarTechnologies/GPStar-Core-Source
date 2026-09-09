@@ -23,7 +23,11 @@
 #ifdef ESP32
 void restartWireless(); // From Webhandler.h
 void shutdownWireless(); // From Webhandler.h
+void bleSendData(const uint8_t* pData, size_t length); // From Bluetooth.h - send serialized data via BLE
+void processBLECommand(); // From Bluetooth.h - process queued BLE command bytes
+extern bool b_ble_command_ready; // From Bluetooth.h - flag indicating BLE command is queued
 #endif
+void handleWandPacket(uint8_t i_packet_type);
 
 /*
  * Neutrona Wand & Attenuator communication.
@@ -479,16 +483,28 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
     case A_SYNC_DATA:
       i_send_size = wandComs.txObj(wandSyncData);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
+
+    #ifdef ESP32
+      bleSendData(wandComs.packet.txBuff, i_send_size);
+    #endif
     break;
 
     case A_SAVE_PREFERENCES_WAND:
       i_send_size = wandComs.txObj(wandConfig);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
+
+    #ifdef ESP32
+      bleSendData(wandComs.packet.txBuff, i_send_size);
+    #endif
     break;
 
     case A_SAVE_PREFERENCES_SMOKE:
       i_send_size = wandComs.txObj(smokeConfig);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
+
+    #ifdef ESP32
+      bleSendData(wandComs.packet.txBuff, i_send_size);
+    #endif
     break;
 
     default:
@@ -499,6 +515,10 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
 
       i_send_size = wandComs.txObj(sendCmdW);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
+
+    #ifdef ESP32
+      bleSendData(wandComs.packet.txBuff, i_send_size);
+    #endif
     break;
   }
 }
@@ -1003,69 +1023,89 @@ void checkWand() {
     // sendDebug(String(F("Wand PacketID: ")) + String(i_packet_id));
 
     if(i_packet_id > 0) {
-      if(ms_wand_check.isRunning() && WAND_CONN_STATE == WAND_CONNECTED) {
-        // If the timer is still running and wand is connected, consider any request as proof of life.
-        ms_wand_check.restart();
-      }
-
       // Determine the type of packet which was sent by the wand device.
       switch(i_packet_id) {
         case PACKET_COMMAND:
           wandComs.rxObj(recvCmdW);
-          if(recvCmdW.c > 0 && recvCmdW.s == A_COM_START && recvCmdW.e == A_COM_END) {
-            sendDebug(String(F("Recv. Wand Command: ")) + String(recvCmdW.c) + String(F(" | Conn. State: ")) + String(WAND_CONN_STATE));
-            handleWandCommand(recvCmdW.c, recvCmdW.d1);
-          }
         break;
-
         case PACKET_DATA:
           if(WAND_CONN_STATE != WAND_CONNECTED) {
             // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
             return;
           }
-
           wandComs.rxObj(recvDataW);
-          if(recvDataW.c > 0 && recvDataW.s == A_COM_START && recvDataW.e == A_COM_END) {
-            sendDebug(String(F("Recv. Wand Data: ")) + String(recvDataW.c));
-            // No handlers at this time.
-          }
         break;
-
         case PACKET_WAND:
           if(WAND_CONN_STATE != WAND_CONNECTED) {
             // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
             return;
           }
-
           wandComs.rxObj(wandConfig);
-          sendDebug(F("Recv. Wand Config Prefs"));
-
-          // Update the flag for our local wifi if applicable.
-          #ifdef ESP32
-          if(WIFI_USER_MODE == WIFI_ENABLED || (WIFI_USER_MODE == WIFI_DEFAULT && ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING)) {
-            b_received_prefs_wand = true;
-          }
-          #endif
-
-          // Send the EEPROM preferences just returned by the wand.
-          attenuatorSerialSend(A_SEND_PREFERENCES_WAND);
         break;
-
         case PACKET_SMOKE:
           if(WAND_CONN_STATE != WAND_CONNECTED) {
             // Can't proceed if the wand isn't connected; prevents phantom actions from occurring.
             return;
           }
-
           wandComs.rxObj(smokeConfig);
-          sendDebug(F("Recv. Wand Smoke Prefs"));
-
-          // Send the EEPROM preferences just returned by the wand.
-          // This data will combine with the pack's smoke settings.
-          attenuatorSerialSend(A_SEND_PREFERENCES_SMOKE);
         break;
       }
+
+      if(ms_wand_check.isRunning() && WAND_CONN_STATE == WAND_CONNECTED) {
+        // If the timer is still running and wand is connected, consider any request as proof of life.
+        ms_wand_check.restart();
+      }
+
+      handleWandPacket(i_packet_id);
     }
+  }
+  #ifdef ESP32
+  else if(b_ble_command_ready) {
+    // No serial data; check for BLE data instead
+    processBLECommand();
+  }
+  #endif
+}
+
+void handleWandPacket(uint8_t i_packet_type) {
+  // Take action based on the packet type and extracted data object.
+  switch(i_packet_type) {
+    case PACKET_COMMAND:
+      if(recvCmdW.c > 0 && recvCmdW.s == A_COM_START && recvCmdW.e == A_COM_END) {
+        sendDebug(String(F("Recv. Wand Command: ")) + String(recvCmdW.c) + String(F(" | Conn. State: ")) + String(WAND_CONN_STATE));
+        handleWandCommand(recvCmdW.c, recvCmdW.d1);
+      }
+    break;
+
+    case PACKET_DATA:
+      wandComs.rxObj(recvDataW);
+      if(recvDataW.c > 0 && recvDataW.s == A_COM_START && recvDataW.e == A_COM_END) {
+        sendDebug(String(F("Recv. Wand Data: ")) + String(recvDataW.c));
+        // No handlers at this time.
+      }
+    break;
+
+    case PACKET_WAND:
+      sendDebug(F("Recv. Wand Config Prefs"));
+
+      // Update the flag for our local wifi if applicable.
+      #ifdef ESP32
+      if(WIFI_USER_MODE == WIFI_ENABLED || (WIFI_USER_MODE == WIFI_DEFAULT && ATTENUATOR_CONN_STATE != ATTENUATOR_CONNECTED && ATTENUATOR_CONN_STATE != ATTENUATOR_SYNCING)) {
+        b_received_prefs_wand = true;
+      }
+      #endif
+
+      // Send the EEPROM preferences just returned by the wand.
+      attenuatorSerialSend(A_SEND_PREFERENCES_WAND);
+    break;
+
+    case PACKET_SMOKE:
+      sendDebug(F("Recv. Wand Smoke Prefs"));
+
+      // Send the EEPROM preferences just returned by the wand.
+      // This data will combine with the pack's smoke settings.
+      attenuatorSerialSend(A_SEND_PREFERENCES_SMOKE);
+    break;
   }
 }
 

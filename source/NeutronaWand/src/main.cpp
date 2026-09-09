@@ -42,7 +42,7 @@
 
 // Set to 1 to enable built-in debug messages via Serial device output.
 // Use with DEBUG_SEND_TO_CONSOLE and other DEBUG_'s in Configuration.h
-#define GPSTAR_DEBUG 0
+#define GPSTAR_DEBUG 1
 
 // Debug macros
 #if GPSTAR_DEBUG == 1
@@ -138,6 +138,7 @@ extern WandSyncData wandSyncData;
 #include "Serial.h"
 #ifdef ESP32
   #include "Wireless.h"
+  #include "Bluetooth.h"
   #include "Webhandler.h"
   #include "Webrouting.h"
 #endif
@@ -298,6 +299,11 @@ void setup() {
   else {
     // Sensor malfunction detected, so disconnect Wire1.
     Wire1.end();
+  }
+
+  // Initialize Bluetooth LE (Pack as server/peripheral)
+  if(!startBluetooth()) {
+    debugln(F("BLE initialization failed"));
   }
 #else
   Wire.begin();
@@ -722,6 +728,10 @@ void mainLoop() {
 
 // The main loop of the program which manages all system operations which must occur on every loop.
 void loop() {
+  #ifdef ESP32
+    updateBLEConnection(); // BLE connection check.
+  #endif
+
   switch(WAND_CONN_STATE) {
     case PACK_DISCONNECTED:
     case PACK_MISMATCH:
