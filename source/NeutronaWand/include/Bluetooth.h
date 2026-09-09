@@ -269,32 +269,48 @@ BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
 // Check and process incoming BLE notifications from Pack
 // Called every main loop iteration to poll for new status characteristic data
 // Uses value change detection (compares with last known value) to detect notifications
+// Validates sequence numbers to detect lost packets from rapid sends
 void processBLENotification() {
   if(!b_ble_connected || !g_pRemoteStatusChar) {
     return;
   }
   
-  // Get current characteristic value
+  // Get current characteristic value (format: [seq_byte][packet_data])
   NimBLEAttValue value = g_pRemoteStatusChar->getValue();
   
-  // Only process if we have data
-  if(value.length() > 0 && value.length() <= 32) {
-    // Simple change detection: compare length and first byte
+  // Only process if we have data (at least seq + minimal packet)
+  if(value.length() > 1 && value.length() <= 33) {  // 1 seq + 32 max packet
+    // Change detection: compare full buffer to detect actual data changes
+    static uint8_t lastBuffer[33] = {0};
     static size_t lastLength = 0;
-    static uint8_t lastFirstByte = 0;
+    static uint8_t lastSeq = 0;
     
     bool changed = (value.length() != lastLength) || 
-                   (value.length() > 0 && value.data()[0] != lastFirstByte);
+                   (memcmp(value.data(), lastBuffer, value.length()) != 0);
     
     if(changed) {
-      // Copy to buffer
-      memcpy(g_ble_rx_buffer, value.c_str(), value.length());
-      g_ble_rx_length = value.length();
+      // Extract sequence byte
+      uint8_t seq = value.data()[0];
       
+      // Check for skipped packets
+      if(lastLength > 0 && seq != (lastSeq + 1)) {
+        debug(F("[BLE-RX] SKIP: expected seq "));
+        debug(lastSeq + 1);
+        debug(F(" got "));
+        debugln(seq);
+      }
+      lastSeq = seq;
+      
+      // Copy to buffer (without sequence byte - just the packet part)
+      size_t packet_length = value.length() - 1;
+      memcpy(g_ble_rx_buffer, value.data() + 1, packet_length);  // Skip first seq byte
+      g_ble_rx_length = packet_length;
+      
+      // Update static for next comparison
+      memcpy(lastBuffer, value.data(), value.length());
       lastLength = value.length();
-      lastFirstByte = (value.length() > 0) ? value.data()[0] : 0;
       
-      // Parse the packet
+      // Parse the packet (now contains only packet data, not seq byte)
       BLEPacket packet = bleHandleData(g_ble_rx_buffer, g_ble_rx_length);
       
       if(packet.packetType == PACKET_COMMAND) {

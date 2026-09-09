@@ -37,6 +37,7 @@ NimBLEServer *g_pBLEServer = nullptr;
 NimBLEService *g_pGPStarService = nullptr;
 NimBLECharacteristic *g_pCommandCharacteristic = nullptr;
 NimBLECharacteristic *g_pStatusCharacteristic = nullptr;
+static uint8_t g_ble_tx_sequence = 0;  // Sequence counter for BLE notifications (detect lost packets)
 bool b_ble_enabled = true; // Master enable/disable flag; set to false to turn off all BLE scanning and connection
 bool b_ble_initialized = false; // NimBLE device initialized, service/characteristics created, advertising started
 bool b_ble_connected = false; // Indicates when the Wand has successfully connected and bonded with this Pack
@@ -519,12 +520,17 @@ bool startBluetooth() {
 }
 
 // Send serialized data via BLE characteristic (receives same buffer that was sent via UART)
-// The function checks BLE state and sends the same bytes via characteristic
+// Prepends a sequence number byte to detect lost packets from fast sends
 void bleSendData(const uint8_t* pData, size_t length) {
   if(!b_ble_enabled || !b_ble_connected || !g_pStatusCharacteristic) {
     return;  // BLE not ready, function decides silently
   }
   
-  g_pStatusCharacteristic->setValue((uint8_t*)pData, length);
+  // Create buffer with sequence byte prepended
+  uint8_t ble_buffer[33];  // 1 byte seq + 32 max packet = 33
+  ble_buffer[0] = g_ble_tx_sequence++;  // Increment after use (0, 1, 2, ...)
+  memcpy(&ble_buffer[1], pData, length);
+  
+  g_pStatusCharacteristic->setValue(ble_buffer, length + 1);
   g_pStatusCharacteristic->notify();
 }
