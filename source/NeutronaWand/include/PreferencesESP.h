@@ -730,18 +730,22 @@ void getSpecialPreferences() {
     if(preferences.isKey("mag_cal")) {
       preferences.getBytes("mag_cal", &magCalData, sizeof(magCalData));
 
-      size_t readA = preferences.getBytes("accel_cal", &accelOffsets, sizeof(accelOffsets));
-      if(readA == sizeof(accelOffsets)) {
-        calibratedOffsets.accelX = accelOffsets.x;
-        calibratedOffsets.accelY = accelOffsets.y;
-        calibratedOffsets.accelZ = accelOffsets.z;
+      if(preferences.isKey("accel_cal")) {
+        size_t readA = preferences.getBytes("accel_cal", &accelOffsets, sizeof(accelOffsets));
+        if(readA == sizeof(accelOffsets)) {
+          calibratedOffsets.accelX = accelOffsets.x;
+          calibratedOffsets.accelY = accelOffsets.y;
+          calibratedOffsets.accelZ = accelOffsets.z;
+        }
       }
 
-      size_t readG = preferences.getBytes("gyro_cal", &gyroOffsets, sizeof(gyroOffsets));
-      if(readG == sizeof(gyroOffsets)) {
-        calibratedOffsets.gyroX = gyroOffsets.x;
-        calibratedOffsets.gyroY = gyroOffsets.y;
-        calibratedOffsets.gyroZ = gyroOffsets.z;
+      if(preferences.isKey("gyro_cal")) {
+        size_t readG = preferences.getBytes("gyro_cal", &gyroOffsets, sizeof(gyroOffsets));
+        if(readG == sizeof(gyroOffsets)) {
+          calibratedOffsets.gyroX = gyroOffsets.x;
+          calibratedOffsets.gyroY = gyroOffsets.y;
+          calibratedOffsets.gyroZ = gyroOffsets.z;
+        }
       }
     }
 
