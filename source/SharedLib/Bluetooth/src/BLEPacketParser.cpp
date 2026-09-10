@@ -20,7 +20,6 @@
 
 #include "BLEPacketParser.h"
 #include "BLEConstants.h"
-#include "../../Communication/include/Communication.h"
 #include <string.h>
 
 /*

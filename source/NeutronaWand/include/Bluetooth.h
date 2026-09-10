@@ -22,6 +22,9 @@
 // For BluetoothLE (BLE)
 #include <NimBLEDevice.h>
 
+// BLE Message Queue Library (Phase 3 refactoring) - umbrella header
+#include <BLE.h>
+
 // Declare external reference to WirelessManager pointer (allocated in main.cpp after NVS init)
 extern WirelessManager* wirelessMgr;
 
@@ -46,15 +49,16 @@ uint16_t i_target_pack_id = 0; // Pack device ID extracted from advertisement (r
 NimBLEAddress g_packAddress;  // MAC address of discovered Pack
 bool b_pack_found = false;    // Set by scan callback, cleared by main thread after connecting
 
+// BLE message queues (message-level queueing per BLE_TRANSPORT.md)
+// Wand TX: messages from Wand to Pack (written to PackRX characteristic)
+// Wand RX: messages from Pack to Wand (received via notifications)
+// Note: Queues are zero-initialized by default in C; no explicit init needed before use
+BLEMessageQueue g_ble_tx_queue = {};
+BLEMessageQueue g_ble_rx_queue = {};
+
 // BLE notification queue (store incoming Pack notifications for main loop processing)
 uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
 size_t g_ble_rx_length = 0;         // Number of bytes in buffer
-
-// Serial TX queue (accumulate outgoing frames per loop, flush once)
-#define SERIAL_TX_QUEUE_SIZE 256
-uint8_t g_serial_tx_queue[SERIAL_TX_QUEUE_SIZE] = {0};
-size_t g_serial_tx_queue_length = 0;
-uint8_t g_ble_tx_sequence = 0;  // 6-bit sequence counter for outgoing indications
 
 // Serial RX buffer (incoming BLE-sourced serial frames for fallback processing)
 uint8_t g_serial_rx_buffer[32] = {0};
@@ -687,114 +691,77 @@ void handleBLEWandConnection() {
 
 // Queue serialized data for transmission at end of loop
 // Accumulates frames, then bleFlushQueues() sends once with metadata byte
+/*
+ * Queue a serialized packet for transmission to Pack.
+ * 
+ * Phase 3 (Refactored): Uses BLE library message queueing.
+ * Per BLE_TRANSPORT.md: Each packet becomes one BLEMessage with frame markers preserved.
+ * Sequence counter is managed by library; status tracking per message.
+ */
 void bleQueueSerialData(const uint8_t* pData, size_t length) {
-  if(!b_ble_enabled) {
-    return;  // BLE disabled, silently drop
+  if(!b_ble_enabled || !pData || length == 0) {
+    return;  // BLE disabled or invalid input, silently drop
   }
   
-  // Check if frame fits in queue
-  if(g_serial_tx_queue_length + length > SERIAL_TX_QUEUE_SIZE) {
+  // Create a BLEMessage from the packet data
+  // The packet already has frame markers (0x02 start, 0x04 end)
+  BLEMessage msg;
+  uint8_t result = BLEPacketParser_CreateMessage(
+    BLEPacketParser_GetPacketType(pData, length),
+    0,  // Sequence will be managed by library if needed
+    pData,
+    length,
+    &msg
+  );
+  
+  if(result != BLE_PACKET_INVALID) {
+    // Enqueue the message for transmission
+    uint8_t enqueue_result = BLEQueueManager_Enqueue(&g_ble_tx_queue, &msg);
+    
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[WAND→PACK-Q] OVERFLOW: queue="));
-      debug(g_serial_tx_queue_length);
-      debug(F("B + frame="));
-      debug(length);
-      debug(F("B exceeds limit="));
-      debug(SERIAL_TX_QUEUE_SIZE);
-      debugln(F("B"));
-    #endif
-    return;  // Queue full, drop frame
-  }
-  
-  // Append frame to queue
-  memcpy(&g_serial_tx_queue[g_serial_tx_queue_length], pData, length);
-  g_serial_tx_queue_length += length;
-  
-  #if defined(DEBUG_BLUETOOTH)
-    // Parse frame type from first byte (if valid)
-    const char* frameType = "UNKNOWN";
-    if(length >= 4) {
-      uint8_t start = pData[0];
-      uint8_t end = pData[length - 1];
-      
-      if(start == A_COM_START && end == A_COM_END) {
-        if(length == 6) {
-          frameType = "COMMAND";
-          uint16_t cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
-          uint16_t d1 = (uint16_t)pData[3] | ((uint16_t)pData[4] << 8);
-          debug(F("[WAND→PACK-Q] COMMAND frame: cmd="));
-          debug(cmd);
-          debug(F(" d1="));
-          debug(d1);
-          debug(F(" | size="));
-          debug(length);
-          debug(F("B depth="));
-          debug(g_serial_tx_queue_length);
-          debug(F("/"));
-          debug(SERIAL_TX_QUEUE_SIZE);
-          debugln(F("B"));
-        } else if(length == 7) {
-          frameType = "DATA";
-          uint16_t cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
-          debug(F("[WAND→PACK-Q] DATA frame: cmd="));
-          debug(cmd);
-          debug(F(" d[0]="));
-          debug(pData[3]);
-          debug(F(" d[1]="));
-          debug(pData[4]);
-          debug(F(" d[2]="));
-          debug(pData[5]);
-          debug(F(" | size="));
-          debug(length);
-          debug(F("B depth="));
-          debug(g_serial_tx_queue_length);
-          debug(F("/"));
-          debug(SERIAL_TX_QUEUE_SIZE);
-          debugln(F("B"));
-        } else {
-          debug(F("[WAND→PACK-Q] Large frame: size="));
-          debug(length);
-          debug(F("B depth="));
-          debug(g_serial_tx_queue_length);
-          debug(F("/"));
-          debug(SERIAL_TX_QUEUE_SIZE);
-          debugln(F("B"));
-        }
-      } else {
-        debug(F("[WAND→PACK-Q] Invalid frame markers: start=0x"));
-        debug(start, HEX);
-        debug(F(" end=0x"));
-        debug(end, HEX);
-        debug(F(" size="));
-        debug(length);
-        debug(F("B depth="));
-        debug(g_serial_tx_queue_length);
+      if(enqueue_result == BLE_QUEUE_OK) {
+        debug(F("[WAND→PACK-Q] Message queued, depth="));
+        debug(BLEQueueManager_GetCount(&g_ble_tx_queue));
         debug(F("/"));
-        debug(SERIAL_TX_QUEUE_SIZE);
-        debugln(F("B"));
+        debug(BLE_QUEUE_SIZE);
+        debugln(F(" msgs"));
+      } else if(enqueue_result == BLE_QUEUE_FULL) {
+        debug(F("[WAND→PACK-Q] OVERFLOW: queue full, overflows="));
+        debug(g_ble_tx_queue.overflowCount);
+        debugln();
       }
-    }
-  #endif
+    #endif
+  } else {
+    #if defined(DEBUG_BLUETOOTH)
+      debug(F("[WAND→PACK-Q] Invalid packet: start=0x"));
+      if(length > 0) debug(pData[0], HEX);
+      debug(F(" end=0x"));
+      if(length > 0) debug(pData[length-1], HEX);
+      debug(F(" len="));
+      debug(length);
+      debugln();
+    #endif
+  }
 }
 
-// Flush all queued serial frames as single write with metadata byte
-// Called at end of main loop (PHASE 3: FLUSH)
-// Metadata format: [7:6]=source type (00=serial), [5:0]=sequence counter
+/*
+ * Flush queued messages as BLE writes (one message per write).
+ * 
+ * Phase 3 (Refactored): Dequeues and sends individual BLEMessages.
+ * Per BLE_TRANSPORT.md: Each write carries one complete message.
+ * Uses write-without-response for efficiency (Wand→Pack characteristic).
+ */
 void bleFlushQueues() {
   if(!b_ble_enabled || !b_ble_connected || !g_pBLEClient) {
     return;  // BLE not ready, queues stay intact for next loop
   }
   
-  if(g_serial_tx_queue_length == 0) {
-    return;  // No data to send
-  }
-  
   // Lazy-load remote characteristics on first use
   if(!g_pRemoteCommandChar) {
     debugln(F("[WAND→PACK] First flush - discovering Pack command characteristic..."));
-    NimBLERemoteService *pService = g_pBLEClient->getService("0000ffe0-0000-1000-8000-00805f9b34fb");
+    NimBLERemoteService *pService = g_pBLEClient->getService(BLE_SERIALDATA_SERVICE_UUID);
     if(pService) {
-      g_pRemoteCommandChar = pService->getCharacteristic("0000ffe1-0000-1000-8000-00805f9b34fb");
+      g_pRemoteCommandChar = pService->getCharacteristic(BLE_SERIALDATA_PACKTX_CHAR_UUID);
       if(!g_pRemoteCommandChar) {
         debugln(F("[WAND→PACK] ERROR: Could not find Pack command characteristic"));
         return;
@@ -805,87 +772,48 @@ void bleFlushQueues() {
     }
   }
   
-  // Build transmission: metadata byte + all queued frames
-  uint8_t ble_buffer[257];  // 1 byte metadata + 256 queue
-  
-  // Metadata byte: source=00 (serial), sequence counter in low 6 bits
-  ble_buffer[0] = (0x00 << 6) | (g_ble_tx_sequence & 0x3F);
-  uint8_t current_seq = g_ble_tx_sequence;
-  g_ble_tx_sequence = (g_ble_tx_sequence + 1) & 0x3F;  // Wrap at 64
-  
-  // Copy all queued frames
-  memcpy(&ble_buffer[1], g_serial_tx_queue, g_serial_tx_queue_length);
-  
-  // Send via write without response (fire and forget, but queued by Wand)
-  if(g_pRemoteCommandChar->canWrite()) {
-    g_pRemoteCommandChar->writeValue(ble_buffer, g_serial_tx_queue_length + 1, false);
+  // Process all queued messages (max 16 per queue per spec)
+  while(!BLEQueueManager_IsEmpty(&g_ble_tx_queue)) {
+    BLEMessage msg;
+    uint8_t result = BLEQueueManager_Dequeue(&g_ble_tx_queue, &msg);
     
-    #if defined(DEBUG_BLUETOOTH)
-      debug(F("[WAND→PACK-SEND] Seq#"));
-      debug(current_seq);
-      debug(F(" Metadata=0x"));
-      debug(ble_buffer[0], HEX);
-      debug(F(" Payload="));
-      debug(g_serial_tx_queue_length);
-      debug(F("B Total="));
-      debug(g_serial_tx_queue_length + 1);
-      debugln(F("B"));
+    if(result != BLE_QUEUE_OK) {
+      break;  // Queue empty or error
+    }
+    
+    // Send message as write-without-response (message payload already has frame markers)
+    // Metadata format: [7:6]=source, [5:0]=sequence
+    uint8_t ble_buffer[258];  // 1 byte metadata + 257 (1B seq + 256B payload max)
+    ble_buffer[0] = (0x00 << 6) | (msg.sequence & 0x3F);
+    
+    // Copy message payload (includes frame markers 0x02...0x04)
+    memcpy(&ble_buffer[1], msg.payload, msg.length);
+    
+    if(g_pRemoteCommandChar->canWrite()) {
+      g_pRemoteCommandChar->writeValue(ble_buffer, msg.length + 1, false);
       
-      // Log what frames are in this flush
-      size_t offset = 0;
-      int frame_count = 0;
-      while(offset < g_serial_tx_queue_length) {
-        uint8_t start = g_serial_tx_queue[offset];
-        if(offset + 1 < g_serial_tx_queue_length) {
-          uint8_t end = g_serial_tx_queue[offset + g_serial_tx_queue_length - 1];
-          frame_count++;
-          
-          if(g_serial_tx_queue_length - offset == 6) {
-            uint16_t cmd = (uint16_t)g_serial_tx_queue[offset+1] | ((uint16_t)g_serial_tx_queue[offset+2] << 8);
-            uint16_t d1 = (uint16_t)g_serial_tx_queue[offset+3] | ((uint16_t)g_serial_tx_queue[offset+4] << 8);
-            debug(F("  [Frame "));
-            debug(frame_count);
-            debug(F("] COMMAND: cmd="));
-            debug(cmd);
-            debug(F(" d1="));
-            debugln(d1);
-            offset += 6;
-          } else if(g_serial_tx_queue_length - offset == 7) {
-            uint16_t cmd = (uint16_t)g_serial_tx_queue[offset+1] | ((uint16_t)g_serial_tx_queue[offset+2] << 8);
-            debug(F("  [Frame "));
-            debug(frame_count);
-            debug(F("] DATA: cmd="));
-            debug(cmd);
-            debug(F(" d[0,1,2]="));
-            debug(g_serial_tx_queue[offset+3]);
-            debug(F(","));
-            debug(g_serial_tx_queue[offset+4]);
-            debug(F(","));
-            debug(g_serial_tx_queue[offset+5]);
-            debugln();
-            offset += 7;
-          } else {
-            debug(F("  [Frame "));
-            debug(frame_count);
-            debug(F("] ("));
-            debug(g_serial_tx_queue_length - offset);
-            debugln(F("B)"));
-            break;
-          }
-        } else {
-          break;
-        }
-      }
-    #endif
-  } else {
-    #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[WAND→PACK] ERROR: Pack command characteristic not writable"));
-    #endif
-    return;
+      #if defined(DEBUG_BLUETOOTH)
+        debug(F("[WAND→PACK-SEND] Seq#"));
+        debug(msg.sequence);
+        debug(F(" PktType="));
+        debug(msg.packetType);
+        debug(F(" Len="));
+        debug(msg.length);
+        debug(F("B Depth="));
+        debug(BLEQueueManager_GetCount(&g_ble_tx_queue));
+        debug(F("/"));
+        debug(BLE_QUEUE_SIZE);
+        debugln();
+      #endif
+    } else {
+      #if defined(DEBUG_BLUETOOTH)
+        debugln(F("[WAND→PACK] ERROR: Pack command characteristic not writable"));
+      #endif
+      // Re-queue the message we just dequeued since we couldn't send it
+      BLEQueueManager_Enqueue(&g_ble_tx_queue, &msg);
+      break;
+    }
   }
-  
-  // Clear queue for next loop
-  g_serial_tx_queue_length = 0;
 }
 
 // Apply queued serial data from BLE (fallback when UART unavailable)

@@ -79,3 +79,26 @@
 #define BLE_FRAME_START_MARKER             0x02
 #define BLE_FRAME_END_MARKER               0x04
 
+/*
+ * Packet Type Constants
+ * 
+ * Identifies the type of communication packet.
+ * 
+ * IMPORTANT: These constants are DUPLICATED from Communication.h
+ * Communication.h is the source of truth. If packet types change, update
+ * Communication.h first, then mirror the changes here to keep them in sync.
+ * This duplication exists because BLE library must be transport-agnostic
+ * and cannot depend on Communication.h (which has inline functions causing
+ * multiple definition linker errors).
+ * 
+ * Per BLE_TRANSPORT.md: packet boundaries preserved through transmission.
+ */
+#define PACKET_UNKNOWN                     0
+#define PACKET_COMMAND                     1
+#define PACKET_DATA                        2
+#define PACKET_PACK                        3
+#define PACKET_WAND                        4
+#define PACKET_SMOKE                       5
+#define PACKET_SYNC                        6
+#define PACKET_IDENTITY                    7
+
