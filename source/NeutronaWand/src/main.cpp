@@ -730,6 +730,7 @@ void mainLoop() {
 void loop() {
   #ifdef ESP32
     updateBLEConnection(); // BLE connection check.
+    bleProcessData(); // Check for incoming BLE data.
   #endif
 
   switch(WAND_CONN_STATE) {
@@ -819,6 +820,8 @@ void loop() {
       }
     break;
   }
+
+  bleFlushQueues(); // Send any stored BLE data.
 #endif
 
   // Task execution via the scheduler.

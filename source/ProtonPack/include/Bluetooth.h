@@ -47,6 +47,16 @@ uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
 size_t g_ble_rx_length = 0;         // Number of bytes in buffer
 bool b_ble_rx_ready = false;        // Flag: data ready to process
 
+// Serial TX queue (accumulate outgoing frames per loop, flush once)
+#define SERIAL_TX_QUEUE_SIZE 256
+uint8_t g_serial_tx_queue[SERIAL_TX_QUEUE_SIZE] = {0};
+size_t g_serial_tx_queue_length = 0;
+
+// Serial RX buffer (incoming BLE-sourced serial frames for fallback processing)
+uint8_t g_serial_rx_buffer[32] = {0};
+size_t g_serial_rx_length = 0;
+bool b_serial_rx_ready = false;
+
 // Global callback objects (must persist for lifetime of BLE server)
 NimBLEServerCallbacks *g_pPackServerCallbacks = nullptr;
 NimBLECharacteristicCallbacks *g_pPackCharacteristicCallbacks = nullptr;
@@ -104,7 +114,7 @@ const char* GPSTAR_STATUS_CHAR_UUID = "0000ffe2-0000-1000-8000-00805f9b34fb";
  * 7. Wand sends commands via command characteristic writes
  * 8. onWrite callback fires → GPStarPackCharacteristicCallbacks::onWrite receives command bytes
  * 9. Pack sends status via status characteristic notifications
- * 10. bleSendData() function notifies Wand with serialized status data
+ * 10. bleQueueSerialData() function notifies Wand with serialized status data
  * 11. If Wand disconnects → onDisconnect() callback fires → b_ble_connected = false → continues advertising
  */
 
@@ -223,11 +233,57 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       }
       
       // Queue the command for processing by checkWand() in main loop
-      if(rxValue.length() <= 32) {
-        debugln(F("[PACK-CALLBACK] Write callback fired"));
-        memcpy(g_ble_rx_buffer, rxValue.c_str(), rxValue.length());
-        g_ble_rx_length = rxValue.length();
-        b_ble_rx_ready = true;
+      if(rxValue.length() > 1) {  // Must have at least metadata + 1 byte payload
+        // Extract metadata byte (byte[0])
+        uint8_t metadata = (uint8_t)rxValue[0];
+        uint8_t source_type = (metadata >> 6) & 0x03;
+        uint8_t sequence = metadata & 0x3F;
+        size_t payload_length = rxValue.length() - 1;
+        
+        #if defined(DEBUG_BLUETOOTH)
+          debug(F("[BLE-RX] Recv "));
+          debug(rxValue.length());
+          debug(F("B | Metadata="));
+          debug(metadata);
+          debug(F(" (source="));
+          debug(source_type);
+          debug(F(" seq="));
+          debug(sequence);
+          debug(F(") | Payload="));
+          debug(payload_length);
+          debugln(F("B"));
+        #endif
+        
+        // Verify source type is serial (00)
+        if(source_type != 0x00) {
+          #if defined(DEBUG_BLUETOOTH)
+            debug(F("[BLE-RX] ✗ Invalid source type "));
+            debug(source_type);
+            debugln(F(" - ignoring"));
+          #endif
+          return;
+        }
+        
+        // Copy payload (skip metadata byte) to buffer for processing
+        if(payload_length <= 32) {
+          memcpy(g_ble_rx_buffer, rxValue.c_str() + 1, payload_length);
+          g_ble_rx_length = payload_length;
+          b_ble_rx_ready = true;
+          
+          #if defined(DEBUG_BLUETOOTH)
+            debug(F("[BLE-RX] Queued ("));
+            debug(g_ble_rx_length);
+            debugln(F("B payload)"));
+          #endif
+        } else {
+          #if defined(DEBUG_BLUETOOTH)
+            debugln(F("[BLE-RX] ✗ Payload too large - ignoring"));
+          #endif
+        }
+      } else {
+        #if defined(DEBUG_BLUETOOTH)
+          debugln(F("[BLE-RX] ✗ Packet too short - ignoring"));
+        #endif
       }
     }
   }
@@ -289,7 +345,7 @@ BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
 
 // Process incoming BLE notifications from Wand
 // Called from main loop to parse and handle queued BLE command bytes
-void processBLENotification() {
+void bleProcessData() {
   if(!b_ble_rx_ready || g_ble_rx_length == 0) {
     return;  // No notification queued
   }
@@ -467,9 +523,12 @@ bool startBluetooth() {
     #endif
 
     // Create status characteristic (Pack sends status updates via indications)
+    // Properties: INDICATE (enables indications) + READ (let Wand read value)
+    // DO NOT include WRITE - this is receive-only (Pack → Wand)
+    // DO NOT manually create CCCD - NimBLE auto-creates it with proper permissions when INDICATE is set
     g_pStatusCharacteristic = g_pGPStarService->createCharacteristic(
       GPSTAR_STATUS_CHAR_UUID,
-      NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE
+      NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::READ
     );
     
     if(!g_pStatusCharacteristic) {
@@ -481,7 +540,8 @@ bool startBluetooth() {
 
     #if defined(DEBUG_BLUETOOTH)
       debugln(F("[BLE] Status characteristic created (Pack → Wand)"));
-      debugln(F("[BLE] Status char properties: INDICATE + READ + WRITE"));
+      debugln(F("[BLE] Status char properties: INDICATE + READ"));
+      debugln(F("[BLE] CCCD auto-created by NimBLE (readable and writable)"));
     #endif
 
     // Set up advertising
@@ -520,30 +580,133 @@ bool startBluetooth() {
   }
 }
 
-// Send serialized data via BLE characteristic (receives same buffer that was sent via UART)
-// Uses indications (with acknowledgment) to queue commands and prevent loss from rapid sends
-// Each indicate() call blocks until client sends confirmation, naturally serializing sends
-void bleSendData(const uint8_t* pData, size_t length) {
-  if(!b_ble_enabled || !b_ble_connected || !g_pStatusCharacteristic) {
-    return;  // BLE not ready, function decides silently
+// Queue serialized data for transmission at end of loop
+// Accumulates frames, then bleFlushQueues() sends once with metadata byte
+void bleQueueSerialData(const uint8_t* pData, size_t length) {
+  if(!b_ble_enabled) {
+    return;  // BLE disabled, silently drop
   }
   
-  // Create buffer with sequence byte prepended
-  uint8_t ble_buffer[33];  // 1 byte seq + 32 max packet = 33
-  ble_buffer[0] = g_ble_tx_sequence++;  // Increment after use (0, 1, 2, ...)
-  memcpy(&ble_buffer[1], pData, length);
+  // Check if frame fits in queue
+  if(g_serial_tx_queue_length + length > SERIAL_TX_QUEUE_SIZE) {
+    #if defined(DEBUG_BLUETOOTH)
+      debug(F("[BLE-TX-Q] ✗ OVERFLOW: queue="));
+      debug(g_serial_tx_queue_length);
+      debug(F(" + frame="));
+      debug(length);
+      debug(F(" > limit "));
+      debug(SERIAL_TX_QUEUE_SIZE);
+      debugln(F(" - DROPPED"));
+    #endif
+    return;  // Queue full, drop frame
+  }
   
-  // Use indicate() instead of notify() - requires client ACK
-  // This blocks until Wand confirms receipt, preventing packet loss from rapid sends
-  g_pStatusCharacteristic->setValue(ble_buffer, length + 1);
+  // Append frame to queue
+  memcpy(&g_serial_tx_queue[g_serial_tx_queue_length], pData, length);
+  g_serial_tx_queue_length += length;
   
   #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE-TX] Sending indication (seq "));
-    debug(ble_buffer[0]);
-    debug(F(", len "));
+    debug(F("[BLE-TX-Q] + "));
     debug(length);
-    debugln(F(")"));
+    debug(F("B → depth "));
+    debug(g_serial_tx_queue_length);
+    debug(F("/"));
+    debug(SERIAL_TX_QUEUE_SIZE);
+    debugln(F(""));
+  #endif
+}
+
+// Flush all queued serial frames as single indication with metadata byte
+// Called at end of main loop (PHASE 3: FLUSH)
+// Metadata format: [7:6]=source type (00=serial), [5:0]=sequence counter
+void bleFlushQueues() {
+  if(!b_ble_enabled || !b_ble_connected || !g_pStatusCharacteristic) {
+    return;  // BLE not ready, queues stay intact for next loop
+  }
+  
+  if(g_serial_tx_queue_length == 0) {
+    return;  // No data to send
+  }
+  
+  // Build transmission: metadata byte + all queued frames
+  uint8_t ble_buffer[257];  // 1 byte metadata + 256 queue
+  
+  // Metadata byte: source=00 (serial), sequence counter in low 6 bits
+  ble_buffer[0] = (0x00 << 6) | (g_ble_tx_sequence & 0x3F);
+  g_ble_tx_sequence = (g_ble_tx_sequence + 1) & 0x3F;  // Wrap at 64
+  
+  // Copy all queued frames
+  memcpy(&ble_buffer[1], g_serial_tx_queue, g_serial_tx_queue_length);
+  
+  // Send as one indication (blocks until Wand ACKs)
+  g_pStatusCharacteristic->setValue(ble_buffer, g_serial_tx_queue_length + 1);
+  
+  #if defined(DEBUG_BLUETOOTH)
+    debug(F("[BLE-TX-FLUSH] seq="));
+    debug(ble_buffer[0]);
+    debug(F(" payload="));
+    debug(g_serial_tx_queue_length);
+    debugln(F("B"));
   #endif
   
   g_pStatusCharacteristic->indicate();
+  
+  // Clear queue for next loop
+  g_serial_tx_queue_length = 0;
+}
+
+// Apply queued serial data from BLE (fallback when UART unavailable)
+// Processes queued frame identical to UART path
+void bleApplySerialData() {
+  if(!b_serial_rx_ready || g_serial_rx_length == 0) {
+    return;  // No queued data
+  }
+  
+  // Parse the frame
+  BLEPacket packet = bleHandleData(g_serial_rx_buffer, g_serial_rx_length);
+  
+  if(packet.packetType > 0) {
+    // Deserialize into same global structs as UART
+    switch(packet.packetType) {
+      case PACKET_COMMAND:
+        if(packet.cmd > 0) {
+          recvCmdW.s = packet.start;
+          recvCmdW.c = packet.cmd;
+          recvCmdW.d1 = packet.d1;
+          recvCmdW.e = packet.end;
+        }
+        break;
+        
+      case PACKET_DATA:
+        if(packet.cmd > 0) {
+          recvDataW.s = packet.start;
+          recvDataW.c = packet.cmd;
+          recvDataW.d[0] = packet.d[0];
+          recvDataW.d[1] = packet.d[1];
+          recvDataW.d[2] = packet.d[2];
+          recvDataW.e = packet.end;
+        }
+        break;
+        
+      case PACKET_WAND:
+        memcpy(&wandConfig, g_serial_rx_buffer, g_serial_rx_length);
+        break;
+        
+      case PACKET_SMOKE:
+        memcpy(&smokeConfig, g_serial_rx_buffer, g_serial_rx_length);
+        break;
+    }
+    
+    // Ensure Wand connection state is synchronized
+    if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
+      WAND_CONN_STATE = WAND_CONNECTED;
+    }
+    
+    // Route to central packet handler (same as UART)
+    handleWandPacket(packet.packetType);
+  }
+  
+  // Clear for next frame
+  b_serial_rx_ready = false;
+  g_serial_rx_length = 0;
 }

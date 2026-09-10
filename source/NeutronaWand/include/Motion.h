@@ -1425,7 +1425,7 @@ void collectQuickMotionOffsets() {
 #if defined(MOTION_SENSORS) && defined(MOTION_OFFSETS)
   if(quickOffsets.samples < i_sensor_samples) {
     quickOffsets.samples++; // Increment the sample count.
-    #if defined(DEBUG_SEND_TO_CONSOLE)
+    #if defined(DEBUG_SEND_TO_CONSOLE) && defined(DEBUG_TELEMETRY_DATA)
       debugln("Calibrating motion offsets... Sample " + String(quickOffsets.samples) + " of " + String(i_sensor_samples));
     #endif
 
@@ -1450,7 +1450,9 @@ void collectQuickMotionOffsets() {
     quickOffsets.gyroZ = quickOffsets.sumGyroZ * f_inv;
   }
   else {
+  #if defined(DEBUG_SEND_TO_CONSOLE) && defined(DEBUG_TELEMETRY_DATA)
     debugln(F("Quick offsets collected, switching to standard telemetry collection mode."));
+  #endif
     SENSOR_READ_TARGET = TELEMETRY; // Set target to telemetry after calibration.
     notifyWSClients(); // Send a special notification after offsets are loaded.
   }

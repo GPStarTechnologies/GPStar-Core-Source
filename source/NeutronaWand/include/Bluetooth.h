@@ -50,6 +50,17 @@ bool b_pack_found = false;    // Set by scan callback, cleared by main thread af
 uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
 size_t g_ble_rx_length = 0;         // Number of bytes in buffer
 
+// Serial TX queue (accumulate outgoing frames per loop, flush once)
+#define SERIAL_TX_QUEUE_SIZE 256
+uint8_t g_serial_tx_queue[SERIAL_TX_QUEUE_SIZE] = {0};
+size_t g_serial_tx_queue_length = 0;
+uint8_t g_ble_tx_sequence = 0;  // 6-bit sequence counter for outgoing indications
+
+// Serial RX buffer (incoming BLE-sourced serial frames for fallback processing)
+uint8_t g_serial_rx_buffer[32] = {0};
+size_t g_serial_rx_length = 0;
+bool b_serial_rx_ready = false;
+
 // Global callback objects (must persist for lifetime of BLE client)
 NimBLEClientCallbacks *g_pWandClientCallbacks = nullptr;
 NimBLEScanCallbacks *g_pWandScanCallbacks = nullptr;
@@ -107,7 +118,7 @@ void discoverRemoteCharacteristics();
  * 4. onDiscResult() → creates NimBLEClient, initiates connection to Pack
  * 5. Client callbacks (GPStarWandClientCallbacks) fire → onConnect, onConfirmPIN, onAuthenticationComplete
  * 6. After successful pairing → b_ble_connected = true
- * 7. Commands sent via packSerialSend() → calls bleSendData() which writes to Pack
+ * 7. Commands sent via packSerialSend() → calls bleQueueSerialData() which writes to Pack
  * 8. If Pack disconnects → onDisconnect() callback fires → b_ble_connected = false → scan resumes
  */
 
@@ -117,7 +128,9 @@ void discoverRemoteCharacteristics();
 class GPStarWandClientCallbacks : public NimBLEClientCallbacks {
   void onConnect(NimBLEClient *pClient) {
     // FIRED WHEN: Wand successfully establishes BLE connection with Pack
-    debugln(F("[BLE] >>> onConnect() fired <<<"));
+    #if defined(DEBUG_BLUETOOTH)
+      debugln(F("[BLE-STATE] CONNECTED"));
+    #endif
   }
 
   void onDisconnect(NimBLEClient *pClient, int reason) {
@@ -270,7 +283,7 @@ BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
 // Called every main loop iteration to poll for new status characteristic data
 // Uses value change detection (compares with last known value) to detect notifications
 // Validates sequence numbers to detect lost packets from rapid sends
-void processBLENotification() {
+void bleProcessData() {
   if(!b_ble_connected || !g_pRemoteStatusChar) {
     return;
   }
@@ -432,10 +445,10 @@ void discoverRemoteCharacteristics() {
   #endif
 
   // Enable notifications for status characteristic
-  // Note: NimBLE delivers notifications automatically; we poll the characteristic value in processBLENotification()
+  // Note: NimBLE delivers notifications automatically; we poll the characteristic value in bleProcessData()
   if(g_pRemoteStatusChar->canNotify()) {
     // Subscribe to enable notifications
-    // We poll g_pRemoteStatusChar->getValue() in processBLENotification() to read new data
+    // We poll g_pRemoteStatusChar->getValue() in bleProcessData() to read new data
     g_pRemoteStatusChar->subscribe();
     
     #if defined(DEBUG_BLUETOOTH)
@@ -577,21 +590,30 @@ void handleBLEWandConnection() {
       
       // BLOCKING connect - waits for connection to complete
       if(pClient->connect(g_packAddress)) {
-        debugln(F("[BLE] >>> CONNECTED <<<"));
         g_pBLEClient = pClient;
+        
+        #if defined(DEBUG_BLUETOOTH)
+          debugln(F("[BLE-STATE] → Connected (waiting for async callback)"));
+          debugln(F("[BLE-STATE] → Initiating pairing..."));
+        #endif
         
         // NOW initiate pairing - call secureConnection() right after connect() returns
         // This is BLOCKING but necessary for pairing handshake
-        debugln(F("[BLE] Initiating secure connection (pairing)..."));
         if(pClient->secureConnection()) {
-          debugln(F("[BLE] >>> PAIRING INITIATED <<<"));
+          #if defined(DEBUG_BLUETOOTH)
+            debugln(F("[BLE-STATE] Pairing initiated"));
+          #endif
           b_ble_connected = true;
         } else {
-          debugln(F("[BLE] ERROR: secureConnection() failed"));
+          #if defined(DEBUG_BLUETOOTH)
+            debugln(F("[BLE-STATE] ✗ secureConnection() failed"));
+          #endif
           b_ble_connected = false;
         }
       } else {
-        debugln(F("[BLE] ERROR: connect() failed"));
+        #if defined(DEBUG_BLUETOOTH)
+          debugln(F("[BLE-STATE] ✗ connect() failed"));
+        #endif
         NimBLEDevice::deleteClient(pClient);
         g_pBLEClient = nullptr;
       }
@@ -619,48 +641,63 @@ void handleBLEWandConnection() {
   // If Pack is not found, scan continues in background
 }
 
-// Send serialized data via BLE characteristic (receives same buffer that was sent via UART)
-// The function checks BLE state and sends the same bytes via characteristic
-void bleSendData(const uint8_t* pData, size_t length) {
-  if(!b_ble_enabled || !b_ble_connected || !g_pBLEClient) {
-    return;  // BLE not ready, function decides silently
+// Queue serialized data for transmission at end of loop
+// Accumulates frames, then bleFlushQueues() sends once with metadata byte
+void bleQueueSerialData(const uint8_t* pData, size_t length) {
+  if(!b_ble_enabled) {
+    return;  // BLE disabled, silently drop
   }
   
-  // Lazy-load remote characteristics on first use (skip discovery, just use UUID directly)
-  if(!g_pRemoteCommandChar || !g_pRemoteStatusChar) {
-    debugln(F("[BLE] First send - getting remote characteristics..."));
+  // Check if frame fits in queue
+  if(g_serial_tx_queue_length + length > SERIAL_TX_QUEUE_SIZE) {
+    #if defined(DEBUG_BLUETOOTH)
+      debug(F("[BLE-TX-Q] ✗ OVERFLOW: queue="));
+      debug(g_serial_tx_queue_length);
+      debug(F(" + frame="));
+      debug(length);
+      debug(F(" > limit "));
+      debug(SERIAL_TX_QUEUE_SIZE);
+      debugln(F(" - DROPPED"));
+    #endif
+    return;  // Queue full, drop frame
+  }
+  
+  // Append frame to queue
+  memcpy(&g_serial_tx_queue[g_serial_tx_queue_length], pData, length);
+  g_serial_tx_queue_length += length;
+  
+  #if defined(DEBUG_BLUETOOTH)
+    debug(F("[BLE-TX-Q] + "));
+    debug(length);
+    debug(F("B → depth "));
+    debug(g_serial_tx_queue_length);
+    debug(F("/"));
+    debug(SERIAL_TX_QUEUE_SIZE);
+    debugln(F(""));
+  #endif
+}
+
+// Flush all queued serial frames as single write with metadata byte
+// Called at end of main loop (PHASE 3: FLUSH)
+// Metadata format: [7:6]=source type (00=serial), [5:0]=sequence counter
+void bleFlushQueues() {
+  if(!b_ble_enabled || !b_ble_connected || !g_pBLEClient) {
+    return;  // BLE not ready, queues stay intact for next loop
+  }
+  
+  if(g_serial_tx_queue_length == 0) {
+    return;  // No data to send
+  }
+  
+  // Lazy-load remote characteristics on first use
+  if(!g_pRemoteCommandChar) {
+    debugln(F("[BLE] First flush - getting remote command characteristic..."));
     NimBLERemoteService *pService = g_pBLEClient->getService("0000ffe0-0000-1000-8000-00805f9b34fb");
     if(pService) {
-      // Get command characteristic (Wand → Pack)
+      g_pRemoteCommandChar = pService->getCharacteristic("0000ffe1-0000-1000-8000-00805f9b34fb");
       if(!g_pRemoteCommandChar) {
-        g_pRemoteCommandChar = pService->getCharacteristic("0000ffe1-0000-1000-8000-00805f9b34fb");
-        if(g_pRemoteCommandChar) {
-          debugln(F("[BLE] OK: Got remote command characteristic"));
-        } else {
-          debugln(F("[BLE] ERROR: Could not get command characteristic"));
-          return;
-        }
-      }
-      
-      // Get status characteristic (Pack → Wand) and subscribe to notifications
-      if(!g_pRemoteStatusChar) {
-        g_pRemoteStatusChar = pService->getCharacteristic("0000ffe2-0000-1000-8000-00805f9b34fb");
-        if(g_pRemoteStatusChar) {
-          debugln(F("[BLE] OK: Got remote status characteristic"));
-          if(g_pRemoteStatusChar->canIndicate()) {
-            debugln(F("[BLE] Status characteristic supports indications (with ACK), subscribing..."));
-            // Subscribe to enable indications (with acknowledgment)
-            // Indications require client ACK, preventing packet loss from rapid sends
-            // We poll g_pRemoteStatusChar->getValue() in processBLENotification() to read new data
-            bool subResult = g_pRemoteStatusChar->subscribe();
-            debug(F("[BLE] Subscribe result: "));
-            debugln(subResult ? F("SUCCESS") : F("FAILED"));
-          } else {
-            debugln(F("[BLE] ERROR: Status characteristic does NOT support indications"));
-          }
-        } else {
-          debugln(F("[BLE] ERROR: Could not get status characteristic"));
-        }
+        debugln(F("[BLE] ERROR: Could not get command characteristic"));
+        return;
       }
     } else {
       debugln(F("[BLE] ERROR: Could not get remote service"));
@@ -668,10 +705,92 @@ void bleSendData(const uint8_t* pData, size_t length) {
     }
   }
   
-  // Now send the data
-  if(g_pRemoteCommandChar && g_pRemoteCommandChar->canWrite()) {
-    g_pRemoteCommandChar->writeValue((uint8_t*)pData, length, false);  // false = write without response
+  // Build transmission: metadata byte + all queued frames
+  uint8_t ble_buffer[257];  // 1 byte metadata + 256 queue
+  
+  // Metadata byte: source=00 (serial), sequence counter in low 6 bits
+  ble_buffer[0] = (0x00 << 6) | (g_ble_tx_sequence & 0x3F);
+  g_ble_tx_sequence = (g_ble_tx_sequence + 1) & 0x3F;  // Wrap at 64
+  
+  // Copy all queued frames
+  memcpy(&ble_buffer[1], g_serial_tx_queue, g_serial_tx_queue_length);
+  
+  // Send via write without response (fire and forget, but queued by Wand)
+  if(g_pRemoteCommandChar->canWrite()) {
+    g_pRemoteCommandChar->writeValue(ble_buffer, g_serial_tx_queue_length + 1, false);
+    
+    #if defined(DEBUG_BLUETOOTH)
+      debug(F("[BLE-TX-FLUSH] seq="));
+      debug(ble_buffer[0]);
+      debug(F(" payload="));
+      debug(g_serial_tx_queue_length);
+      debugln(F("B"));
+    #endif
+  } else {
+    #if defined(DEBUG_BLUETOOTH)
+      debugln(F("[BLE-TX] ERROR: Cannot write to command characteristic"));
+    #endif
+    return;
   }
+  
+  // Clear queue for next loop
+  g_serial_tx_queue_length = 0;
+}
+
+// Apply queued serial data from BLE (fallback when UART unavailable)
+// Processes queued frame identical to UART path
+void bleApplySerialData() {
+  if(!b_serial_rx_ready || g_serial_rx_length == 0) {
+    return;  // No queued data
+  }
+  
+  // Parse the frame
+  BLEPacket packet = bleHandleData(g_serial_rx_buffer, g_serial_rx_length);
+  
+  if(packet.packetType > 0) {
+    // Deserialize into same global structs as UART
+    switch(packet.packetType) {
+      case PACKET_COMMAND:
+        if(packet.cmd > 0) {
+          recvCmd.s = packet.start;
+          recvCmd.c = packet.cmd;
+          recvCmd.d1 = packet.d1;
+          recvCmd.e = packet.end;
+        }
+        break;
+        
+      case PACKET_DATA:
+        if(packet.cmd > 0) {
+          recvData.s = packet.start;
+          recvData.c = packet.cmd;
+          recvData.d[0] = packet.d[0];
+          recvData.d[1] = packet.d[1];
+          recvData.d[2] = packet.d[2];
+          recvData.e = packet.end;
+        }
+        break;
+        
+      case PACKET_WAND:
+        memcpy(&wandConfig, g_serial_rx_buffer, g_serial_rx_length);
+        break;
+        
+      case PACKET_SMOKE:
+        memcpy(&smokeConfig, g_serial_rx_buffer, g_serial_rx_length);
+        break;
+    }
+    
+    // Ensure Pack connection state is synchronized
+    if(WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) {
+      WAND_CONN_STATE = PACK_CONNECTED;
+    }
+    
+    // Route to central packet handler (same as UART)
+    handlePacket(packet.packetType);
+  }
+  
+  // Clear for next frame
+  b_serial_rx_ready = false;
+  g_serial_rx_length = 0;
 }
 
 // Periodic BLE connection manager - call from mainLoop every iteration

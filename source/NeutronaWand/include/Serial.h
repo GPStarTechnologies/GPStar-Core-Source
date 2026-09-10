@@ -23,8 +23,8 @@
 #ifdef ESP32
 void restartWireless(); // From Webhandler.h
 void shutdownWireless(); // From Webhandler.h
-void bleSendData(const uint8_t* pData, size_t length); // From Bluetooth.h - send serialized data via BLE
-void processBLENotification(); // From Bluetooth.h - check and process BLE notification data
+void bleQueueSerialData(const uint8_t* pData, size_t length); // From Bluetooth.h - send serialized data via BLE
+void bleApplySerialData(); // From Bluetooth.h - apply serial data sent via BLE
 #endif
 void handlePacket(uint8_t i_packet_type);
 void toggleStandaloneMode(bool); // From System.h
@@ -262,7 +262,7 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       debugln(F("[WAND-TX] SEND_PREFERENCES_WAND"));
 
     #ifdef ESP32
-      bleSendData(packComs.packet.txBuff, i_send_size);
+      bleQueueSerialData(packComs.packet.txBuff, i_send_size);
     #endif
     break;
 
@@ -274,7 +274,7 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       debugln(F("[WAND-TX] SEND_PREFERENCES_SMOKE"));
 
     #ifdef ESP32
-      bleSendData(packComs.packet.txBuff, i_send_size);
+      bleQueueSerialData(packComs.packet.txBuff, i_send_size);
     #endif
     break;
 
@@ -298,7 +298,7 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       debugln(i_value);
 
     #ifdef ESP32
-      bleSendData(packComs.packet.txBuff, i_send_size);
+      bleQueueSerialData(packComs.packet.txBuff, i_send_size);
     #endif
     break;
   }
@@ -622,11 +622,6 @@ void checkPack() {
     return;
   }
 
-  // Check for BLE notifications from Pack (includes detection of value changes)
-  #ifdef ESP32
-  processBLENotification();
-  #endif
-
   if(packComs.available() > 0) {
     uint8_t i_packet_id = packComs.currentPacketID();
     // sendDebug(String(F("PacketID: ")) + String(i_packet_id));
@@ -652,8 +647,13 @@ void checkPack() {
       }
 
       handlePacket(i_packet_id);
+      return;
     }
   }
+
+#ifdef ESP32
+  bleApplySerialData(); // Apply any commands sent via BLE.
+#endif
 }
 
 void handlePacket(uint8_t i_packet_type) {

@@ -641,6 +641,7 @@ void mainLoop() {
 void loop() {
 #ifdef ESP32
   if(b_initial_wifi_setup_finished) {
+    bleProcessData(); // Check for incoming BLE data.
 #endif
 
   // Update the available audio device.
@@ -712,6 +713,8 @@ void loop() {
   if(!b_initial_wifi_setup_finished) {
     b_initial_wifi_setup_finished = true;
   }
+
+  bleFlushQueues(); // Send any stored BLE data.
 #endif
 
   // Task execution via the scheduler.
