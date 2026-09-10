@@ -1,0 +1,35 @@
+{
+  "name": "Bluetooth",
+  "version": "1.0.0",
+  "description": "BLE SerialData transport library - message queue management and packet parsing for Pack/Wand communication.",
+  "keywords": [
+    "bluetooth",
+    "ble",
+    "queue",
+    "serialdata",
+    "communication",
+    "gpstar",
+    "message",
+    "packet"
+  ],
+  "authors": [
+    {
+      "name": "Michael Rajotte",
+      "email": "michael.rajotte@gpstartechnologies.com"
+    },
+    {
+      "name": "Dustin Grau",
+      "email": "dustin.grau@gmail.com"
+    },
+    {
+      "name": "Nomake Wan",
+      "email": "nomake_wan@yahoo.co.jp"
+    }
+  ],
+  "license": "GPL-3.0-or-later",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"],
+  "build": {
+    "includeDir": "include"
+  }
+}

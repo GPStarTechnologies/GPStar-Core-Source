@@ -13,6 +13,10 @@
 			"path": "scripts"
 		},
 		{
+			"name": "SharedLib-Bluetooth",
+			"path": "source/SharedLib/Bluetooth"
+		},
+		{
 			"name": "SharedLib-Communication",
 			"path": "source/SharedLib/Communication"
 		},
@@ -95,6 +99,10 @@
 		{
 			"name": "Sounds",
 			"path": "../GPStar-Sounds"
+		},
+		{
+			"name": "NimBLE",
+			"path": "../../Downloads/NimBLE-Arduino-master"
 		}
 	],
 	"settings": {

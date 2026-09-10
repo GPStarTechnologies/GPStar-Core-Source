@@ -10,7 +10,7 @@ SHARED_DIR="$SRCDIR/SharedLib"
 MJVER="V6"
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 
-echo "Running sanity tests for $SHARED_DIR/DeviceState..."
+echo "Running sanity tests for $SHARED_DIR projects..."
 
 # Clean build files
 pio run --project-dir "$SHARED_DIR/DeviceState" --target clean
@@ -29,3 +29,9 @@ pio run --project-dir "$SHARED_DIR/Lighting" --target clean
 
 # Run unit tests
 pio test --project-dir "$SHARED_DIR/Lighting" -v
+
+# Clean build files
+pio run --project-dir "$SHARED_DIR/Bluetooth" --target clean
+
+# Run unit tests
+pio test --project-dir "$SHARED_DIR/Bluetooth" -v
