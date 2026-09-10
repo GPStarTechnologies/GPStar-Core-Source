@@ -304,15 +304,20 @@ void bleProcessData() {
     if(changed) {
       // Extract sequence byte
       uint8_t seq = value.data()[0];
+      uint8_t source_type = (seq >> 6) & 0x03;
+      uint8_t seq_num = seq & 0x3F;
       
       // Check for skipped packets
-      if(lastLength > 0 && seq != (lastSeq + 1)) {
-        debug(F("[BLE-RX] SKIP: expected seq "));
+      static bool firstPacket = true;
+      if(!firstPacket && seq_num != (lastSeq + 1)) {
+        debug(F("[PACK→WAND-RX] PACKET LOSS: expected seq#"));
         debug(lastSeq + 1);
-        debug(F(" got "));
-        debugln(seq);
+        debug(F(" got seq#"));
+        debug(seq_num);
+        debugln(F(""));
       }
-      lastSeq = seq;
+      firstPacket = false;
+      lastSeq = seq_num;
       
       // Copy to buffer (without sequence byte - just the packet part)
       size_t packet_length = value.length() - 1;
@@ -326,15 +331,54 @@ void bleProcessData() {
       // Parse the packet (now contains only packet data, not seq byte)
       BLEPacket packet = bleHandleData(g_ble_rx_buffer, g_ble_rx_length);
       
-      if(packet.packetType == PACKET_COMMAND) {
-        debug(F("[BLE-RX] CMD "));
-        debugln(packet.cmd);
-      } else if(packet.packetType == PACKET_SYNC) {
-        debugln(F("[BLE-RX] SYNC_DATA"));
-      } else {
-        debug(F("[BLE-RX] Packet type "));
-        debugln(packet.packetType);
-      }
+      #if defined(DEBUG_BLUETOOTH)
+        debug(F("[PACK→WAND-RX] Seq#"));
+        debug(seq_num);
+        debug(F(" Type="));
+        switch(packet.packetType) {
+          case PACKET_COMMAND:
+            debug(F("COMMAND"));
+            break;
+          case PACKET_DATA:
+            debug(F("DATA"));
+            break;
+          case PACKET_WAND:
+            debug(F("WAND"));
+            break;
+          case PACKET_SMOKE:
+            debug(F("SMOKE"));
+            break;
+          case PACKET_SYNC:
+            debug(F("SYNC"));
+            break;
+          default:
+            debug(F("UNKNOWN("));
+            debug(packet.packetType);
+            debug(F(")"));
+            break;
+        }
+        debug(F(" Size="));
+        debug(packet_length);
+        debug(F("B"));
+        
+        // Show packet details
+        if(packet.packetType == PACKET_COMMAND) {
+          debug(F(" cmd="));
+          debug(packet.cmd);
+          debug(F(" d1="));
+          debug(packet.d1);
+        } else if(packet.packetType == PACKET_DATA) {
+          debug(F(" cmd="));
+          debug(packet.cmd);
+          debug(F(" d[0,1,2]="));
+          debug(packet.d[0]);
+          debug(F(","));
+          debug(packet.d[1]);
+          debug(F(","));
+          debug(packet.d[2]);
+        }
+        debugln(F(""));
+      #endif
       
       // Deserialize BLE buffer into global structs (same as UART path)
       if(packet.packetType > 0) {
@@ -651,13 +695,13 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   // Check if frame fits in queue
   if(g_serial_tx_queue_length + length > SERIAL_TX_QUEUE_SIZE) {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE-TX-Q] OVERFLOW queue="));
+      debug(F("[WAND→PACK-Q] OVERFLOW: queue="));
       debug(g_serial_tx_queue_length);
-      debug(F(" + frame="));
+      debug(F("B + frame="));
       debug(length);
-      debug(F(" > limit "));
+      debug(F("B exceeds limit="));
       debug(SERIAL_TX_QUEUE_SIZE);
-      debugln(F(""));
+      debugln(F("B"));
     #endif
     return;  // Queue full, drop frame
   }
@@ -667,13 +711,69 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   g_serial_tx_queue_length += length;
   
   #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE-TX-Q] ADD "));
-    debug(length);
-    debug(F("B depth="));
-    debug(g_serial_tx_queue_length);
-    debug(F("/"));
-    debug(SERIAL_TX_QUEUE_SIZE);
-    debugln(F(""));
+    // Parse frame type from first byte (if valid)
+    const char* frameType = "UNKNOWN";
+    if(length >= 4) {
+      uint8_t start = pData[0];
+      uint8_t end = pData[length - 1];
+      
+      if(start == A_COM_START && end == A_COM_END) {
+        if(length == 6) {
+          frameType = "COMMAND";
+          uint16_t cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
+          uint16_t d1 = (uint16_t)pData[3] | ((uint16_t)pData[4] << 8);
+          debug(F("[WAND→PACK-Q] COMMAND frame: cmd="));
+          debug(cmd);
+          debug(F(" d1="));
+          debug(d1);
+          debug(F(" | size="));
+          debug(length);
+          debug(F("B depth="));
+          debug(g_serial_tx_queue_length);
+          debug(F("/"));
+          debug(SERIAL_TX_QUEUE_SIZE);
+          debugln(F("B"));
+        } else if(length == 7) {
+          frameType = "DATA";
+          uint16_t cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
+          debug(F("[WAND→PACK-Q] DATA frame: cmd="));
+          debug(cmd);
+          debug(F(" d[0]="));
+          debug(pData[3]);
+          debug(F(" d[1]="));
+          debug(pData[4]);
+          debug(F(" d[2]="));
+          debug(pData[5]);
+          debug(F(" | size="));
+          debug(length);
+          debug(F("B depth="));
+          debug(g_serial_tx_queue_length);
+          debug(F("/"));
+          debug(SERIAL_TX_QUEUE_SIZE);
+          debugln(F("B"));
+        } else {
+          debug(F("[WAND→PACK-Q] Large frame: size="));
+          debug(length);
+          debug(F("B depth="));
+          debug(g_serial_tx_queue_length);
+          debug(F("/"));
+          debug(SERIAL_TX_QUEUE_SIZE);
+          debugln(F("B"));
+        }
+      } else {
+        debug(F("[WAND→PACK-Q] Invalid frame markers: start=0x"));
+        debug(start, HEX);
+        debug(F(" end=0x"));
+        debug(end, HEX);
+        debug(F(" size="));
+        debug(length);
+        debug(F("B depth="));
+        debug(g_serial_tx_queue_length);
+        debug(F("/"));
+        debug(SERIAL_TX_QUEUE_SIZE);
+        debugln(F("B"));
+      }
+    }
   #endif
 }
 
@@ -691,16 +791,16 @@ void bleFlushQueues() {
   
   // Lazy-load remote characteristics on first use
   if(!g_pRemoteCommandChar) {
-    debugln(F("[BLE] First flush - getting remote command characteristic..."));
+    debugln(F("[WAND→PACK] First flush - discovering Pack command characteristic..."));
     NimBLERemoteService *pService = g_pBLEClient->getService("0000ffe0-0000-1000-8000-00805f9b34fb");
     if(pService) {
       g_pRemoteCommandChar = pService->getCharacteristic("0000ffe1-0000-1000-8000-00805f9b34fb");
       if(!g_pRemoteCommandChar) {
-        debugln(F("[BLE] ERROR: Could not get command characteristic"));
+        debugln(F("[WAND→PACK] ERROR: Could not find Pack command characteristic"));
         return;
       }
     } else {
-      debugln(F("[BLE] ERROR: Could not get remote service"));
+      debugln(F("[WAND→PACK] ERROR: Could not find Pack GPStar service"));
       return;
     }
   }
@@ -710,6 +810,7 @@ void bleFlushQueues() {
   
   // Metadata byte: source=00 (serial), sequence counter in low 6 bits
   ble_buffer[0] = (0x00 << 6) | (g_ble_tx_sequence & 0x3F);
+  uint8_t current_seq = g_ble_tx_sequence;
   g_ble_tx_sequence = (g_ble_tx_sequence + 1) & 0x3F;  // Wrap at 64
   
   // Copy all queued frames
@@ -720,15 +821,65 @@ void bleFlushQueues() {
     g_pRemoteCommandChar->writeValue(ble_buffer, g_serial_tx_queue_length + 1, false);
     
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE-TX-FLUSH] seq="));
-      debug(ble_buffer[0]);
-      debug(F(" payload="));
+      debug(F("[WAND→PACK-SEND] Seq#"));
+      debug(current_seq);
+      debug(F(" Metadata=0x"));
+      debug(ble_buffer[0], HEX);
+      debug(F(" Payload="));
       debug(g_serial_tx_queue_length);
+      debug(F("B Total="));
+      debug(g_serial_tx_queue_length + 1);
       debugln(F("B"));
+      
+      // Log what frames are in this flush
+      size_t offset = 0;
+      int frame_count = 0;
+      while(offset < g_serial_tx_queue_length) {
+        uint8_t start = g_serial_tx_queue[offset];
+        if(offset + 1 < g_serial_tx_queue_length) {
+          uint8_t end = g_serial_tx_queue[offset + g_serial_tx_queue_length - 1];
+          frame_count++;
+          
+          if(g_serial_tx_queue_length - offset == 6) {
+            uint16_t cmd = (uint16_t)g_serial_tx_queue[offset+1] | ((uint16_t)g_serial_tx_queue[offset+2] << 8);
+            uint16_t d1 = (uint16_t)g_serial_tx_queue[offset+3] | ((uint16_t)g_serial_tx_queue[offset+4] << 8);
+            debug(F("  [Frame "));
+            debug(frame_count);
+            debug(F("] COMMAND: cmd="));
+            debug(cmd);
+            debug(F(" d1="));
+            debugln(d1);
+            offset += 6;
+          } else if(g_serial_tx_queue_length - offset == 7) {
+            uint16_t cmd = (uint16_t)g_serial_tx_queue[offset+1] | ((uint16_t)g_serial_tx_queue[offset+2] << 8);
+            debug(F("  [Frame "));
+            debug(frame_count);
+            debug(F("] DATA: cmd="));
+            debug(cmd);
+            debug(F(" d[0,1,2]="));
+            debug(g_serial_tx_queue[offset+3]);
+            debug(F(","));
+            debug(g_serial_tx_queue[offset+4]);
+            debug(F(","));
+            debug(g_serial_tx_queue[offset+5]);
+            debugln();
+            offset += 7;
+          } else {
+            debug(F("  [Frame "));
+            debug(frame_count);
+            debug(F("] ("));
+            debug(g_serial_tx_queue_length - offset);
+            debugln(F("B)"));
+            break;
+          }
+        } else {
+          break;
+        }
+      }
     #endif
   } else {
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE-TX] ERROR: Cannot write to command characteristic"));
+      debugln(F("[WAND→PACK] ERROR: Pack command characteristic not writable"));
     #endif
     return;
   }

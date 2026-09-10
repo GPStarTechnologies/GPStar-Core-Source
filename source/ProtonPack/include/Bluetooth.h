@@ -183,8 +183,8 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       
       // Check for identity packet (validates this is a Wand)
       if(packetType == PACKET_IDENTITY) {
-        debugln(F("[BLE] IDENTITY PACKET RECEIVED"));
-        debug(F("[BLE] Packet length: "));
+        debugln(F("[WAND→PACK] IDENTITY PACKET RECEIVED"));
+        debug(F("[WAND→PACK] Packet length: "));
         debugln(rxValue.length());
         
         if(rxValue.length() >= 4) {
@@ -193,33 +193,23 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
           uint8_t deviceIDLo = (uint8_t)rxValue[3];
           uint16_t deviceID = ((uint16_t)deviceIDHi << 8) | deviceIDLo;
           
-          debug(F("[BLE] Identity packet: type="));
-          debug(packetType);
-          debug(F(" deviceType="));
+          debug(F("[WAND→PACK] Identity: deviceType="));
           debug(deviceType);
-          debug(F(" deviceIDHi="));
-          debug(deviceIDHi);
-          debug(F(" deviceIDLo="));
-          debug(deviceIDLo);
+          debug(F(" deviceID="));
+          debug(deviceID, HEX);
           debugln(F(""));
-          
-          debug(F("[BLE] Device Type: "));
-          debug(deviceType);
-          debug(F(" Device ID: "));
-          debugln(deviceID);
           
           // Validate this is a Wand (IR_DEVICE_NEUTRONA_WAND = 0x0)
           if(deviceType == 0x00) {
             b_ble_connected = true;
-            debugln(F("[BLE] WAND IDENTITY VERIFIED"));
-            debugln(F("[BLE] BLE connection is now ACTIVE"));
+            debugln(F("[WAND→PACK] WAND IDENTITY VERIFIED - Connection Active"));
           } else {
-            debugln(F("[BLE] IDENTITY REJECTED Invalid device type"));
+            debugln(F("[WAND→PACK] ERROR: Invalid device type - rejecting connection"));
           }
         } else {
-          debug(F("[BLE] ERROR Identity packet too short expected 4 got "));
+          debug(F("[WAND→PACK] ERROR: Identity packet too short (expected 4 bytes, got "));
           debug(rxValue.length());
-          debugln(F(""));
+          debugln(F(")"));
         }
         return;
       }
@@ -227,7 +217,7 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       // Only process other commands if we've verified this is a Wand
       if(!b_ble_connected) {
         #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[BLE] Command received before identity verification - ignoring"));
+          debugln(F("[WAND→PACK] ERROR: Command received before identity verification - ignoring"));
         #endif
         return;
       }
@@ -240,24 +230,10 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
         uint8_t sequence = metadata & 0x3F;
         size_t payload_length = rxValue.length() - 1;
         
-        #if defined(DEBUG_BLUETOOTH)
-          debug(F("[BLE-RX] Recv "));
-          debug(rxValue.length());
-          debug(F("B | Metadata="));
-          debug(metadata);
-          debug(F(" (source="));
-          debug(source_type);
-          debug(F(" seq="));
-          debug(sequence);
-          debug(F(") | Payload="));
-          debug(payload_length);
-          debugln(F("B"));
-        #endif
-        
         // Verify source type is serial (00)
         if(source_type != 0x00) {
           #if defined(DEBUG_BLUETOOTH)
-            debug(F("[BLE-RX] REJECT source="));
+            debug(F("[WAND→PACK] ERROR: Invalid source type="));
             debug(source_type);
             debugln(F(""));
           #endif
@@ -271,18 +247,59 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
           b_ble_rx_ready = true;
           
           #if defined(DEBUG_BLUETOOTH)
-            debug(F("[BLE-RX] QUEUE "));
-            debug(g_ble_rx_length);
-            debugln(F("B"));
+            // Parse frames in the payload to show details
+            uint8_t* payload = (uint8_t*)rxValue.c_str() + 1;
+            
+            debug(F("[WAND→PACK-RX] Seq#"));
+            debug(sequence);
+            debug(F(" Payload="));
+            debug(payload_length);
+            debug(F("B | Frames: "));
+            
+            // Try to parse frame type from first byte of payload
+            if(payload_length >= 4) {
+              uint8_t start = payload[0];
+              uint8_t end = payload[payload_length - 1];
+              
+              if(start == A_COM_START && end == A_COM_END) {
+                if(payload_length == 6) {
+                  uint16_t cmd = (uint16_t)payload[1] | ((uint16_t)payload[2] << 8);
+                  uint16_t d1 = (uint16_t)payload[3] | ((uint16_t)payload[4] << 8);
+                  debug(F("COMMAND cmd="));
+                  debug(cmd);
+                  debug(F(" d1="));
+                  debug(d1);
+                } else if(payload_length == 7) {
+                  uint16_t cmd = (uint16_t)payload[1] | ((uint16_t)payload[2] << 8);
+                  debug(F("DATA cmd="));
+                  debug(cmd);
+                  debug(F(" d[0,1,2]="));
+                  debug(payload[3]);
+                  debug(F(","));
+                  debug(payload[4]);
+                  debug(F(","));
+                  debug(payload[5]);
+                } else {
+                  debug(F("("));
+                  debug(payload_length);
+                  debug(F("B frame)"));
+                }
+              } else {
+                debug(F("(invalid markers)"));
+              }
+            }
+            debugln();
           #endif
         } else {
           #if defined(DEBUG_BLUETOOTH)
-            debugln(F("[BLE-RX] REJECT payload_length"));
+            debug(F("[WAND→PACK] ERROR: Payload too large ("));
+            debug(payload_length);
+            debugln(F("B exceeds 32B limit)"));
           #endif
         }
       } else {
         #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[BLE-RX] REJECT length<2"));
+          debugln(F("[WAND→PACK] ERROR: Received less than 2 bytes"));
         #endif
       }
     }
@@ -590,13 +607,13 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   // Check if frame fits in queue
   if(g_serial_tx_queue_length + length > SERIAL_TX_QUEUE_SIZE) {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE-TX-Q] OVERFLOW queue="));
+      debug(F("[PACK→WAND-Q] OVERFLOW: queue="));
       debug(g_serial_tx_queue_length);
-      debug(F(" + frame="));
+      debug(F("B + frame="));
       debug(length);
-      debug(F(" > limit "));
+      debug(F("B exceeds limit="));
       debug(SERIAL_TX_QUEUE_SIZE);
-      debugln(F(""));
+      debugln(F("B"));
     #endif
     return;  // Queue full, drop frame
   }
@@ -606,13 +623,66 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   g_serial_tx_queue_length += length;
   
   #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE-TX-Q] ADD "));
-    debug(length);
-    debug(F("B depth="));
-    debug(g_serial_tx_queue_length);
-    debug(F("/"));
-    debug(SERIAL_TX_QUEUE_SIZE);
-    debugln(F(""));
+    // Parse frame type from first byte (if valid)
+    if(length >= 4) {
+      uint8_t start = pData[0];
+      uint8_t end = pData[length - 1];
+      
+      if(start == A_COM_START && end == A_COM_END) {
+        if(length == 6) {
+          uint16_t cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
+          uint16_t d1 = (uint16_t)pData[3] | ((uint16_t)pData[4] << 8);
+          debug(F("[PACK→WAND-Q] COMMAND frame: cmd="));
+          debug(cmd);
+          debug(F(" d1="));
+          debug(d1);
+          debug(F(" | size="));
+          debug(length);
+          debug(F("B depth="));
+          debug(g_serial_tx_queue_length);
+          debug(F("/"));
+          debug(SERIAL_TX_QUEUE_SIZE);
+          debugln(F("B"));
+        } else if(length == 7) {
+          uint16_t cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
+          debug(F("[PACK→WAND-Q] DATA frame: cmd="));
+          debug(cmd);
+          debug(F(" d[0]="));
+          debug(pData[3]);
+          debug(F(" d[1]="));
+          debug(pData[4]);
+          debug(F(" d[2]="));
+          debug(pData[5]);
+          debug(F(" | size="));
+          debug(length);
+          debug(F("B depth="));
+          debug(g_serial_tx_queue_length);
+          debug(F("/"));
+          debug(SERIAL_TX_QUEUE_SIZE);
+          debugln(F("B"));
+        } else {
+          debug(F("[PACK→WAND-Q] Large frame: size="));
+          debug(length);
+          debug(F("B depth="));
+          debug(g_serial_tx_queue_length);
+          debug(F("/"));
+          debug(SERIAL_TX_QUEUE_SIZE);
+          debugln(F("B"));
+        }
+      } else {
+        debug(F("[PACK→WAND-Q] Invalid frame markers: start=0x"));
+        debug(start, HEX);
+        debug(F(" end=0x"));
+        debug(end, HEX);
+        debug(F(" size="));
+        debug(length);
+        debug(F("B depth="));
+        debug(g_serial_tx_queue_length);
+        debug(F("/"));
+        debug(SERIAL_TX_QUEUE_SIZE);
+        debugln(F("B"));
+      }
+    }
   #endif
 }
 
@@ -633,6 +703,7 @@ void bleFlushQueues() {
   
   // Metadata byte: source=00 (serial), sequence counter in low 6 bits
   ble_buffer[0] = (0x00 << 6) | (g_ble_tx_sequence & 0x3F);
+  uint8_t current_seq = g_ble_tx_sequence;
   g_ble_tx_sequence = (g_ble_tx_sequence + 1) & 0x3F;  // Wrap at 64
   
   // Copy all queued frames
@@ -642,11 +713,60 @@ void bleFlushQueues() {
   g_pStatusCharacteristic->setValue(ble_buffer, g_serial_tx_queue_length + 1);
   
   #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE-TX-FLUSH] seq="));
-    debug(ble_buffer[0]);
-    debug(F(" payload="));
+    debug(F("[PACK→WAND-SEND] Seq#"));
+    debug(current_seq);
+    debug(F(" Metadata=0x"));
+    debug(ble_buffer[0], HEX);
+    debug(F(" Payload="));
     debug(g_serial_tx_queue_length);
+    debug(F("B Total="));
+    debug(g_serial_tx_queue_length + 1);
     debugln(F("B"));
+    
+    // Log what frames are in this flush
+    size_t offset = 0;
+    int frame_count = 0;
+    while(offset < g_serial_tx_queue_length) {
+      uint8_t start = g_serial_tx_queue[offset];
+      if(offset + 1 < g_serial_tx_queue_length) {
+        frame_count++;
+        
+        if(g_serial_tx_queue_length - offset == 6) {
+          uint16_t cmd = (uint16_t)g_serial_tx_queue[offset+1] | ((uint16_t)g_serial_tx_queue[offset+2] << 8);
+          uint16_t d1 = (uint16_t)g_serial_tx_queue[offset+3] | ((uint16_t)g_serial_tx_queue[offset+4] << 8);
+          debug(F("  [Frame "));
+          debug(frame_count);
+          debug(F("] COMMAND: cmd="));
+          debug(cmd);
+          debug(F(" d1="));
+          debugln(d1);
+          offset += 6;
+        } else if(g_serial_tx_queue_length - offset == 7) {
+          uint16_t cmd = (uint16_t)g_serial_tx_queue[offset+1] | ((uint16_t)g_serial_tx_queue[offset+2] << 8);
+          debug(F("  [Frame "));
+          debug(frame_count);
+          debug(F("] DATA: cmd="));
+          debug(cmd);
+          debug(F(" d[0,1,2]="));
+          debug(g_serial_tx_queue[offset+3]);
+          debug(F(","));
+          debug(g_serial_tx_queue[offset+4]);
+          debug(F(","));
+          debug(g_serial_tx_queue[offset+5]);
+          debugln();
+          offset += 7;
+        } else {
+          debug(F("  [Frame "));
+          debug(frame_count);
+          debug(F("] ("));
+          debug(g_serial_tx_queue_length - offset);
+          debugln(F("B)"));
+          break;
+        }
+      } else {
+        break;
+      }
+    }
   #endif
   
   g_pStatusCharacteristic->indicate();
