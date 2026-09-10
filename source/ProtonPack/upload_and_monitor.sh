@@ -19,8 +19,19 @@ echo "Baud: $BAUD"
 echo "Environment: $ENV"
 echo ""
 
-# Step 1: Upload
-echo "[1/2] Uploading firmware..."
+# Step 1: Clean
+echo "[1/3] Cleaning old build..."
+platformio run -d "$SCRIPT_DIR" --target clean --environment "$ENV"
+
+if [ $? -ne 0 ]; then
+    echo "Clean failed!"
+    exit 1
+fi
+
+echo ""
+
+# Step 2: Upload
+echo "[2/3] Uploading firmware..."
 platformio run -d "$SCRIPT_DIR" --target upload --environment "$ENV"
 
 if [ $? -ne 0 ]; then
@@ -29,11 +40,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "[✓] Upload complete!"
-echo ""
-
-# Step 2: Monitor
-echo "[2/2] Starting serial monitor..."
+echo "[3/3] Starting serial monitor..."
 echo "Press Ctrl+C to stop monitoring"
 echo ""
 

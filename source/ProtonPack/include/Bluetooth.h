@@ -161,8 +161,8 @@ class GPStarPackServerCallbacks : public NimBLEServerCallbacks {
     // FIRED WHEN: Passkey pairing successfully completes with Wand
     // ACTION: Log pairing success, connection now bonded and encrypted
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] *** PAIRING COMPLETE with Wand ***"));
-      debugln(F("  Connection is now bonded and encrypted"));
+      debugln(F("[BLE] PAIRING COMPLETE with Wand"));
+      debugln(F("[BLE] Connection is now bonded and encrypted"));
     #endif
   }
 };
@@ -183,7 +183,7 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       
       // Check for identity packet (validates this is a Wand)
       if(packetType == PACKET_IDENTITY) {
-        debugln(F("[BLE] !!! IDENTITY PACKET RECEIVED !!!"));
+        debugln(F("[BLE] IDENTITY PACKET RECEIVED"));
         debug(F("[BLE] Packet length: "));
         debugln(rxValue.length());
         
@@ -193,33 +193,33 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
           uint8_t deviceIDLo = (uint8_t)rxValue[3];
           uint16_t deviceID = ((uint16_t)deviceIDHi << 8) | deviceIDLo;
           
-          debug(F("[BLE] Identity packet contents: [0x"));
-          debug(packetType, HEX);
-          debug(F(", 0x"));
-          debug(deviceType, HEX);
-          debug(F(", 0x"));
-          debug(deviceIDHi, HEX);
-          debug(F(", 0x"));
-          debug(deviceIDLo, HEX);
-          debugln(F("]"));
+          debug(F("[BLE] Identity packet: type="));
+          debug(packetType);
+          debug(F(" deviceType="));
+          debug(deviceType);
+          debug(F(" deviceIDHi="));
+          debug(deviceIDHi);
+          debug(F(" deviceIDLo="));
+          debug(deviceIDLo);
+          debugln(F(""));
           
-          debug(F("[BLE] Device Type: 0x"));
-          debug(deviceType, HEX);
-          debug(F(", Device ID: 0x"));
-          debugln(deviceID, HEX);
+          debug(F("[BLE] Device Type: "));
+          debug(deviceType);
+          debug(F(" Device ID: "));
+          debugln(deviceID);
           
           // Validate this is a Wand (IR_DEVICE_NEUTRONA_WAND = 0x0)
           if(deviceType == 0x00) {
             b_ble_connected = true;
-            debugln(F("[BLE] *** WAND IDENTITY VERIFIED ***"));
-            debugln(F("[BLE] BLE connection is now ACTIVE!"));
+            debugln(F("[BLE] WAND IDENTITY VERIFIED"));
+            debugln(F("[BLE] BLE connection is now ACTIVE"));
           } else {
-            debugln(F("[BLE] *** IDENTITY REJECTED - Invalid device type ***"));
+            debugln(F("[BLE] IDENTITY REJECTED Invalid device type"));
           }
         } else {
-          debug(F("[BLE] ERROR: Identity packet too short (expected 4, got "));
+          debug(F("[BLE] ERROR Identity packet too short expected 4 got "));
           debug(rxValue.length());
-          debugln(F(")"));
+          debugln(F(""));
         }
         return;
       }
@@ -257,9 +257,9 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
         // Verify source type is serial (00)
         if(source_type != 0x00) {
           #if defined(DEBUG_BLUETOOTH)
-            debug(F("[BLE-RX] ✗ Invalid source type "));
+            debug(F("[BLE-RX] REJECT source="));
             debug(source_type);
-            debugln(F(" - ignoring"));
+            debugln(F(""));
           #endif
           return;
         }
@@ -271,18 +271,18 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
           b_ble_rx_ready = true;
           
           #if defined(DEBUG_BLUETOOTH)
-            debug(F("[BLE-RX] Queued ("));
+            debug(F("[BLE-RX] QUEUE "));
             debug(g_ble_rx_length);
-            debugln(F("B payload)"));
+            debugln(F("B"));
           #endif
         } else {
           #if defined(DEBUG_BLUETOOTH)
-            debugln(F("[BLE-RX] ✗ Payload too large - ignoring"));
+            debugln(F("[BLE-RX] REJECT payload_length"));
           #endif
         }
       } else {
         #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[BLE-RX] ✗ Packet too short - ignoring"));
+          debugln(F("[BLE-RX] REJECT length<2"));
         #endif
       }
     }
@@ -444,10 +444,10 @@ bool startBluetooth() {
 
   try {
     // Initialize NimBLE with device name based on Pack ID
-    String deviceName = "GPStar-Pack-" + String(wirelessMgr->getDeviceID(), HEX);
+    String deviceName = "GPStar-Pack-" + String(wirelessMgr->getDeviceID(), DEC);
     
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] Initializing NimBLE device as: "));
+      debug(F("[BLE] Initializing NimBLE device "));
       debugln(deviceName);
     #endif
     
@@ -468,7 +468,7 @@ bool startBluetooth() {
     
     if(!g_pBLEServer) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] *** ERROR: Failed to create BLE Server"));
+        debugln(F("[BLE] ERROR Failed to create BLE Server"));
       #endif
       return false;
     }
@@ -489,13 +489,13 @@ bool startBluetooth() {
     
     if(!g_pGPStarService) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] *** ERROR: Failed to create GPStar service"));
+        debugln(F("[BLE] ERROR Failed to create GPStar service"));
       #endif
       return false;
     }
     
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] GPStar service created (UUID: "));
+      debug(F("[BLE] GPStar service created UUID "));
       debugln(GPSTAR_SERVICE_UUID);
     #endif
 
@@ -507,7 +507,7 @@ bool startBluetooth() {
     
     if(!g_pCommandCharacteristic) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] *** ERROR: Failed to create command characteristic"));
+        debugln(F("[BLE] ERROR Failed to create command characteristic"));
       #endif
       return false;
     }
@@ -519,7 +519,7 @@ bool startBluetooth() {
     g_pCommandCharacteristic->setCallbacks(g_pPackCharacteristicCallbacks);
     
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Command characteristic created (Wand → Pack)"));
+      debugln(F("[BLE] Command characteristic created Wand to Pack"));
     #endif
 
     // Create status characteristic (Pack sends status updates via indications)
@@ -533,15 +533,15 @@ bool startBluetooth() {
     
     if(!g_pStatusCharacteristic) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] *** ERROR: Failed to create status characteristic"));
+        debugln(F("[BLE] ERROR Failed to create status characteristic"));
       #endif
       return false;
     }
 
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Status characteristic created (Pack → Wand)"));
-      debugln(F("[BLE] Status char properties: INDICATE + READ"));
-      debugln(F("[BLE] CCCD auto-created by NimBLE (readable and writable)"));
+      debugln(F("[BLE] Status characteristic created Pack to Wand"));
+      debugln(F("[BLE] Status char properties INDICATE READ"));
+      debugln(F("[BLE] CCCD auto-created by NimBLE readable writable"));
     #endif
 
     // Set up advertising
@@ -573,7 +573,7 @@ bool startBluetooth() {
   }
   catch (const std::exception &e) {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] *** EXCEPTION: "));
+      debug(F("[BLE] EXCEPTION "));
       debugln(e.what());
     #endif
     return false;
@@ -590,13 +590,13 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   // Check if frame fits in queue
   if(g_serial_tx_queue_length + length > SERIAL_TX_QUEUE_SIZE) {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE-TX-Q] ✗ OVERFLOW: queue="));
+      debug(F("[BLE-TX-Q] OVERFLOW queue="));
       debug(g_serial_tx_queue_length);
       debug(F(" + frame="));
       debug(length);
       debug(F(" > limit "));
       debug(SERIAL_TX_QUEUE_SIZE);
-      debugln(F(" - DROPPED"));
+      debugln(F(""));
     #endif
     return;  // Queue full, drop frame
   }
@@ -606,9 +606,9 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   g_serial_tx_queue_length += length;
   
   #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE-TX-Q] + "));
+    debug(F("[BLE-TX-Q] ADD "));
     debug(length);
-    debug(F("B → depth "));
+    debug(F("B depth="));
     debug(g_serial_tx_queue_length);
     debug(F("/"));
     debug(SERIAL_TX_QUEUE_SIZE);

@@ -166,8 +166,8 @@ class GPStarWandClientCallbacks : public NimBLEClientCallbacks {
     // ACTION: Mark connected, ready for commands
     // NOTE: Do NOT call blocking operations (getService, getCharacteristic) in callbacks!
     //       Characteristic discovery will be lazy-loaded in main thread or when needed
-    debugln(F("[BLE] !!! onAuthenticationComplete() CALLBACK FIRED !!!"));
-    debugln(F("[BLE] *** PAIRING COMPLETE ***"));
+    debugln(F("[BLE] onAuthenticationComplete CALLBACK FIRED"));
+    debugln(F("[BLE] PAIRING COMPLETE"));
     debugln(F("[BLE] Connection is now bonded and encrypted"));
     
     // Mark connection ready for command/control
@@ -197,7 +197,7 @@ class GPStarWandScanCallbacks : public NimBLEScanCallbacks {
     // Look for Pack by device name (format: "GPStar-Pack-XXXX")
     String deviceName = advertisedDevice->getName().c_str();
     if(deviceName.indexOf("GPStar-Pack-") == 0) {
-      debugln(F("[BLE] *** PACK FOUND! ***"));
+      debugln(F("[BLE] PACK FOUND"));
       debug(F("[BLE] Pack name: "));
       debugln(advertisedDevice->getName().c_str());
       debug(F("[BLE] Pack address: "));
@@ -413,7 +413,7 @@ void discoverRemoteCharacteristics() {
   }
 
   #if defined(DEBUG_BLUETOOTH)
-    debugln(F("[BLE] *** Found remote GPStar service ***"));
+    debugln(F("[BLE] Found remote GPStar service"));
   #endif
 
   // Get the command characteristic (Wand → Pack)
@@ -427,7 +427,7 @@ void discoverRemoteCharacteristics() {
   }
 
   #if defined(DEBUG_BLUETOOTH)
-    debugln(F("[BLE] *** Found remote command characteristic (Wand → Pack) ***"));
+      debugln(F("[BLE] Found remote command characteristic Wand to Pack"));
   #endif
 
   // Get the status characteristic (Pack → Wand)
@@ -441,7 +441,7 @@ void discoverRemoteCharacteristics() {
   }
 
   #if defined(DEBUG_BLUETOOTH)
-    debugln(F("[BLE] *** Found remote status characteristic (Pack → Wand) ***"));
+      debugln(F("[BLE] Found remote status characteristic Pack to Wand"));
   #endif
 
   // Enable notifications for status characteristic
@@ -453,7 +453,7 @@ void discoverRemoteCharacteristics() {
     
     #if defined(DEBUG_BLUETOOTH)
       debugln(F("[BLE] Subscribed to status notifications"));
-      debugln(F("[BLE] *** BLE READY FOR DATA EXCHANGE ***"));
+      debugln(F("[BLE] READY FOR DATA EXCHANGE"));
     #endif
   } else {
     #if defined(DEBUG_BLUETOOTH)
@@ -484,7 +484,7 @@ bool startBluetooth() {
 
   try {
     // Initialize NimBLE with device name based on Wand ID
-    String deviceName = "GPStar-Wand-" + String(wirelessMgr->getDeviceID(), HEX);
+    String deviceName = "GPStar-Wand-" + String(wirelessMgr->getDeviceID(), DEC);
     
     #if defined(DEBUG_BLUETOOTH)
       debug(F("[BLE] Initializing NimBLE device as: "));
@@ -507,7 +507,7 @@ bool startBluetooth() {
     
     if(!pScan) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] *** ERROR: Failed to get BLE scan instance"));
+        debugln(F("[BLE] ERROR Failed to get BLE scan instance"));
       #endif
       return false;
     }
@@ -551,7 +551,7 @@ bool startBluetooth() {
   }
   catch (const std::exception &e) {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] *** EXCEPTION: "));
+      debug(F("[BLE] EXCEPTION "));
       debugln(e.what());
     #endif
     return false;
@@ -593,26 +593,26 @@ void handleBLEWandConnection() {
         g_pBLEClient = pClient;
         
         #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[BLE-STATE] → Connected (waiting for async callback)"));
-          debugln(F("[BLE-STATE] → Initiating pairing..."));
+          debugln(F("[BLE-STATE] CONN_SYNC_DONE"));
+          debugln(F("[BLE-STATE] PAIRING_START"));
         #endif
         
         // NOW initiate pairing - call secureConnection() right after connect() returns
         // This is BLOCKING but necessary for pairing handshake
         if(pClient->secureConnection()) {
           #if defined(DEBUG_BLUETOOTH)
-            debugln(F("[BLE-STATE] Pairing initiated"));
+            debugln(F("[BLE-STATE] PAIR_INITIATED"));
           #endif
           b_ble_connected = true;
         } else {
           #if defined(DEBUG_BLUETOOTH)
-            debugln(F("[BLE-STATE] ✗ secureConnection() failed"));
+            debugln(F("[BLE-STATE] ERROR secureConnection"));
           #endif
           b_ble_connected = false;
         }
       } else {
         #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[BLE-STATE] ✗ connect() failed"));
+          debugln(F("[BLE-STATE] ERROR connect"));
         #endif
         NimBLEDevice::deleteClient(pClient);
         g_pBLEClient = nullptr;
@@ -651,13 +651,13 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   // Check if frame fits in queue
   if(g_serial_tx_queue_length + length > SERIAL_TX_QUEUE_SIZE) {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE-TX-Q] ✗ OVERFLOW: queue="));
+      debug(F("[BLE-TX-Q] OVERFLOW queue="));
       debug(g_serial_tx_queue_length);
       debug(F(" + frame="));
       debug(length);
       debug(F(" > limit "));
       debug(SERIAL_TX_QUEUE_SIZE);
-      debugln(F(" - DROPPED"));
+      debugln(F(""));
     #endif
     return;  // Queue full, drop frame
   }
@@ -667,9 +667,9 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   g_serial_tx_queue_length += length;
   
   #if defined(DEBUG_BLUETOOTH)
-    debug(F("[BLE-TX-Q] + "));
+    debug(F("[BLE-TX-Q] ADD "));
     debug(length);
-    debug(F("B → depth "));
+    debug(F("B depth="));
     debug(g_serial_tx_queue_length);
     debug(F("/"));
     debug(SERIAL_TX_QUEUE_SIZE);
