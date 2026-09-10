@@ -5989,7 +5989,8 @@ void resetWifiCommand() {
  */
 bool canChangeStreamMode() {
   if(PACK_STATE != MODE_ON) {
-    sendDebug(F("canChangeStreamMode() -> BLOCKED: Pack is not on"));
+    // Debug is commented out as it can be quite verbose when enabled.
+    //sendDebug(F("canChangeStreamMode() -> BLOCKED: Pack is not on"));
     return false;
   }
 

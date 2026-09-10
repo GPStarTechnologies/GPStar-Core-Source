@@ -70,35 +70,18 @@ NimBLEClientCallbacks *g_pWandClientCallbacks = nullptr;
 NimBLEScanCallbacks *g_pWandScanCallbacks = nullptr;
 
 /*
- * BLE UUIDs (custom 128-bit UUIDs for GPStar peer-to-peer protocol)
- *
- * UUID Stability and Hardcoding Strategy:
- * ========================================
- * These UUIDs are intentionally HARDCODED for Phase 1 because:
- * 1. STABILITY: Allows Wand to reliably discover any Pack (same UUID always)
- * 2. SIMPLICITY: No service discovery negotiation needed; Wand knows exactly what to look for
- * 3. SINGLE-PAIR MODEL: Current requirement is one Pack per Wand (not concurrent multi-pack)
- * 4. EFFICIENCY: Reduces BLE scanning complexity; Wand filters by known service UUID
- *
- * If we made these DYNAMIC in the future (Phase 2+), we would:
- * - Add a UUID registration mechanism (e.g., store in EEPROM)
- * - Allow Pack to advertise its UUID via WiFi mDNS (discovery pre-step)
- * - Require Wand to scan all possible UUIDs or use a "discovery mode"
- * - Trade: Complexity gain vs. benefit loss (only supports multi-pack scenarios)
- *
- * Current format: Bluetooth SIG reserved namespace with GPStar-specific suffixes
- * 0000ffe0-... = Primary service (chosen from Vendor-Defined space)
- * 0000ffe1-... = Command characteristic (Wand → Pack)
- * 0000ffe2-... = Status characteristic (Pack → Wand)
- *
- * To change these UUIDs:
- * - Update BOTH Pack/Wand Bluetooth.h files simultaneously (must match!)
- * - Use online UUID generator or reserve from Bluetooth SIG if commercializing
- * - Current values are placeholders; safe for private/hobbyist use
+ * BLE UUIDs (defined in shared BLE library)
+ * 
+ * These constants come from BLEConstants.h in the shared Bluetooth library.
+ * They are hardcoded per BLE_TRANSPORT.md specification for stable Pack discovery.
+ * 
+ * UUID layout:
+ * - BLE_SERIALDATA_SERVICE_UUID: Service advertised by Pack
+ * - BLE_SERIALDATA_PACKTX_CHAR_UUID: Pack → Wand (indications)
+ * - BLE_SERIALDATA_PACKRX_CHAR_UUID: Wand → Pack (writes)
+ * 
+ * DO NOT DUPLICATE these in application code - use the shared library constants!
  */
-const char* GPSTAR_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
-const char* GPSTAR_COMMAND_CHAR_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb";
-const char* GPSTAR_STATUS_CHAR_UUID = "0000ffe2-0000-1000-8000-00805f9b34fb";
 
 // Forward declaration of characteristic discovery function (defined after callbacks)
 void discoverRemoteCharacteristics();
@@ -314,7 +297,7 @@ void bleProcessData() {
       // Check for skipped packets
       static bool firstPacket = true;
       if(!firstPacket && seq_num != (lastSeq + 1)) {
-        debug(F("[PACK→WAND-RX] PACKET LOSS: expected seq#"));
+        debug(F("[PACK-TX-RX] PACKET LOSS: expected seq#"));
         debug(lastSeq + 1);
         debug(F(" got seq#"));
         debug(seq_num);
@@ -336,7 +319,7 @@ void bleProcessData() {
       BLEPacket packet = bleHandleData(g_ble_rx_buffer, g_ble_rx_length);
       
       #if defined(DEBUG_BLUETOOTH)
-        debug(F("[PACK→WAND-RX] Seq#"));
+        debug(F("[PACK-TX-RX] Seq#"));
         debug(seq_num);
         debug(F(" Type="));
         switch(packet.packetType) {
@@ -451,7 +434,7 @@ void discoverRemoteCharacteristics() {
   #endif
 
   // Get the remote service by UUID
-  g_pRemoteGPStarService = g_pBLEClient->getService(GPSTAR_SERVICE_UUID);
+  g_pRemoteGPStarService = g_pBLEClient->getService(BLE_SERIALDATA_SERVICE_UUID);
   
   if(!g_pRemoteGPStarService) {
     #if defined(DEBUG_BLUETOOTH)
@@ -464,8 +447,8 @@ void discoverRemoteCharacteristics() {
     debugln(F("[BLE] Found remote GPStar service"));
   #endif
 
-  // Get the command characteristic (Wand → Pack)
-  g_pRemoteCommandChar = g_pRemoteGPStarService->getCharacteristic(GPSTAR_COMMAND_CHAR_UUID);
+  // Get the command characteristic (Wand → Pack) - Write target is PACKRX
+  g_pRemoteCommandChar = g_pRemoteGPStarService->getCharacteristic(BLE_SERIALDATA_PACKRX_CHAR_UUID);
   
   if(!g_pRemoteCommandChar) {
     #if defined(DEBUG_BLUETOOTH)
@@ -478,8 +461,8 @@ void discoverRemoteCharacteristics() {
       debugln(F("[BLE] Found remote command characteristic Wand to Pack"));
   #endif
 
-  // Get the status characteristic (Pack → Wand)
-  g_pRemoteStatusChar = g_pRemoteGPStarService->getCharacteristic(GPSTAR_STATUS_CHAR_UUID);
+  // Get the status characteristic (Pack → Wand) - Receive via indications on PACKTX
+  g_pRemoteStatusChar = g_pRemoteGPStarService->getCharacteristic(BLE_SERIALDATA_PACKTX_CHAR_UUID);
   
   if(!g_pRemoteStatusChar) {
     #if defined(DEBUG_BLUETOOTH)
@@ -761,11 +744,15 @@ void bleFlushQueues() {
     debugln(F("[WAND→PACK] First flush - discovering Pack command characteristic..."));
     NimBLERemoteService *pService = g_pBLEClient->getService(BLE_SERIALDATA_SERVICE_UUID);
     if(pService) {
-      g_pRemoteCommandChar = pService->getCharacteristic(BLE_SERIALDATA_PACKTX_CHAR_UUID);
+      // Write commands to PACKRX (ffe2)
+      g_pRemoteCommandChar = pService->getCharacteristic(BLE_SERIALDATA_PACKRX_CHAR_UUID);
       if(!g_pRemoteCommandChar) {
         debugln(F("[WAND→PACK] ERROR: Could not find Pack command characteristic"));
         return;
       }
+      #if defined(DEBUG_BLUETOOTH)
+        debugln(F("[WAND→PACK] Pack command characteristic discovered successfully"));
+      #endif
     } else {
       debugln(F("[WAND→PACK] ERROR: Could not find Pack GPStar service"));
       return;
@@ -789,9 +776,20 @@ void bleFlushQueues() {
     // Copy message payload (includes frame markers 0x02...0x04)
     memcpy(&ble_buffer[1], msg.payload, msg.length);
     
-    if(g_pRemoteCommandChar->canWrite()) {
-      g_pRemoteCommandChar->writeValue(ble_buffer, msg.length + 1, false);
-      
+    // Validate characteristic is still available and writable
+    if(!g_pRemoteCommandChar || !g_pRemoteCommandChar->canWrite()) {
+      #if defined(DEBUG_BLUETOOTH)
+        debugln(F("[WAND→PACK] WARNING: Pack characteristic unavailable, re-queueing message"));
+      #endif
+      // Re-queue the message we just dequeued since we couldn't send it
+      BLEQueueManager_Enqueue(&g_ble_tx_queue, &msg);
+      // Clear the characteristic pointer to force rediscovery on next flush
+      g_pRemoteCommandChar = nullptr;
+      break;
+    }
+    
+    // Attempt to write the message
+    if(g_pRemoteCommandChar->writeValue(ble_buffer, msg.length + 1, false)) {
       #if defined(DEBUG_BLUETOOTH)
         debug(F("[WAND→PACK-SEND] Seq#"));
         debug(msg.sequence);
@@ -807,10 +805,11 @@ void bleFlushQueues() {
       #endif
     } else {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[WAND→PACK] ERROR: Pack command characteristic not writable"));
+        debugln(F("[WAND→PACK] ERROR: Failed to write value, re-queueing message"));
       #endif
-      // Re-queue the message we just dequeued since we couldn't send it
+      // Re-queue the message and force rediscovery
       BLEQueueManager_Enqueue(&g_ble_tx_queue, &msg);
+      g_pRemoteCommandChar = nullptr;
       break;
     }
   }

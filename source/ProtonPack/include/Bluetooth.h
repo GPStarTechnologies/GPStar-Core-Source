@@ -67,35 +67,18 @@ NimBLEServerCallbacks *g_pPackServerCallbacks = nullptr;
 NimBLECharacteristicCallbacks *g_pPackCharacteristicCallbacks = nullptr;
 
 /*
- * BLE UUIDs (custom 128-bit UUIDs for GPStar peer-to-peer protocol)
- *
- * UUID Stability and Hardcoding Strategy:
- * ========================================
- * These UUIDs are intentionally HARDCODED for Phase 1 because:
- * 1. STABILITY: Allows Wand to reliably discover any Pack (same UUID always)
- * 2. SIMPLICITY: No service discovery negotiation needed; Wand knows exactly what to look for
- * 3. SINGLE-PAIR MODEL: Current requirement is one Pack per Wand (not concurrent multi-pack)
- * 4. EFFICIENCY: Reduces BLE scanning complexity; Wand filters by known service UUID
- *
- * If we made these DYNAMIC in the future (Phase 2+), we would:
- * - Add a UUID registration mechanism (e.g., store in EEPROM)
- * - Allow Pack to advertise its UUID via WiFi mDNS (discovery pre-step)
- * - Require Wand to scan all possible UUIDs or use a "discovery mode"
- * - Trade: Complexity gain vs. benefit loss (only supports multi-pack scenarios)
- *
- * Current format: Bluetooth SIG reserved namespace with GPStar-specific suffixes
- * 0000ffe0-... = Primary service (chosen from Vendor-Defined space)
- * 0000ffe1-... = Command characteristic (Wand → Pack)
- * 0000ffe2-... = Status characteristic (Pack → Wand)
- *
- * To change these UUIDs:
- * - Update BOTH Pack/Wand Bluetooth.h files simultaneously (must match!)
- * - Use online UUID generator or reserve from Bluetooth SIG if commercializing
- * - Current values are placeholders; safe for private/hobbyist use
+ * BLE UUIDs (defined in shared BLE library)
+ * 
+ * These constants come from BLEConstants.h in the shared Bluetooth library.
+ * They are hardcoded per BLE_TRANSPORT.md specification for stable Pack discovery.
+ * 
+ * UUID layout:
+ * - BLE_SERIALDATA_SERVICE_UUID: Service advertised by Pack
+ * - BLE_SERIALDATA_PACKTX_CHAR_UUID: Pack → Wand (indications)
+ * - BLE_SERIALDATA_PACKRX_CHAR_UUID: Wand → Pack (writes)
+ * 
+ * DO NOT DUPLICATE these in application code - use the shared library constants!
  */
-const char* GPSTAR_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
-const char* GPSTAR_COMMAND_CHAR_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb";
-const char* GPSTAR_STATUS_CHAR_UUID = "0000ffe2-0000-1000-8000-00805f9b34fb";
 
 /*
  * Bluetooth LE Management Functions
@@ -391,11 +374,7 @@ void bleProcessData() {
     debug(F(" | cmd="));
     debug(packet.cmd);
     debug(F(" d1="));
-    debug(packet.d1);
-    debug(F(" | start="));
-    debug(packet.start);
-    debug(F(" end="));
-    debugln(packet.end);
+    debugln(packet.d1);
   #endif
 
   // Deserialize BLE buffer into same global structs used by UART
@@ -507,23 +486,24 @@ bool startBluetooth() {
     #endif
 
     // Create the GPStar service
-    g_pGPStarService = g_pBLEServer->createService(GPSTAR_SERVICE_UUID);
+    g_pGPStarService = g_pBLEServer->createService(BLE_SERIALDATA_SERVICE_UUID);
     
     if(!g_pGPStarService) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] ERROR Failed to create GPStar service"));
+        debugln(F("[BLE] ERROR Failed to create GPSta Serial Data Service"));
       #endif
       return false;
     }
     
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] GPStar service created UUID "));
-      debugln(GPSTAR_SERVICE_UUID);
+      debug(F("[BLE] GPStar Serial Data Service created, UUID: "));
+      debugln(BLE_SERIALDATA_SERVICE_UUID);
     #endif
 
     // Create command characteristic (Wand writes commands to Pack)
+    // Use PACKRX UUID (ffe2) since this receives data FROM wand
     g_pCommandCharacteristic = g_pGPStarService->createCharacteristic(
-      GPSTAR_COMMAND_CHAR_UUID,
+      BLE_SERIALDATA_PACKRX_CHAR_UUID,
       NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR
     );
     
@@ -548,8 +528,9 @@ bool startBluetooth() {
     // Properties: INDICATE (enables indications) + READ (let Wand read value)
     // DO NOT include WRITE - this is receive-only (Pack → Wand)
     // DO NOT manually create CCCD - NimBLE auto-creates it with proper permissions when INDICATE is set
+    // Use PACKTX UUID (ffe1) since this transmits data FROM pack
     g_pStatusCharacteristic = g_pGPStarService->createCharacteristic(
-      GPSTAR_STATUS_CHAR_UUID,
+      BLE_SERIALDATA_PACKTX_CHAR_UUID,
       NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::READ
     );
     
@@ -631,20 +612,20 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
     
     #if defined(DEBUG_BLUETOOTH)
       if(enqueue_result == BLE_QUEUE_OK) {
-        debug(F("[PACK→WAND-Q] Message queued, depth="));
+        debug(F("[PACK-TX-Q] Message queued, depth="));
         debug(BLEQueueManager_GetCount(&g_ble_tx_queue));
         debug(F("/"));
         debug(BLE_QUEUE_SIZE);
         debugln(F(" msgs"));
       } else if(enqueue_result == BLE_QUEUE_FULL) {
-        debug(F("[PACK→WAND-Q] OVERFLOW: queue full, overflows="));
+        debug(F("[PACK-TX-Q] OVERFLOW: queue full, overflows="));
         debug(g_ble_tx_queue.overflowCount);
         debugln();
       }
     #endif
   } else {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[PACK→WAND-Q] Invalid packet: start=0x"));
+      debug(F("[PACK-TX-Q] Invalid packet: start=0x"));
       if(length > 0) debug(pData[0], HEX);
       debug(F(" end=0x"));
       if(length > 0) debug(pData[length-1], HEX);
@@ -688,7 +669,7 @@ void bleFlushQueues() {
     g_pStatusCharacteristic->indicate();
     
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[PACK→WAND-SEND] Seq#"));
+      debug(F("[PACK-TX-SEND] Seq#"));
       debug(msg.sequence);
       debug(F(" PktType="));
       debug(msg.packetType);

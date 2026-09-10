@@ -259,9 +259,10 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = packComs.txObj(wandConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
 
-      debugln(F("[WAND-TX] SEND_PREFERENCES_WAND"));
+      debugln(F("[SERIAL-TX] SEND_PREFERENCES_WAND"));
 
     #ifdef ESP32
+      // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
       bleQueueSerialData(packComs.packet.txBuff, i_send_size);
     #endif
     break;
@@ -271,14 +272,16 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = packComs.txObj(smokeConfig);
       packComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
 
-      debugln(F("[WAND-TX] SEND_PREFERENCES_SMOKE"));
+      debugln(F("[SERIAL-TX] SEND_PREFERENCES_SMOKE"));
 
     #ifdef ESP32
+      // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
       bleQueueSerialData(packComs.packet.txBuff, i_send_size);
     #endif
     break;
 
     default:
+      // Any other case will be a command packet.
       sendCmd.s = A_COM_START;
       sendCmd.c = i_command;
       sendCmd.d1 = i_value;
@@ -288,16 +291,20 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
         // Once connected, each send of data should restart the timer.
         ms_handshake.restart();
       }
+      else {
+        debugln("Wand is not connected to Pack");  
+      }
 
       i_send_size = packComs.txObj(sendCmd);
       packComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
 
-      debug(F("[WAND-TX] CMD "));
+      debug(F("[SERIAL-TX] c="));
       debug(i_command);
-      debug(F(" VAL "));
+      debug(F(" d="));
       debugln(i_value);
 
     #ifdef ESP32
+      // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
       bleQueueSerialData(packComs.packet.txBuff, i_send_size);
     #endif
     break;

@@ -483,9 +483,10 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = wandComs.txObj(wandSyncData);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SYNC);
 
-      debugln(F("[PACK-TX] SYNC_DATA"));
+      debugln(F("[SERIAL-TX] A_SYNC_DATA"));
 
     #ifdef ESP32
+      // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
       bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
     #endif
     break;
@@ -494,9 +495,10 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = wandComs.txObj(wandConfig);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_WAND);
 
-      debugln(F("[PACK-TX] SAVE_PREFERENCES_WAND"));
+      debugln(F("[SERIAL-TX] A_SAVE_PREFERENCES_WAND"));
 
     #ifdef ESP32
+      // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
       bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
     #endif
     break;
@@ -505,14 +507,16 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = wandComs.txObj(smokeConfig);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_SMOKE);
 
-      debugln(F("[PACK-TX] SAVE_PREFERENCES_SMOKE"));
+      debugln(F("[SERIAL-TX] A_SAVE_PREFERENCES_SMOKE"));
 
     #ifdef ESP32
+      // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
       bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
     #endif
     break;
 
     default:
+      // Any other case will be a command packet.
       sendCmdW.s = A_COM_START;
       sendCmdW.c = i_command;
       sendCmdW.d1 = i_value;
@@ -521,12 +525,13 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
       i_send_size = wandComs.txObj(sendCmdW);
       wandComs.sendData(i_send_size, (uint8_t) PACKET_COMMAND);
 
-      debug(F("[PACK-TX] CMD "));
+      debug(F("[SERIAL-TX] c="));
       debug(i_command);
-      debug(F(" VAL "));
+      debug(F(" d1="));
       debugln(i_value);
 
     #ifdef ESP32
+      // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
       bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
     #endif
     break;
@@ -1131,7 +1136,7 @@ void doWandSync() {
   }
 
   // Begin the synchronization process which tells the wand the pack got the handshake.
-  sendDebug(F("Wand Sync Start"));
+  sendDebug(String(F("doWandSync() -> Sending A_SYNC_START c=")) + String(A_SYNC_START));
   wandSerialSend(A_SYNC_START, b_pack_post_finish ? 2 : 1);
 
   // Wand sync sound effect if not in demo light mode.
