@@ -374,7 +374,7 @@ void bleProcessData() {
         case PACKET_SYNC: debug(F("SYNC(6)")); break;
         default: debug(F("UNKNOWN(0)")); break;
       }
-      debug(F(" | cmd="));
+      debug(F(" | c="));
       debug(packet.cmd);
       debug(F(" d1="));
       debugln(packet.d1);
@@ -683,7 +683,7 @@ void bleFlushQueues() {
       debug(msg.packetType);
       debug(F(" Len="));
       debug(msg.length);
-      debug(F("B Depth="));
+      debug(F(" bytes Depth="));
       debug(BLEQueueManager_GetCount(&g_ble_tx_queue));
       debug(F("/"));
       debug(BLE_QUEUE_SIZE);

@@ -346,12 +346,12 @@ void bleProcessData() {
         
         // Show packet details
         if(packet.packetType == PACKET_COMMAND) {
-          debug(F(" cmd="));
+          debug(F(" c="));
           debug(packet.cmd);
           debug(F(" d1="));
           debug(packet.d1);
         } else if(packet.packetType == PACKET_DATA) {
-          debug(F(" cmd="));
+          debug(F(" c="));
           debug(packet.cmd);
           debug(F(" d[0,1,2]="));
           debug(packet.d[0]);
