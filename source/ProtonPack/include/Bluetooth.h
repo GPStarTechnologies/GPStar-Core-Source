@@ -50,8 +50,9 @@ bool b_ble_connected = false; // Indicates when the Wand has successfully connec
 // Pack RX: messages from Wand to Pack (written to PackRX characteristic)
 // Note: Queues are zero-initialized by default in C; no explicit init needed before use
 BLEMessageQueue g_ble_tx_queue = {};
+BLEMessageQueue g_ble_rx_queue = {};  // RX queue for incoming Wand messages
 
-// BLE command queue (store incoming BLE commands for processing)
+// Legacy RX buffer (kept for compatibility, but prefer using g_ble_rx_queue)
 uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
 size_t g_ble_rx_length = 0;         // Number of bytes in buffer
 bool b_ble_rx_ready = false;        // Flag: data ready to process
@@ -208,75 +209,79 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       if(rxValue.length() > 1) {  // Must have at least metadata + 1 byte payload
         // Extract metadata byte (byte[0])
         uint8_t metadata = (uint8_t)rxValue[0];
-        uint8_t source_type = (metadata >> 6) & 0x03;
-        uint8_t sequence = metadata & 0x3F;
+        uint8_t packetType = (metadata >> 5) & 0x07;  // bits [7:5]
+        uint8_t sequence = metadata & 0x1F;            // bits [4:0]
         size_t payload_length = rxValue.length() - 1;
         
-        // Verify source type is serial (00)
-        if(source_type != 0x00) {
+        // Validate packet type is within expected range (0-6)
+        if(packetType > 6) {
           #if defined(DEBUG_BLUETOOTH)
-            debug(F("[WAND→PACK] ERROR: Invalid source type="));
-            debug(source_type);
+            debug(F("[WAND→PACK] ERROR: Invalid packet type="));
+            debug(packetType);
             debugln(F(""));
           #endif
           return;
         }
         
-        // Copy payload (skip metadata byte) to buffer for processing
-        if(payload_length <= 32) {
-          memcpy(g_ble_rx_buffer, rxValue.c_str() + 1, payload_length);
-          g_ble_rx_length = payload_length;
-          b_ble_rx_ready = true;
+        // Copy payload to temporary buffer for message creation
+        uint8_t tempPayload[256] = {0};
+        if(payload_length > 0 && payload_length <= 256) {
+          memcpy(tempPayload, rxValue.c_str() + 1, payload_length);
+        }
+        
+        // Create BLE message and enqueue to RX queue
+        if(payload_length <= 256) {
+          BLEMessage msg;
+          uint8_t result = BLEQueueManager_CreateMessage(
+            packetType,
+            sequence,
+            tempPayload,
+            payload_length,
+            &msg
+          );
           
-          #if defined(DEBUG_BLUETOOTH)
-            // Parse frames in the payload to show details
-            uint8_t* payload = (uint8_t*)rxValue.c_str() + 1;
+          if(result != BLE_PACKET_INVALID) {
+            uint8_t enqueue_result = BLEQueueManager_Enqueue(&g_ble_rx_queue, &msg);
             
-            debug(F("[PACK-RX] Seq#"));
-            debug(sequence);
-            debug(F(" Payload="));
-            debug(payload_length);
-            debug(F("bytes | "));
-            
-            // Try to parse frame type from first byte of payload
-            if(payload_length >= 4) {
-              uint8_t start = payload[0];
-              uint8_t end = payload[payload_length - 1];
-              
-              if(start == A_COM_START && end == A_COM_END) {
-                if(payload_length == 6) {
-                  uint16_t cmd = (uint16_t)payload[1] | ((uint16_t)payload[2] << 8);
-                  uint16_t d1 = (uint16_t)payload[3] | ((uint16_t)payload[4] << 8);
-                  debug(F("COMMAND c="));
-                  debug(cmd);
-                  debug(F(" d1="));
-                  debug(d1);
-                } else if(payload_length == 7) {
-                  uint16_t cmd = (uint16_t)payload[1] | ((uint16_t)payload[2] << 8);
-                  debug(F("DATA c="));
-                  debug(cmd);
-                  debug(F(" d[0,1,2]="));
-                  debug(payload[3]);
-                  debug(F(","));
-                  debug(payload[4]);
-                  debug(F(","));
-                  debug(payload[5]);
-                } else {
-                  debug(F("("));
-                  debug(payload_length);
-                  debug(F("B frame)"));
+            #if defined(DEBUG_BLUETOOTH)
+              if(enqueue_result == BLE_QUEUE_OK) {
+                debug(F("[PACK-RX] Seq#"));
+                debug(sequence);
+                debug(F(" Payload="));
+                debug(payload_length);
+                debug(F(" bytes | "));
+                
+                // Parse frame type for logging
+                if(payload_length >= 4) {
+                  uint8_t start = tempPayload[0];
+                  uint8_t end = tempPayload[payload_length - 1];
+                  
+                  if(start == A_COM_START && end == A_COM_END) {
+                    if(payload_length == 6) {
+                      uint16_t cmd = (uint16_t)tempPayload[1] | ((uint16_t)tempPayload[2] << 8);
+                      uint16_t d1 = (uint16_t)tempPayload[3] | ((uint16_t)tempPayload[4] << 8);
+                      debug(F("COMMAND c="));
+                      debug(cmd);
+                      debug(F(" d1="));
+                      debug(d1);
+                    } else {
+                      debug(F("("));
+                      debug(payload_length);
+                      debug(F("B frame)"));
+                    }
+                  } else {
+                    debug(F("(invalid markers)"));
+                  }
                 }
-              } else {
-                debug(F("(invalid markers)"));
+                debugln();
               }
-            }
-            debugln();
-          #endif
+            #endif
+          }
         } else {
           #if defined(DEBUG_BLUETOOTH)
             debug(F("[WAND→PACK] ERROR: Payload too large ("));
             debug(payload_length);
-            debugln(F("B exceeds 32B limit)"));
+            debugln(F(" B exceeds 256B limit)"));
           #endif
         }
       } else {
@@ -345,61 +350,73 @@ BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
 // Process incoming BLE notifications from Wand
 // Called from main loop to parse and handle queued BLE command bytes
 void bleProcessData() {
-  if(!b_ble_rx_ready || g_ble_rx_length == 0) {
-    return;  // No notification queued
-  }
-
-  // Clear the ready flag
-  b_ble_rx_ready = false;
-  
-  // Parse the queued notification
-  BLEPacket packet = bleHandleData(g_ble_rx_buffer, g_ble_rx_length);
-  
-  #if defined(DEBUG_BLUETOOTH)
-    // Parsed packet structure
-    debug(F("[BLE-RX] Parsed: type="));
-    switch(packet.packetType) {
-      case PACKET_COMMAND: debug(F("COMMAND(1)")); break;
-      case PACKET_DATA: debug(F("DATA(2)")); break;
-      case PACKET_WAND: debug(F("WAND(3)")); break;
-      case PACKET_SMOKE: debug(F("SMOKE(4)")); break;
-      default: debug(F("UNKNOWN(0)")); break;
+  // Dequeue and process all available RX messages
+  while(!BLEQueueManager_IsEmpty(&g_ble_rx_queue)) {
+    BLEMessage msg;
+    uint8_t result = BLEQueueManager_Dequeue(&g_ble_rx_queue, &msg);
+    
+    if(result != BLE_QUEUE_OK) {
+      break;  // Queue empty or error
     }
-    debug(F(" | cmd="));
-    debug(packet.cmd);
-    debug(F(" d1="));
-    debugln(packet.d1);
-  #endif
+    
+    // Parse the queued message payload
+    BLEPacket packet = bleHandleData(msg.payload, msg.length);
+    
+    #if defined(DEBUG_BLUETOOTH)
+      // Parsed packet structure
+      debug(F("[BLE-RX] Parsed: type="));
+      switch(packet.packetType) {
+        case PACKET_COMMAND: debug(F("COMMAND(1)")); break;
+        case PACKET_DATA: debug(F("DATA(2)")); break;
+        case PACKET_PACK: debug(F("PACK(3)")); break;
+        case PACKET_WAND: debug(F("WAND(4)")); break;
+        case PACKET_SMOKE: debug(F("SMOKE(5)")); break;
+        case PACKET_SYNC: debug(F("SYNC(6)")); break;
+        default: debug(F("UNKNOWN(0)")); break;
+      }
+      debug(F(" | cmd="));
+      debug(packet.cmd);
+      debug(F(" d1="));
+      debugln(packet.d1);
+    #endif
 
-  // Deserialize BLE buffer into same global structs used by UART
-  if(packet.packetType > 0) {
-    switch(packet.packetType) {
-      case PACKET_COMMAND:
-        if(packet.cmd > 0) {
-          recvCmdW.s = packet.start;
-          recvCmdW.c = packet.cmd;
-          recvCmdW.d1 = packet.d1;
-          recvCmdW.e = packet.end;
-        }
-        break;
-        
-      case PACKET_DATA:
-        if(packet.cmd > 0) {
-          recvDataW.s = packet.start;
-          recvDataW.c = packet.cmd;
-          recvDataW.d[0] = packet.d[0];
-          recvDataW.d[1] = packet.d[1];
-          recvDataW.d[2] = packet.d[2];
-          recvDataW.e = packet.end;
-        }
-        break;
+    // Deserialize BLE buffer into same global structs used by UART
+    if(packet.packetType > 0) {
+      switch(packet.packetType) {
+        case PACKET_COMMAND:
+          if(packet.cmd > 0) {
+            recvCmdW.s = packet.start;
+            recvCmdW.c = packet.cmd;
+            recvCmdW.d1 = packet.d1;
+            recvCmdW.e = packet.end;
+          }
+          break;
+          
+        case PACKET_DATA:
+          if(packet.cmd > 0) {
+            recvDataW.s = packet.start;
+            recvDataW.c = packet.cmd;
+            recvDataW.d[0] = packet.d[0];
+            recvDataW.d[1] = packet.d[1];
+            recvDataW.d[2] = packet.d[2];
+            recvDataW.e = packet.end;
+          }
+          break;
         
       case PACKET_WAND:
-        memcpy(&wandConfig, g_ble_rx_buffer, g_ble_rx_length);
+        memcpy(&wandConfig, msg.payload, msg.length);
         break;
         
       case PACKET_SMOKE:
-        memcpy(&smokeConfig, g_ble_rx_buffer, g_ble_rx_length);
+        memcpy(&smokeConfig, msg.payload, msg.length);
+        break;
+        
+      case PACKET_PACK:
+        memcpy(&packConfig, msg.payload, msg.length);
+        break;
+        
+      case PACKET_SYNC:
+        // Sync packets from Wand (handled same as COMMAND)
         break;
     }
     
@@ -412,9 +429,7 @@ void bleProcessData() {
     // Route to central packet handler (same dispatcher as UART)
     handleWandPacket(packet.packetType);
   }
-  
-  // Clear the buffer
-  g_ble_rx_length = 0;
+  }
 }
 
 bool startBluetooth() {

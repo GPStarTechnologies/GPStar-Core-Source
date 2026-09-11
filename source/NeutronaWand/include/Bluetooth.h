@@ -713,9 +713,9 @@ void bleFlushQueues() {
     }
     
     // Send message as write-without-response (message payload already has frame markers)
-    // Metadata format: [7:6]=source, [5:0]=sequence
-    uint8_t ble_buffer[258];  // 1 byte metadata + 257 (1B seq + 256B payload max)
-    ble_buffer[0] = (0x00 << 6) | (msg.sequence & 0x3F);
+    // Metadata format: [7:5]=packet_type, [4:0]=sequence (wraps at 32 for wire, local counter is full 8-bit)
+    uint8_t ble_buffer[258];  // 1 byte metadata + 257 max
+    ble_buffer[0] = (msg.packetType << 5) | (msg.sequence & 0x1F);
     
     // Copy message payload (includes frame markers 0x02...0x04)
     memcpy(&ble_buffer[1], msg.payload, msg.length);
