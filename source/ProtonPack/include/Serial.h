@@ -23,8 +23,7 @@
 #ifdef ESP32
 void restartWireless(); // From Webhandler.h
 void shutdownWireless(); // From Webhandler.h
-void bleQueueSerialData(const uint8_t* pData, size_t length); // From Bluetooth.h - send serialized data via BLE
-void bleApplySerialData(); // From Bluetooth.h - apply serial data sent via BLE
+void bleQueueSerialData(const uint8_t* pData, size_t length, uint8_t packetType); // From Bluetooth.h - send serialized data via BLE
 #endif
 void handleWandPacket(uint8_t i_packet_type);
 
@@ -487,7 +486,7 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
 
     #ifdef ESP32
       // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
-      bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
+      bleQueueSerialData(wandComs.packet.txBuff, i_send_size, PACKET_SYNC);
     #endif
     break;
 
@@ -499,7 +498,7 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
 
     #ifdef ESP32
       // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
-      bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
+      bleQueueSerialData(wandComs.packet.txBuff, i_send_size, PACKET_WAND);
     #endif
     break;
 
@@ -511,7 +510,7 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
 
     #ifdef ESP32
       // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
-      bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
+      bleQueueSerialData(wandComs.packet.txBuff, i_send_size, PACKET_SMOKE);
     #endif
     break;
 
@@ -532,7 +531,7 @@ void wandSerialSend(uint16_t i_command, uint16_t i_value) {
 
     #ifdef ESP32
       // Frame markers are added by sendData(): +1 for 0x02 start, +1 for 0x04 end
-      bleQueueSerialData(wandComs.packet.txBuff, i_send_size);
+      bleQueueSerialData(wandComs.packet.txBuff, i_send_size, PACKET_COMMAND);
     #endif
     break;
   }
@@ -1075,10 +1074,6 @@ void checkWand() {
       return;
     }
   }
-
-#ifdef ESP32
-  bleApplySerialData(); // Apply any commands sent via BLE.
-#endif
 }
 
 void handleWandPacket(uint8_t i_packet_type) {

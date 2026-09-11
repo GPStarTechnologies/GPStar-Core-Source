@@ -59,4 +59,3 @@ struct BLEMessageQueue {
   uint8_t count;                           // Current message count (0 to BLE_QUEUE_SIZE)
   uint16_t overflowCount;                  // Diagnostic: rejected enqueues
 };
-

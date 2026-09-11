@@ -258,3 +258,71 @@ TEST_F(BLEQueueManagerTest, PayloadPreservation) {
     EXPECT_EQ(readMsg.payload[i], testMsg.payload[i]);
   }
 }
+
+// Test 14: CreateMessage with valid payload
+TEST_F(BLEQueueManagerTest, CreateMessageValidPayload) {
+  uint8_t payload[] = {0x02, 0xAA, 0xBB, 0xCC, 0xDD, 0x04};
+  BLEMessage msg;
+  
+  uint8_t result = BLEQueueManager_CreateMessage(PACKET_COMMAND, 42, payload, 6, &msg);
+  
+  EXPECT_EQ(result, BLE_QUEUE_OK);
+  EXPECT_EQ(msg.packetType, PACKET_COMMAND);
+  EXPECT_EQ(msg.sequence, 42);
+  EXPECT_EQ(msg.length, 6);
+  EXPECT_EQ(msg.status, BLE_MSG_STATUS_QUEUED);
+  
+  // Verify payload copied correctly
+  for(int i = 0; i < 6; i++) {
+    EXPECT_EQ(msg.payload[i], payload[i]);
+  }
+}
+
+// Test 15: CreateMessage with null payload
+TEST_F(BLEQueueManagerTest, CreateMessageNullPayload) {
+  BLEMessage msg;
+  uint8_t result = BLEQueueManager_CreateMessage(PACKET_COMMAND, 42, nullptr, 6, &msg);
+  
+  EXPECT_EQ(result, BLE_PACKET_INVALID);
+}
+
+// Test 16: CreateMessage with null message buffer
+TEST_F(BLEQueueManagerTest, CreateMessageNullMessageBuffer) {
+  uint8_t payload[] = {0x02, 0xAA, 0xBB, 0xCC, 0xDD, 0x04};
+  uint8_t result = BLEQueueManager_CreateMessage(PACKET_COMMAND, 42, payload, 6, nullptr);
+  
+  EXPECT_EQ(result, BLE_PACKET_INVALID);
+}
+
+// Test 17: CreateMessage with payload too large
+TEST_F(BLEQueueManagerTest, CreateMessagePayloadTooLarge) {
+  uint8_t payload[BLE_MESSAGE_PAYLOAD_SIZE + 1];
+  BLEMessage msg;
+  
+  uint8_t result = BLEQueueManager_CreateMessage(PACKET_COMMAND, 42, payload, 
+                                                  BLE_MESSAGE_PAYLOAD_SIZE + 1, &msg);
+  
+  EXPECT_EQ(result, BLE_PACKET_INVALID);
+}
+
+// Test 18: CreateMessage then enqueue
+TEST_F(BLEQueueManagerTest, CreateMessageThenEnqueue) {
+  uint8_t payload[] = {0x02, 0x11, 0x22, 0x33, 0x44, 0x04};
+  BLEMessage msg;
+  
+  uint8_t create_result = BLEQueueManager_CreateMessage(PACKET_DATA, 99, payload, 6, &msg);
+  EXPECT_EQ(create_result, BLE_QUEUE_OK);
+  
+  uint8_t enqueue_result = BLEQueueManager_Enqueue(&queue, &msg);
+  EXPECT_EQ(enqueue_result, BLE_QUEUE_OK);
+  
+  uint8_t dequeue_result = BLEQueueManager_Dequeue(&queue, &readMsg);
+  EXPECT_EQ(dequeue_result, BLE_QUEUE_OK);
+  
+  // Verify message made it through queue
+  EXPECT_EQ(readMsg.packetType, PACKET_DATA);
+  EXPECT_EQ(readMsg.sequence, 99);
+  EXPECT_EQ(readMsg.length, 6);
+  EXPECT_EQ(readMsg.payload[0], 0x02);
+  EXPECT_EQ(readMsg.payload[5], 0x04);
+}

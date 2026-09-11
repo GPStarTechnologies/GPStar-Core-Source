@@ -51,19 +51,12 @@ bool b_pack_found = false;    // Set by scan callback, cleared by main thread af
 
 // BLE message queues (message-level queueing per BLE_TRANSPORT.md)
 // Wand TX: messages from Wand to Pack (written to PackRX characteristic)
-// Wand RX: messages from Pack to Wand (received via notifications)
 // Note: Queues are zero-initialized by default in C; no explicit init needed before use
 BLEMessageQueue g_ble_tx_queue = {};
-BLEMessageQueue g_ble_rx_queue = {};
 
 // BLE notification queue (store incoming Pack notifications for main loop processing)
 uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
 size_t g_ble_rx_length = 0;         // Number of bytes in buffer
-
-// Serial RX buffer (incoming BLE-sourced serial frames for fallback processing)
-uint8_t g_serial_rx_buffer[32] = {0};
-size_t g_serial_rx_length = 0;
-bool b_serial_rx_ready = false;
 
 // Global callback objects (must persist for lifetime of BLE client)
 NimBLEClientCallbacks *g_pWandClientCallbacks = nullptr;
@@ -83,8 +76,8 @@ NimBLEScanCallbacks *g_pWandScanCallbacks = nullptr;
  * DO NOT DUPLICATE these in application code - use the shared library constants!
  */
 
-// Forward declaration of characteristic discovery function (defined after callbacks)
-void discoverRemoteCharacteristics();
+// Forward declaration of BLE connection update function (defined after callbacks)
+void updateBLEConnection();
 
 /*
  * Bluetooth LE Management Functions
@@ -418,81 +411,6 @@ void bleProcessData() {
   }
 }
 
-// Discover remote Pack service and characteristics
-// CALLED AFTER: Pairing completes (from onAuthenticationComplete)
-// ACTION: Retrieve remote service UUID, find command and status characteristics, subscribe for notifications
-void discoverRemoteCharacteristics() {
-  if(!g_pBLEClient) {
-    #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] ERROR: No BLE client available for service discovery"));
-    #endif
-    return;
-  }
-
-  #if defined(DEBUG_BLUETOOTH)
-    debugln(F("[BLE] Discovering remote GPStar service..."));
-  #endif
-
-  // Get the remote service by UUID
-  g_pRemoteGPStarService = g_pBLEClient->getService(BLE_SERIALDATA_SERVICE_UUID);
-  
-  if(!g_pRemoteGPStarService) {
-    #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] ERROR: Could not find remote GPStar service"));
-    #endif
-    return;
-  }
-
-  #if defined(DEBUG_BLUETOOTH)
-    debugln(F("[BLE] Found remote GPStar service"));
-  #endif
-
-  // Get the command characteristic (Wand → Pack) - Write target is PACKRX
-  g_pRemoteCommandChar = g_pRemoteGPStarService->getCharacteristic(BLE_SERIALDATA_PACKRX_CHAR_UUID);
-  
-  if(!g_pRemoteCommandChar) {
-    #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] ERROR: Could not find remote command characteristic"));
-    #endif
-    return;
-  }
-
-  #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Found remote command characteristic Wand to Pack"));
-  #endif
-
-  // Get the status characteristic (Pack → Wand) - Receive via indications on PACKTX
-  g_pRemoteStatusChar = g_pRemoteGPStarService->getCharacteristic(BLE_SERIALDATA_PACKTX_CHAR_UUID);
-  
-  if(!g_pRemoteStatusChar) {
-    #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] ERROR: Could not find remote status characteristic"));
-    #endif
-    return;
-  }
-
-  #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Found remote status characteristic Pack to Wand"));
-  #endif
-
-  // Enable notifications for status characteristic
-  // Note: NimBLE delivers notifications automatically; we poll the characteristic value in bleProcessData()
-  if(g_pRemoteStatusChar->canNotify()) {
-    // Subscribe to enable notifications
-    // We poll g_pRemoteStatusChar->getValue() in bleProcessData() to read new data
-    g_pRemoteStatusChar->subscribe();
-    
-    #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Subscribed to status notifications"));
-      debugln(F("[BLE] READY FOR DATA EXCHANGE"));
-    #endif
-  } else {
-    #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] ERROR: Remote status characteristic does not support notifications"));
-    #endif
-  }
-}
-
 bool startBluetooth() {
   if(!b_ble_enabled) {
     #if defined(DEBUG_BLUETOOTH)
@@ -681,7 +599,7 @@ void handleBLEWandConnection() {
  * Per BLE_TRANSPORT.md: Each packet becomes one BLEMessage with frame markers preserved.
  * Sequence counter is managed by library; status tracking per message.
  */
-void bleQueueSerialData(const uint8_t* pData, size_t length) {
+void bleQueueSerialData(const uint8_t* pData, size_t length, uint8_t packetType) {
   if(!b_ble_enabled || !pData || length == 0) {
     return;  // BLE disabled or invalid input, silently drop
   }
@@ -689,8 +607,8 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   // Create a BLEMessage from the packet data
   // The packet already has frame markers (0x02 start, 0x04 end)
   BLEMessage msg;
-  uint8_t result = BLEPacketParser_CreateMessage(
-    BLEPacketParser_GetPacketType(pData, length),
+  uint8_t result = BLEQueueManager_CreateMessage(
+    packetType,
     0,  // Sequence will be managed by library if needed
     pData,
     length,
@@ -741,17 +659,17 @@ void bleFlushQueues() {
   
   // Lazy-load remote characteristics on first use
   if(!g_pRemoteCommandChar) {
-    debugln(F("[WAND→PACK] First flush - discovering Pack command characteristic..."));
+    debugln(F("[WAND→PACK] First flush - discovering PACKRX characteristic..."));
     NimBLERemoteService *pService = g_pBLEClient->getService(BLE_SERIALDATA_SERVICE_UUID);
     if(pService) {
       // Write commands to PACKRX (ffe2)
       g_pRemoteCommandChar = pService->getCharacteristic(BLE_SERIALDATA_PACKRX_CHAR_UUID);
       if(!g_pRemoteCommandChar) {
-        debugln(F("[WAND→PACK] ERROR: Could not find Pack command characteristic"));
+        debugln(F("[WAND→PACK] ERROR: Could not find PACKRX characteristic"));
         return;
       }
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[WAND→PACK] Pack command characteristic discovered successfully"));
+        debugln(F("[WAND→PACK] PACKRX characteristic discovered successfully"));
       #endif
     } else {
       debugln(F("[WAND→PACK] ERROR: Could not find Pack GPStar service"));
@@ -813,62 +731,6 @@ void bleFlushQueues() {
       break;
     }
   }
-}
-
-// Apply queued serial data from BLE (fallback when UART unavailable)
-// Processes queued frame identical to UART path
-void bleApplySerialData() {
-  if(!b_serial_rx_ready || g_serial_rx_length == 0) {
-    return;  // No queued data
-  }
-  
-  // Parse the frame
-  BLEPacket packet = bleHandleData(g_serial_rx_buffer, g_serial_rx_length);
-  
-  if(packet.packetType > 0) {
-    // Deserialize into same global structs as UART
-    switch(packet.packetType) {
-      case PACKET_COMMAND:
-        if(packet.cmd > 0) {
-          recvCmd.s = packet.start;
-          recvCmd.c = packet.cmd;
-          recvCmd.d1 = packet.d1;
-          recvCmd.e = packet.end;
-        }
-        break;
-        
-      case PACKET_DATA:
-        if(packet.cmd > 0) {
-          recvData.s = packet.start;
-          recvData.c = packet.cmd;
-          recvData.d[0] = packet.d[0];
-          recvData.d[1] = packet.d[1];
-          recvData.d[2] = packet.d[2];
-          recvData.e = packet.end;
-        }
-        break;
-        
-      case PACKET_WAND:
-        memcpy(&wandConfig, g_serial_rx_buffer, g_serial_rx_length);
-        break;
-        
-      case PACKET_SMOKE:
-        memcpy(&smokeConfig, g_serial_rx_buffer, g_serial_rx_length);
-        break;
-    }
-    
-    // Ensure Pack connection state is synchronized
-    if(WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH) {
-      WAND_CONN_STATE = PACK_CONNECTED;
-    }
-    
-    // Route to central packet handler (same as UART)
-    handlePacket(packet.packetType);
-  }
-  
-  // Clear for next frame
-  b_serial_rx_ready = false;
-  g_serial_rx_length = 0;
 }
 
 // Periodic BLE connection manager - call from mainLoop every iteration

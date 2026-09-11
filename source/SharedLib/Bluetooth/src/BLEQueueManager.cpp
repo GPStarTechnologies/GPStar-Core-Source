@@ -38,6 +38,34 @@ void BLEQueueManager_Init(BLEMessageQueue* queue) {
 }
 
 /*
+ * Create a BLE message from a raw payload.
+ */
+uint8_t BLEQueueManager_CreateMessage(uint8_t packetType,
+                                      uint8_t sequence, 
+                                      const uint8_t* payload,
+                                      size_t length, 
+                                      BLEMessage* msg) {
+  if(!payload || !msg) {
+    return BLE_PACKET_INVALID;
+  }
+  
+  // Check payload size fits in message buffer
+  if(length > BLE_MESSAGE_PAYLOAD_SIZE) {
+    return BLE_PACKET_INVALID;
+  }
+  
+  // Populate message structure
+  msg->packetType = packetType;
+  msg->sequence = sequence;
+  msg->length = length;
+  msg->status = BLE_MSG_STATUS_QUEUED;
+  
+  // Copy payload bytes
+  memcpy(msg->payload, payload, length);
+  
+  return BLE_QUEUE_OK;
+}
+/*
  * Enqueue a message to the tail of the queue (FIFO).
  */
 uint8_t BLEQueueManager_Enqueue(BLEMessageQueue* queue, const BLEMessage* msg) {

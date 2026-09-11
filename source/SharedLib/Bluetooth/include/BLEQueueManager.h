@@ -33,10 +33,6 @@
 #include "BLEMessage.h"
 #include "BLEMessageQueue.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
  * Initialize a message queue to empty state.
  * 
@@ -47,6 +43,33 @@ extern "C" {
  * Zeros all message slots.
  */
 void BLEQueueManager_Init(BLEMessageQueue* queue);
+
+/*
+ * Create a BLE message from a raw payload.
+ * 
+ * Args:
+ *   packetType - the packet type (PACKET_COMMAND, PACKET_DATA, etc.)
+ *   sequence   - sequence number (0-255) for this message
+ *   payload    - pointer to packet bytes
+ *   length     - number of bytes in payload
+ *   msg        - pointer to BLEMessage output buffer (receives created message)
+ * 
+ * Returns:
+ *   BLE_QUEUE_OK       - message successfully created
+ *   BLE_PACKET_INVALID - payload is invalid; msg is not modified
+ * 
+ * Validates the payload, then populates all BLEMessage fields:
+ *   - packetType from input
+ *   - sequence from input
+ *   - payload (memcpy'd from input)
+ *   - length from input
+ *   - status = BLE_MSG_STATUS_QUEUED
+ */
+uint8_t BLEQueueManager_CreateMessage(uint8_t packetType,
+                                      uint8_t sequence, 
+                                      const uint8_t* payload,
+                                      size_t length, 
+                                      BLEMessage* msg);
 
 /*
  * Enqueue a message to the tail of the queue.
@@ -139,7 +162,3 @@ uint8_t BLEQueueManager_GetCount(const BLEMessageQueue* queue);
  * Sets head=0, tail=0, count=0 (does not reset overflowCount).
  */
 void BLEQueueManager_Clear(BLEMessageQueue* queue);
-
-#ifdef __cplusplus
-}
-#endif

@@ -50,17 +50,11 @@ bool b_ble_connected = false; // Indicates when the Wand has successfully connec
 // Pack RX: messages from Wand to Pack (written to PackRX characteristic)
 // Note: Queues are zero-initialized by default in C; no explicit init needed before use
 BLEMessageQueue g_ble_tx_queue = {};
-BLEMessageQueue g_ble_rx_queue = {};
 
 // BLE command queue (store incoming BLE commands for processing)
 uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
 size_t g_ble_rx_length = 0;         // Number of bytes in buffer
 bool b_ble_rx_ready = false;        // Flag: data ready to process
-
-// Serial RX buffer (incoming BLE-sourced serial frames for fallback processing)
-uint8_t g_serial_rx_buffer[32] = {0};
-size_t g_serial_rx_length = 0;
-bool b_serial_rx_ready = false;
 
 // Global callback objects (must persist for lifetime of BLE server)
 NimBLEServerCallbacks *g_pPackServerCallbacks = nullptr;
@@ -170,37 +164,37 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       uint8_t packetType = (uint8_t)rxValue[0];
       
       // Check for identity packet (validates this is a Wand)
-      if(packetType == PACKET_IDENTITY) {
-        debugln(F("[WAND→PACK] IDENTITY PACKET RECEIVED"));
-        debug(F("[WAND→PACK] Packet length: "));
-        debugln(rxValue.length());
+      // if(packetType == PACKET_IDENTITY) {
+      //   debugln(F("[WAND→PACK] IDENTITY PACKET RECEIVED"));
+      //   debug(F("[WAND→PACK] Packet length: "));
+      //   debugln(rxValue.length());
         
-        if(rxValue.length() >= 4) {
-          uint8_t deviceType = (uint8_t)rxValue[1];
-          uint8_t deviceIDHi = (uint8_t)rxValue[2];
-          uint8_t deviceIDLo = (uint8_t)rxValue[3];
-          uint16_t deviceID = ((uint16_t)deviceIDHi << 8) | deviceIDLo;
+      //   if(rxValue.length() >= 4) {
+      //     uint8_t deviceType = (uint8_t)rxValue[1];
+      //     uint8_t deviceIDHi = (uint8_t)rxValue[2];
+      //     uint8_t deviceIDLo = (uint8_t)rxValue[3];
+      //     uint16_t deviceID = ((uint16_t)deviceIDHi << 8) | deviceIDLo;
           
-          debug(F("[WAND→PACK] Identity: deviceType="));
-          debug(deviceType);
-          debug(F(" deviceID="));
-          debug(deviceID, HEX);
-          debugln(F(""));
+      //     debug(F("[WAND→PACK] Identity: deviceType="));
+      //     debug(deviceType);
+      //     debug(F(" deviceID="));
+      //     debug(deviceID, HEX);
+      //     debugln(F(""));
           
-          // Validate this is a Wand (IR_DEVICE_NEUTRONA_WAND = 0x0)
-          if(deviceType == 0x00) {
-            b_ble_connected = true;
-            debugln(F("[WAND→PACK] WAND IDENTITY VERIFIED - Connection Active"));
-          } else {
-            debugln(F("[WAND→PACK] ERROR: Invalid device type - rejecting connection"));
-          }
-        } else {
-          debug(F("[WAND→PACK] ERROR: Identity packet too short (expected 4 bytes, got "));
-          debug(rxValue.length());
-          debugln(F(")"));
-        }
-        return;
-      }
+      //     // Validate this is a Wand (IR_DEVICE_NEUTRONA_WAND = 0x0)
+      //     if(deviceType == 0x00) {
+      //       b_ble_connected = true;
+      //       debugln(F("[WAND→PACK] WAND IDENTITY VERIFIED - Connection Active"));
+      //     } else {
+      //       debugln(F("[WAND→PACK] ERROR: Invalid device type - rejecting connection"));
+      //     }
+      //   } else {
+      //     debug(F("[WAND→PACK] ERROR: Identity packet too short (expected 4 bytes, got "));
+      //     debug(rxValue.length());
+      //     debugln(F(")"));
+      //   }
+      //   return;
+      // }
       
       // Only process other commands if we've verified this is a Wand
       if(!b_ble_connected) {
@@ -502,6 +496,7 @@ bool startBluetooth() {
 
     // Create command characteristic (Wand writes commands to Pack)
     // Use PACKRX UUID (ffe2) since this receives data FROM wand
+    // WRITE_NR only: Wand calls writeValue(..., false) for write-without-response
     g_pCommandCharacteristic = g_pGPStarService->createCharacteristic(
       BLE_SERIALDATA_PACKRX_CHAR_UUID,
       NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR
@@ -521,7 +516,7 @@ bool startBluetooth() {
     g_pCommandCharacteristic->setCallbacks(g_pPackCharacteristicCallbacks);
     
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Command characteristic created Wand to Pack"));
+      debugln(F("[BLE] Created Wand to Pack (PACKRX) Characteristic (WRITE_NR)"));
     #endif
 
     // Create status characteristic (Pack sends status updates via indications)
@@ -542,9 +537,7 @@ bool startBluetooth() {
     }
 
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Status characteristic created Pack to Wand"));
-      debugln(F("[BLE] Status char properties INDICATE READ"));
-      debugln(F("[BLE] CCCD auto-created by NimBLE readable writable"));
+      debugln(F("[BLE] Created Pack to Wand (PACKTX) Characteristic (INDICATE/READ)"));
     #endif
 
     // Set up advertising
@@ -590,7 +583,7 @@ bool startBluetooth() {
  * Per BLE_TRANSPORT.md: Each packet becomes one BLEMessage with frame markers preserved.
  * Sequence counter is managed by library; status tracking per message.
  */
-void bleQueueSerialData(const uint8_t* pData, size_t length) {
+void bleQueueSerialData(const uint8_t* pData, size_t length, uint8_t packetType) {
   if(!b_ble_enabled || !pData || length == 0) {
     return;  // BLE disabled or invalid input, silently drop
   }
@@ -598,8 +591,8 @@ void bleQueueSerialData(const uint8_t* pData, size_t length) {
   // Create a BLEMessage from the packet data
   // The packet already has frame markers (0x02 start, 0x04 end)
   BLEMessage msg;
-  uint8_t result = BLEPacketParser_CreateMessage(
-    BLEPacketParser_GetPacketType(pData, length),
+  uint8_t result = BLEQueueManager_CreateMessage(
+    packetType,
     0,  // Sequence will be managed by library if needed
     pData,
     length,
@@ -682,60 +675,4 @@ void bleFlushQueues() {
       debugln();
     #endif
   }
-}
-
-// Apply queued serial data from BLE (fallback when UART unavailable)
-// Processes queued frame identical to UART path
-void bleApplySerialData() {
-  if(!b_serial_rx_ready || g_serial_rx_length == 0) {
-    return;  // No queued data
-  }
-  
-  // Parse the frame
-  BLEPacket packet = bleHandleData(g_serial_rx_buffer, g_serial_rx_length);
-  
-  if(packet.packetType > 0) {
-    // Deserialize into same global structs as UART
-    switch(packet.packetType) {
-      case PACKET_COMMAND:
-        if(packet.cmd > 0) {
-          recvCmdW.s = packet.start;
-          recvCmdW.c = packet.cmd;
-          recvCmdW.d1 = packet.d1;
-          recvCmdW.e = packet.end;
-        }
-        break;
-        
-      case PACKET_DATA:
-        if(packet.cmd > 0) {
-          recvDataW.s = packet.start;
-          recvDataW.c = packet.cmd;
-          recvDataW.d[0] = packet.d[0];
-          recvDataW.d[1] = packet.d[1];
-          recvDataW.d[2] = packet.d[2];
-          recvDataW.e = packet.end;
-        }
-        break;
-        
-      case PACKET_WAND:
-        memcpy(&wandConfig, g_serial_rx_buffer, g_serial_rx_length);
-        break;
-        
-      case PACKET_SMOKE:
-        memcpy(&smokeConfig, g_serial_rx_buffer, g_serial_rx_length);
-        break;
-    }
-    
-    // Ensure Wand connection state is synchronized
-    if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
-      WAND_CONN_STATE = WAND_CONNECTED;
-    }
-    
-    // Route to central packet handler (same as UART)
-    handleWandPacket(packet.packetType);
-  }
-  
-  // Clear for next frame
-  b_serial_rx_ready = false;
-  g_serial_rx_length = 0;
 }

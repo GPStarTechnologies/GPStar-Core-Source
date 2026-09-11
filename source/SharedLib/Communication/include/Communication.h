@@ -97,7 +97,6 @@ enum PACKET_TYPE : uint8_t {
   PACKET_WAND  = 4,   // Neutrona Wand preferences/settings
   PACKET_SMOKE = 5,   // Smoke/Overheat preferences/settings
   PACKET_SYNC  = 6,   // Synchronization data
-  PACKET_IDENTITY = 7 // BLE device identity handshake (Wand/Pack validation)
 };
 
 // For command signals (2 byte ID, 2 byte optional data).
