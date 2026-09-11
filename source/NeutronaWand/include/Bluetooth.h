@@ -54,6 +54,9 @@ bool b_pack_found = false;    // Set by scan callback, cleared by main thread af
 // Note: Queues are zero-initialized by default in C; no explicit init needed before use
 BLEMessageQueue g_ble_tx_queue = {};
 
+// Sequence counter for BLE messages (incremented for each outgoing message)
+static uint8_t g_ble_tx_sequence = 0;
+
 // BLE notification queue (store incoming Pack notifications for main loop processing)
 uint8_t g_ble_rx_buffer[32] = {0};  // Buffer for received BLE bytes
 size_t g_ble_rx_length = 0;         // Number of bytes in buffer
@@ -609,7 +612,7 @@ void bleQueueSerialData(const uint8_t* pData, size_t length, uint8_t packetType)
   BLEMessage msg;
   uint8_t result = BLEQueueManager_CreateMessage(
     packetType,
-    0,  // Sequence will be managed by library if needed
+    g_ble_tx_sequence++,  // Increment sequence for each message (wraps at 256)
     pData,
     length,
     &msg
@@ -658,19 +661,42 @@ void bleFlushQueues() {
   }
   
   // Lazy-load remote characteristics on first use
-  if(!g_pRemoteCommandChar) {
-    debugln(F("[WAND→PACK] First flush - discovering PACKRX characteristic..."));
+  if(!g_pRemoteCommandChar || !g_pRemoteStatusChar) {
+    debugln(F("[WAND→PACK] First flush - discovering characteristics..."));
     NimBLERemoteService *pService = g_pBLEClient->getService(BLE_SERIALDATA_SERVICE_UUID);
     if(pService) {
       // Write commands to PACKRX (ffe2)
-      g_pRemoteCommandChar = pService->getCharacteristic(BLE_SERIALDATA_PACKRX_CHAR_UUID);
       if(!g_pRemoteCommandChar) {
-        debugln(F("[WAND→PACK] ERROR: Could not find PACKRX characteristic"));
-        return;
+        g_pRemoteCommandChar = pService->getCharacteristic(BLE_SERIALDATA_PACKRX_CHAR_UUID);
+        if(!g_pRemoteCommandChar) {
+          debugln(F("[WAND→PACK] ERROR: Could not find PACKRX characteristic"));
+          return;
+        }
+        #if defined(DEBUG_BLUETOOTH)
+          debugln(F("[WAND→PACK] PACKRX characteristic discovered successfully"));
+        #endif
       }
-      #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[WAND→PACK] PACKRX characteristic discovered successfully"));
-      #endif
+      
+      // Subscribe to indications from PACKTX (ffe1)
+      if(!g_pRemoteStatusChar) {
+        g_pRemoteStatusChar = pService->getCharacteristic(BLE_SERIALDATA_PACKTX_CHAR_UUID);
+        if(!g_pRemoteStatusChar) {
+          debugln(F("[PACK→WAND] ERROR: Could not find PACKTX characteristic"));
+          // Non-fatal; can still send to Pack even if we can't receive
+        } else {
+          // Subscribe to indications/notifications on PACKTX
+          // bleProcessData() will poll the characteristic value for changes
+          if(!g_pRemoteStatusChar->subscribe(true, nullptr, false)) {
+            #if defined(DEBUG_BLUETOOTH)
+              debugln(F("[PACK→WAND] WARNING: Failed to subscribe to PACKTX indications"));
+            #endif
+          } else {
+            #if defined(DEBUG_BLUETOOTH)
+              debugln(F("[PACK→WAND] PACKTX characteristic discovered and subscribed"));
+            #endif
+          }
+        }
+      }
     } else {
       debugln(F("[WAND→PACK] ERROR: Could not find Pack GPStar service"));
       return;

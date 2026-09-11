@@ -232,11 +232,11 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
             // Parse frames in the payload to show details
             uint8_t* payload = (uint8_t*)rxValue.c_str() + 1;
             
-            debug(F("[WAND→PACK-RX] Seq#"));
+            debug(F("[PACK-RX] Seq#"));
             debug(sequence);
             debug(F(" Payload="));
             debug(payload_length);
-            debug(F("B | Frames: "));
+            debug(F("bytes | "));
             
             // Try to parse frame type from first byte of payload
             if(payload_length >= 4) {
@@ -247,13 +247,13 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
                 if(payload_length == 6) {
                   uint16_t cmd = (uint16_t)payload[1] | ((uint16_t)payload[2] << 8);
                   uint16_t d1 = (uint16_t)payload[3] | ((uint16_t)payload[4] << 8);
-                  debug(F("COMMAND cmd="));
+                  debug(F("COMMAND c="));
                   debug(cmd);
                   debug(F(" d1="));
                   debug(d1);
                 } else if(payload_length == 7) {
                   uint16_t cmd = (uint16_t)payload[1] | ((uint16_t)payload[2] << 8);
-                  debug(F("DATA cmd="));
+                  debug(F("DATA c="));
                   debug(cmd);
                   debug(F(" d[0,1,2]="));
                   debug(payload[3]);
@@ -516,7 +516,7 @@ bool startBluetooth() {
     g_pCommandCharacteristic->setCallbacks(g_pPackCharacteristicCallbacks);
     
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Created Wand to Pack (PACKRX) Characteristic (WRITE_NR)"));
+      debugln(F("[BLE] Created Wand to Pack (PACKRX) Characteristic (WRITE/WRITE_NR)"));
     #endif
 
     // Create status characteristic (Pack sends status updates via indications)
@@ -593,7 +593,7 @@ void bleQueueSerialData(const uint8_t* pData, size_t length, uint8_t packetType)
   BLEMessage msg;
   uint8_t result = BLEQueueManager_CreateMessage(
     packetType,
-    0,  // Sequence will be managed by library if needed
+    g_ble_tx_sequence++,  // Increment sequence for each message (wraps at 256)
     pData,
     length,
     &msg
