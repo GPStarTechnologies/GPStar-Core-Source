@@ -351,7 +351,7 @@ void setup() {
   gpstarWand.enableVGStreams();
 
   // Select a random GB1/GB2 white LED blink rate for this session.
-  i_classic_blink_index = random(0,5);
+  i_classic_blink_index = random(0,7);
 
   // Load any saved settings stored in the EEPROM memory of the GPStar Neutrona Wand.
   if(b_eeprom) {

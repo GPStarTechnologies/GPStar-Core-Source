@@ -177,16 +177,18 @@ enum WAND_BARREL_LEDS WAND_BARREL_LED = GPSTAR_BARREL;
  * By default this is set to the blink cycle used on the Afterlife props.
  * On first system start a random value will be selected for GB1/GB2 mode.
  * Common values are as follows:
- * GB1 Spengler, GB1 Venkman (Sedgewick): 666
- * GB2 Spengler Semi-Hero: 500
  * GB1/GB2 Stantz Hero: 333
- * GB1 Venkman (Rooftop): 417
- * GB2 Venkman (Vigo), GB2 Zeddemore: 375
+ * GB1 Venkman Hero (Sedgewick): 625
+ * GB1 Venkman (Rooftop): 435
+ * GB1 Spengler Hero: 666
+ * GB2 Spengler Semi-Hero: 500
+ * GB2 Venkman Semi-Hero: 313
+ * GB2 Zeddemore Semi-Hero: 375
  * Afterlife/Frozen Empire (all props): 146
  */
 millisDelay ms_white_light;
 const uint16_t i_afterlife_blink_interval = 146;
-const uint16_t i_classic_blink_intervals[5] = {333, 375, 417, 500, 666};
+const uint16_t i_classic_blink_intervals[7] = {313, 333, 375, 435, 500, 625, 666};
 uint8_t i_classic_blink_index = 0;
 uint16_t i_white_light_interval = i_afterlife_blink_interval;
 
