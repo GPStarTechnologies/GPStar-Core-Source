@@ -179,7 +179,7 @@ enum WAND_BARREL_LEDS WAND_BARREL_LED = GPSTAR_BARREL;
  * Common values are as follows:
  * GB1/GB2 Stantz Hero: 333
  * GB1 Venkman Hero (Sedgewick): 625
- * GB1 Venkman (Rooftop): 435
+ * GB1 Venkman Hero (Rooftop): 435
  * GB1 Spengler Hero: 666
  * GB2 Spengler Semi-Hero: 500
  * GB2 Venkman Semi-Hero: 313
