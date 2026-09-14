@@ -48,10 +48,10 @@
 
 /**
  * Attenuator LED Enumeration
- * 
+ *
  * Defines logical names for each LED on the Attenuator device.
  * These names map to animation state in the Lighting library.
- * 
+ *
  * Physical layout (from top to bottom):
  * - TOP_LED: Status indicator (connection, menu level)
  * - UPPER_LED: Radiation lens (firing/charging state)

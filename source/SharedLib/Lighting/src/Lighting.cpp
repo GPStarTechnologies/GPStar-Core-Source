@@ -26,7 +26,7 @@
 #include <Lighting.h>
 
 // Constructor: Initialize Lighting instance for deviceCount devices with specified refresh rate (default: 5ms).
-Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs) 
+Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs)
   : numDevices(deviceCount > 0 ? deviceCount : 1),
     deviceRefreshMs(refreshRateMs >= 5 ? refreshRateMs : 5) {
   // Allocate state arrays for each device slot.
@@ -74,76 +74,76 @@ LED_HSV Lighting::getStaticColorDefinition(ColorID color) const {
   switch(color) {
     case C_WHITE:
       return {100, 0, 255};  // White = no saturation, full brightness
-    
+
     case C_BLACK:
       return {0, 0, 0};  // Black = all zeros
-    
+
     case C_WARM_WHITE:
       return {36, 183, 255};
-    
+
     case C_PINK:
       return {244, 255, 255};
-    
+
     case C_PASTEL_PINK:
       return {244, 128, 255};
-    
+
     case C_RED:
       return {0, 255, 255};
-    
+
     case C_LIGHT_RED:
       return {0, 192, 255};
-    
+
     case C_RED2:
       return {5, 255, 255};
-    
+
     case C_RED3:
       return {10, 255, 255};
-    
+
     case C_RED4:
       return {15, 255, 255};
-    
+
     case C_RED5:
       return {20, 255, 255};
-    
+
     case C_ORANGE:
       return {32, 255, 255};
-    
+
     case C_BEIGE:
       return {43, 128, 255};
-    
+
     case C_YELLOW:
       return {64, 255, 255};
-    
+
     case C_CHARTREUSE:
       return {80, 255, 255};
-    
+
     case C_GREEN:
       return {96, 255, 255};
-    
+
     case C_DARK_GREEN:
       return {96, 255, 128};
-    
+
     case C_MINT:
       return {112, 120, 255};
-    
+
     case C_AQUA:
       return {128, 255, 255};
-    
+
     case C_LIGHT_BLUE:
       return {145, 255, 255};
-    
+
     case C_MID_BLUE:
       return {160, 255, 255};
-    
+
     case C_NAVY_BLUE:
       return {170, 200, 112};
-    
+
     case C_BLUE:
       return {180, 255, 255};
-    
+
     case C_PURPLE:
       return {192, 255, 255};
-    
+
     default:
       // WARNING: Do NOT recursively call getDynamicColorHSV() here as it will cause an infinite loop!
       return {100, 0, 255};  // Default to white
@@ -202,12 +202,12 @@ LED_HSV Lighting::getColorHSV(ColorID color, uint8_t brightness, uint8_t saturat
   // Some colors override saturation or brightness with fixed values.
 
   LED_HSV result = getStaticColorDefinition(color);
-  
+
   // Apply requested brightness and saturation (unless they're fixed by the color definition)
   if(color != C_BLACK) {  // Black always stays black (don't override brightness)
     result.v = brightness;
   }
-  
+
   // Only override saturation for colors that don't have fixed saturation
   switch(color) {
     case C_WHITE:
@@ -219,13 +219,13 @@ LED_HSV Lighting::getColorHSV(ColorID color, uint8_t brightness, uint8_t saturat
     case C_NAVY_BLUE:
       // These have fixed saturation - don't override
       break;
-    
+
     default:
       // All other colors use requested saturation
       result.s = saturation;
       break;
   }
-  
+
   return result;
 }
 
@@ -372,12 +372,12 @@ LED_HSV Lighting::animateDecayHue(uint8_t deviceSlot, const AnimationConfig& cfg
 
   if(dynamicCounter[deviceSlot] % cycle == 0) {
     dynamicHue[deviceSlot] -= 1;  // Decay hue downward
-    
+
     // Wrap around if we go below minimum
     if(dynamicHue[deviceSlot] < cfg.value2) {
       dynamicHue[deviceSlot] = cfg.value1;
     }
-    
+
     dynamicCounter[deviceSlot] = 1;
   } else {
     dynamicCounter[deviceSlot]++;
@@ -480,7 +480,7 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
 
   // Get animation configuration for this dynamic color
   const AnimationConfig& cfg = getAnimationConfig(color);
-  
+
   // Convert millisecond-based timing to frame cycles based on device refresh rate
   // Minimum 1 frame to ensure animation progresses
   uint8_t cycle = (cfg.cycleMs / deviceRefreshMs);
@@ -490,19 +490,19 @@ LED_HSV Lighting::getDynamicColorHSV(uint8_t deviceSlot, ColorID color, uint8_t 
   switch(cfg.mode) {
     case ANIM_ALTERNATE:
       return animateAlternate(deviceSlot, cfg, cycle, brightness);
-    
+
     case ANIM_FADE:
       return animateFade(deviceSlot, cfg, cycle, brightness);
-    
+
     case ANIM_PULSE:
       return animatePulse(deviceSlot, cfg, cycle, brightness);
-    
+
     case ANIM_CYCLE_HUE:
       return animateCycleHue(deviceSlot, cfg, cycle, brightness);
-    
+
     case ANIM_DECAY_HUE:
       return animateDecayHue(deviceSlot, cfg, cycle, brightness);
-    
+
     default:
       // Unknown animation mode, return safe default (white)
       return getColorHSV(C_WHITE, brightness, saturation);
@@ -545,15 +545,15 @@ ColorOrder Lighting::getColorOrder(uint8_t deviceSlot) const {
 
 // Get an interpolated palette color with smooth animation and speed control.
 LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot,
-                                  const LED_Palette16& palette, 
+                                  const LED_Palette16& palette,
                                   float speedMultiplier,
-                                  uint8_t phaseOffset, 
+                                  uint8_t phaseOffset,
                                   uint8_t brightness,
                                   bool reverse) {
   if(deviceSlot >= numDevices) {
     return LED_RGB_BLACK;
   }
-  
+
   // Clamp speed multiplier to reasonable range (0.1x to 10x)
   if(speedMultiplier < 0.1f) speedMultiplier = 0.1f;
   if(speedMultiplier > 10.0f) speedMultiplier = 10.0f;
@@ -565,7 +565,7 @@ LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot,
   // We use fixed-point (16-bit) to preserve fractional movement across all refresh rates
   const uint16_t BASE_INCREMENT = 5;  // Reference baseline (5ms = 200fps, minimum device refresh rate)
   uint16_t increment = (uint16_t)((BASE_INCREMENT * 256 * speedMultiplier) / deviceRefreshMs);
-  
+
   // Advance palette index with full fractional precision (16-bit accumulation)
   // This preserves sub-pixel movement even on slower refresh rates
   paletteAnimationCycle[deviceSlot]++;
@@ -574,31 +574,31 @@ LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot,
   } else {
     paletteIndex[deviceSlot] += increment;  // Normal: increment position (full 16-bit value)
   }
-  
+
   // Get current palette position (0-255 maps to 16 colors) with position offset applied
   // Upper 8 bits of paletteIndex map to visible palette position (0-255)
   uint8_t currentPos = (paletteIndex[deviceSlot] >> 8) + phaseOffset;
-  
+
   // Calculate which two palette colors to interpolate between
   uint8_t palettePos = (currentPos >> 4);  // Map 0-255 to 0-15 (16 palette colors)
   uint8_t nextPos = (palettePos + 1) & 0x0F;  // Wrap around at 16
   uint8_t fraction = currentPos & 0x0F;  // Interpolation fraction (0-15)
-  
+
   // Get the two adjacent palette colors as HSV
   LED_HSV hsv1 = getColorHSV(palette.colors[palettePos], brightness);
   LED_HSV hsv2 = getColorHSV(palette.colors[nextPos], brightness);
-  
+
   // Interpolate between the two HSV colors
   // For smooth animation, interpolate all three components
   uint8_t interpH = hsv1.h + ((int16_t)(hsv2.h - hsv1.h) * fraction / 16);
   uint8_t interpS = hsv1.s + ((int16_t)(hsv2.s - hsv1.s) * fraction / 16);
   uint8_t interpV = hsv1.v + ((int16_t)(hsv2.v - hsv1.v) * fraction / 16);
-  
+
   LED_HSV interpolated = {interpH, interpS, interpV};
-  
+
   // Convert to RGB
   LED_RGB rgb = hsv2rgb(interpolated);
-  
+
   // Apply stored color order for this device
   return applyColorOrder(rgb, deviceColorOrder[deviceSlot]);
 }
@@ -629,7 +629,7 @@ uint8_t Lighting::scale8_video(uint8_t value, uint8_t scale) {
   // Apply scale with bit-shift, then add 1 if both value and scale are non-zero
   // This ensures LEDs don't fade completely to black during dimming transitions
   uint8_t scaled = (uint16_t)value * (uint16_t)scale >> 8;
-  
+
   // Add 1 if both value and scale are non-zero
   // (This condition matches FastLED's video-safe behavior)
   if(value && scale) {

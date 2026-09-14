@@ -4,7 +4,7 @@
 
 The Lighting library provides both static (fixed) and dynamic (animated) color management for GPStar controllers. This document describes the differences between color types, explains animation modes and their configurations, and details how animations are timed at the device level.
 
-**Key Concepts**: 
+**Key Concepts**:
 - **Dynamic Colors**: Frame-based animations with their own timing configuration (`cycleMs`). The Lighting library maintains separate animation state for each segment, allowing independent animation of different LED segments.
 - **Palette Colors**: Interpolate smoothly between colors using the project's `DEVICE_REFRESH_MS` refresh rate plus a `speedMultiplier` for speed control. No separate timing configuration—all palette animations use the same device refresh rate.
 

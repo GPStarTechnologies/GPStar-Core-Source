@@ -27,12 +27,12 @@
  */
 void BLEQueueManager_Init(BLEMessageQueue* queue) {
   if(!queue) return;
-  
+
   queue->head = 0;
   queue->tail = 0;
   queue->count = 0;
   queue->overflowCount = 0;
-  
+
   // Zero-initialize all message slots
   memset(queue->messages, 0, sizeof(queue->messages));
 }
@@ -41,28 +41,28 @@ void BLEQueueManager_Init(BLEMessageQueue* queue) {
  * Create a BLE message from a raw payload.
  */
 uint8_t BLEQueueManager_CreateMessage(uint8_t packetType,
-                                      uint8_t sequence, 
+                                      uint8_t sequence,
                                       const uint8_t* payload,
-                                      size_t length, 
+                                      size_t length,
                                       BLEMessage* msg) {
   if(!payload || !msg) {
     return BLE_PACKET_INVALID;
   }
-  
+
   // Check payload size fits in message buffer
   if(length > BLE_MESSAGE_PAYLOAD_SIZE) {
     return BLE_PACKET_INVALID;
   }
-  
+
   // Populate message structure
   msg->packetType = packetType;
   msg->sequence = sequence;
   msg->length = length;
   msg->status = BLE_MSG_STATUS_QUEUED;
-  
+
   // Copy payload bytes
   memcpy(msg->payload, payload, length);
-  
+
   return BLE_QUEUE_OK;
 }
 /*
@@ -70,22 +70,22 @@ uint8_t BLEQueueManager_CreateMessage(uint8_t packetType,
  */
 uint8_t BLEQueueManager_Enqueue(BLEMessageQueue* queue, const BLEMessage* msg) {
   if(!queue || !msg) return BLE_QUEUE_FULL;
-  
+
   // Check if queue is full
   if(queue->count >= BLE_QUEUE_SIZE) {
     queue->overflowCount++;
     return BLE_QUEUE_FULL;
   }
-  
+
   // Copy message to tail slot
   memcpy(&queue->messages[queue->tail], msg, sizeof(BLEMessage));
-  
+
   // Advance tail index with wraparound
   queue->tail = (queue->tail + 1) % BLE_QUEUE_SIZE;
-  
+
   // Increment message count
   queue->count++;
-  
+
   return BLE_QUEUE_OK;
 }
 
@@ -94,21 +94,21 @@ uint8_t BLEQueueManager_Enqueue(BLEMessageQueue* queue, const BLEMessage* msg) {
  */
 uint8_t BLEQueueManager_Dequeue(BLEMessageQueue* queue, BLEMessage* msg) {
   if(!queue || !msg) return BLE_QUEUE_EMPTY;
-  
+
   // Check if queue is empty
   if(queue->count == 0) {
     return BLE_QUEUE_EMPTY;
   }
-  
+
   // Copy message from head slot
   memcpy(msg, &queue->messages[queue->head], sizeof(BLEMessage));
-  
+
   // Advance head index with wraparound
   queue->head = (queue->head + 1) % BLE_QUEUE_SIZE;
-  
+
   // Decrement message count
   queue->count--;
-  
+
   return BLE_QUEUE_OK;
 }
 
@@ -117,15 +117,15 @@ uint8_t BLEQueueManager_Dequeue(BLEMessageQueue* queue, BLEMessage* msg) {
  */
 uint8_t BLEQueueManager_Peek(const BLEMessageQueue* queue, BLEMessage* msg) {
   if(!queue || !msg) return BLE_QUEUE_EMPTY;
-  
+
   // Check if queue is empty
   if(queue->count == 0) {
     return BLE_QUEUE_EMPTY;
   }
-  
+
   // Copy message from head slot (do not advance head or change count)
   memcpy(msg, &queue->messages[queue->head], sizeof(BLEMessage));
-  
+
   return BLE_QUEUE_OK;
 }
 
@@ -158,7 +158,7 @@ uint8_t BLEQueueManager_GetCount(const BLEMessageQueue* queue) {
  */
 void BLEQueueManager_Clear(BLEMessageQueue* queue) {
   if(!queue) return;
-  
+
   queue->head = 0;
   queue->tail = 0;
   queue->count = 0;

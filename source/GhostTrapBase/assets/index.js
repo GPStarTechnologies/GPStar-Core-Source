@@ -55,7 +55,7 @@ function onLoad(event) {
   getStatus(); // Get status immediately.
   wsClient.connect(); // Open the WebSocket.
   esManager.connect(); // Start EventSource connection.
-  
+
   // Cleanup on page unload
   window.addEventListener("beforeunload", () => {
     wsClient.disconnect();

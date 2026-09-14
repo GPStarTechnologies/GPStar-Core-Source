@@ -30,7 +30,7 @@
 
 /*
  * BLE SerialData Service and Characteristic UUIDs
- * 
+ *
  * These UUIDs are HARDCODED per BLE_TRANSPORT.md specification.
  * Pack advertises the SerialData service with these characteristics:
  * - PackTX: Pack → Wand (uses indications, reliable)
@@ -42,7 +42,7 @@
 
 /*
  * BLE Message Queue Configuration
- * 
+ *
  * Per BLE_TRANSPORT.md:
  * "Use fixed-size circular/ring buffers. Initial size: TX queue: 16 messages, RX queue: 16 messages"
  */
@@ -51,9 +51,9 @@
 
 /*
  * BLE Message Status Codes
- * 
+ *
  * Represents the lifecycle state of a queued message.
- * Per BLE_TRANSPORT.md rule #8: "A reliably transmitted message is removed from the TX queue 
+ * Per BLE_TRANSPORT.md rule #8: "A reliably transmitted message is removed from the TX queue
  * only after the appropriate BLE completion/confirmation event."
  */
 #define BLE_MSG_STATUS_QUEUED              0
@@ -62,7 +62,7 @@
 
 /*
  * BLE Operation Result Codes
- * 
+ *
  * Returned by queue and parser functions to indicate success or failure.
  */
 #define BLE_QUEUE_OK                       0

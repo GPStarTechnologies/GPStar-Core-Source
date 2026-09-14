@@ -32,24 +32,24 @@
 
 /*
  * BLE Message Queue Structure
- * 
+ *
  * A circular/ring buffer queue holding up to BLE_QUEUE_SIZE (16) complete messages.
- * 
+ *
  * Fields:
  *   messages       - Fixed array of BLE_QUEUE_SIZE message slots
  *   head           - Index of next message to transmit (0 to BLE_QUEUE_SIZE-1)
  *   tail           - Index of next empty slot to write (0 to BLE_QUEUE_SIZE-1)
  *   count          - Current number of queued messages (0 to BLE_QUEUE_SIZE)
  *   overflowCount  - Diagnostic counter: number of enqueue attempts that failed due to full queue
- * 
+ *
  * Queue Discipline (FIFO):
  *   - Messages are added at tail, removed from head
  *   - When count < BLE_QUEUE_SIZE, enqueue succeeds and increments count
  *   - When count >= BLE_QUEUE_SIZE, enqueue fails, overflowCount increments
  *   - Dequeue removes head message and advances head index
  *   - Head and tail wrap around at BLE_QUEUE_SIZE (modulo arithmetic)
- * 
- * Per BLE_TRANSPORT.md rule #10: "Queue overflow must be detectable and must never 
+ *
+ * Per BLE_TRANSPORT.md rule #10: "Queue overflow must be detectable and must never
  * silently discard an older queued message." The overflowCount field allows detection.
  */
 struct BLEMessageQueue {

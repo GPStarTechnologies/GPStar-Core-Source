@@ -73,7 +73,7 @@ void sendAnimationFrameData(); // From Webhandler.h
 /**
  * Animation State Machine
  * Records and plays back sequences of relay actuations at 100ms intervals.
- * 
+ *
  * STATE FLOW:
  *   IDLE_EMPTY (no data)
  *     → startRecording() → RECORDING (active recording)
@@ -227,7 +227,7 @@ inline void recordRelayAtCurrentFrame(uint8_t actuatorID) {
 
   // Check if this frame is currently empty (not yet triggered)
   uint8_t oldValue = currentAnimation.data.frames[currentFrame];
-  
+
   // Write actuator ID to buffer at this frame
   currentAnimation.data.frames[currentFrame] = actuatorID;
 
@@ -280,24 +280,24 @@ inline void discardRecording() {
  */
 /**
  * saveRecordingToNVS() - Serialize and persist the current recording to flash storage
- * 
+ *
  * HOW IT WORKS:
  * - Animation data is stored as a binary blob under a text KEY NAME in NVS
  * - Key names are fixed: "anim0", "anim1", "anim2", "anim3" (from ANIMATION_NAMES array)
  * - Each slot stores an AnimationData struct serialized as bytes (606 total: metadata + frame buffer)
  * - putBytes() writes the struct directly to NVS; subsequent reads via getBytes() deserialize it back
- * 
+ *
  * STRUCTURE SAVED (AnimationData - 606 bytes total):
  * - keyFrames (2 bytes): Count of frames that contain relay triggers
  * - totalFrames (2 bytes): Timeline duration in frames (1 frame = 100ms)
  * - checksum (2 bytes): CRC16 of frames buffer for corruption detection
  * - frames[600] (600 bytes): The actual animation data (0=idle, 1-4=relay ID to trigger)
- * 
+ *
  * PERSISTENCE MODEL:
  * - NVS namespace "animations" holds 4 slots, each up to ~606 bytes
  * - Slot name determines where it's stored (e.g., animIndex=0 → saved under key "anim0")
  * - Once written, data persists across power cycles until explicitly deleted or overwritten
- * 
+ *
  * @param animIndex: Slot number 0-3; determines which ANIMATION_NAMES key is used
  * @return: true if write succeeded (written bytes == struct size), false otherwise
  */
@@ -347,19 +347,19 @@ inline bool saveRecordingToNVS(uint8_t animIndex) {
  */
 /**
  * loadAnimationFromNVS() - Deserialize and load a saved animation from flash storage
- * 
+ *
  * HOW IT WORKS:
  * - Reverse of saveRecordingToNVS(): reads the binary blob from NVS and reconstructs the AnimationData struct
  * - Looks up the animation by slot number (0-3), which maps to ANIMATION_NAMES key ("anim0", "anim1", etc.)
  * - getBytes() pulls the 606-byte struct from NVS and deserializes it back into an AnimationData struct
  * - Validates the deserialized data before loading it into the runtime buffer
- * 
+ *
  * VALIDATION CHECKS:
  * - Size: Must equal sizeof(AnimationData) - indicates data is structurally intact
  * - keyFrames: Must be > 0 - slot must contain at least one frame with an action
  * - totalFrames: Must be > 0 and <= ANIM_MAX_FRAMES (600) - duration must be valid
  * - Checksum: CRC16 of frames buffer must match stored checksum (corruption detection)
- * 
+ *
  * @param animIndex: Slot number 0-3
  * @return: true if load and validation succeeded, false if slot is empty or data is corrupted
  */
@@ -459,12 +459,12 @@ inline void updatePlayback() {
     // Static remembers across calls, so we only trigger once per unique frame.
     // Initialize to 0xFFFF (65535), a sentinel value outside valid range (0-599), ensures first frame triggers.
     static uint16_t lastTriggeredFrame = 0xFFFF;
-    
+
     if (currentFrame != lastTriggeredFrame) {
       // Trigger the relay and play its audio effect via the system function
       ActuatorID actuatorID = static_cast<ActuatorID>(relayID - 1);  // Convert 1-4 to 0-3
       triggerActuator(actuatorID);
-      
+
       // Remember this frame to prevent triggering it again on the next 10 loop cycles
       lastTriggeredFrame = currentFrame;
     }
@@ -500,23 +500,23 @@ inline bool validateChecksum(uint8_t animIndex) {
 
 /**
  * Scan NVS and rebuild the animation availability cache
- * 
+ *
  * HOW IT WORKS:
  * - Queries NVS for each of the 4 animation slots ("anim0", "anim1", "anim2", "anim3")
  * - For each slot, attempts to deserialize AnimationData using getBytes()
  * - Updates the in-memory animationSlots[] array with hasAnimation flag and animationSeconds duration
  * - This cache is used by the UI to populate dropdowns and enable/disable the Play button
- * 
+ *
  * CACHE ARRAY (animationSlots[4]):
  * - animationSlots[i].id = slot number (0-3)
  * - animationSlots[i].hasAnimation = true if slot contains valid data
  * - animationSlots[i].animationSeconds = animation duration in seconds (0 if empty)
- * 
+ *
  * WHEN TO CALL:
  * - After saveRecordingToNVS() completes (so UI learns about new saved animation)
  * - On system startup (to populate UI with any previously saved animations)
  * - When user explicitly requests "refresh" action
- * 
+ *
  * OPERATION:
  * - Opens Preferences in read-only mode, iterates all 4 slots
  * - For each slot, getBytes() returns 0 if key doesn't exist (empty slot)
@@ -525,7 +525,7 @@ inline bool validateChecksum(uint8_t animIndex) {
  */
 void refreshAnimationSlotCache() {
   Preferences preferences;
-  
+
   if (!preferences.begin("animations", true)) {
     // Unable to open namespace - mark all slots as empty
     for (uint8_t i = 0; i < 4; i++) {
@@ -539,14 +539,14 @@ void refreshAnimationSlotCache() {
   // Check each animation slot
   for (uint8_t i = 0; i < 4; i++) {
     animationSlots[i].id = i;
-    
+
     // getBytes() deserializes the AnimationData struct from NVS for this slot
     // Parameters: key name (ANIMATION_NAMES[i]), pointer to data buffer, max size
     // Returns: number of bytes read (should equal sizeof(AnimationData) if slot has animation)
     // Returns 0 if key doesn't exist (slot is empty)
     AnimationData data;
     size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
-    
+
     // Validation: only mark slot as "hasAnimation" if read succeeded and data is valid
     if (size == sizeof(data) && data.totalFrames > 0 && data.totalFrames <= ANIM_MAX_FRAMES) {
       animationSlots[i].hasAnimation = true;
@@ -557,6 +557,6 @@ void refreshAnimationSlotCache() {
       animationSlots[i].animationSeconds = 0.0f;
     }
   }
-  
+
   preferences.end();
 }

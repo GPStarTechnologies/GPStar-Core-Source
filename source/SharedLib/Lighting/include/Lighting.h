@@ -197,11 +197,11 @@ class Lighting {
 
     /**
      * Get an interpolated palette color with smooth animation and speed control.
-     * 
+     *
      * Provides frame-based palette animation with automatic interpolation between
      * adjacent palette colors. The palette index advances each frame with fractional
      * precision, based on device refresh rate and a speed multiplier.
-     * 
+     *
      * Parameters:
      *   deviceSlot: [0..numDevices-1] - Which device to animate
      *   palette: LED_Palette16 - 16-color palette to cycle through
@@ -213,16 +213,16 @@ class Lighting {
      *     - Used to distribute palette across multiple LEDs (e.g., LED index scaled to 0-255)
      *   brightness: [0-255] - Overall brightness level (default: 255)
      *   reverse: [true/false] - Cycle palette backwards (default: false)
-     * 
+     *
      * Returns: LED_RGB color with device's stored ColorOrder already applied
-     * 
+     *
      * How it works:
      * 1. Reads current paletteIndex[deviceSlot] and adds phaseOffset
      * 2. Calculates two adjacent palette color indices and interpolation fraction
      * 3. Converts both colors to HSV, interpolates between them smoothly
      * 4. Advances paletteIndex based on refresh rate and speedMultiplier (or decrements if reverse)
      * 5. Applies stored ColorOrder for device and returns final RGB
-     * 
+     *
      * Example:
      *   LED_Palette16 myPalette = {{C_RED, C_GREEN, C_BLUE, ...}};
      *   LED_RGB color = lighting.getPaletteColor(0, myPalette, 1.5);  // 1.5x speed
@@ -232,7 +232,7 @@ class Lighting {
     LED_RGB getPaletteColor(uint8_t deviceSlot,
                             const LED_Palette16& palette,
                             float speedMultiplier = 1.0,
-                            uint8_t phaseOffset = 0, 
+                            uint8_t phaseOffset = 0,
                             uint8_t brightness = 255,
                             bool reverse = false);
 

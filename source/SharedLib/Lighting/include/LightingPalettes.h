@@ -23,11 +23,11 @@
 
 /**
  * PALETTE CREATION FUNCTIONS
- * 
+ *
  * These functions build LED_RGB_Palette16 palettes using consistent
  * color definitions from the Lighting library. Each palette maps to
  * a thematic set of colors for different stream modes.
- * 
+ *
  * All colors are derived from ColorID enum values, ensuring consistency
  * across the application. ColorIDs will be mapped to HSV triplets.
  */

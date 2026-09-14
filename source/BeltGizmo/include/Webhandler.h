@@ -376,9 +376,9 @@ void webLoops() {
       // Update the current count of AP clients.
       static uint8_t prev_ap_count = 0;
       static uint8_t prev_ws_count = 0;
-      
+
       i_ap_client_count = WiFi.softAPgetStationNum();
-      
+
       // Detect if AP or WebSocket client counts changed, and push update if they did.
       if(i_ap_client_count != prev_ap_count || i_ws_client_count != prev_ws_count) {
         prev_ap_count = i_ap_client_count;

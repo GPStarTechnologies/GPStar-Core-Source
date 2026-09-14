@@ -387,8 +387,8 @@ void setup() {
 // Task callback for handling animations.
 void animateTaskCallback() {
   if(b_pack_post_finish) {
-    if(!b_demo_light_mode || !b_first_boot || 
-       (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) || 
+    if(!b_demo_light_mode || !b_first_boot ||
+       (b_demo_light_mode && WAND_CONN_STATE == WAND_CONNECTED) ||
        (b_demo_light_mode && WAND_CONN_STATE != WAND_CONNECTED && WAND_CONN_STATE != WAND_SYNCING && ms_wand_check.remaining() < 1)) {
       // Update all LED's when the task runs.
     #ifdef ESP32

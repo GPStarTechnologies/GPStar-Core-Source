@@ -398,7 +398,7 @@ class Telemetry3DView {
   constructor(domId, geometryUrl) {
     this.el = document.getElementById(domId);
     console.debug("[Telemetry3DView] DOM element found:", this.el);
-    
+
     this.width = parentWidth(this.el);
     this.height = parentHeight(this.el);
     this.aspect = this.width / this.height;
@@ -532,7 +532,7 @@ class Calibration3DView {
   constructor(domId) {
     this.el = document.getElementById(domId);
     console.debug("[Calibration3DView] DOM element found:", this.el);
-    
+
     this.width = parentWidth(this.el);
     this.height = parentHeight(this.el);
     this.aspect = this.width / this.height;
@@ -740,7 +740,7 @@ function init3D() {
     console.warn("[init3D] Waiting for Three.js library to load...");
     return;
   }
-  
+
   // Verify DOM elements exist
   const telemetryEl = document.getElementById("vizTelemetry");
   const calibrationEl = document.getElementById("vizCalibration");
@@ -748,7 +748,7 @@ function init3D() {
   if (!telemetryEl || !calibrationEl) {
     console.warn("[init3D] Waiting for DOM elements...");
     return;
-  } 
+  }
 
   // All prerequisites met, set the flag to indicate object creation in progress.
   init3DInProgress = true;

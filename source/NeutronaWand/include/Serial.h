@@ -291,7 +291,7 @@ void packSerialSend(uint16_t i_command, uint16_t i_value) {
         ms_handshake.restart();
       }
       else {
-        debugln("Wand is not connected to Pack");  
+        debugln("Wand is not connected to Pack");
       }
 
       i_send_size = packComs.txObj(sendCmd);

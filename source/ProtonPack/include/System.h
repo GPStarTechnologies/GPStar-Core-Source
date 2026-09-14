@@ -2986,7 +2986,7 @@ void cyclotronColourReset() {
       for(uint8_t i = 0; i < i_cyclotron_num_leds; i++) {
         cyclotronLidMgr.setPixelColor(i + i_cyclotron_led_start, C_BLACK);
       }
-      
+
       // Clear animation state to reset fade objects and brightness tracking
       clearCyclotronFades();
     break;

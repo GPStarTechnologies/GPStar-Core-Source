@@ -63,21 +63,21 @@ NimBLECharacteristicCallbacks *g_pPackCharacteristicCallbacks = nullptr;
 
 /*
  * BLE UUIDs (defined in shared BLE library)
- * 
+ *
  * These constants come from BLEConstants.h in the shared Bluetooth library.
  * They are hardcoded per BLE_TRANSPORT.md specification for stable Pack discovery.
- * 
+ *
  * UUID layout:
  * - BLE_SERIALDATA_SERVICE_UUID: Service advertised by Pack
  * - BLE_SERIALDATA_PACKTX_CHAR_UUID: Pack → Wand (indications)
  * - BLE_SERIALDATA_PACKRX_CHAR_UUID: Wand → Pack (writes)
- * 
+ *
  * DO NOT DUPLICATE these in application code - use the shared library constants!
  */
 
 /*
  * Bluetooth LE Management Functions
- * 
+ *
  * OVERVIEW:
  * =========
  * The Pack is a BLE SERVER (peripheral) that advertises and accepts connections from the Wand (client/central).
@@ -109,13 +109,11 @@ class GPStarPackServerCallbacks : public NimBLEServerCallbacks {
     // FIRED WHEN: Device successfully connects to Pack BLE server
     // ACTION: Log connection and mark ready for commands
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] Pack MAC: "));
-      debugln(NimBLEDevice::getAddress().toString().c_str());
-      debug(F("[BLE] Wand MAC: "));
-      debugln(connInfo.getAddress().toString().c_str());
-      debugln(F("[BLE] WAND CONNECTED"));
+      sendDebug(String(F("[BLE] Pack MAC: ")) + String(NimBLEDevice::getAddress().toString().c_str()));
+      sendDebug(String(F("[BLE] Wand MAC: ")) + String(connInfo.getAddress().toString().c_str()));
+      sendDebug(F("[BLE] WAND CONNECTED"));
     #endif
-    
+
     // Mark ready for commands immediately after connection
     b_ble_connected = true;
   }
@@ -124,17 +122,15 @@ class GPStarPackServerCallbacks : public NimBLEServerCallbacks {
     // FIRED WHEN: Device disconnects from Pack BLE server (device powered off, out of range, or user disconnect)
     // ACTION: Clear connection flag, log reason code, restart advertising for next connection
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] Device disconnected (reason: "));
-      debug(reason);
-      debugln(F(")"));
+      sendDebug(String(F("[BLE] Device disconnected (reason: ")) + String(reason) + String(F(")")));
     #endif
     b_ble_connected = false;
-    
+
     // Ensure advertising restarts for next connection attempt
     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
     if(pAdvertising && !pAdvertising->isAdvertising()) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] Restarting BLE advertising..."));
+        sendDebug(F("[BLE] Restarting BLE advertising..."));
       #endif
       pAdvertising->start();
     }
@@ -144,8 +140,8 @@ class GPStarPackServerCallbacks : public NimBLEServerCallbacks {
     // FIRED WHEN: Passkey pairing successfully completes with Wand
     // ACTION: Log pairing success, connection now bonded and encrypted
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] PAIRING COMPLETE with Wand"));
-      debugln(F("[BLE] Connection is now bonded and encrypted"));
+      sendDebug(F("[BLE] PAIRING COMPLETE with Wand"));
+      sendDebug(F("[BLE] Connection is now bonded and encrypted"));
     #endif
   }
 };
@@ -159,29 +155,29 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
     // PARAM pCharacteristic: The command characteristic being written to
     // PARAM connInfo: Connection info (MAC address, connection handle, etc)
     // ACTION: Process command or identity data
-    
+
     std::string rxValue = pCharacteristic->getValue();
     if (rxValue.length() > 0) {
       uint8_t packetType = (uint8_t)rxValue[0];
-      
+
       // Check for identity packet (validates this is a Wand)
       // if(packetType == PACKET_IDENTITY) {
       //   debugln(F("[WAND→PACK] IDENTITY PACKET RECEIVED"));
       //   debug(F("[WAND→PACK] Packet length: "));
       //   debugln(rxValue.length());
-        
+
       //   if(rxValue.length() >= 4) {
       //     uint8_t deviceType = (uint8_t)rxValue[1];
       //     uint8_t deviceIDHi = (uint8_t)rxValue[2];
       //     uint8_t deviceIDLo = (uint8_t)rxValue[3];
       //     uint16_t deviceID = ((uint16_t)deviceIDHi << 8) | deviceIDLo;
-          
+
       //     debug(F("[WAND→PACK] Identity: deviceType="));
       //     debug(deviceType);
       //     debug(F(" deviceID="));
       //     debug(deviceID, HEX);
       //     debugln(F(""));
-          
+
       //     // Validate this is a Wand (IR_DEVICE_NEUTRONA_WAND = 0x0)
       //     if(deviceType == 0x00) {
       //       b_ble_connected = true;
@@ -196,15 +192,15 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       //   }
       //   return;
       // }
-      
+
       // Only process other commands if we've verified this is a Wand
       if(!b_ble_connected) {
         #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[WAND→PACK] ERROR: Command received before identity verification - ignoring"));
+          sendDebug(F("[WAND→PACK] ERROR: Command received before identity verification - ignoring"));
         #endif
         return;
       }
-      
+
       // Queue the command for processing by checkWand() in main loop
       if(rxValue.length() > 1) {  // Must have at least metadata + 1 byte payload
         // Extract metadata byte (byte[0])
@@ -212,23 +208,21 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
         uint8_t packetType = (metadata >> 5) & 0x07;  // bits [7:5]
         uint8_t sequence = metadata & 0x1F;            // bits [4:0]
         size_t payload_length = rxValue.length() - 1;
-        
+
         // Validate packet type is within expected range (0-6)
         if(packetType > 6) {
           #if defined(DEBUG_BLUETOOTH)
-            debug(F("[WAND→PACK] ERROR: Invalid packet type="));
-            debug(packetType);
-            debugln(F(""));
+            sendDebug(String(F("[WAND→PACK] ERROR: Invalid packet type=")) + String(packetType));
           #endif
           return;
         }
-        
+
         // Copy payload to temporary buffer for message creation
         uint8_t tempPayload[256] = {0};
         if(payload_length > 0 && payload_length <= 256) {
           memcpy(tempPayload, rxValue.c_str() + 1, payload_length);
         }
-        
+
         // Create BLE message and enqueue to RX queue
         if(payload_length <= 256) {
           BLEMessage msg;
@@ -239,38 +233,27 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
             payload_length,
             &msg
           );
-          
+
           if(result != BLE_PACKET_INVALID) {
             uint8_t enqueue_result = BLEQueueManager_Enqueue(&g_ble_rx_queue, &msg);
-            
+
             #if defined(DEBUG_BLUETOOTH)
               if(enqueue_result == BLE_QUEUE_OK) {
-                debug(F("[PACK-RX] Seq#"));
-                debug(sequence);
-                debug(F(" Payload="));
-                debug(payload_length);
-                debug(F(" bytes | "));
-                
                 // Parse frame type for logging
                 if(payload_length >= 4) {
                   uint8_t start = tempPayload[0];
                   uint8_t end = tempPayload[payload_length - 1];
-                  
+
                   if(start == A_COM_START && end == A_COM_END) {
                     if(payload_length == 6) {
                       uint16_t cmd = (uint16_t)tempPayload[1] | ((uint16_t)tempPayload[2] << 8);
                       uint16_t d1 = (uint16_t)tempPayload[3] | ((uint16_t)tempPayload[4] << 8);
-                      debug(F("COMMAND c="));
-                      debug(cmd);
-                      debug(F(" d1="));
-                      debug(d1);
+                      sendDebug(String(F("[PACK-RX] Seq#")) + String(sequence) + String(F(" Payload=")) + String(payload_length) + String(F(" bytes | COMMAND c=")) + String(cmd) + String(F(" d1=")) + String(d1));
                     } else {
-                      debug(F("("));
-                      debug(payload_length);
-                      debug(F("B frame)"));
+                      sendDebug(String(F("[PACK-RX] Seq#")) + String(sequence) + String(F(" Payload=")) + String(payload_length) + String(F(" bytes | (")) + String(payload_length) + String(F("B frame)")));
                     }
                   } else {
-                    debug(F("(invalid markers)"));
+                    sendDebug(F("(invalid markers)"));
                   }
                 }
                 debugln();
@@ -279,14 +262,12 @@ class GPStarPackCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
           }
         } else {
           #if defined(DEBUG_BLUETOOTH)
-            debug(F("[WAND→PACK] ERROR: Payload too large ("));
-            debug(payload_length);
-            debugln(F(" B exceeds 256B limit)"));
+            sendDebug(String(F("[WAND→PACK] ERROR: Payload too large (")) + String(payload_length) + String(F(" B exceeds 256B limit)")));
           #endif
         }
       } else {
         #if defined(DEBUG_BLUETOOTH)
-          debugln(F("[WAND→PACK] ERROR: Received less than 2 bytes"));
+          sendDebug(F("[WAND→PACK] ERROR: Received less than 2 bytes"));
         #endif
       }
     }
@@ -308,26 +289,26 @@ struct BLEPacket {
 // Returns packet with packetType = PACKET_UNKNOWN if parse fails
 BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
   BLEPacket packet = {PACKET_UNKNOWN, 0, 0, 0, {0, 0, 0}, 0, length};
-  
+
   if(length < 4) {
     return packet;
   }
-  
+
   packet.start = pData[0];
   packet.end = pData[length - 1];
-  
+
   // Validate frame markers
   if(packet.start != A_COM_START || packet.end != A_COM_END) {
     return packet;
   }
-  
+
   // Determine packet type based on length
   if(length == 6) {
     // PACKET_COMMAND: (s, c:2, d1:2, e)
     packet.packetType = PACKET_COMMAND;
     packet.cmd = (uint16_t)pData[1] | ((uint16_t)pData[2] << 8);
     packet.d1 = (uint16_t)pData[3] | ((uint16_t)pData[4] << 8);
-  } 
+  }
   else if(length == 7) {
     // PACKET_DATA: (s, c:2, d[3], e)
     packet.packetType = PACKET_DATA;
@@ -343,7 +324,7 @@ BLEPacket bleHandleData(const uint8_t* pData, size_t length) {
       packet.packetType = PACKET_WAND;  // Assume WAND if larger
     }
   }
-  
+
   return packet;
 }
 
@@ -354,30 +335,25 @@ void bleProcessData() {
   while(!BLEQueueManager_IsEmpty(&g_ble_rx_queue)) {
     BLEMessage msg;
     uint8_t result = BLEQueueManager_Dequeue(&g_ble_rx_queue, &msg);
-    
+
     if(result != BLE_QUEUE_OK) {
       break;  // Queue empty or error
     }
-    
+
     // Parse the queued message payload
     BLEPacket packet = bleHandleData(msg.payload, msg.length);
-    
+
     #if defined(DEBUG_BLUETOOTH)
       // Parsed packet structure
-      debug(F("[BLE-RX] Parsed: type="));
       switch(packet.packetType) {
-        case PACKET_COMMAND: debug(F("COMMAND(1)")); break;
-        case PACKET_DATA: debug(F("DATA(2)")); break;
-        case PACKET_PACK: debug(F("PACK(3)")); break;
-        case PACKET_WAND: debug(F("WAND(4)")); break;
-        case PACKET_SMOKE: debug(F("SMOKE(5)")); break;
-        case PACKET_SYNC: debug(F("SYNC(6)")); break;
-        default: debug(F("UNKNOWN(0)")); break;
+        case PACKET_COMMAND: sendDebug(String(F("[BLE-RX] Parsed: type=COMMAND(1)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
+        case PACKET_DATA: sendDebug(String(F("[BLE-RX] Parsed: type=DATA(2)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
+        case PACKET_PACK: sendDebug(String(F("[BLE-RX] Parsed: type=PACK(3)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
+        case PACKET_WAND: sendDebug(String(F("[BLE-RX] Parsed: type=WAND(4)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
+        case PACKET_SMOKE: sendDebug(String(F("[BLE-RX] Parsed: type=SMOKE(5)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
+        case PACKET_SYNC: sendDebug(String(F("[BLE-RX] Parsed: type=SYNC(6)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
+        default: sendDebug(String(F("[BLE-RX] Parsed: type=UNKNOWN(0)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
       }
-      debug(F(" | c="));
-      debug(packet.cmd);
-      debug(F(" d1="));
-      debugln(packet.d1);
     #endif
 
     // Deserialize BLE buffer into same global structs used by UART
@@ -391,7 +367,7 @@ void bleProcessData() {
             recvCmdW.e = packet.end;
           }
           break;
-          
+
         case PACKET_DATA:
           if(packet.cmd > 0) {
             recvDataW.s = packet.start;
@@ -402,65 +378,63 @@ void bleProcessData() {
             recvDataW.e = packet.end;
           }
           break;
-        
-      case PACKET_WAND:
-        memcpy(&wandConfig, msg.payload, msg.length);
-        break;
-        
-      case PACKET_SMOKE:
-        memcpy(&smokeConfig, msg.payload, msg.length);
-        break;
-        
-      case PACKET_PACK:
-        memcpy(&packConfig, msg.payload, msg.length);
-        break;
-        
-      case PACKET_SYNC:
-        // Sync packets from Wand (handled same as COMMAND)
-        break;
+
+        case PACKET_WAND:
+          memcpy(&wandConfig, msg.payload, msg.length);
+          break;
+
+        case PACKET_SMOKE:
+          memcpy(&smokeConfig, msg.payload, msg.length);
+          break;
+
+        case PACKET_PACK:
+          memcpy(&packConfig, msg.payload, msg.length);
+          break;
+
+        case PACKET_SYNC:
+          // Sync packets from Wand (handled same as COMMAND)
+          break;
+      }
+
+      // Ensure BLE connection state is synchronized (UART does this via serial handshake)
+      // BLE bypass: directly update state to allow handlers to process commands
+      if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
+        WAND_CONN_STATE = WAND_CONNECTED;
+      }
+
+      // Route to central packet handler (same dispatcher as UART)
+      handleWandPacket(packet.packetType);
     }
-    
-    // Ensure BLE connection state is synchronized (UART does this via serial handshake)
-    // BLE bypass: directly update state to allow handlers to process commands
-    if(WAND_CONN_STATE == WAND_DISCONNECTED || WAND_CONN_STATE == WAND_MISMATCH) {
-      WAND_CONN_STATE = WAND_CONNECTED;
-    }
-    
-    // Route to central packet handler (same dispatcher as UART)
-    handleWandPacket(packet.packetType);
-  }
   }
 }
 
 bool startBluetooth() {
   if(!b_ble_enabled) {
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] BLE disabled, startup skipped"));
+      sendDebug(F("[BLE] BLE disabled, startup skipped"));
     #endif
     return false;
   }
 
   if(b_ble_initialized) {
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Already initialized"));
+      sendDebug(F("[BLE] Already initialized"));
     #endif
     return true;
   }
 
   #if defined(DEBUG_BLUETOOTH)
-    debugln();
-    debugln(F("========== BLE Server (Pack) Initialization =========="));
+    sendDebug(F("========== BLE Server (Pack) Initialization =========="));
   #endif
 
   try {
     // Initialize NimBLE with device name based on Pack ID
     String deviceName = "GPStar-Pack-" + String(wirelessMgr->getDeviceID(), DEC);
-    
+
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] Initializing NimBLE device "));
-      debugln(deviceName);
+      sendDebug(String(F("[BLE] Initializing NimBLE device ")) + String(deviceName));
     #endif
-    
+
     NimBLEDevice::init(deviceName.c_str());
 
     // Configure automatic pairing with LE Secure Connections
@@ -468,21 +442,21 @@ bool startBluetooth() {
     NimBLEDevice::setSecurityAuth(true, true, false);  // bonding, MITM, passkey pairing (not SC)
     NimBLEDevice::setSecurityPasskey(BLE_PAIRING_PASSKEY); // Set passkey (must match Wand)
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY); // Display passkey only
-    
+
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Security: LE Secure Connections with bonding enabled (MITM disabled for testing)"));
+      sendDebug(F("[BLE] Security: LE Secure Connections with bonding enabled (MITM disabled for testing)"));
     #endif
 
     // Create the BLE Server (this device is the server/peripheral)
     g_pBLEServer = NimBLEDevice::createServer();
-    
+
     if(!g_pBLEServer) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] ERROR Failed to create BLE Server"));
+        sendDebug(F("[BLE] ERROR Failed to create BLE Server"));
       #endif
       return false;
     }
-    
+
     // Set server callbacks for connection state changes
     // Create and store callback object globally (must persist for server lifetime)
     if(!g_pPackServerCallbacks) {
@@ -491,22 +465,21 @@ bool startBluetooth() {
     g_pBLEServer->setCallbacks(g_pPackServerCallbacks);
 
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] BLE Server created successfully"));
+      sendDebug(F("[BLE] BLE Server created successfully"));
     #endif
 
     // Create the GPStar service
     g_pGPStarService = g_pBLEServer->createService(BLE_SERIALDATA_SERVICE_UUID);
-    
+
     if(!g_pGPStarService) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] ERROR Failed to create GPSta Serial Data Service"));
+        sendDebug(F("[BLE] ERROR Failed to create GPSta Serial Data Service"));
       #endif
       return false;
     }
-    
+
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] GPStar Serial Data Service created, UUID: "));
-      debugln(BLE_SERIALDATA_SERVICE_UUID);
+      sendDebug(String(F("[BLE] GPStar Serial Data Service created, UUID: ")) + String(BLE_SERIALDATA_SERVICE_UUID));
     #endif
 
     // Create command characteristic (Wand writes commands to Pack)
@@ -516,22 +489,22 @@ bool startBluetooth() {
       BLE_SERIALDATA_PACKRX_CHAR_UUID,
       NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR
     );
-    
+
     if(!g_pCommandCharacteristic) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] ERROR Failed to create command characteristic"));
+        sendDebug(F("[BLE] ERROR Failed to create command characteristic"));
       #endif
       return false;
     }
-    
+
     // Create and store callback object globally (must persist for characteristic lifetime)
     if(!g_pPackCharacteristicCallbacks) {
       g_pPackCharacteristicCallbacks = new GPStarPackCharacteristicCallbacks();
     }
     g_pCommandCharacteristic->setCallbacks(g_pPackCharacteristicCallbacks);
-    
+
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Created Wand to Pack (PACKRX) Characteristic (WRITE/WRITE_NR)"));
+      sendDebug(F("[BLE] Created Wand to Pack (PACKRX) Characteristic (WRITE/WRITE_NR)"));
     #endif
 
     // Create status characteristic (Pack sends status updates via indications)
@@ -543,16 +516,16 @@ bool startBluetooth() {
       BLE_SERIALDATA_PACKTX_CHAR_UUID,
       NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::READ
     );
-    
+
     if(!g_pStatusCharacteristic) {
       #if defined(DEBUG_BLUETOOTH)
-        debugln(F("[BLE] ERROR Failed to create status characteristic"));
+        sendDebug(F("[BLE] ERROR Failed to create status characteristic"));
       #endif
       return false;
     }
 
     #if defined(DEBUG_BLUETOOTH)
-      debugln(F("[BLE] Created Pack to Wand (PACKTX) Characteristic (INDICATE/READ)"));
+      sendDebug(F("[BLE] Created Pack to Wand (PACKTX) Characteristic (INDICATE/READ)"));
     #endif
 
     // Set up advertising
@@ -568,14 +541,10 @@ bool startBluetooth() {
     pAdvertising->start();
 
     #if defined(DEBUG_BLUETOOTH)
-      debugln();
-      debugln(F("========== BLE Server (Pack) Initialization =========="));
-      debug(F("[BLE] MAC: "));
-      debugln(NimBLEDevice::getAddress().toString().c_str());
-      debug(F("[BLE] Name: "));
-      debugln(deviceName);
-      debugln(F("[BLE] Waiting for Wand to connect..."));
-      debugln();
+      sendDebug(String(F("========== BLE Server (Pack) Initialization ==========")));
+      sendDebug(String(F("[BLE] MAC: ")) + String(NimBLEDevice::getAddress().toString().c_str()));
+      sendDebug(String(F("[BLE] Name: ")) + String(deviceName));
+      sendDebug(String(F("[BLE] Waiting for Wand to connect...")));
     #endif
 
     b_ble_initialized = true;
@@ -584,8 +553,7 @@ bool startBluetooth() {
   }
   catch (const std::exception &e) {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[BLE] EXCEPTION "));
-      debugln(e.what());
+      sendDebug(String(F("[BLE] EXCEPTION ")) + String(e.what()));
     #endif
     return false;
   }
@@ -593,7 +561,7 @@ bool startBluetooth() {
 
 /*
  * Queue a serialized packet for transmission to Wand.
- * 
+ *
  * Phase 3 (Refactored): Uses BLE library message queueing.
  * Per BLE_TRANSPORT.md: Each packet becomes one BLEMessage with frame markers preserved.
  * Sequence counter is managed by library; status tracking per message.
@@ -602,7 +570,7 @@ void bleQueueSerialData(const uint8_t* pData, size_t length, uint8_t packetType)
   if(!b_ble_enabled || !pData || length == 0) {
     return;  // BLE disabled or invalid input, silently drop
   }
-  
+
   // Create a BLEMessage from the packet data
   // The packet already has frame markers (0x02 start, 0x04 end)
   BLEMessage msg;
@@ -613,40 +581,31 @@ void bleQueueSerialData(const uint8_t* pData, size_t length, uint8_t packetType)
     length,
     &msg
   );
-  
+
   if(result != BLE_PACKET_INVALID) {
     // Enqueue the message for transmission
     uint8_t enqueue_result = BLEQueueManager_Enqueue(&g_ble_tx_queue, &msg);
-    
+
     #if defined(DEBUG_BLUETOOTH)
       if(enqueue_result == BLE_QUEUE_OK) {
-        debug(F("[PACK-TX-Q] Message queued, depth="));
-        debug(BLEQueueManager_GetCount(&g_ble_tx_queue));
-        debug(F("/"));
-        debug(BLE_QUEUE_SIZE);
-        debugln(F(" msgs"));
+        sendDebug(String(F("[PACK-TX-Q] Message queued, depth=")) + String(BLEQueueManager_GetCount(&g_ble_tx_queue)) + String(F("/")) + String(BLE_QUEUE_SIZE) + String(F(" msgs")));
       } else if(enqueue_result == BLE_QUEUE_FULL) {
-        debug(F("[PACK-TX-Q] OVERFLOW: queue full, overflows="));
-        debug(g_ble_tx_queue.overflowCount);
-        debugln();
+        sendDebug(String(F("[PACK-TX-Q] OVERFLOW: queue full, overflows=")) + String(g_ble_tx_queue.overflowCount));
       }
     #endif
   } else {
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[PACK-TX-Q] Invalid packet: start=0x"));
       if(length > 0) debug(pData[0], HEX);
-      debug(F(" end=0x"));
+      sendDebug(String(F("[PACK-TX-Q] Invalid packet: start=0x end=0x")));
       if(length > 0) debug(pData[length-1], HEX);
-      debug(F(" len="));
-      debug(length);
-      debugln();
+      sendDebug(String(F("[PACK-TX-Q] Invalid packet: start=0x len=")) + String(length));
     #endif
   }
 }
 
 /*
  * Flush queued messages as BLE indications (one message per indication).
- * 
+ *
  * Phase 3 (Refactored): Dequeues and sends individual BLEMessages.
  * Per BLE_TRANSPORT.md: Each indication carries one complete message.
  * Confirmation/status handling deferred to integration layer.
@@ -655,39 +614,30 @@ void bleFlushQueues() {
   if(!b_ble_enabled || !b_ble_connected || !g_pStatusCharacteristic) {
     return;  // BLE not ready, queues stay intact for next loop
   }
-  
+
   // Process all queued messages (max 16 per queue per spec)
   while(!BLEQueueManager_IsEmpty(&g_ble_tx_queue)) {
     BLEMessage msg;
     uint8_t result = BLEQueueManager_Dequeue(&g_ble_tx_queue, &msg);
-    
+
     if(result != BLE_QUEUE_OK) {
       break;  // Queue empty or error
     }
-    
+
     // Send message as indication (message payload already has frame markers)
     // Metadata format: [7:6]=source, [5:0]=sequence
     uint8_t ble_buffer[258];  // 1 byte metadata + 257 (1B seq + 256B payload max)
     ble_buffer[0] = (0x00 << 6) | (msg.sequence & 0x3F);
-    
+
     // Copy message payload (includes frame markers 0x02...0x04)
     memcpy(&ble_buffer[1], msg.payload, msg.length);
-    
+
     g_pStatusCharacteristic->setValue(ble_buffer, msg.length + 1);
     g_pStatusCharacteristic->indicate();
-    
+
     #if defined(DEBUG_BLUETOOTH)
-      debug(F("[PACK-TX-SEND] Seq#"));
-      debug(msg.sequence);
-      debug(F(" PktType="));
-      debug(msg.packetType);
-      debug(F(" Len="));
-      debug(msg.length);
-      debug(F(" bytes Depth="));
-      debug(BLEQueueManager_GetCount(&g_ble_tx_queue));
-      debug(F("/"));
-      debug(BLE_QUEUE_SIZE);
-      debugln();
+      sendDebug(String(F("[PACK-TX-SEND] Seq#")) + String(msg.sequence) + String(F(" PktType=")) + String(msg.packetType) + String(F(" Len=")) + String(msg.length) +
+      String(F(" bytes Depth=")) + String(BLEQueueManager_GetCount(&g_ble_tx_queue)) + String(F("/")) + String(BLE_QUEUE_SIZE));
     #endif
   }
 }

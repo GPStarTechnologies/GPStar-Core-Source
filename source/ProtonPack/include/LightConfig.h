@@ -222,13 +222,13 @@ struct LightingDevice {
 /*
  * Lighting Registry - source of truth for segment→chain→pin mapping
  * Includes pre-calculated MaxPixels and BufferOffset for runtime efficiency.
- * 
+ *
  * ESP32: BufferOffset = chain_id * i_max_pxl8_count
  *   - CHAIN_PACK (0):      offset 0 (LEDs 0-65)
  *   - CHAIN_CYCLOTRON (1): offset 66 (LEDs 66-129)
  *   - CHAIN_EXP1 (2):      offset 132 (LEDs 132-197)
  *   - CHAIN_EXP2 (3):      offset 198 (LEDs 198-263)
- * 
+ *
  * ATMega: BufferOffset = 0 (unused, each chain has its own NeoPixel instance)
  */
 static constexpr LightingDevice lighting_devices[DEVICE_SLOTS] = {
@@ -523,7 +523,7 @@ public:
       // Get current pixel's RGB color
       LED_RGB current_rgb = getPixelColor(index);
       LED_RGB scaled_rgb = LED_RGB_BLACK;
-      
+
       // Find the maximum component of the RGB triplet.
       uint8_t max_component = max(current_rgb.r, max(current_rgb.g, current_rgb.b));
 
@@ -545,20 +545,20 @@ public:
     if(fade_amount == 0) {
       return;
     }
-    
+
     LED_RGB current_rgb = getPixelColor(index);
-    
+
     // Convert fade_amount (0-255 scale) to a brightness retention factor (0.0-1.0)
     // fade_amount is the intensity of the fade; higher values fade more
     // Example: fade_amount=1 keeps 99.6% brightness; fade_amount=255 keeps 0%
     float fade_factor = (255.0f - fade_amount) / 255.0f;
-    
+
     // Scale each component proportionally to preserve color ratio
     LED_RGB scaled_rgb;
     scaled_rgb.r = (uint8_t)(current_rgb.r * fade_factor);
     scaled_rgb.g = (uint8_t)(current_rgb.g * fade_factor);
     scaled_rgb.b = (uint8_t)(current_rgb.b * fade_factor);
-    
+
     // Apply the scaled color back
     setPixelColor(index, scaled_rgb);
   }

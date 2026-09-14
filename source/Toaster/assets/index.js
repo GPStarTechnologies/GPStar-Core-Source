@@ -368,14 +368,14 @@ function saveToSlot() {
 function playFromSlot() {
   // Get the selected animation slot from the play dropdown
   const slotIndex = parseInt(getEl("playSlot").value);
-  
+
   // Verify selected slot contains animation data
   const slotInfo = animationSlots.find((s) => s.id === slotIndex);
   if (!slotInfo || !slotInfo.hasAnimation || !slotInfo.keyFrames) {
     alert(`Slot ${slotIndex} does not contain a saved animation.`);
     return;
   }
-  
+
   // Send command to backend to play the selected animation
   sendCommand("/animations/play/" + slotIndex);
 }
@@ -431,7 +431,7 @@ function updatePlaySlots() {
       option.disabled = !slot.hasAnimation;
     }
   }
-  
+
   // Re-apply button states to account for new viable slots availability
   applyButtonStates(currentAnimationState);
 }
@@ -444,7 +444,7 @@ function buildAnimationProgressHTML(animData) {
   let progressBar = "-";
   let elapsedTime = "-";
   let lastActuator = "-";
-  
+
   // Only populate progress info when actively recording or playing back
   if (animData.state === "RECORDING" || animData.state === "PLAYBACK") {
     if (animData.state === "PLAYBACK") {
@@ -456,12 +456,12 @@ function buildAnimationProgressHTML(animData) {
     const total = animData.totalFrames || 0;
     const percentage = total > 0 ? ((current / total) * 100).toFixed(1) : 0;
     progressBar = `${percentage}% <progress class="animationProgressBar" value="${percentage}" max="100"></progress>`;
-    
+
     // Calculate elapsed time: current elapsed time vs total animation duration
     const elapsed = (animData.elapsedSeconds || 0).toFixed(1);
     const duration = (animData.totalTime || 0).toFixed(1);
     elapsedTime = `${elapsed} / ${duration}s`;
-    
+
     // Display which actuator was last triggered (backend provides lastActuator, fall back to frameValue if needed)
     if (animData.lastActuator && animData.lastActuator > 0 && animData.lastActuator <= 4) {
       lastActuator = `Actuator ${animData.lastActuator}`;
@@ -485,7 +485,7 @@ function updateAnimationDisplay(animData) {
   // Map server's explicit state name string directly
   // Valid states: IDLE_EMPTY, RECORDING, IDLE_PENDING_SAVE, IDLE_LOADED, PLAYBACK
   const validStates = ["IDLE_EMPTY", "RECORDING", "IDLE_PENDING_SAVE", "IDLE_LOADED", "PLAYBACK"];
-  
+
   if (animData.state !== undefined && typeof animData.state === "string" && validStates.includes(animData.state)) {
     currentAnimationState = animData.state;
   } else {
@@ -498,14 +498,14 @@ function updateAnimationDisplay(animData) {
   // On first page load, animationSlots may be empty, but updatePlaySlots() will recalculate
   // when WebSocket delivers the slot data
   updatePlaySlots();
-  
+
   // Apply all button states based on current state and newly calculated slot viability
   applyButtonStates(currentAnimationState);
-  
+
   // Update progress display ONLY during active operations (RECORDING or PLAYBACK)
   // These states will have currentFrame, elapsedSeconds, progress fields populated
   const progressDivs = document.querySelectorAll(".animationProgress");
-  if ((currentAnimationState === "RECORDING" || currentAnimationState === "PLAYBACK") && 
+  if ((currentAnimationState === "RECORDING" || currentAnimationState === "PLAYBACK") &&
        animData.currentFrame !== undefined && animData.elapsedSeconds !== undefined) {
     const progressHTML = buildAnimationProgressHTML(animData);
     progressDivs.forEach(div => {

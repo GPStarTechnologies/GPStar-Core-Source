@@ -156,7 +156,7 @@ String getDeviceConfig() {
  * Used by both SSE events and status responses to ensure consistency.
  * Prepare a JSON object with current animation frame and progress data.
  * Sends real-time updates during recording and playback sessions.
- * 
+ *
  * FIELDS (sent to client):
  * - state: Explicit 5-state value (0=IDLE_EMPTY, 1=RECORDING, 2=IDLE_PENDING_SAVE, 3=IDLE_LOADED, 4=PLAYBACK)
  * - stateName: Human-readable state name
@@ -173,36 +173,36 @@ String getDeviceConfig() {
 void buildAnimationJson(JsonObject& animationObj) {
   const char* stateNames[] = {"IDLE_EMPTY", "RECORDING", "IDLE_PENDING_SAVE", "IDLE_LOADED", "PLAYBACK"};
   const char* triggerSourceNames[] = {"NONE", "RF", "WEB"};
-  
+
   // Send only the state name string, not the integer enum value
   animationObj["state"] = stateNames[currentAnimation.state];
-  
+
   animationObj["sourceSlot"] = currentAnimation.sourceSlot;
   animationObj["triggerSource"] = triggerSourceNames[currentAnimation.triggerSource];
   animationObj["keyFrames"] = currentAnimation.data.keyFrames;  // Frames with relay activity
   animationObj["totalFrames"] = currentAnimation.data.totalFrames;
   animationObj["totalTime"] = roundFloat((float)currentAnimation.data.totalFrames * ANIM_TIME_UNIT_MS / 1000.0f);
-  
+
   // Only calculate timing and frame data during active operations (RECORDING or PLAYBACK)
   // In idle states, these values are meaningless and should not be sent
   if(currentAnimation.state == ANIM_RECORDING || currentAnimation.state == ANIM_PLAYBACK) {
     uint32_t elapsed = millis() - currentAnimation.wallTime;
     uint16_t currentFrame = elapsed / ANIM_TIME_UNIT_MS;
     animationObj["currentFrame"] = currentFrame;
-    
+
     // Derive elapsed time in seconds (frames × frame duration / 1000 for ms to seconds)
     animationObj["elapsedSeconds"] = roundFloat((float)currentFrame * ANIM_TIME_UNIT_MS / 1000.0f);
-    
+
     // Derive progress percentage (based on animation timeline span)
     if(currentAnimation.data.totalFrames > 0) {
       animationObj["progress"] = roundFloat((float)currentFrame / currentAnimation.data.totalFrames * 100.0f);
     }
-    
+
     // Include which actuator (if any) is firing at current frame
     // Value: 0 = no action, 1-4 = actuator ID
     uint8_t currentActuator = (currentFrame < currentAnimation.data.totalFrames) ? currentAnimation.data.frames[currentFrame] : 0;
     animationObj["frameValue"] = currentActuator;
-    
+
     // Find the last actuator that was triggered up to the current frame (search backwards from currentFrame)
     // This shows the most recent trigger during playback, updating as we progress through the animation
     uint8_t lastRecordedActuator = 0;
@@ -213,7 +213,7 @@ void buildAnimationJson(JsonObject& animationObj) {
       }
     }
     animationObj["lastActuator"] = lastRecordedActuator;  // Will be 0 if no actuators recorded before currentFrame, 1-4 otherwise
-    
+
     // Build relay state array based on current frame actuator
     // Each relay shows active=true only if it matches the currently firing actuator
     JsonArray relaysArray = animationObj["relays"].to<JsonArray>();
@@ -265,7 +265,7 @@ String getEquipmentStatus() {
     slotObj["id"] = animationSlots[i].id;
     slotObj["hasAnimation"] = animationSlots[i].hasAnimation;
     slotObj["animationSeconds"] = roundFloat(animationSlots[i].animationSeconds);
-    
+
     // Include the full frames array for debugging playback issues
     if (animationSlots[i].hasAnimation) {
       // Load the animation data from NVS to get the full frames array
@@ -274,12 +274,12 @@ String getEquipmentStatus() {
       if (preferences.begin("animations", true)) {
         size_t size = preferences.getBytes(ANIMATION_NAMES[i], &data, sizeof(data));
         preferences.end();
-        
+
         if (size == sizeof(data)) {
           // Include metadata
           slotObj["keyFrames"] = data.keyFrames;
           slotObj["totalFrames"] = data.totalFrames;
-          
+
           // Include frames array as integers (0 = idle, 1-4 = actuator ID)
           JsonArray framesArray = slotObj["frames"].to<JsonArray>();
           for (uint16_t f = 0; f < data.totalFrames; f++) {
@@ -514,9 +514,9 @@ void webLoops() {
       // Update the current count of AP clients.
       static uint8_t prev_ap_count = 0;
       static uint8_t prev_ws_count = 0;
-      
+
       i_ap_client_count = WiFi.softAPgetStationNum();
-      
+
       // Detect if AP or WebSocket client counts changed, and push update if they did.
       if(i_ap_client_count != prev_ap_count || i_ws_client_count != prev_ws_count) {
         prev_ap_count = i_ap_client_count;
@@ -570,10 +570,10 @@ String getAnimationFrame() {
   String frameData;
   JsonDocument jsonFrame;
   JsonObject animationObj = jsonFrame.to<JsonObject>();
-  
+
   // Use shared helper to build animation JSON
   buildAnimationJson(animationObj);
-  
+
   // Serialize JSON object to string.
   serializeJson(jsonFrame, frameData);
   return frameData;
@@ -1159,13 +1159,13 @@ void handleRecordSave(AsyncWebServerRequest *request) {
         if (saveRecordingToNVS(animIndex)) {
           // Update the animation slot cache from NVS
           refreshAnimationSlotCache();
-          
+
           // Send state update to notify UI that recording was saved and transitioned to IDLE_LOADED
           sendAnimationFrameData();
-          
+
           // Notify all clients that slots have changed
           notifyWSClients();
-          
+
           JsonDocument jsonResponse;
           jsonResponse["status"] = "success";
           jsonResponse["message"] = "Animation saved";
@@ -1206,7 +1206,7 @@ void handlePlayAnimation(AsyncWebServerRequest *request) {
         if (startPlayback(animIndex, TRIGGER_SOURCE_WEB)) {
           // Send state update to notify UI that playback started and state is now PLAYBACK
           sendAnimationFrameData();
-          
+
           JsonDocument jsonResponse;
           jsonResponse["status"] = "success";
           jsonResponse["message"] = "Playback started";

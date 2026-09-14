@@ -6,7 +6,7 @@ function initConnectionOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'connectionOverlay';
     overlay.className = 'connection-overlay';
-    
+
     const content = document.createElement('div');
     content.className = 'connection-overlay-content';
     content.id = 'connectionOverlayContent';
@@ -20,7 +20,7 @@ function initConnectionOverlay() {
     overlay.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
     overlay.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
     overlay.addEventListener('wheel', (e) => { e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: true });
-    
+
     document.body.appendChild(overlay);
   }
 }
@@ -29,7 +29,7 @@ function showConnectionOverlay(attemptNumber = null) {
   initConnectionOverlay();
   const overlay = document.getElementById('connectionOverlay');
   const content = document.getElementById('connectionOverlayContent');
-  
+
   if (attemptNumber !== null) {
     content.innerHTML = `<p>Reconnecting...</p><p class="connection-overlay-attempt">Attempt ${attemptNumber}</p>`;
   } else {
@@ -102,7 +102,7 @@ class WebSocketClient {
     this.#heartbeatIntervalDisconnected = config.heartbeatIntervalDisconnected || 30000; // Default 30s
     this.#heartbeatResponseWaitTime = config.heartbeatResponseWaitTime || 2000; // Default 2s
   }
-  
+
   /**
    * Get current connection state
    * @returns {boolean} True if WebSocket is connected
@@ -110,7 +110,7 @@ class WebSocketClient {
   get isConnected() {
     return this.#isConnected;
   }
-  
+
   /**
    * Connect to WebSocket with automatic backoff on failure
    */
@@ -119,19 +119,19 @@ class WebSocketClient {
     if (this.#wsReconnectTimer) {
       clearTimeout(this.#wsReconnectTimer);
     }
-    
+
     console.log("WebSocket: Attempting connection... (attempt " + (this.#wsConnectionAttempts + 1) + ")");
     const gateway = "ws://" + this.#hostname + this.#wsPath;
-    
+
     try {
       this.#websocket = new WebSocket(gateway);
       this.#websocket.onopen = (e) => this._handleOpen(e);
       this.#websocket.onclose = (e) => this._handleClose(e);
       this.#websocket.onerror = (e) => this._handleError(e);
       this.#websocket.onmessage = (e) => this._handleMessage(e);
-      
+
       this.#wsConnectionAttempts++;
-      
+
       // Timeout connection attempt after configured duration
       this.#wsReconnectTimer = setTimeout(() => {
         if (this.#websocket && this.#websocket.readyState === WebSocket.CONNECTING) {
@@ -144,7 +144,7 @@ class WebSocketClient {
       this._scheduleReconnect();
     }
   }
-  
+
   /**
    * Send message over WebSocket if connected
    * @param {any} data - Data to send
@@ -157,7 +157,7 @@ class WebSocketClient {
     }
     return false;
   }
-  
+
   /**
    * Disconnect WebSocket
    */
@@ -179,7 +179,7 @@ class WebSocketClient {
       this.#heartbeatResponseTimer = null;
     }
   }
-  
+
   /**
    * Internal: Handle connection open
    */
@@ -198,7 +198,7 @@ class WebSocketClient {
     this._startHeartbeat();
     this.#onOpen(event);
   }
-  
+
   /**
    * Internal: Handle connection close
    */
@@ -214,7 +214,7 @@ class WebSocketClient {
     this._scheduleReconnect();
     this.#onClose(event);
   }
-  
+
   /**
    * Internal: Handle connection error
    */
@@ -222,7 +222,7 @@ class WebSocketClient {
     console.error("WebSocket: Error:", event);
     this.#onError(event);
   }
-  
+
   /**
    * Internal: Handle incoming message
    */
@@ -239,7 +239,7 @@ class WebSocketClient {
     }
     this.#onMessage(event);
   }
-  
+
   /**
    * Internal: Schedule reconnection with exponential backoff
    */
@@ -247,18 +247,18 @@ class WebSocketClient {
     if (this.#wsReconnectTimer) {
       clearTimeout(this.#wsReconnectTimer);
     }
-    
+
     const delayMs = Math.min(
       this.#wsReconnectDelay * Math.pow(1.5, Math.min(this.#wsConnectionAttempts, 5)),
       this.#wsReconnectDelayMax
     );
     const jitter = Math.random() * 1000;
     const totalDelay = Math.floor(delayMs + jitter);
-    
+
     console.log("WebSocket: Reconnect scheduled in " + totalDelay + "ms (attempt " + (this.#wsConnectionAttempts + 1) + ")");
     this.#wsReconnectTimer = setTimeout(() => this.connect(), totalDelay);
   }
-  
+
   /**
    * Internal: Start heartbeat timers (called on connection open)
    * Starts WebSocket heartbeat to keep connection alive
@@ -269,7 +269,7 @@ class WebSocketClient {
     }
     this._doWsHeartbeat();
   }
-  
+
   /**
    * Internal: Send periodic WebSocket heartbeat to keep connection alive
    */
@@ -284,7 +284,7 @@ class WebSocketClient {
     const interval = this.#isConnected ? this.#heartbeatIntervalConnected : this.#heartbeatIntervalDisconnected;
     this.#wsHeartbeatTimer = setTimeout(() => this._doWsHeartbeat(), interval);
   }
-  
+
   /**
    * Internal: Check if heartbeat response was received (called on timeout)
    * Increments miss counter; closes connection and reconnects on 2nd miss
@@ -292,7 +292,7 @@ class WebSocketClient {
   _checkHeartbeatResponse() {
     this.#heartbeatMissCount++;
     console.log("WebSocket: Heartbeat response timeout (miss #" + this.#heartbeatMissCount + ")");
-    
+
     if (this.#heartbeatMissCount >= 2) {
       console.log("WebSocket: 2nd heartbeat miss - closing connection and reconnecting");
       this.#heartbeatResponseTimer = null;
@@ -309,7 +309,7 @@ class WebSocketClient {
 class EventSourceManager {
   // Private fields
   #eventSource = null;
-  
+
   /**
    * Initialize EventSource manager
    * @param {Object} config - Configuration object
@@ -319,7 +319,7 @@ class EventSourceManager {
   constructor(config = {}) {
     this.eventHandlers = config.eventHandlers || {};
   }
-  
+
   /**
    * Connect to EventSource and register event handlers
    */
@@ -328,22 +328,22 @@ class EventSourceManager {
       console.warn("EventSource: Not supported in this browser");
       return;
     }
-    
+
     console.log("EventSource: Connecting...");
     this.#eventSource = new EventSource("/events");
-    
+
     // Standard open handler
     this.#eventSource.addEventListener("open", () => {
       console.log("EventSource: Connected");
     }, false);
-    
+
     // Standard error handler
     this.#eventSource.addEventListener("error", (e) => {
       if (e.target.readyState !== EventSource.OPEN) {
         console.log("EventSource: Disconnected");
       }
     }, false);
-    
+
     // Register custom event handlers
     Object.keys(this.eventHandlers).forEach((eventName) => {
       this.#eventSource.addEventListener(eventName, (e) => {
@@ -357,7 +357,7 @@ class EventSourceManager {
       }, false);
     });
   }
-  
+
   /**
    * Register an event handler dynamically
    * @param {string} eventName - Name of the event
@@ -380,7 +380,7 @@ class EventSourceManager {
       }, false);
     }
   }
-  
+
   /**
    * Close EventSource connection
    */
@@ -404,7 +404,7 @@ class XHRHelper {
     this.timeout = config.timeout || 5000;
     this.onError = config.onError || (() => {});
   }
-  
+
   /**
    * Send GET request
    * @param {string} url - URL to request
@@ -437,7 +437,7 @@ class XHRHelper {
     xhttp.send();
     return true;
   }
-  
+
   /**
    * Send PUT request
    * @param {string} url - URL to request
@@ -467,7 +467,7 @@ class XHRHelper {
     xhttp.send(data || null);
     return true;
   }
-  
+
   /**
    * Send POST request
    * @param {string} url - URL to request
@@ -497,7 +497,7 @@ class XHRHelper {
     xhttp.send(data || null);
     return true;
   }
-  
+
   /**
    * Send DELETE request
    * @param {string} url - URL to request

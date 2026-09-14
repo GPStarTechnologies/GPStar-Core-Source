@@ -119,7 +119,7 @@ const esManager = new EventSourceManager({
       setHtml("yaw", formatFloat(obj.yaw ?? 0) + "&deg;");
       setHtml("gForce", `${formatFloat(obj.gForce ?? 0)}`);
       setHtml("angVel", `${formatFloat(obj.angVel ?? 0)}&deg;/s`);
-      setHtml("shaken", `&nbsp;&nbsp;&nbsp;${obj.shaken ? "&oplus;" : "&mdash;"}`);  
+      setHtml("shaken", `&nbsp;&nbsp;&nbsp;${obj.shaken ? "&oplus;" : "&mdash;"}`);
       setHtml("magX", `${formatFloat(obj.mX ?? 0)}&micro;T`);
       setHtml("magY", `${formatFloat(obj.mY ?? 0)}&micro;T`);
       setHtml("magZ", `${formatFloat(obj.mZ ?? 0)}&micro;T`);
@@ -368,7 +368,7 @@ class Telemetry3DView {
   constructor(domId, geometryUrl) {
     this.el = document.getElementById(domId);
     console.debug("[Telemetry3DView] DOM element found:", this.el);
-    
+
     this.width = parentWidth(this.el);
     this.height = parentHeight(this.el);
     this.aspect = this.width / this.height;
@@ -502,7 +502,7 @@ class Calibration3DView {
   constructor(domId) {
     this.el = document.getElementById(domId);
     console.debug("[Calibration3DView] DOM element found:", this.el);
-    
+
     this.width = parentWidth(this.el);
     this.height = parentHeight(this.el);
     this.aspect = this.width / this.height;
@@ -710,7 +710,7 @@ function init3D() {
     console.warn("[init3D] Waiting for Three.js library to load...");
     return;
   }
-  
+
   // Verify DOM elements exist
   const telemetryEl = document.getElementById("vizTelemetry");
   const calibrationEl = document.getElementById("vizCalibration");
@@ -718,7 +718,7 @@ function init3D() {
   if (!telemetryEl || !calibrationEl) {
     console.warn("[init3D] Waiting for DOM elements...");
     return;
-  } 
+  }
 
   // All prerequisites met, set the flag to indicate object creation in progress.
   init3DInProgress = true;

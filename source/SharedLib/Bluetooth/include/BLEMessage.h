@@ -21,7 +21,7 @@
  *   --------
  *   Defines a complete BLE message structure representing one logical packet
  *   to be transmitted or received via the SerialData transport.
- *   
+ *
  *   Per BLE_TRANSPORT.md rule #4: "One queue entry represents one complete logical message."
  */
 
@@ -33,9 +33,9 @@
 
 /*
  * BLE Message Structure
- * 
+ *
  * Represents a single complete message to be transmitted or received.
- * 
+ *
  * Fields:
  *   packetType  - Type of packet (PACKET_COMMAND, PACKET_DATA, PACKET_SYNC, etc.)
  *                 Comes from Communication.h PACKET_TYPE enum
@@ -45,9 +45,9 @@
  *                 Includes frame markers (0x02 start, 0x04 end) and all command/data
  *   length      - Number of bytes in payload (typically 4-256)
  *   status      - Current state of this message (QUEUED, SENT, CONFIRMED)
- * 
- * Per BLE_TRANSPORT.md: "The payload is preserved exactly as produced for the existing 
- * serial transport. The BLE transport does not reinterpret or rebuild this payload. 
+ *
+ * Per BLE_TRANSPORT.md: "The payload is preserved exactly as produced for the existing
+ * serial transport. The BLE transport does not reinterpret or rebuild this payload.
  * It wraps and transports it intact."
  */
 struct BLEMessage {

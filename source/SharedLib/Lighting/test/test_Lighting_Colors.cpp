@@ -16,9 +16,9 @@
 class LightingColorsFixture : public ::testing::Test {
 protected:
     Lighting lighting;  // Create Lighting instance for testing
-    
+
     LightingColorsFixture() : lighting(1) {}  // Initialize with 1 device
-    
+
     void SetUp() override {
         // Color definition tests don't require state reset
     }
@@ -62,7 +62,7 @@ TEST_F(LightingColorsFixture, StaticColor_White_HasZeroSaturation) {
 TEST_F(LightingColorsFixture, StaticColor_BrightnessParameterApplied) {
     LED_HSV bright = lighting.getColorHSV(C_RED, 255, 255);
     LED_HSV dim = lighting.getColorHSV(C_RED, 128, 255);
-    
+
     EXPECT_EQ(bright.v, 255);
     EXPECT_EQ(dim.v, 128);    // Brightness parameter should be applied
 }
@@ -70,7 +70,7 @@ TEST_F(LightingColorsFixture, StaticColor_BrightnessParameterApplied) {
 TEST_F(LightingColorsFixture, StaticColor_SaturationParameterApplied) {
     LED_HSV saturated = lighting.getColorHSV(C_RED, 255, 255);
     LED_HSV desaturated = lighting.getColorHSV(C_RED, 255, 128);
-    
+
     EXPECT_EQ(saturated.s, 255);
     EXPECT_EQ(desaturated.s, 128);  // Saturation parameter should be applied
 }
@@ -83,7 +83,7 @@ TEST_F(LightingColorsFixture, AllStaticColors_ReturnValidHSV) {
         C_GREEN, C_DARK_GREEN, C_MINT, C_AQUA,
         C_LIGHT_BLUE, C_MID_BLUE, C_NAVY_BLUE, C_BLUE, C_PURPLE
     };
-    
+
     for(ColorID color : colors) {
         LED_HSV hsv = lighting.getColorHSV(color, 255, 255);
         // All values should be in valid range

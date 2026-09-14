@@ -1,9 +1,9 @@
 /*
  * BLE Library - Umbrella Header
- * 
+ *
  * This header provides the complete public interface for the Bluetooth
  * message queue and packet creation functionality.
- * 
+ *
  * Usage:
  *   #include <BLE.h>  // Automatically includes all BLE components
  */

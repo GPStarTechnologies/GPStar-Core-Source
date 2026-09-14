@@ -101,7 +101,7 @@ enum ColorID : uint8_t {
 
 /**
  * LED_Palette16: A platform-independent 16-color palette.
- * 
+ *
  * This provides a simple, driver-agnostic container using the LED_RGB type.
  * Palettes distribute colors across pixels for transitions and lighting effects.
  */
@@ -133,10 +133,10 @@ enum AnimationMode : uint8_t {
 
 /**
  * AnimationConfig: Complete configuration for a dynamic color animation.
- * 
+ *
  * Stores all parameters needed to control an animation's behavior and timing.
  * One config per dynamic ColorID, loaded from centralized lookup table.
- * 
+ *
  * Fields:
  *   cycleMs: Milliseconds between animation state changes (explicit, device-independent timing)
  *   mode: AnimationMode - How the animation advances (alternate, fade, pulse, cycle, decay)
@@ -145,7 +145,7 @@ enum AnimationMode : uint8_t {
  *   fixedHue: Optional fixed hue (for ANIM_FADE animations on specific color)
  *   saturation: Optional saturation override (for ANIM_CYCLE_HUE animations)
  *   adjustBrightness: Special flag - darken green on REDGREEN alternation
- * 
+ *
  * Example:
  *   {250, ANIM_ALTERNATE, 0, 96, 0, 255, true}  // Red ↔ Green, darken green
  *   {30, ANIM_CYCLE_HUE, 0, 5, 0, 255, false}   // Rainbow, advance +5 hue, full sat

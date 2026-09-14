@@ -257,7 +257,7 @@ void updateTopStatusLED() {
   // Update the top LED based on certain system statuses.
   auto& mgr = LightingManager::getInstance();
   uint8_t led_top = mgr.getMappedIndex(TOP_LED);
-  
+
   switch(MENU_LEVEL) {
     case MENU_1:
       // Keep indicator solid when in this menu level (indicates default/stable).
@@ -310,7 +310,7 @@ void updateBodyLEDs() {
   // Otherwise, use the standard pattern/colour for illumination.
   auto& mgr = LightingManager::getInstance();
   uint8_t led_upper = mgr.getMappedIndex(UPPER_LED);
-  
+
   if(b_pack_alarm || b_overheating) {
     mgr.setPixelColor(led_upper, C_RED_FADE);
   }
