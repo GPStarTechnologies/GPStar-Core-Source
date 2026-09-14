@@ -347,12 +347,13 @@ void bleProcessData() {
       // Parsed packet structure
       switch(packet.packetType) {
         case PACKET_COMMAND: sendDebug(String(F("[BLE-RX] Parsed: type=COMMAND(1)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
-        case PACKET_DATA: sendDebug(String(F("[BLE-RX] Parsed: type=DATA(2)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
-        case PACKET_PACK: sendDebug(String(F("[BLE-RX] Parsed: type=PACK(3)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
-        case PACKET_WAND: sendDebug(String(F("[BLE-RX] Parsed: type=WAND(4)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
-        case PACKET_SMOKE: sendDebug(String(F("[BLE-RX] Parsed: type=SMOKE(5)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
-        case PACKET_SYNC: sendDebug(String(F("[BLE-RX] Parsed: type=SYNC(6)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
-        default: sendDebug(String(F("[BLE-RX] Parsed: type=UNKNOWN(0)")) + String(F(" | c=")) + String(packet.cmd) + String(F(" d1=")) + String(packet.d1)); break;
+        case PACKET_DATA: sendDebug(String(F("[BLE-RX] Parsed: type=DATA(2)")) + String(F(" | c=")) String(packet.cmd) + String(F(" d[0,1,2]=")) + String(packet.d[0]) +
+              String(F(",")) + String(packet.d[1]) + String(F(",")) + String(packet.d[2])); break;
+        case PACKET_PACK: sendDebug(String(F("[BLE-RX] Parsed: type=PACK(3)"))); break;
+        case PACKET_WAND: sendDebug(String(F("[BLE-RX] Parsed: type=WAND(4)"))); break;
+        case PACKET_SMOKE: sendDebug(String(F("[BLE-RX] Parsed: type=SMOKE(5)"))); break;
+        case PACKET_SYNC: sendDebug(String(F("[BLE-RX] Parsed: type=SYNC(6)"))); break;
+        default: sendDebug(String(F("[BLE-RX] Parsed: type=UNKNOWN(0)"))); break;
       }
     #endif
 
