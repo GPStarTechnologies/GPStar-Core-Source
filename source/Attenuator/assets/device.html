@@ -281,22 +281,24 @@
           return;
         }
 
-        // Do not allow saving if the new SSID is too short/long, or illegal.
+        // Do not allow saving if the new SSID is too short/long, or illegal (only validate if a value is provided).
         var wifiName = getText("wifiName");
-        if (wifiName.length < 8) {
-          alert("Error: Network name must be more than 8 characters.");
-          return;
-        }
-        if (wifiName.length > 32) {
-          // Field input size should disallow this, but check just in case.
-          alert("Error: Network name cannot exceed 32 characters.");
-          return;
-        }
-        var ssidRegex = /^[a-zA-Z0-9-_]*$/;
-        if (!ssidRegex.test(wifiName)) {
-          // The name for the SSID must conform to RFC standards which limits the allowed characters.
-          alert("Error: Network name may only contain letters, numbers, hyphens, and underscores.");
-          return;
+        if (wifiName.length > 0) {
+          if (wifiName.length < 8) {
+            alert("Error: Network name must be more than 8 characters.");
+            return;
+          }
+          if (wifiName.length > 32) {
+            // Field input size should disallow this, but check just in case.
+            alert("Error: Network name cannot exceed 32 characters.");
+            return;
+          }
+          var ssidRegex = /^[a-zA-Z0-9-_]*$/;
+          if (!ssidRegex.test(wifiName)) {
+            // The name for the SSID must conform to RFC standards which limits the allowed characters.
+            alert("Error: Network name may only contain letters, numbers, hyphens, and underscores.");
+            return;
+          }
         }
 
         // Saves current settings to attenuator, updating runtime variables and making changes immediately effective.
