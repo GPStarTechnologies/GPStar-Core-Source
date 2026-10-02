@@ -452,7 +452,7 @@ void setClippardLED(bool b_on, ColorID colorEnum = C_WARM_WHITE) {
 }
 
 // Helper function for top Hat LED control (index 3 in CHAIN_VENT, or GPIO pin)
-void setTopHatLED(bool b_on, ColorID colorEnum = C_WARM_WHITE) {
+void setTopHatLED(bool b_on, ColorID colorEnum = C_ORANGE) {
   if(b_rgb_vent_light && b_rgb_top_hat) {
     // Use RGB addressable LED with color support
     auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
