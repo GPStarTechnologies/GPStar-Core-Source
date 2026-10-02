@@ -102,6 +102,8 @@ struct __attribute__((packed)) WandPrefs {
   bool extraProtonSounds : 1;
   bool quickVenting : 1;
   bool rgbVentColours : 1;
+  bool rgbClippardEnable : 1;
+  bool rgbTopHatEnable : 1;
   bool autoVentLight : 1;
   bool wandBeepLoop : 1;
   bool wandBootError : 1;

@@ -438,6 +438,32 @@ void wandTipSpark() {
   ms_wand_heatup_fade.start(i_delay_heatup);
 }
 
+// Helper function for Clippard LED control (index 2 in CHAIN_VENT, or GPIO pin)
+void setClippardLED(bool b_on, ColorID colorEnum = C_WARM_WHITE) {
+  if(b_rgb_vent_light && b_rgb_clippard) {
+    // Use RGB addressable LED with color support
+    auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
+    ventMgr.setPixelColor(2, b_on ? colorEnum : C_BLACK);
+    b_vent_lights_changed = true;
+  } else {
+    // Fall back to simple GPIO on/off
+    digitalWriteFast(CLIPPARD_LED_PIN, b_on ? HIGH : LOW);
+  }
+}
+
+// Helper function for top Hat LED control (index 3 in CHAIN_VENT, or GPIO pin)
+void setTopHatLED(bool b_on, ColorID colorEnum = C_WARM_WHITE) {
+  if(b_rgb_vent_light && b_rgb_top_hat) {
+    // Use RGB addressable LED with color support
+    auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
+    ventMgr.setPixelColor(3, b_on ? colorEnum : C_BLACK);
+    b_vent_lights_changed = true;
+  } else {
+    // Fall back to simple GPIO on/off
+    digitalWriteFast(TOP_HAT_LED_PIN, b_on ? HIGH : LOW);
+  }
+}
+
 // Main control of hat light functions.
 void hatLightControl() {
   switch(WAND_STATUS) {
@@ -447,7 +473,7 @@ void hatLightControl() {
         if(gpstarWand.getIonArmSwitch() == RED_SWITCH_OFF) {
           // Keep the hat lights turned off.
           digitalWriteFast(BARREL_HAT_LED_PIN, LOW);
-          digitalWriteFast(TOP_HAT_LED_PIN, LOW);
+          setTopHatLED(false);
         }
       }
     break;
@@ -455,38 +481,38 @@ void hatLightControl() {
     case MODE_ERROR:
       if(ms_error_blink.remaining() < i_error_blink_delay / 2) {
         digitalWriteFast(SLO_BLO_LED_PIN, LOW);
-        digitalWriteFast(TOP_HAT_LED_PIN, LOW);
-        digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+        setTopHatLED(false);
+        setClippardLED(false);
       }
       else {
         digitalWriteFast(SLO_BLO_LED_PIN, HIGH);
-        digitalWriteFast(TOP_HAT_LED_PIN, HIGH);
-        digitalWriteFast(CLIPPARD_LED_PIN, HIGH);
+        setTopHatLED(true);
+        setClippardLED(true);
       }
     break;
 
     case MODE_ON:
       // Clippard LED is linked to the wand switch; check to see if it needs to be on.
-      digitalWriteFast(CLIPPARD_LED_PIN, switch_wand.on() ? HIGH : LOW);
+      setClippardLED(switch_wand.on());
 
       if(b_pack_alarm) {
         if(ms_error_blink.remaining() < i_error_blink_delay / 2) {
-          digitalWriteFast(TOP_HAT_LED_PIN, LOW);
+          setTopHatLED(false);
         }
         else {
-          digitalWriteFast(TOP_HAT_LED_PIN, HIGH);
+          setTopHatLED(true);
         }
       }
       else {
         if(!ms_warning_blink.isRunning() && !ms_error_blink.isRunning() && WAND_ACTION_STATUS != ACTION_OVERHEATING) {
           if(getNeutronaWandYearMode() == SYSTEM_AFTERLIFE || getNeutronaWandYearMode() == SYSTEM_FROZEN_EMPIRE) {
             // In Afterlife and Frozen Empire, both hat lights are on once the wand is activated.
-            digitalWriteFast(TOP_HAT_LED_PIN, HIGH);
+            setTopHatLED(true);
             digitalWriteFast(BARREL_HAT_LED_PIN, HIGH);
           }
           else {
             // In 1984 and 1989 the top hat light never comes on, and the barrel hat light comes on when firing.
-            digitalWriteFast(TOP_HAT_LED_PIN, LOW);
+            setTopHatLED(false);
 
             if(b_firing) {
               digitalWriteFast(BARREL_HAT_LED_PIN, HIGH);
@@ -498,11 +524,11 @@ void hatLightControl() {
         }
         else if(ms_warning_blink.isRunning() && WAND_ACTION_STATUS == ACTION_FIRING) {
           if(ms_warning_blink.remaining() < i_warning_blink_delay / 2) {
-            digitalWriteFast(TOP_HAT_LED_PIN, HIGH);
+            setTopHatLED(true);
             digitalWriteFast(BARREL_HAT_LED_PIN, HIGH);
           }
           else {
-            digitalWriteFast(TOP_HAT_LED_PIN, LOW);
+            setTopHatLED(false);
             digitalWriteFast(BARREL_HAT_LED_PIN, LOW);
           }
         }
@@ -512,10 +538,10 @@ void hatLightControl() {
 
           // Turn on hat light 2 in 1984/1989 as overheat indicator; turn off in Afterlife/Frozen Empire.
           if(getNeutronaWandYearMode() == SYSTEM_1984 || getNeutronaWandYearMode() == SYSTEM_1989) {
-            digitalWriteFast(TOP_HAT_LED_PIN, HIGH);
+            setTopHatLED(true);
           }
           else {
-            digitalWriteFast(TOP_HAT_LED_PIN, LOW);
+            setTopHatLED(false);
           }
         }
       }
@@ -539,10 +565,10 @@ void resetHatLights() {
 
   // Reset wand body top hat light.
   if(((getNeutronaWandYearMode() == SYSTEM_AFTERLIFE || getNeutronaWandYearMode() == SYSTEM_FROZEN_EMPIRE) && WAND_STATUS == MODE_ON)) {
-    digitalWriteFast(TOP_HAT_LED_PIN, HIGH);
+    setTopHatLED(true);
   }
   else {
-    digitalWriteFast(TOP_HAT_LED_PIN, LOW);
+    setTopHatLED(false);
   }
 }
 
@@ -3224,9 +3250,9 @@ void barrelLightsOff() {
 void wandLightsOffMenuSystem() {
   // Make sure some of the wand lights are off, specifically for the Menu systems.
   digitalWriteFast(SLO_BLO_LED_PIN, LOW); // Turn off the SLO-BLO LED.
-  digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Turn off the front left LED under the Clippard valve.
+  setClippardLED(false); // Turn off the front left LED under the Clippard valve.
   digitalWriteFast(BARREL_HAT_LED_PIN, LOW); // Turn off hat light 1.
-  digitalWriteFast(TOP_HAT_LED_PIN, LOW); // Turn off hat light 2.
+  setTopHatLED(false); // Turn off hat light 2.
   ventTopLightControl(false); // Turn off the blinking white top LED.
   ventLightControl(0); // Turn off the vent light.
 
@@ -3479,7 +3505,7 @@ void modeActivate() {
   b_sound_afterlife_idle_2_fade = true;
 
   if(ms_power_indicator.isRunning()) {
-    digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+    setClippardLED(false);
   }
   setPowerOnReminder(false);
 
@@ -4064,7 +4090,7 @@ void checkSwitches() {
                 }
 
                 if(switch_vent.on() && switch_wand.on()) {
-                  digitalWriteFast(CLIPPARD_LED_PIN, HIGH); // Turn on the front left LED under the Clippard valve.
+                  setClippardLED(true); // Turn on the front left LED under the Clippard valve.
 
                   // Turn on the vent lights.
                   if(b_vent_light_control) {
@@ -4092,7 +4118,7 @@ void checkSwitches() {
                     wandBargraphControl(0);
                   }
 
-                  digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Turn off the front left LED under the Clippard valve.
+                  setClippardLED(false); // Turn off the front left LED under the Clippard valve.
 
                   // Turn off the Neutrona Wand vent lights.
                   ventLightControl(0);
@@ -9642,7 +9668,7 @@ void checkRotaryEncoder() {
                 // Turn off the other lights.
                 ventLightControl(0); // Level 3
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9670,7 +9696,7 @@ void checkRotaryEncoder() {
 
                 // Turn off the other lights.
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9698,7 +9724,7 @@ void checkRotaryEncoder() {
                 ventTopLightControl(true); // Level 4
 
                 // Turn off the other lights.
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9724,7 +9750,7 @@ void checkRotaryEncoder() {
                 digitalWriteFast(SLO_BLO_LED_PIN, HIGH); // Level 2
                 ventLightControl(); // Level 3
                 ventTopLightControl(true); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, HIGH); // Level 5
+                setClippardLED(true); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9808,7 +9834,7 @@ void checkRotaryEncoder() {
                 ventTopLightControl(true); // Level 4
 
                 // Turn off the other lights.
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9836,7 +9862,7 @@ void checkRotaryEncoder() {
 
                 // Turn off the other lights.
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9864,7 +9890,7 @@ void checkRotaryEncoder() {
                 // Turn off the other lights.
                 ventLightControl(0); // Level 3
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9890,7 +9916,7 @@ void checkRotaryEncoder() {
                 digitalWriteFast(SLO_BLO_LED_PIN, LOW); // Level 2
                 ventLightControl(0); // Level 3
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9970,7 +9996,7 @@ void checkRotaryEncoder() {
                 // Turn off the other lights.
                 ventLightControl(0); // Level 3
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -9998,7 +10024,7 @@ void checkRotaryEncoder() {
 
                 // Turn off the other lights.
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -10083,7 +10109,7 @@ void checkRotaryEncoder() {
                 // Turn off the other lights.
                 ventLightControl(0); // Level 3
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -10109,7 +10135,7 @@ void checkRotaryEncoder() {
                 digitalWriteFast(SLO_BLO_LED_PIN, LOW); // Level 2
                 ventLightControl(0); // Level 3
                 ventTopLightControl(false); // Level 4
-                digitalWriteFast(CLIPPARD_LED_PIN, LOW); // Level 5
+                setClippardLED(false); // Level 5
 
                 // Play an indication beep to notify we have changed menu levels.
                 stopEffect(S_BEEPS);
@@ -10408,7 +10434,7 @@ void changeIonArmSwitchState(bool state) {
     gpstarWand.setIonArmSwitch(RED_SWITCH_ON);
 
     if(ms_power_indicator.isRunning()) {
-      digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+      setClippardLED(false);
     }
     setPowerOnReminder(false);
 
@@ -10606,7 +10632,13 @@ void checkPowerOnReminder() {
     if(ms_power_indicator.justFinished()) {
       if(gpstarWand.isPackInactiveModeOriginal() || gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
         // Blink the Clippard LED to indicate to the user that the system battery is still powered on.
-        digitalWriteFast(CLIPPARD_LED_PIN, (digitalReadFast(CLIPPARD_LED_PIN) == LOW) ? HIGH : LOW);
+        if(b_rgb_vent_light && b_rgb_clippard) {
+          auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
+          // Toggle by checking if currently off (black), then turn it on, otherwise turn it off
+          setClippardLED(ventMgr.getPixelColor(2) == LED_RGB_BLACK);
+        } else {
+          digitalWriteFast(CLIPPARD_LED_PIN, (digitalReadFast(CLIPPARD_LED_PIN) == LOW) ? HIGH : LOW);
+        }
       }
 
       // Restart the blink timer.

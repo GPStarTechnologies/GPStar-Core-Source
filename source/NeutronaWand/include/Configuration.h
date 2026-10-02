@@ -147,6 +147,8 @@ bool b_bargraph_invert = false;
 #else
   bool b_rgb_vent_light = false; // Assumes stock LED for ATMega, overridden with EEPROM.
 #endif
+bool b_rgb_clippard = false; // Support the RGB Clippard Light (requires b_rgb_vent_light).
+bool b_rgb_top_hat = false; // Support the RGB top Hat light (requires b_rgb_vent_light).
 
 /*
  * Enables the optional addressable RGB vent/top light to display the current stream colours.

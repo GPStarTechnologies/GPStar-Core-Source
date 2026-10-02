@@ -327,6 +327,8 @@ String getWandConfig() {
     jsonBody["quickVenting"] = wandConfig.quickVenting; // true|false (Super-Hero Mode Only)
     jsonBody["rgbVentEnabled"] = wandConfig.rgbVentEnabled; // true|false
     jsonBody["rgbVentColours"] = wandConfig.rgbVentColours; // true|false
+    jsonBody["rgbClippardEnable"] = wandConfig.rgbClippardEnable; // true|false
+    jsonBody["rgbTopHatEnable"] = wandConfig.rgbTopHatEnable; // true|false
     jsonBody["autoVentLight"] = wandConfig.autoVentLight; // true|false
     jsonBody["audioVolumeBoosted"] = wandConfig.audioVolumeBoosted; // true|false
     jsonBody["gpstarAudioLed"] = wandConfig.gpstarAudioLed; // true|false
@@ -1855,6 +1857,8 @@ AsyncCallbackJsonWebHandler *handleSaveWandConfig = new AsyncCallbackJsonWebHand
       // Boolean fields - LED toggles
       wandConfig.rgbVentEnabled = extractBoolFromJson(jsonBody, "rgbVentEnabled", wandConfig.rgbVentEnabled);
       wandConfig.rgbVentColours = extractBoolFromJson(jsonBody, "rgbVentColours", wandConfig.rgbVentColours);
+      wandConfig.rgbClippardEnable = extractBoolFromJson(jsonBody, "rgbClippardEnable", wandConfig.rgbClippardEnable);
+      wandConfig.rgbTopHatEnable = extractBoolFromJson(jsonBody, "rgbTopHatEnable", wandConfig.rgbTopHatEnable);
       wandConfig.autoVentLight = extractBoolFromJson(jsonBody, "autoVentLight", wandConfig.autoVentLight);
 
       // Stream mode toggles - Update in the config object for the moment, and save back to the device's state object later.

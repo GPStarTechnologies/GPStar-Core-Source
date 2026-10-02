@@ -94,6 +94,24 @@
       </div>
       <div class="setting">
         <label class="toggle-switchy" data-label="left">
+          <input id="rgbClippardEnable" name="rgbClippardEnable" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">RGB Clippard Light:</span>
+        </label>
+      </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-label="left">
+          <input id="rgbTopHatEnable" name="rgbTopHatEnable" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">RGB Top Hat Light:</span>
+        </label>
+      </div>
+      <div class="setting">
+        <label class="toggle-switchy" data-label="left">
           <input id="autoVentLight" name="autoVentLight" type="checkbox" />
           <span class="toggle">
             <span class="switch"></span>
@@ -447,6 +465,8 @@
         setToggle("wandSoundsToPack", settings.wandSoundsToPack);
         setToggle("quickVenting", settings.quickVenting);
         setToggle("rgbVentColours", settings.rgbVentColours);
+        setToggle("rgbClippardEnable", settings.rgbClippardEnable);
+        setToggle("rgbTopHatEnable", settings.rgbTopHatEnable);
         setToggle("autoVentLight", settings.autoVentLight);
         setToggle("wandBeepLoop", settings.wandBeepLoop);
         setToggle("wandBootError", settings.wandBootError);
@@ -606,6 +626,8 @@
           wandSoundsToPack: getToggle("wandSoundsToPack"),
           quickVenting: getToggle("quickVenting"),
           rgbVentColours: getToggle("rgbVentColours"),
+          rgbClippardEnable: getToggle("rgbClippardEnable"),
+          rgbTopHatEnable: getToggle("rgbTopHatEnable"),
           autoVentLight: getToggle("autoVentLight"),
           wandBeepLoop: getToggle("wandBeepLoop"),
           wandBootError: getToggle("wandBootError"),

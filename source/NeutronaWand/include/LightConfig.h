@@ -57,7 +57,7 @@
  * Note that these are in the expected physical order in the chain
  */
 #define BARREL_LEDS_MAX 50 // The maximum number of barrel LEDs supported (GPStar Neutrona Barrel is 48 + 2 Strobe Tips).
-#define VENT_LED_COUNT 2 // The maximum number of LEDs for the vent lights. Main vent + top Clip Lite.
+#define VENT_LED_COUNT 4 // The maximum number of LEDs for the vent light chain: Main Vent + Top Clip Lite, Clippard LED, and Hat Light.
 
 /*
  * The Hasbro Neutrona Wand has 5 LEDs. 0 = Base, 4 = tip. These are addressable with a single pin and are GRB colour order.

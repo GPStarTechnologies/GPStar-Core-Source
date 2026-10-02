@@ -52,6 +52,8 @@ struct objLEDEEPROM {
   // Note there is no RGB Vent Light setting for ESP32 as it must always be enabled
   uint8_t ventLightStreamColours;
   uint8_t gpstarAudioLed;
+  uint8_t rgbClippardEnable;
+  uint8_t rgbTopHatEnable;
 } gObjLEDEEPROM;
 
 // Data structure for configuration settings (stored in Preferences)
@@ -98,6 +100,8 @@ void saveLEDEEPROM() {
   gObjLEDEEPROM.numBarrelLeds = WAND_BARREL_LED;
   gObjLEDEEPROM.numBargraphLeds = BARGRAPH_TYPE_EEPROM;
   gObjLEDEEPROM.gpstarAudioLed = b_gpstar_audio_led_enabled ? 2 : 1;
+  gObjLEDEEPROM.rgbClippardEnable = b_rgb_clippard ? 2 : 1;
+  gObjLEDEEPROM.rgbTopHatEnable = b_rgb_top_hat ? 2 : 1;
 
   // Create Preferences object to handle non-volatile storage (NVS).
   Preferences preferences;
@@ -660,6 +664,14 @@ void readEEPROM() {
     if(gObjLEDEEPROM.gpstarAudioLed > 0 && gObjLEDEEPROM.gpstarAudioLed < 3) {
       b_gpstar_audio_led_enabled = (gObjLEDEEPROM.gpstarAudioLed > 1);
       setAudioLED(b_gpstar_audio_led_enabled);
+    }
+
+    if(gObjLEDEEPROM.rgbClippardEnable > 0 && gObjLEDEEPROM.rgbClippardEnable < 3) {
+      b_rgb_clippard = (gObjLEDEEPROM.rgbClippardEnable > 1);
+    }
+
+    if(gObjLEDEEPROM.rgbTopHatEnable > 0 && gObjLEDEEPROM.rgbTopHatEnable < 3) {
+      b_rgb_top_hat = (gObjLEDEEPROM.rgbTopHatEnable > 1);
     }
   }
   else {

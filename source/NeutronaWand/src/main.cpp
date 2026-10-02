@@ -327,8 +327,8 @@ void setup() {
 
   pinModeFast(SLO_BLO_LED_PIN, OUTPUT); // SLO-BLO LED under the toggle switches.
   pinModeFast(CLIPPARD_LED_PIN, OUTPUT); // Front left LED underneath the Clippard valve.
-  pinModeFast(BARREL_HAT_LED_PIN, OUTPUT); // Hat light at front of the wand near the barrel tip.
-  pinModeFast(TOP_HAT_LED_PIN, OUTPUT); // Hat light at top of the wand body (gun box).
+  pinModeFast(BARREL_HAT_LED_PIN, OUTPUT); // Hat light [1] at front of the wand near the barrel tip.
+  pinModeFast(TOP_HAT_LED_PIN, OUTPUT); // Hat light [2] at top of the wand body (gun box).
   pinModeFast(BARREL_TIP_LED_PIN, OUTPUT); // LED at the tip of the wand barrel.
 
 #ifndef ESP32

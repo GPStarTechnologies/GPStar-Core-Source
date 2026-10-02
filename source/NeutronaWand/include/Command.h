@@ -221,7 +221,7 @@ void executeCommand(uint16_t i_command, uint16_t i_value = 0) {
       // If we are fully off we must also make sure to start/stop the power reminder.
       if(b_playing_music && !b_music_paused) {
         if(ms_power_indicator.isRunning()) {
-          digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+          setClippardLED(false);
         }
         setPowerOnReminder(false);
       }

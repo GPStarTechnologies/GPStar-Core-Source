@@ -716,7 +716,7 @@ void checkPack() {
 
             // Reset our power-on indicator in case it is currently blinking.
             if(ms_power_indicator.isRunning()) {
-              digitalWriteFast(CLIPPARD_LED_PIN, LOW);
+              setClippardLED(false);
             }
             setPowerOnReminder(true);
             b_pack_on = false;

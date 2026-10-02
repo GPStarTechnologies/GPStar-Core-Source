@@ -62,6 +62,8 @@ struct objLEDEEPROM {
   uint8_t rgb_vent_light;
   uint8_t vent_light_stream_colours;
   uint8_t gpstar_audio_led;
+  uint8_t rgb_clippard_enable;
+  uint8_t rgb_top_hat_enable;
 };
 
 /*
@@ -422,6 +424,14 @@ void readEEPROM() {
       b_gpstar_audio_led_enabled = (obj_led_eeprom.gpstar_audio_led > 1);
       setAudioLED(b_gpstar_audio_led_enabled);
     }
+
+    if(obj_led_eeprom.rgb_clippard_enable > 0 && obj_led_eeprom.rgb_clippard_enable < 3) {
+      b_rgb_clippard = (obj_led_eeprom.rgb_clippard_enable > 1);
+    }
+
+    if(obj_led_eeprom.rgb_top_hat_enable > 0 && obj_led_eeprom.rgb_top_hat_enable < 3) {
+      b_rgb_top_hat = (obj_led_eeprom.rgb_top_hat_enable > 1);
+    }
   }
   else {
     // CRC doesn't match; let's clear the EEPROMs to be safe.
@@ -453,6 +463,8 @@ void saveLEDEEPROM() {
   uint8_t i_vent_light_stream_colours = b_vent_light_stream_colours ? 2 : 1; // 1 = Vent Light stream colours disabled, 2 = Vent Light stream colours enabled
   uint8_t i_rgb_vent_light = b_rgb_vent_light ? 2 : 1; // 1 = RGB Vent Light disabled, 2 = RGB Vent Light enabled
   uint8_t i_gpstar_audio_led = b_gpstar_audio_led_enabled ? 2 : 1; // 1 = GPStar Audio LED disabled, 2 = GPStar Audio LED enabled
+  uint8_t i_rgb_clippard_enable = b_rgb_clippard ? 2 : 1; // 1 = RGB Clippard disabled, 2 = RGB Clippard enabled
+  uint8_t i_rgb_top_hat_enable = b_rgb_top_hat ? 2 : 1; // 1 = RGB Top Hat disabled, 2 = RGB Top Hat enabled
 
   // Build the LED EEPROM object with the new data.
   objLEDEEPROM obj_led_eeprom = {
@@ -463,7 +475,9 @@ void saveLEDEEPROM() {
     i_bargraph_led_count,
     i_rgb_vent_light,
     i_vent_light_stream_colours,
-    i_gpstar_audio_led
+    i_gpstar_audio_led,
+    i_rgb_clippard_enable,
+    i_rgb_top_hat_enable
   };
 
   // Save to the EEPROM.
