@@ -419,8 +419,12 @@ void setup() {
 
 // Task callback for handling animations.
 void animateTaskCallback() {
-  auto& barrelMgr = LightingManager::getInstance(CHAIN_BARREL);
+#ifdef ESP32
+  // No need to create any dedicated manager instances for ESP32.
+#else
+  // Create reusable access to the CHAIN_VENT manager to get the color.
   auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
+#endif
 
   if(b_vent_lights_changed) {
     if(b_rgb_vent_light || (WAND_CONN_STATE == PACK_DISCONNECTED || WAND_CONN_STATE == PACK_MISMATCH)) {
@@ -440,9 +444,11 @@ void animateTaskCallback() {
 
   // Update all LED's when the task runs.
 #ifdef ESP32
-  barrelMgr.show();
+  // Call show() on any segment to cause all to update (parallel update to all HW pins).
+  LightingManager::getInstance(CHAIN_BARREL).show();
 #else
-  barrelMgr.show();
+  // Call show() on a representative segment from each chain.
+  LightingManager::getInstance(CHAIN_BARREL).show();
   ventMgr.show();
 #endif
 }

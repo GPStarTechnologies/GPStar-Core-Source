@@ -444,7 +444,6 @@ void setClippardLED(bool b_on, ColorID colorEnum = C_WARM_WHITE) {
     // Use RGB addressable LED with color support
     auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
     ventMgr.setPixelColor(2, b_on ? colorEnum : C_BLACK);
-    b_vent_lights_changed = true;
   } else {
     // Fall back to simple GPIO on/off
     digitalWriteFast(CLIPPARD_LED_PIN, b_on ? HIGH : LOW);
@@ -457,7 +456,6 @@ void setTopHatLED(bool b_on, ColorID colorEnum = C_ORANGE) {
     // Use RGB addressable LED with color support
     auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
     ventMgr.setPixelColor(3, b_on ? colorEnum : C_BLACK);
-    b_vent_lights_changed = true;
   } else {
     // Fall back to simple GPIO on/off
     digitalWriteFast(TOP_HAT_LED_PIN, b_on ? HIGH : LOW);
