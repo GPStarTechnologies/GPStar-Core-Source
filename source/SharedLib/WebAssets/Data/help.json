@@ -124,6 +124,8 @@
     "barrelSwitchPolarity": "Configures the barrel safety switch behavior: Default (normal operation), Inverted (reversed logic), or Disabled (switch is ignored).",
     "rgbVentEnabled": "Enables or disables support for the GPStar RGB Vent/Top LED board.",
     "rgbVentColours": "When enabled, the vent light changes colours to match the currently selected stream type in video game mode.",
+    "rgbClippardEnable": "Enables use of the GPStar RGB Clippard LED extension from the GPStar RGB Vent/Top LED board.",
+    "rgbTopHatEnable": "Enables use of the GPStar RGB Top Hat LED extension from the GPStar RGB Vent/Top LED board.",
     "autoVentLight": "When enabled, the vent light brightness will change with power level and go full brightness when firing.",
     "overheatEnabled": "When enabled, allows the system to enter an overheat state after sustained firing, requiring a cooldown period before firing can resume.",
     "quickVenting": "When enabled, allows triggering a quick vent sequence via clicking the Intensify button if the top-right toggle is down.",

@@ -147,14 +147,19 @@ bool b_bargraph_invert = false;
 #else
   bool b_rgb_vent_light = false; // Assumes stock LED for ATMega, overridden with EEPROM.
 #endif
-bool b_rgb_clippard = false; // Support the RGB Clippard Light (requires b_rgb_vent_light).
-bool b_rgb_top_hat = false; // Support the RGB top Hat light (requires b_rgb_vent_light).
 
 /*
  * Enables the optional addressable RGB vent/top light to display the current stream colours.
  * If false, the vent/top light will only display the appropriate shades of white for the current year setting.
  */
 bool b_vent_light_stream_colours = true;
+
+/*
+ * Enables the optional addressable RGB Clippart/Hat lights when using the extensible RGB Vent/Top Light board.
+ * Both require b_rgb_vent_light to be true, otherwise falls back to devices on the respective GPIO pins.
+ */
+bool b_rgb_clippard = false;
+bool b_rgb_top_hat = false;
 
 /*
  * Enables special brightness controls during idle and firing modes if set to true.

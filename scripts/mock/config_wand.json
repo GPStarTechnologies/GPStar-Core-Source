@@ -29,6 +29,8 @@
   "quickVenting": true,
   "rgbVentEnabled": true,
   "rgbVentColours": false,
+  "rgbClippardEnable": false,
+  "rgbTopHatEnable": false,
   "autoVentLight": true,
   "gpstarAudioLed": true,
   "wandBeepLoop": false,

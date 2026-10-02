@@ -98,6 +98,8 @@ void getWandPrefsObject() {
   wandConfig.quickVenting = b_quick_vent;
   wandConfig.rgbVentEnabled = b_rgb_vent_light;
   wandConfig.rgbVentColours = b_vent_light_stream_colours;
+  wandConfig.rgbClippardEnable = b_rgb_clippard;
+  wandConfig.rgbTopHatEnable = b_rgb_top_hat;
   wandConfig.autoVentLight = b_vent_light_control;
   wandConfig.wandBeepLoop = b_beep_loop;
   wandConfig.wandBootError = b_wand_boot_errors;
@@ -460,6 +462,8 @@ void handleWandPrefsUpdate() {
   b_rgb_vent_light = wandConfig.rgbVentEnabled;
   #endif
   b_vent_light_stream_colours = wandConfig.rgbVentColours;
+  b_rgb_clippard = wandConfig.rgbClippardEnable;
+  b_rgb_top_hat = wandConfig.rgbTopHatEnable;
   b_vent_light_control = wandConfig.autoVentLight;
   b_beep_loop = wandConfig.wandBeepLoop;
   b_wand_boot_errors = wandConfig.wandBootError;
