@@ -75,6 +75,7 @@ struct objLEDEEPROM {
   uint8_t inner_cyclotron_led_panel;
   uint8_t powercell_inverted;
   uint8_t cyclotron_single_center_led;
+  uint8_t center_led_fade; // Used for the 1984/1989 themes.
   uint8_t vg_powercell;
   uint8_t vg_cyclotron;
   uint8_t gpstar_audio_led;
@@ -86,7 +87,6 @@ struct objLEDEEPROM {
 struct objConfigEEPROM {
   uint8_t brass_startup_loop;
   uint8_t cyclotron_direction;
-  uint8_t center_led_fade; // Used for the 1984/1989 themes.
   uint8_t simulate_ring; // Used for the Afterlife/Frozen Empire themes.
   uint8_t smoke_setting;
   uint8_t overheat_strobe;
@@ -241,6 +241,11 @@ void readEEPROM() {
       b_cyclotron_single_led = (obj_led_eeprom.cyclotron_single_center_led > 1);
     }
 
+    if(obj_led_eeprom.center_led_fade > 0 && obj_led_eeprom.center_led_fade < 3) {
+      b_fade_cyclotron_led = (obj_led_eeprom.center_led_fade > 1);
+      i_1984_delay = b_fade_cyclotron_led ? CYCLOTRON_DELAY_TVG : CYCLOTRON_DELAY_1984;
+    }
+
     if(obj_led_eeprom.vg_powercell > 0 && obj_led_eeprom.vg_powercell < 3) {
       b_powercell_colour_toggle = (obj_led_eeprom.vg_powercell > 1);
     }
@@ -335,11 +340,6 @@ void readEEPROM() {
 
     if(obj_config_eeprom.cyclotron_direction > 0 && obj_config_eeprom.cyclotron_direction < 3) {
       b_clockwise = (obj_config_eeprom.cyclotron_direction > 1);
-    }
-
-    if(obj_config_eeprom.center_led_fade > 0 && obj_config_eeprom.center_led_fade < 3) {
-      b_fade_cyclotron_led = (obj_config_eeprom.center_led_fade > 1);
-      i_1984_delay = b_fade_cyclotron_led ? CYCLOTRON_DELAY_TVG : CYCLOTRON_DELAY_1984;
     }
 
     if(obj_config_eeprom.simulate_ring > 0 && obj_config_eeprom.simulate_ring < 3) {
@@ -580,6 +580,9 @@ void saveLEDEEPROM() {
   // Cyclotron 1/3-LED setting for 84/89 modes.
   uint8_t i_cyclotron_single_center_led = b_cyclotron_single_led ? 2 : 1;
 
+  // Cyclotron fade setting for 84/89 modes.
+  uint8_t i_center_led_fade = b_fade_cyclotron_led ? 2 : 1;
+
   // Power Cell and Cyclotron VG colour flags.
   uint8_t i_vg_powercell = b_powercell_colour_toggle ? 2 : 1;
   uint8_t i_vg_cyclotron = b_cyclotron_colour_toggle ? 2 : 1;
@@ -610,6 +613,7 @@ void saveLEDEEPROM() {
     i_inner_cyclotron_led_panel,
     i_powercell_inverted,
     i_cyclotron_single_center_led,
+    i_center_led_fade,
     i_vg_powercell,
     i_vg_cyclotron,
     i_gpstar_audio_led
@@ -640,7 +644,6 @@ void saveConfigEEPROM() {
   // 1 = false, 2 = true.
   uint8_t i_brass_startup_loop = b_brass_startup_loop ? 2 : 1;
   uint8_t i_cyclotron_direction = b_clockwise ? 2 : 1; // 1 = counter-clockwise, 2 = clockwise.
-  uint8_t i_center_led_fade = b_fade_cyclotron_led ? 2 : 1;
   uint8_t i_simulate_ring = b_cyclotron_simulate_ring ? 2 : 1;
   uint8_t i_smoke_settings = b_smoke_enabled ? 2 : 1;
 
@@ -705,7 +708,6 @@ void saveConfigEEPROM() {
   objConfigEEPROM obj_config_eeprom = {
     i_brass_startup_loop,
     i_cyclotron_direction,
-    i_center_led_fade,
     i_simulate_ring,
     i_smoke_settings,
     i_overheat_strobe,

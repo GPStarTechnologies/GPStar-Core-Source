@@ -65,6 +65,7 @@ struct objLEDEEPROM {
   uint8_t inner_cyclotron_led_panel;
   uint8_t powercell_inverted;
   uint8_t cyclotron_single_center_led;
+  uint8_t center_led_fade;
   uint8_t vg_powercell;
   uint8_t vg_cyclotron;
   uint8_t gpstar_audio_led;
@@ -73,7 +74,6 @@ struct objLEDEEPROM {
 struct objConfigEEPROM {
   uint8_t brass_startup_loop;
   uint8_t cyclotron_direction;
-  uint8_t center_led_fade;
   uint8_t simulate_ring;
   uint8_t smoke_setting;
   uint8_t overheat_strobe;
@@ -159,6 +159,7 @@ void saveLEDEEPROM() {
   gObjLEDEEPROM.inner_cyclotron_led_panel = i_inner_cyclotron_led_panel;
   gObjLEDEEPROM.powercell_inverted = b_powercell_invert ? 2 : 1;
   gObjLEDEEPROM.cyclotron_single_center_led = b_cyclotron_single_led ? 2 : 1;
+  gObjLEDEEPROM.center_led_fade = b_fade_cyclotron_led ? 2 : 1;
   gObjLEDEEPROM.vg_powercell = b_powercell_colour_toggle ? 2 : 1;
   gObjLEDEEPROM.vg_cyclotron = b_cyclotron_colour_toggle ? 2 : 1;
   gObjLEDEEPROM.gpstar_audio_led = b_gpstar_audio_led_enabled ? 2 : 1;
@@ -225,7 +226,6 @@ void saveConfigEEPROM() {
 
   gObjConfigEEPROM.brass_startup_loop = b_brass_startup_loop ? 2 : 1;
   gObjConfigEEPROM.cyclotron_direction = b_clockwise ? 2 : 1;
-  gObjConfigEEPROM.center_led_fade = b_fade_cyclotron_led ? 2 : 1;
   gObjConfigEEPROM.simulate_ring = b_cyclotron_simulate_ring ? 2 : 1;
   gObjConfigEEPROM.smoke_setting = b_smoke_enabled ? 2 : 1;
   gObjConfigEEPROM.overheat_strobe = b_overheat_strobe ? 2 : 1;
@@ -387,6 +387,11 @@ void readEEPROM() {
       b_powercell_invert = (gObjLEDEEPROM.powercell_inverted > 1);
     }
 
+    if(gObjLEDEEPROM.center_led_fade > 0 && gObjLEDEEPROM.center_led_fade < 3) {
+      b_fade_cyclotron_led = (gObjLEDEEPROM.center_led_fade > 1);
+      i_1984_delay = b_fade_cyclotron_led ? CYCLOTRON_DELAY_TVG : CYCLOTRON_DELAY_1984;
+    }
+
     if(gObjLEDEEPROM.cyclotron_single_center_led > 0 && gObjLEDEEPROM.cyclotron_single_center_led < 3) {
       b_cyclotron_single_led = (gObjLEDEEPROM.cyclotron_single_center_led > 1);
     }
@@ -487,11 +492,6 @@ void readEEPROM() {
 
     if(gObjConfigEEPROM.cyclotron_direction > 0 && gObjConfigEEPROM.cyclotron_direction < 3) {
       b_clockwise = (gObjConfigEEPROM.cyclotron_direction > 1);
-    }
-
-    if(gObjConfigEEPROM.center_led_fade > 0 && gObjConfigEEPROM.center_led_fade < 3) {
-      b_fade_cyclotron_led = (gObjConfigEEPROM.center_led_fade > 1);
-      i_1984_delay = b_fade_cyclotron_led ? CYCLOTRON_DELAY_TVG : CYCLOTRON_DELAY_1984;
     }
 
     if(gObjConfigEEPROM.simulate_ring > 0 && gObjConfigEEPROM.simulate_ring < 3) {
