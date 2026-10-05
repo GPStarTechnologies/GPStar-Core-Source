@@ -316,6 +316,7 @@ enum BARGRAPH_TYPES : uint8_t {
 } BARGRAPH_TYPE;
 BARGRAPH_TYPES BARGRAPH_TYPE_EEPROM = SEGMENTS_28;
 
+const uint8_t i_bargraph_segments = 30;
 const uint8_t i_bargraph_interval = 4;
 const uint8_t i_bargraph_wait = 180;
 bool b_bargraph_up = false;
@@ -337,7 +338,6 @@ uint16_t i_bargraph_multiplier_current = i_bargraph_multiplier_ramp_2021;
  * 2: 1/4: 5 - 11    (7 segments)
  * 1: none: 0 - 4    (5 segments)
  */
-const uint8_t i_bargraph_segments = 30;
 const uint8_t i_bargraph_invert[i_bargraph_segments - 2] PROGMEM = {54, 38, 22, 6, 53, 37, 21, 5, 52, 36, 20, 4, 51, 35, 19, 3, 50, 34, 18, 2, 49, 33, 17, 1, 48, 32, 16, 0};
 const uint8_t i_bargraph_normal[i_bargraph_segments - 2] PROGMEM = {0, 16, 32, 48, 1, 17, 33, 49, 2, 18, 34, 50, 3, 19, 35, 51, 4, 20, 36, 52, 5, 21, 37, 53, 6, 22, 38, 54};
 const uint8_t i_bargraph_power_table_28[MAX_POWER_LEVEL + 1] PROGMEM = {0, 4, 11, 16, 22, 27};
@@ -352,8 +352,8 @@ const uint8_t i_bargraph_power_table_28[MAX_POWER_LEVEL + 1] PROGMEM = {0, 4, 11
  * 2: 1/4: 6 - 11    (6 segments)
  * 1: none: 0 - 5    (6 segments)
  */
-const uint8_t i_bargraph_wamco_invert[i_bargraph_segments] PROGMEM = {64, 48, 32, 16, 0, 1, 17, 33, 49, 65, 66, 50, 34, 18, 2, 3, 19, 35, 51, 67, 4, 20, 36, 52, 68, 53, 37, 21, 5, 69};
-const uint8_t i_bargraph_wamco_normal[i_bargraph_segments] PROGMEM = {69, 5, 21, 37, 53, 68, 52, 36, 20, 4, 67, 51, 35, 19, 3, 2, 18, 34, 50, 66, 65, 49, 33, 17, 1, 0, 16, 32, 48, 64};
+const uint8_t i_bargraph_wamco_invert[i_bargraph_segments] PROGMEM = {23, 7, 54, 38, 22, 6, 53, 37, 21, 5, 52, 36, 20, 4, 51, 35, 19, 3, 50, 34, 18, 2, 49, 33, 17, 1, 48, 32, 16, 0};
+const uint8_t i_bargraph_wamco_normal[i_bargraph_segments] PROGMEM = {0, 16, 32, 48, 1, 17, 33, 49, 2, 18, 34, 50, 3, 19, 35, 51, 4, 20, 36, 52, 5, 21, 37, 53, 6, 22, 38, 54, 7, 23};
 const uint8_t i_bargraph_power_table_wamco[MAX_POWER_LEVEL + 1] PROGMEM = {0, 5, 11, 17, 23, 29};
 
 /*
