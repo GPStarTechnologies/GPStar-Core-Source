@@ -158,6 +158,7 @@ public:
   void initializeDriver() {
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+    pixels.clear();
     pixels.show();
   }
 

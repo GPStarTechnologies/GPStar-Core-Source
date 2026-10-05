@@ -391,6 +391,7 @@ public:
       auto& pixels = getDevicePixels(assignedSlot);
       pixels.begin();
       pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+      pixels.clear();
       pixels.show();
       initComplete[0] = true;
     }
@@ -401,6 +402,7 @@ public:
       auto& pixels = getDevicePixels(assignedSlot);
       pixels.begin();
       pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+      pixels.clear();
       pixels.show();
       initComplete[chain] = true;
     }

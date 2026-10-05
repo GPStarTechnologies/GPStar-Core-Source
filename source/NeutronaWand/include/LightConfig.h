@@ -222,6 +222,7 @@ public:
     auto& pixels = getDevicePixels(assignedSlot);
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+    pixels.clear();
     pixels.show();
   }
 
