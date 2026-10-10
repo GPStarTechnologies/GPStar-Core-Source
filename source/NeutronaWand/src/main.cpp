@@ -171,12 +171,12 @@ void setup() {
   // Initialize LED driver for each hardware chain
 #ifdef ESP32
   // ESP32: Single shared NeoPXL8 driver manages all pins - internally is initialized once
-  LightingManager::getInstance(CHAIN_BARREL).initializeDriver(ORDER_RGB);
-  LightingManager::getInstance(CHAIN_VENT).initializeDriver(ORDER_GRB);
+  LightingManager::getInstance(CHAIN_BARREL).initializeDriver();
+  LightingManager::getInstance(CHAIN_VENT).initializeDriver();
 #else
   // ATMega: Separate NeoPixel instance per chain - initialize for each instance
-  LightingManager::getInstance(CHAIN_BARREL).initializeDriver(ORDER_RGB);
-  LightingManager::getInstance(CHAIN_VENT).initializeDriver(ORDER_GRB);
+  LightingManager::getInstance(CHAIN_BARREL).initializeDriver();
+  LightingManager::getInstance(CHAIN_VENT).initializeDriver();
 #endif
 
 #ifdef ESP32
