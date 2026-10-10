@@ -202,6 +202,67 @@ TEST_F(LightingConversionFixture, HSV_LowValue_DimColor) {
     EXPECT_LT(rgb.b, 50);
 }
 
+TEST_F(LightingConversionFixture, HSV_WarmWhite_ConvertToRGB) {
+    // C_WARM_WHITE: H=36, S=183, V=255
+    // Expected: RGB(255, 227, 71) - warm orange tone
+    LED_HSV warmwhite_hsv = {36, 183, 255};
+    LED_RGB warmwhite_rgb = Lighting::hsv2rgb(warmwhite_hsv);
+    
+    EXPECT_EQ(warmwhite_rgb.r, 255);
+    EXPECT_EQ(warmwhite_rgb.g, 227);
+    EXPECT_EQ(warmwhite_rgb.b, 71);
+    EXPECT_LT(warmwhite_rgb.g, warmwhite_rgb.r);  // Verify G < R for warm tone
+}
+
+TEST_F(LightingConversionFixture, HSV_Orange_ConvertToRGB) {
+    // C_ORANGE (hue 32): H=32, S=255, V=255
+    // Expected: pure orange with R >> G
+    LED_HSV orange_hsv = {32, 255, 255};
+    LED_RGB orange_rgb = Lighting::hsv2rgb(orange_hsv);
+    
+    EXPECT_GT(orange_rgb.r, 240);
+    EXPECT_GT(orange_rgb.g, 100);
+    EXPECT_LT(orange_rgb.b, 50);
+    EXPECT_LT(orange_rgb.g, orange_rgb.r);  // Verify G < R for orange
+}
+
+TEST_F(LightingConversionFixture, HSV_Yellow_ConvertToRGB_Diagnostic) {
+    // C_YELLOW (hue 64): H=64, S=255, V=255 - pure yellow
+    LED_HSV yellow_hsv = {64, 255, 255};
+    LED_RGB yellow_rgb = Lighting::hsv2rgb(yellow_hsv);
+    
+    EXPECT_GT(yellow_rgb.r, 100);
+    EXPECT_GT(yellow_rgb.g, 100);
+    EXPECT_LT(yellow_rgb.b, 100);
+}
+
+TEST_F(LightingConversionFixture, HSV_Hue36_AllSaturations_Specific) {
+    // Focus specifically on H=36, S=183 vs other saturation values
+    LED_HSV test_hsv = {36, 183, 255};
+    LED_RGB test_rgb = Lighting::hsv2rgb(test_hsv);
+    
+    // Verify warm white has R > G
+    EXPECT_GT(test_rgb.r, test_rgb.g);
+}
+
+TEST_F(LightingConversionFixture, HSV_WarmWhite_ApplyOrderGRB) {
+    // If we changed NeutronaWand to use ORDER_GRB instead of ORDER_RGB,
+    // what would be sent to pixels.Color()?
+    // This shows what happens if we apply "Fix Option B" (pre-swap in library)
+    
+    LED_HSV warmwhite_hsv = {36, 183, 255};
+    LED_RGB rgb = Lighting::hsv2rgb(warmwhite_hsv);  // RGB(255, 227, 71)
+    
+    // Apply ORDER_GRB ordering
+    LED_RGB grb_ordered = Lighting::applyColorOrder(rgb, ORDER_GRB);
+    
+    // Verify it produces RGB(227, 255, 71) - G and R swapped
+    EXPECT_EQ(grb_ordered.r, 227);
+    EXPECT_EQ(grb_ordered.g, 255);
+    EXPECT_EQ(grb_ordered.b, 71);
+    // With NEO_GRB, this would be re-swapped to RGB(255, 227, 71) at hardware
+}
+
 // ============================================================================
 // Color Channel Ordering Tests
 // ============================================================================

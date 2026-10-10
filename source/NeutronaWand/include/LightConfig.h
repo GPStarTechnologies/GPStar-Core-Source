@@ -156,7 +156,8 @@ private:
   // Initializes the Lighting library with color order for this slot.
   LightingManager(LED_CHAIN slot) :
     assignedSlot(slot) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets. (Hasbro barrels override in System.h)
+    // Note: Color order will be set during initialize() call, setting the logical order for RGB triplets.
+    // For the CHAIN_BARREL any stock Hasbro barrels will get an override in System.h (RGB -> GRB)
   }
 
   // Helper: Returns the physical strip object for the given device slot.
@@ -218,12 +219,28 @@ public:
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
-  void initializeDriver() {
+  void initializeDriver(ColorOrder colorOrder = ORDER_RGB) {
     auto& pixels = getDevicePixels(assignedSlot);
+
+    // Set color order for this slot.
+    lightingLib.setColorOrder(assignedSlot, colorOrder);
+
+    // Only initialize the hardware on first call.
+  #ifdef ESP32
+    static bool initialized = false;
+    if(!initialized) {
+      pixels.begin();
+      pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
+      pixels.clear();
+      pixels.show();
+      initialized = true;
+    }
+  #else
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
     pixels.clear();
     pixels.show();
+  #endif
   }
 
   // Turn off LEDs on the chain associated with the current segment.
