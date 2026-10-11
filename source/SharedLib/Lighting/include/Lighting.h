@@ -81,6 +81,7 @@ class Lighting {
     ColorOrder* deviceColorOrder; // Array[numDevices] - color channel order for each device (RGB, GRB, GBR)
     uint16_t* paletteIndex;       // Array[numDevices] - smooth position through palette (0-65535) for sub-pixel interpolation
     uint8_t* paletteAnimationCycle; // Array[numDevices] - frame counter for palette animation timing
+    LED_RGB colorCorrection;      // Global color correction factor for LED strip type
 
     // Helper method to get static color definitions
     LED_HSV getStaticColorDefinition(ColorID color) const;
@@ -112,11 +113,13 @@ class Lighting {
      * Parameters:
      *   deviceCount: Number of independent devices this Lighting object manages (1-6 typical)
      *   refreshRateMs: Device refresh rate in milliseconds (default: 6ms for Wand/Pack, ~167fps)
+     *   stripType: LED strip color correction type (default: LED_UNCORRECTED)
      * Examples:
-     *   Lighting lighting(6, 8);  // ProtonPack with 6 devices, 8ms refresh rate
-     *   Lighting lighting(1);     // Single device, defaults to 6ms (Wand/Pack)
+     *   Lighting lighting(6, 8);  // ProtonPack with 6 devices, 8ms refresh rate, no correction
+     *   Lighting lighting(1, 6, LED_TYPICAL_STRIP);  // Single device with SMD5050 correction
+     *   Lighting lighting(1);     // Single device, defaults to 6ms and no correction
      */
-    Lighting(uint8_t deviceCount = 1, uint16_t refreshRateMs = 6);
+    Lighting(uint8_t deviceCount = 1, uint16_t refreshRateMs = 6, LEDStripType stripType = LED_UNCORRECTED);
 
     /**
      * Destructor: Clean up dynamically allocated state arrays.
@@ -237,8 +240,38 @@ class Lighting {
                             bool reverse = false);
 
     /**
+     * Set the color correction profile for the LED strip type.
+     * Different LED strips have inherent color shifts and can be corrected by scaling RGB output.
+     * Parameters:
+     *   stripType: LEDStripType enum (LED_UNCORRECTED, LED_TYPICAL_STRIP, LED_8MM_PIXEL, etc.)
+     * Example:
+     *   lighting.setColorCorrection(LED_TYPICAL_STRIP);  // Apply SMD5050 correction
+     */
+    void setColorCorrection(LEDStripType stripType);
+
+    /**
+     * Apply the current color correction to an RGB color.
+     * This scales each channel by the correction factor and divides by 255 for proper scaling.
+     * Parameters:
+     *   color: LED_RGB color to correct
+     * Returns: LED_RGB with correction applied
+     * Example:
+     *   LED_RGB corrected = lighting.applyColorCorrection(rgb);
+     */
+    LED_RGB applyColorCorrection(const LED_RGB &color) const;
+
+    /**
+     * Convert HSV color to RGB with automatic color correction applied.
+     * Convenience method that combines hsv2rgb() + correction for use in devices.
+     */
+    LED_RGB hsv2rgbCorrected(const LED_HSV &hsv) const {
+      return applyColorCorrection(hsv2rgb(hsv));
+    }
+
+    /**
      * Convert HSV color to RGB using rainbow algorithm for smooth color transitions.
-     * Example: LED_RGB rgb = lighting.hsv2rgb({128, 255, 200});
+     * Example: LED_RGB rgb = Lighting::hsv2rgb({128, 255, 200});
+     * NOTE: Static method - does not apply device correction. Use hsv2rgbCorrected() for corrected output.
      */
     static LED_RGB hsv2rgb(const LED_HSV &hsv);
 

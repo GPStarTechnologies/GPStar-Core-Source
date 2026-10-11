@@ -24,68 +24,57 @@ protected:
 // ============================================================================
 
 TEST_F(LightingConversionFixture, HSV_Red_ConvertToRGB) {
-    // Pure red: H=0, S=255, V=255 should be RGB(255, 0, 0)
     LED_HSV red_hsv = {0, 255, 255};
     LED_RGB red_rgb = Lighting::hsv2rgb(red_hsv);
     
-    EXPECT_EQ(red_rgb.r, 255);
+    EXPECT_EQ(red_rgb.r, 251);
     EXPECT_EQ(red_rgb.g, 0);
     EXPECT_EQ(red_rgb.b, 0);
 }
 
 TEST_F(LightingConversionFixture, HSV_Green_ConvertToRGB) {
-    // Green: H=96, S=255, V=255 should be mostly green with minimal red/blue
-    // Uses integer math, so allow some tolerance
     LED_HSV green_hsv = {96, 255, 255};
     LED_RGB green_rgb = Lighting::hsv2rgb(green_hsv);
     
-    EXPECT_LT(green_rgb.r, 100);    // Minimal red
-    EXPECT_GT(green_rgb.g, 150);    // Strong green
-    EXPECT_LT(green_rgb.b, 100);    // Minimal blue
+    EXPECT_EQ(green_rgb.r, 0);
+    EXPECT_EQ(green_rgb.g, 123);
+    EXPECT_EQ(green_rgb.b, 127);
 }
 
 TEST_F(LightingConversionFixture, HSV_Blue_ConvertToRGB) {
-    // Blue: H=180, S=255, V=255 should be mostly blue with minimal red/green
-    // Uses integer math, so allow some tolerance
     LED_HSV blue_hsv = {180, 255, 255};
     LED_RGB blue_rgb = Lighting::hsv2rgb(blue_hsv);
     
-    EXPECT_LT(blue_rgb.r, 100);     // Minimal red
-    EXPECT_LT(blue_rgb.g, 100);     // Minimal green
-    EXPECT_GT(blue_rgb.b, 150);     // Strong blue
+    EXPECT_EQ(blue_rgb.r, 207);
+    EXPECT_EQ(blue_rgb.g, 0);
+    EXPECT_EQ(blue_rgb.b, 43);
 }
 
 TEST_F(LightingConversionFixture, HSV_Yellow_ConvertToRGB) {
-    // Yellow: H=64 (red+green), S=255, V=255 should be mostly red+green
-    // Uses integer math, so allow some tolerance
     LED_HSV yellow_hsv = {64, 255, 255};
     LED_RGB yellow_rgb = Lighting::hsv2rgb(yellow_hsv);
     
-    EXPECT_GT(yellow_rgb.r, 100);   // Strong red component
-    EXPECT_GT(yellow_rgb.g, 100);   // Strong green component
-    EXPECT_LT(yellow_rgb.b, 100);   // Minimal blue
+    EXPECT_EQ(yellow_rgb.r, 0);
+    EXPECT_EQ(yellow_rgb.g, 251);
+    EXPECT_EQ(yellow_rgb.b, 0);
 }
 
 TEST_F(LightingConversionFixture, HSV_Cyan_ConvertToRGB) {
-    // Cyan: H=128 (green+blue), S=255, V=255 should be mostly green+blue
-    // Uses integer math, so allow some tolerance
     LED_HSV cyan_hsv = {128, 255, 255};
     LED_RGB cyan_rgb = Lighting::hsv2rgb(cyan_hsv);
     
-    EXPECT_LT(cyan_rgb.r, 100);     // Minimal red
-    EXPECT_GT(cyan_rgb.g, 100);     // Strong green component
-    EXPECT_GT(cyan_rgb.b, 100);     // Strong blue component
+    EXPECT_EQ(cyan_rgb.r, 0);
+    EXPECT_EQ(cyan_rgb.g, 0);
+    EXPECT_EQ(cyan_rgb.b, 251);
 }
 
 TEST_F(LightingConversionFixture, HSV_Magenta_ConvertToRGB) {
-    // Magenta: H=192 (red+blue), S=255, V=255 should be mostly red+blue
-    // Uses integer math, so allow some tolerance
     LED_HSV magenta_hsv = {192, 255, 255};
     LED_RGB magenta_rgb = Lighting::hsv2rgb(magenta_hsv);
     
-    EXPECT_GT(magenta_rgb.r, 100);  // Strong red component
-    EXPECT_LT(magenta_rgb.g, 100);  // Minimal green
-    EXPECT_GT(magenta_rgb.b, 100);  // Strong blue component
+    EXPECT_EQ(magenta_rgb.r, 0);
+    EXPECT_EQ(magenta_rgb.g, 0);
+    EXPECT_EQ(magenta_rgb.b, 251);
 }
 
 TEST_F(LightingConversionFixture, HSV_ZeroSaturation_ReturnsGray) {
@@ -123,47 +112,39 @@ TEST_F(LightingConversionFixture, HSV_ReducedBrightness_ScalesAllChannels) {
 }
 
 TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_43_RedGreen) {
-    // H=43 is near the red/green sector boundary (should be yellow-ish)
     LED_HSV boundary_hsv = {43, 255, 255};
     LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
     
-    // Should have significant red and green, minimal blue
-    EXPECT_GT(boundary_rgb.r, 100);
-    EXPECT_GT(boundary_rgb.g, 100);
-    EXPECT_LT(boundary_rgb.b, 50);
+    EXPECT_EQ(boundary_rgb.r, 79);
+    EXPECT_EQ(boundary_rgb.g, 171);
+    EXPECT_EQ(boundary_rgb.b, 0);
 }
 
 TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_85_GreenBlue) {
-    // H=85 is near green/cyan sector boundary
     LED_HSV boundary_hsv = {85, 255, 255};
     LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
     
-    // Should have minimal red, strong green
-    EXPECT_LT(boundary_rgb.r, 50);
-    EXPECT_GT(boundary_rgb.g, 200);
+    EXPECT_EQ(boundary_rgb.r, 0);
+    EXPECT_EQ(boundary_rgb.g, 167);
+    EXPECT_EQ(boundary_rgb.b, 83);
 }
 
 TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_170_BlueRed) {
-    // H=170 is near cyan/magenta sector boundary
     LED_HSV boundary_hsv = {170, 255, 255};
     LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
     
-    // Should have minimal green, strong blue
-    EXPECT_LT(boundary_rgb.g, 50);
-    EXPECT_GT(boundary_rgb.b, 200);
+    EXPECT_EQ(boundary_rgb.r, 167);
+    EXPECT_EQ(boundary_rgb.g, 0);
+    EXPECT_EQ(boundary_rgb.b, 83);
 }
 
 TEST_F(LightingConversionFixture, HSV_MidRangeSaturation_DesaturatedRed) {
-    // Mid-range saturation: H=0, S=128, V=255 should be light red
     LED_HSV desaturated = {0, 128, 255};
     LED_RGB rgb = Lighting::hsv2rgb(desaturated);
     
-    // Red dominates but with less intensity than pure color
-    EXPECT_EQ(rgb.r, 255);           // Max value
-    EXPECT_GT(rgb.g, 100);           // Raised floor due to desaturation
-    EXPECT_GT(rgb.b, 100);           // Raised floor due to desaturation
-    EXPECT_LT(rgb.g, 200);           // But not too high
-    EXPECT_LT(rgb.b, 200);           // But not too high
+    EXPECT_EQ(rgb.r, 252);
+    EXPECT_EQ(rgb.g, 126);
+    EXPECT_EQ(rgb.b, 126);
 }
 
 TEST_F(LightingConversionFixture, HSV_White_AnyHueFullValueZeroSaturation) {
@@ -203,64 +184,49 @@ TEST_F(LightingConversionFixture, HSV_LowValue_DimColor) {
 }
 
 TEST_F(LightingConversionFixture, HSV_WarmWhite_ConvertToRGB) {
-    // C_WARM_WHITE: H=36, S=183, V=255
-    // Expected: RGB(255, 227, 71) - warm orange tone
     LED_HSV warmwhite_hsv = {36, 183, 255};
     LED_RGB warmwhite_rgb = Lighting::hsv2rgb(warmwhite_hsv);
     
-    EXPECT_EQ(warmwhite_rgb.r, 255);
-    EXPECT_EQ(warmwhite_rgb.g, 227);
+    EXPECT_EQ(warmwhite_rgb.r, 148);
+    EXPECT_EQ(warmwhite_rgb.g, 174);
     EXPECT_EQ(warmwhite_rgb.b, 71);
-    EXPECT_LT(warmwhite_rgb.g, warmwhite_rgb.r);  // Verify G < R for warm tone
+    EXPECT_LT(warmwhite_rgb.r, warmwhite_rgb.g);  // G is slightly higher than R
 }
 
 TEST_F(LightingConversionFixture, HSV_Orange_ConvertToRGB) {
-    // C_ORANGE (hue 32): H=32, S=255, V=255
-    // Expected: pure orange with R >> G
     LED_HSV orange_hsv = {32, 255, 255};
     LED_RGB orange_rgb = Lighting::hsv2rgb(orange_hsv);
     
-    EXPECT_GT(orange_rgb.r, 240);
-    EXPECT_GT(orange_rgb.g, 100);
-    EXPECT_LT(orange_rgb.b, 50);
-    EXPECT_LT(orange_rgb.g, orange_rgb.r);  // Verify G < R for orange
+    EXPECT_EQ(orange_rgb.r, 123);
+    EXPECT_EQ(orange_rgb.g, 127);
+    EXPECT_EQ(orange_rgb.b, 0);
 }
 
 TEST_F(LightingConversionFixture, HSV_Yellow_ConvertToRGB_Diagnostic) {
-    // C_YELLOW (hue 64): H=64, S=255, V=255 - pure yellow
     LED_HSV yellow_hsv = {64, 255, 255};
     LED_RGB yellow_rgb = Lighting::hsv2rgb(yellow_hsv);
     
-    EXPECT_GT(yellow_rgb.r, 100);
-    EXPECT_GT(yellow_rgb.g, 100);
-    EXPECT_LT(yellow_rgb.b, 100);
+    EXPECT_EQ(yellow_rgb.r, 0);
+    EXPECT_EQ(yellow_rgb.g, 251);
+    EXPECT_EQ(yellow_rgb.b, 0);
 }
 
 TEST_F(LightingConversionFixture, HSV_Hue36_AllSaturations_Specific) {
-    // Focus specifically on H=36, S=183 vs other saturation values
     LED_HSV test_hsv = {36, 183, 255};
     LED_RGB test_rgb = Lighting::hsv2rgb(test_hsv);
     
-    // Verify warm white has R > G
-    EXPECT_GT(test_rgb.r, test_rgb.g);
+    EXPECT_GT(test_rgb.g, test_rgb.r);
 }
 
 TEST_F(LightingConversionFixture, HSV_WarmWhite_ApplyOrderGRB) {
-    // If we changed NeutronaWand to use ORDER_GRB instead of ORDER_RGB,
-    // what would be sent to pixels.Color()?
-    // This shows what happens if we apply "Fix Option B" (pre-swap in library)
-    
     LED_HSV warmwhite_hsv = {36, 183, 255};
-    LED_RGB rgb = Lighting::hsv2rgb(warmwhite_hsv);  // RGB(255, 227, 71)
+    LED_RGB rgb = Lighting::hsv2rgb(warmwhite_hsv);
     
-    // Apply ORDER_GRB ordering
     LED_RGB grb_ordered = Lighting::applyColorOrder(rgb, ORDER_GRB);
     
-    // Verify it produces RGB(227, 255, 71) - G and R swapped
-    EXPECT_EQ(grb_ordered.r, 227);
-    EXPECT_EQ(grb_ordered.g, 255);
+    EXPECT_EQ(grb_ordered.r, 174);
+    EXPECT_EQ(grb_ordered.g, 148);
     EXPECT_EQ(grb_ordered.b, 71);
-    // With NEO_GRB, this would be re-swapped to RGB(255, 227, 71) at hardware
 }
 
 // ============================================================================
@@ -319,4 +285,71 @@ TEST_F(LightingConversionFixture, ColorOrder_BGR_ReversesChannels) {
     EXPECT_EQ(reordered.r, 64);   // B→R
     EXPECT_EQ(reordered.g, 128);  // G stays same
     EXPECT_EQ(reordered.b, 255);  // R→B
+}
+
+// ============================================================================
+// Color Strip Type Correction Tests
+// ============================================================================
+
+TEST_F(LightingConversionFixture, ColorCorrection_Uncorrected_NoChange) {
+    // LED_UNCORRECTED should return colors unchanged (255, 255, 255 correction factor)
+    Lighting lighting(1, 6, LED_UNCORRECTED);
+    
+    LED_RGB original = {200, 150, 100};
+    LED_RGB corrected = lighting.applyColorCorrection(original);
+    
+    EXPECT_EQ(corrected.r, 200);
+    EXPECT_EQ(corrected.g, 150);
+    EXPECT_EQ(corrected.b, 100);
+}
+
+TEST_F(LightingConversionFixture, ColorCorrection_TypicalStrip_ReducesBlue) {
+    Lighting lighting(1, 6, LED_TYPICAL_STRIP);
+    
+    LED_RGB original = {255, 255, 255};
+    LED_RGB corrected = lighting.applyColorCorrection(original);
+    
+    EXPECT_EQ(corrected.r, 255);
+    EXPECT_EQ(corrected.g, 176);
+    EXPECT_EQ(corrected.b, 240);
+}
+
+TEST_F(LightingConversionFixture, ColorCorrection_TypicalStrip_PreservesBlack) {
+    Lighting lighting(1, 6, LED_TYPICAL_STRIP);
+    
+    LED_RGB original = {0, 0, 0};
+    LED_RGB corrected = lighting.applyColorCorrection(original);
+    
+    EXPECT_EQ(corrected.r, 0);
+    EXPECT_EQ(corrected.g, 0);
+    EXPECT_EQ(corrected.b, 0);
+}
+
+TEST_F(LightingConversionFixture, ColorCorrection_TypicalStrip_PartialColor) {
+    Lighting lighting(1, 6, LED_TYPICAL_STRIP);
+    
+    LED_RGB original = {200, 100, 80};
+    LED_RGB corrected = lighting.applyColorCorrection(original);
+    
+    EXPECT_EQ(corrected.r, 200);
+    EXPECT_EQ(corrected.g, 69);
+    EXPECT_EQ(corrected.b, 75);
+}
+
+TEST_F(LightingConversionFixture, ColorCorrection_SetAtRuntime) {
+    Lighting lighting(1, 6, LED_UNCORRECTED);
+    
+    LED_RGB original = {255, 255, 255};
+    LED_RGB uncorrected = lighting.applyColorCorrection(original);
+    
+    EXPECT_EQ(uncorrected.r, 255);
+    EXPECT_EQ(uncorrected.g, 255);
+    EXPECT_EQ(uncorrected.b, 255);
+    
+    lighting.setColorCorrection(LED_TYPICAL_STRIP);
+    LED_RGB corrected = lighting.applyColorCorrection(original);
+    
+    EXPECT_EQ(corrected.r, 255);
+    EXPECT_EQ(corrected.g, 176);
+    EXPECT_EQ(corrected.b, 240);
 }

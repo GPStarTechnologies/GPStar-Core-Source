@@ -97,7 +97,7 @@ extern uint8_t i_spectral_custom_saturation;
  *   LightingManager::getInstance(<deviceSlot>);
  *
  * INTERFACE:
- * - initializeDriver() — Sets up the driver library and hardware pins
+ * - initializeDriver(ColorOrder) — Sets up the driver library and hardware pins
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
@@ -142,7 +142,7 @@ public:
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
-  void initializeDriver() {
+  void initializeDriver(ColorOrder colorOrder = ORDER_RGB) {
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
     pixels.clear();
@@ -249,4 +249,4 @@ public:
  * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
-Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS, LED_TYPICAL_STRIP);

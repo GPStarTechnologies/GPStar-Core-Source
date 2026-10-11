@@ -108,7 +108,7 @@ enum LED_CHAIN {
  *   LightingManager::getInstance(<deviceSlot>);
  *
  * INTERFACE:
- * - initializeDriver() — Sets up the driver library and hardware pins
+ * - initializeDriver(ColorOrder) — Sets up the driver library and hardware pins
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
@@ -132,7 +132,7 @@ private:
     systemLEDs(SYSTEM_LED_COUNT, BARREL_LED_PIN, NEO_GRB + NEO_KHZ800),
     ventLEDs(VENT_LED_COUNT, RGB_VENT_PIN, NEO_GRB + NEO_KHZ800),
     assignedSlot(slot) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets.
+    // Note: Color order will be set during initialize() call, setting the logical order for RGB triplets.
   }
 
   // Helper: Returns the physical strip object for the given device slot.
@@ -179,7 +179,7 @@ public:
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
-  void initializeDriver() {
+  void initializeDriver(ColorOrder colorOrder = ORDER_RGB) {
     auto& pixels = getDevicePixels(assignedSlot);
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
@@ -294,4 +294,4 @@ public:
  * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
-Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS, LED_TYPICAL_STRIP);

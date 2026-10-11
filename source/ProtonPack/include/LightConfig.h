@@ -294,7 +294,7 @@ static int8_t pxl8_pins[8] = {
  *   LightingManager::getInstance(DEVICE_INNER_CAKE).setCustomColorHSV(...)
  *
  * INTERFACE:
- * - initializeDriver() — Sets up the driver library and hardware pins
+ * - initializeDriver(ColorOrder) — Sets up the driver library and hardware pins
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs on the current segment
  * - setPixelColor(index, ColorID, brightness) — Set LED with automatic color order
@@ -321,7 +321,7 @@ private:
   // Initializes the driver objects for this segment.
   LightingManager(LED_SEGMENT segment) :
     assignedSlot(segment) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Set the logical order for RGB triplets.
+    // Note: Color order will be set during initialize() call, setting the logical order for RGB triplets.
   }
 
   // Helper: Convert packed uint32_t color to LED_RGB components
@@ -384,7 +384,7 @@ public:
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
-  void initializeDriver() {
+  void initializeDriver(ColorOrder colorOrder = ORDER_RGB) {
   #ifdef ESP32
     // All chains on ESP32 use the single systemLEDs object
     if(!initComplete[0]) {
@@ -630,7 +630,7 @@ LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
  * The Lighting library is shared across all instances so that animation
  * state (palette phase, color tracking) is consistent across all LED chains.
  */
-Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS, LED_TYPICAL_STRIP);
 
 /**
  * In order to allow the show() method to be called across segments (devices) the actual pixel

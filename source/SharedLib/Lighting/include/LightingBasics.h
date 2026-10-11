@@ -43,6 +43,16 @@ struct LED_RGB {
 constexpr LED_RGB LED_RGB_BLACK = {0, 0, 0};
 constexpr LED_RGB LED_RGB_WHITE = {255, 255, 255};
 
+// LEDStripType: Automatic color correction for different LED strip types.
+// Different LED strips have inherent color shifts (red/green/blue ratios). These correction
+// factors are applied to RGB output to achieve accurate colors across different hardware.
+// Based on FastLED 3.6.0 color correction constants.
+// Example: Typical SMD5050 strips have blue-shifted LEDs, so blue output is reduced.
+enum LEDStripType : uint8_t {
+  LED_UNCORRECTED = 0,   // No correction (255, 255, 255) - Default, for testing/baseline
+  LED_TYPICAL_STRIP = 1  // SMD5050 strips (255, 176, 240) - Common WS2812 NeoPixels
+};
+
 // ColorOrder: Set the order of the RGB values as they will be sent to the LED device.
 // GPStar devices are WS2812 which is set by "NEO_GRB" at the hardware level, but we
 // will control the assembly of the LED_RGB triplets via the software for convenience.

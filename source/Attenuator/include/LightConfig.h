@@ -83,7 +83,7 @@ enum ATTENUATOR_LED : uint8_t {
  *   LightingManager::getInstance(<deviceSlot>);
  *
  * INTERFACE:
- * - initializeDriver() — Sets up the driver library and hardware pins
+ * - initializeDriver(ColorOrder) — Sets up the driver library and hardware pins
  * - getMappedIndex(logicalDeviceId) — Get physical index for a logical LED ID
  * - updateLEDMapping(invert) — Apply LED mapping based on inversion preference
  * - show() — Updates physical LEDs with current buffer state
@@ -116,7 +116,7 @@ private:
   LightingManager() :
     pixels(DEVICE_MAX_LEDS, DEVICE_LED_PIN, NEO_GRB + NEO_KHZ800),
     assignedSlot(0) {
-    lightingLib.setColorOrder(assignedSlot, ORDER_RGB); // Application logic uses RGB (driver handles physical GRB conversion)
+    // Note: Color order will be set during initialize() call, setting the logical order for RGB triplets.
   }
 
   // Helper: Apply a mapping of LED names based on invert flag.
@@ -154,7 +154,7 @@ public:
 
   // Initialize LED driver
   // Sets up addressable LED communication and default brightness
-  void initializeDriver() {
+  void initializeDriver(ColorOrder colorOrder = ORDER_RGB) {
     pixels.begin();
     pixels.setBrightness(DEVICE_MAX_BRIGHTNESS);
     pixels.clear();
@@ -274,4 +274,4 @@ public:
  * state (palette phase, color tracking) is consistent across all LED chains.
  */
 LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
-Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS, LED_TYPICAL_STRIP);

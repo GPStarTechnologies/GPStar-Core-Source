@@ -131,7 +131,7 @@ enum LED_CHAIN {
  *   LightingManager::getInstance(<deviceSlot>);
  *
  * INTERFACE:
- * - initializeDriver() — Sets up the driver library and hardware pins
+ * - initializeDriver(ColorOrder) — Sets up the driver library and hardware pins
  * - show() — Updates physical LEDs with current buffer state
  * - lightsOff() — Blanks all LEDs
  * - setPixelColor(index, ColorID, brightness) — Set a single LED to a color with automatic color order
@@ -406,7 +406,7 @@ LightingManager* LightingManager::instances[DEVICE_SLOTS] = {};
  * The Lighting library is shared across all instances so that animation
  * state (palette phase, color tracking) is consistent across all LED chains.
  */
-Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS);
+Lighting LightingManager::lightingLib(DEVICE_SLOTS, DEVICE_REFRESH_MS, LED_TYPICAL_STRIP);
 
 /**
  * In order to allow the show() method to be called across segments (devices) the actual pixel

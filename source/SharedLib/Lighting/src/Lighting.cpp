@@ -26,9 +26,12 @@
 #include <Lighting.h>
 
 // Constructor: Initialize Lighting instance for deviceCount devices with specified refresh rate (default: 5ms).
-Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs) 
+// Optional color correction applied to all RGB output.
+Lighting::Lighting(uint8_t deviceCount, uint16_t refreshRateMs, LEDStripType stripType) 
   : numDevices(deviceCount > 0 ? deviceCount : 1),
     deviceRefreshMs(refreshRateMs >= 5 ? refreshRateMs : 5) {
+  // Initialize color correction based on stripType
+  setColorCorrection(stripType);
   // Allocate state arrays for each device slot.
   customColorHSV = new LED_HSV[numDevices];
   deviceColorOrder = new ColorOrder[numDevices];
@@ -386,61 +389,99 @@ LED_HSV Lighting::animateDecayHue(uint8_t deviceSlot, const AnimationConfig& cfg
   return {dynamicHue[deviceSlot], 255, brightness};
 }
 
-// Convert HSV color to RGB color using a standard rainbow algorithm.
+// Set the color correction profile based on LED strip type.
+// Applies correction factors to account for different LED strip characteristics.
+void Lighting::setColorCorrection(LEDStripType stripType) {
+  switch (stripType) {
+    case LED_TYPICAL_STRIP:
+      // SMD5050 strips: Red=255, Green=176, Blue=240 (blue-shifted)
+      colorCorrection = {255, 176, 240};
+      break;
+    case LED_UNCORRECTED:
+    default:
+      // No correction: all channels at full strength
+      colorCorrection = {255, 255, 255};
+      break;
+  }
+}
+
+// Apply the current color correction factor to an RGB color.
+// Scales each channel by the correction factor and divides by 255.
+LED_RGB Lighting::applyColorCorrection(const LED_RGB &color) const {
+  return {
+    (uint8_t)((color.r * colorCorrection.r) / 255),
+    (uint8_t)((color.g * colorCorrection.g) / 255),
+    (uint8_t)((color.b * colorCorrection.b) / 255)
+  };
+}
+
+// Convert HSV color to RGB color using perceptually-accurate brightness algorithm.
+// Based on FastLED 3.6.0 hsv2rgb_raw_C() - MIT License
+// https://github.com/FastLED/FastLED
+//
+// This implementation maintains constant apparent brightness across all hues by using
+// a "brightness floor" (minimum value added to all channels) and "color amplitude"
+// (hue-specific variation). This produces more visually consistent results than
+// simple linear interpolation, especially for mid-range hues like purple and orange.
 LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
   LED_RGB rgb;
 
-  // If saturation is 0, the color is a shade of gray
-  if(hsv.s == 0) {
+  // Handle achromatic (gray) case
+  if (hsv.s == 0) {
     rgb.r = hsv.v;
     rgb.g = hsv.v;
     rgb.b = hsv.v;
     return rgb;
   }
 
-  // Divide hue into 6 regions (0-5) for the color wheel
-  // Each region is 256/6 ≈ 43 hue units
-  uint8_t region = hsv.h / 43;
-  uint8_t remainder = (hsv.h - (region * 43)) * 6;
+  // Calculate brightness floor and color amplitude
+  // brightness_floor: minimum value all RGB channels will have
+  // color_amplitude: hue-specific variation added on top of floor
+  // This ensures constant perceived brightness across the color wheel
+  uint8_t invsat = 255 - hsv.s;
+  uint8_t brightness_floor = (hsv.v * invsat) / 256;
+  uint8_t color_amplitude = hsv.v - brightness_floor;
 
-  // Calculate intermediate values for smooth transitions
-  uint8_t p = (hsv.v * (255 - hsv.s)) >> 8;
-  uint8_t q = (hsv.v * (255 - ((hsv.s * remainder) >> 8))) >> 8;
-  uint8_t t = (hsv.v * (255 - ((hsv.s * (255 - remainder)) >> 8))) >> 8;
+  // Divide color wheel into 3 sections (HSV_SECTION_3 = 64 hue units per section)
+  // Section 0: 0x00..0x3F (Red→Yellow)
+  // Section 1: 0x40..0x7F (Yellow→Cyan)
+  // Section 2: 0x80..0xBF (Cyan→Red)
+  uint8_t section = hsv.h / 64;      // 0..2
+  uint8_t offset = hsv.h % 64;       // 0..63
 
-  // Map region to RGB values for rainbow effect
-  switch(region) {
+  // Calculate ramp values for smooth transitions within each section
+  uint8_t rampup = offset;           // 0..63 (rises from 0 to 63)
+  uint8_t rampdown = 63 - offset;    // 63..0 (falls from 63 to 0)
+
+  // Scale ramps by color amplitude and add brightness floor
+  // Division by 64 (256/4) properly scales 0..63 ramps to full range
+  uint8_t rampup_adj = (rampup * color_amplitude) / 64;
+  uint8_t rampdown_adj = (rampdown * color_amplitude) / 64;
+
+  uint8_t rampup_with_floor = rampup_adj + brightness_floor;
+  uint8_t rampdown_with_floor = rampdown_adj + brightness_floor;
+
+  // Map section to RGB channels for smooth color transitions
+  switch (section) {
     case 0:
-      rgb.r = hsv.v;
-      rgb.g = t;
-      rgb.b = p;
-    break;
+      // Section 0: 0x00..0x3F (Red to Yellow)
+      rgb.r = rampdown_with_floor;
+      rgb.g = rampup_with_floor;
+      rgb.b = brightness_floor;
+      break;
     case 1:
-      rgb.r = q;
-      rgb.g = hsv.v;
-      rgb.b = p;
-    break;
+      // Section 1: 0x40..0x7F (Yellow to Cyan)
+      rgb.r = brightness_floor;
+      rgb.g = rampdown_with_floor;
+      rgb.b = rampup_with_floor;
+      break;
     case 2:
-      rgb.r = p;
-      rgb.g = hsv.v;
-      rgb.b = t;
-    break;
-    case 3:
-      rgb.r = p;
-      rgb.g = q;
-      rgb.b = hsv.v;
-    break;
-    case 4:
-      rgb.r = t;
-      rgb.g = p;
-      rgb.b = hsv.v;
-    break;
-    case 5:
     default:
-      rgb.r = hsv.v;
-      rgb.g = p;
-      rgb.b = q;
-    break;
+      // Section 2: 0x80..0xBF (Cyan to Red)
+      rgb.r = rampup_with_floor;
+      rgb.g = brightness_floor;
+      rgb.b = rampdown_with_floor;
+      break;
   }
 
   return rgb;
@@ -600,7 +641,10 @@ LED_RGB Lighting::getPaletteColor(uint8_t deviceSlot,
   LED_RGB rgb = hsv2rgb(interpolated);
   
   // Apply stored color order for this device
-  return applyColorOrder(rgb, deviceColorOrder[deviceSlot]);
+  LED_RGB ordered = applyColorOrder(rgb, deviceColorOrder[deviceSlot]);
+  
+  // Apply color correction for LED strip type
+  return applyColorCorrection(ordered);
 }
 
 // ============================================================================
