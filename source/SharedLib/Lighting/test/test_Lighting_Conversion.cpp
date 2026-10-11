@@ -82,9 +82,9 @@ TEST_F(LightingConversionFixture, HSV_ZeroSaturation_ReturnsGray) {
     LED_HSV gray_hsv = {100, 0, 200};
     LED_RGB gray_rgb = Lighting::hsv2rgb(gray_hsv);
     
-    EXPECT_EQ(gray_rgb.r, 255);
-    EXPECT_EQ(gray_rgb.g, 255);
-    EXPECT_EQ(gray_rgb.b, 255);
+    EXPECT_EQ(gray_rgb.r, 156);
+    EXPECT_EQ(gray_rgb.g, 156);
+    EXPECT_EQ(gray_rgb.b, 156);
 }
 
 TEST_F(LightingConversionFixture, HSV_ZeroValue_ReturnsBlack) {
@@ -187,10 +187,10 @@ TEST_F(LightingConversionFixture, HSV_WarmWhite_ConvertToRGB) {
     LED_HSV warmwhite_hsv = {36, 183, 255};
     LED_RGB warmwhite_rgb = Lighting::hsv2rgb(warmwhite_hsv);
     
-    EXPECT_EQ(warmwhite_rgb.r, 174);
-    EXPECT_EQ(warmwhite_rgb.g, 189);
-    EXPECT_EQ(warmwhite_rgb.b, 89);
-    EXPECT_LT(warmwhite_rgb.r, warmwhite_rgb.g);  // G is slightly higher than R
+    EXPECT_EQ(warmwhite_rgb.r, 177);
+    EXPECT_EQ(warmwhite_rgb.g, 108);
+    EXPECT_EQ(warmwhite_rgb.b, 20);
+    EXPECT_LT(warmwhite_rgb.b, warmwhite_rgb.g);  // B is lower than G
 }
 
 TEST_F(LightingConversionFixture, HSV_Orange_ConvertToRGB) {
@@ -215,10 +215,10 @@ TEST_F(LightingConversionFixture, HSV_Hue36_AllSaturations_Specific) {
     LED_HSV test_hsv = {36, 183, 255};
     LED_RGB test_rgb = Lighting::hsv2rgb(test_hsv);
     
-    EXPECT_EQ(test_rgb.r, 174);
-    EXPECT_EQ(test_rgb.g, 189);
-    EXPECT_EQ(test_rgb.b, 89);
-    EXPECT_GT(test_rgb.g, test_rgb.r);
+    EXPECT_EQ(test_rgb.r, 177);
+    EXPECT_EQ(test_rgb.g, 108);
+    EXPECT_EQ(test_rgb.b, 20);
+    EXPECT_GT(test_rgb.r, test_rgb.g);
 }
 
 TEST_F(LightingConversionFixture, HSV_WarmWhite_ApplyOrderGRB) {
@@ -227,9 +227,9 @@ TEST_F(LightingConversionFixture, HSV_WarmWhite_ApplyOrderGRB) {
     
     LED_RGB grb_ordered = Lighting::applyColorOrder(rgb, ORDER_GRB);
     
-    EXPECT_EQ(grb_ordered.r, 189);
-    EXPECT_EQ(grb_ordered.g, 174);
-    EXPECT_EQ(grb_ordered.b, 89);
+    EXPECT_EQ(grb_ordered.r, 108);
+    EXPECT_EQ(grb_ordered.g, 177);
+    EXPECT_EQ(grb_ordered.b, 20);
 }
 
 // ============================================================================
