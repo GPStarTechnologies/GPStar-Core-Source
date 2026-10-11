@@ -416,75 +416,153 @@ LED_RGB Lighting::applyColorCorrection(const LED_RGB &color) const {
 }
 
 // Convert HSV color to RGB color using perceptually-accurate brightness algorithm.
-// Based on FastLED 3.6.0 hsv2rgb_raw_C() - MIT License
+// Based on FastLED 3.6.0 hsv2rgb_rainbow() - MIT License
 // https://github.com/FastLED/FastLED
 //
-// This implementation maintains constant apparent brightness across all hues by using
-// a "brightness floor" (minimum value added to all channels) and "color amplitude"
-// (hue-specific variation). This produces more visually consistent results than
-// simple linear interpolation, especially for mid-range hues like purple and orange.
+// This implementation converts HSV to RGB using the full 0-255 hue range with special
+// handling for yellow brightness (which is perceptually brighter than other colors).
+// It divides the color wheel into 8 sections and applies sophisticated saturation
+// and brightness scaling for perceptually accurate color output.
 LED_RGB Lighting::hsv2rgb(const LED_HSV &hsv) {
-  LED_RGB rgb;
+  // Hue constants for reference
+  const uint8_t K255 = 255;
+  const uint8_t K171 = 171;
+  const uint8_t K170 = 170;
+  const uint8_t K85 = 85;
 
-  // Handle achromatic (gray) case
-  if (hsv.s == 0) {
-    rgb.r = hsv.v;
-    rgb.g = hsv.v;
-    rgb.b = hsv.v;
-    return rgb;
+  uint8_t hue = hsv.h;
+  uint8_t sat = hsv.s;
+  uint8_t val = hsv.v;
+
+  uint8_t offset = hue & 0x1F;  // 0..31 (5-bit offset within each 32-hue section)
+
+  // Calculate offset8 = offset * 8 (scale 0..31 to 0..248)
+  uint8_t offset8 = offset << 3;
+
+  // third = scaled offset (max = 85, which is roughly 1/3 of 255)
+  // This is used for smooth transitions between colors within each section
+  uint8_t third = (offset8 * 85) / 256;  // Equivalent to scale8(offset8, 256/3)
+
+  uint8_t r, g, b;
+
+  // Divide hue wheel into 8 sections based on the high 3 bits of hue
+  // Section numbering in binary: 0XX (0-3), 1XX (4-7) where XX is the hue & 0x60
+  if (!(hue & 0x80)) {
+    // Upper nibble 0: hue 0-127 (Red → Green → Cyan)
+    if (!(hue & 0x40)) {
+      // Sections 0-1: hue 0-63 (Red → Yellow)
+      if (!(hue & 0x20)) {
+        // Section 0: hue 0-31 (Red → Orange)
+        //   R: 255 → 171, G: 0 → 85, B: 0
+        r = K255 - third;
+        g = third;
+        b = 0;
+      } else {
+        // Section 1: hue 32-63 (Orange → Yellow)
+        //   R: 171, G: 85 → 170, B: 0
+        r = K171;
+        g = K85 + third;
+        b = 0;
+      }
+    } else {
+      // Sections 2-3: hue 64-127 (Yellow → Cyan)
+      if (!(hue & 0x20)) {
+        // Section 2: hue 64-95 (Yellow → Green)
+        //   R: 171 → 0, G: 170 → 255, B: 0
+        uint8_t twothirds = (offset8 * 170) / 256;  // scale8(offset8, 256*2/3)
+        r = K171 - twothirds;
+        g = K170 + third;
+        b = 0;
+      } else {
+        // Section 3: hue 96-127 (Green → Aqua/Cyan)
+        //   R: 0, G: 255 → 170, B: 0 → 85
+        r = 0;
+        g = K255 - third;
+        b = third;
+      }
+    }
+  } else {
+    // Upper nibble 1: hue 128-255 (Cyan → Blue → Red)
+    if (!(hue & 0x40)) {
+      // Sections 4-5: hue 128-191 (Cyan → Blue)
+      if (!(hue & 0x20)) {
+        // Section 4: hue 128-159 (Cyan → Blue)
+        //   R: 0, G: 170 → 85, B: 85 → 170
+        uint8_t twothirds = (offset8 * 170) / 256;
+        r = 0;
+        g = K171 - twothirds;
+        b = K85 + twothirds;
+      } else {
+        // Section 5: hue 160-191 (Blue → Magenta)
+        //   R: 0 → 85, G: 0, B: 255 → 170
+        r = third;
+        g = 0;
+        b = K255 - third;
+      }
+    } else {
+      // Sections 6-7: hue 192-255 (Magenta → Red)
+      if (!(hue & 0x20)) {
+        // Section 6: hue 192-223 (Magenta → Pink)
+        //   R: 85 → 170, G: 0, B: 170 → 85
+        r = K85 + third;
+        g = 0;
+        b = K171 - third;
+      } else {
+        // Section 7: hue 224-255 (Pink → Red)
+        //   R: 170 → 255, G: 0, B: 85 → 0
+        r = K170 + third;
+        g = 0;
+        b = K85 - third;
+      }
+    }
   }
 
-  // Calculate brightness floor and color amplitude
-  // brightness_floor: minimum value all RGB channels will have
-  // color_amplitude: hue-specific variation added on top of floor
-  // This ensures constant perceived brightness across the color wheel
-  uint8_t invsat = 255 - hsv.s;
-  uint8_t brightness_floor = (hsv.v * invsat) / 256;
-  uint8_t color_amplitude = hsv.v - brightness_floor;
+  // Apply saturation: desaturate by mixing with white (255,255,255)
+  if (sat != 255) {
+    if (sat == 0) {
+      // Fully desaturated = white
+      r = 255;
+      g = 255;
+      b = 255;
+    } else {
+      // Partial desaturation: blend color with white based on saturation
+      uint8_t desat = 255 - sat;
+      // Video scaling: desat = sqrt(desat^2) for perceptual linearity
+      desat = (desat * desat) / 256;
 
-  // Divide color wheel into 3 sections (HSV_SECTION_3 = 64 hue units per section)
-  // Section 0: 0x00..0x3F (Red→Yellow)
-  // Section 1: 0x40..0x7F (Yellow→Cyan)
-  // Section 2: 0x80..0xBF (Cyan→Red)
-  uint8_t section = hsv.h / 64;      // 0..2
-  uint8_t offset = hsv.h % 64;       // 0..63
+      uint8_t satscale = 255 - desat;
 
-  // Calculate ramp values for smooth transitions within each section
-  uint8_t rampup = offset;           // 0..63 (rises from 0 to 63)
-  uint8_t rampdown = 63 - offset;    // 63..0 (falls from 63 to 0)
+      // Scale each channel by satscale, with proper rounding
+      if (r) r = ((r * satscale) / 256) + 1;
+      if (g) g = ((g * satscale) / 256) + 1;
+      if (b) b = ((b * satscale) / 256) + 1;
 
-  // Scale ramps by color amplitude and add brightness floor
-  // Division by 64 (256/4) properly scales 0..63 ramps to full range
-  uint8_t rampup_adj = (rampup * color_amplitude) / 64;
-  uint8_t rampdown_adj = (rampdown * color_amplitude) / 64;
-
-  uint8_t rampup_with_floor = rampup_adj + brightness_floor;
-  uint8_t rampdown_with_floor = rampdown_adj + brightness_floor;
-
-  // Map section to RGB channels for smooth color transitions
-  switch (section) {
-    case 0:
-      // Section 0: 0x00..0x3F (Red to Yellow)
-      rgb.r = rampdown_with_floor;
-      rgb.g = rampup_with_floor;
-      rgb.b = brightness_floor;
-      break;
-    case 1:
-      // Section 1: 0x40..0x7F (Yellow to Cyan)
-      rgb.r = brightness_floor;
-      rgb.g = rampdown_with_floor;
-      rgb.b = rampup_with_floor;
-      break;
-    case 2:
-    default:
-      // Section 2: 0x80..0xBF (Cyan to Red)
-      rgb.r = rampup_with_floor;
-      rgb.g = brightness_floor;
-      rgb.b = rampdown_with_floor;
-      break;
+      // Add brightness floor (desaturation amount)
+      uint8_t brightness_floor = desat;
+      r += brightness_floor;
+      g += brightness_floor;
+      b += brightness_floor;
+    }
   }
 
-  return rgb;
+  // Apply value (brightness): scale all channels by value
+  if (val != 255) {
+    // Video scaling: val = sqrt(val^2) for perceptual linearity
+    uint8_t val_scaled = (val * val) / 256;
+
+    if (val_scaled == 0) {
+      r = 0;
+      g = 0;
+      b = 0;
+    } else {
+      // Scale each channel by val_scaled, with proper rounding
+      if (r) r = ((r * val_scaled) / 256) + 1;
+      if (g) g = ((g * val_scaled) / 256) + 1;
+      if (b) b = ((b * val_scaled) / 256) + 1;
+    }
+  }
+
+  return {r, g, b};
 }
 
 // Get HSV color values for dynamic/animated colors

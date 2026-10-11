@@ -27,7 +27,7 @@ TEST_F(LightingConversionFixture, HSV_Red_ConvertToRGB) {
     LED_HSV red_hsv = {0, 255, 255};
     LED_RGB red_rgb = Lighting::hsv2rgb(red_hsv);
     
-    EXPECT_EQ(red_rgb.r, 251);
+    EXPECT_EQ(red_rgb.r, 255);
     EXPECT_EQ(red_rgb.g, 0);
     EXPECT_EQ(red_rgb.b, 0);
 }
@@ -37,25 +37,25 @@ TEST_F(LightingConversionFixture, HSV_Green_ConvertToRGB) {
     LED_RGB green_rgb = Lighting::hsv2rgb(green_hsv);
     
     EXPECT_EQ(green_rgb.r, 0);
-    EXPECT_EQ(green_rgb.g, 123);
-    EXPECT_EQ(green_rgb.b, 127);
+    EXPECT_EQ(green_rgb.g, 255);
+    EXPECT_EQ(green_rgb.b, 0);
 }
 
 TEST_F(LightingConversionFixture, HSV_Blue_ConvertToRGB) {
     LED_HSV blue_hsv = {180, 255, 255};
     LED_RGB blue_rgb = Lighting::hsv2rgb(blue_hsv);
     
-    EXPECT_EQ(blue_rgb.r, 207);
+    EXPECT_EQ(blue_rgb.r, 53);
     EXPECT_EQ(blue_rgb.g, 0);
-    EXPECT_EQ(blue_rgb.b, 43);
+    EXPECT_EQ(blue_rgb.b, 202);
 }
 
 TEST_F(LightingConversionFixture, HSV_Yellow_ConvertToRGB) {
     LED_HSV yellow_hsv = {64, 255, 255};
     LED_RGB yellow_rgb = Lighting::hsv2rgb(yellow_hsv);
     
-    EXPECT_EQ(yellow_rgb.r, 0);
-    EXPECT_EQ(yellow_rgb.g, 251);
+    EXPECT_EQ(yellow_rgb.r, 171);
+    EXPECT_EQ(yellow_rgb.g, 170);
     EXPECT_EQ(yellow_rgb.b, 0);
 }
 
@@ -64,27 +64,27 @@ TEST_F(LightingConversionFixture, HSV_Cyan_ConvertToRGB) {
     LED_RGB cyan_rgb = Lighting::hsv2rgb(cyan_hsv);
     
     EXPECT_EQ(cyan_rgb.r, 0);
-    EXPECT_EQ(cyan_rgb.g, 0);
-    EXPECT_EQ(cyan_rgb.b, 251);
+    EXPECT_EQ(cyan_rgb.g, 171);
+    EXPECT_EQ(cyan_rgb.b, 85);
 }
 
 TEST_F(LightingConversionFixture, HSV_Magenta_ConvertToRGB) {
     LED_HSV magenta_hsv = {192, 255, 255};
     LED_RGB magenta_rgb = Lighting::hsv2rgb(magenta_hsv);
     
-    EXPECT_EQ(magenta_rgb.r, 0);
+    EXPECT_EQ(magenta_rgb.r, 85);
     EXPECT_EQ(magenta_rgb.g, 0);
-    EXPECT_EQ(magenta_rgb.b, 251);
+    EXPECT_EQ(magenta_rgb.b, 171);
 }
 
 TEST_F(LightingConversionFixture, HSV_ZeroSaturation_ReturnsGray) {
-    // When S=0, color should be gray (all channels equal to V)
+    // When S=0, color should be white (fully desaturated)
     LED_HSV gray_hsv = {100, 0, 200};
     LED_RGB gray_rgb = Lighting::hsv2rgb(gray_hsv);
     
-    EXPECT_EQ(gray_rgb.r, 200);
-    EXPECT_EQ(gray_rgb.g, 200);
-    EXPECT_EQ(gray_rgb.b, 200);
+    EXPECT_EQ(gray_rgb.r, 255);
+    EXPECT_EQ(gray_rgb.g, 255);
+    EXPECT_EQ(gray_rgb.b, 255);
 }
 
 TEST_F(LightingConversionFixture, HSV_ZeroValue_ReturnsBlack) {
@@ -115,8 +115,8 @@ TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_43_RedGreen) {
     LED_HSV boundary_hsv = {43, 255, 255};
     LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
     
-    EXPECT_EQ(boundary_rgb.r, 79);
-    EXPECT_EQ(boundary_rgb.g, 171);
+    EXPECT_EQ(boundary_rgb.r, 171);
+    EXPECT_EQ(boundary_rgb.g, 114);
     EXPECT_EQ(boundary_rgb.b, 0);
 }
 
@@ -124,27 +124,27 @@ TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_85_GreenBlue) {
     LED_HSV boundary_hsv = {85, 255, 255};
     LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
     
-    EXPECT_EQ(boundary_rgb.r, 0);
-    EXPECT_EQ(boundary_rgb.g, 167);
-    EXPECT_EQ(boundary_rgb.b, 83);
+    EXPECT_EQ(boundary_rgb.r, 60);
+    EXPECT_EQ(boundary_rgb.g, 225);
+    EXPECT_EQ(boundary_rgb.b, 0);
 }
 
 TEST_F(LightingConversionFixture, HSV_HueSectorBoundary_170_BlueRed) {
     LED_HSV boundary_hsv = {170, 255, 255};
     LED_RGB boundary_rgb = Lighting::hsv2rgb(boundary_hsv);
     
-    EXPECT_EQ(boundary_rgb.r, 167);
+    EXPECT_EQ(boundary_rgb.r, 26);
     EXPECT_EQ(boundary_rgb.g, 0);
-    EXPECT_EQ(boundary_rgb.b, 83);
+    EXPECT_EQ(boundary_rgb.b, 229);
 }
 
 TEST_F(LightingConversionFixture, HSV_MidRangeSaturation_DesaturatedRed) {
     LED_HSV desaturated = {0, 128, 255};
     LED_RGB rgb = Lighting::hsv2rgb(desaturated);
     
-    EXPECT_EQ(rgb.r, 252);
-    EXPECT_EQ(rgb.g, 126);
-    EXPECT_EQ(rgb.b, 126);
+    EXPECT_EQ(rgb.r, 255);
+    EXPECT_EQ(rgb.g, 63);
+    EXPECT_EQ(rgb.b, 63);
 }
 
 TEST_F(LightingConversionFixture, HSV_White_AnyHueFullValueZeroSaturation) {
@@ -187,9 +187,9 @@ TEST_F(LightingConversionFixture, HSV_WarmWhite_ConvertToRGB) {
     LED_HSV warmwhite_hsv = {36, 183, 255};
     LED_RGB warmwhite_rgb = Lighting::hsv2rgb(warmwhite_hsv);
     
-    EXPECT_EQ(warmwhite_rgb.r, 148);
-    EXPECT_EQ(warmwhite_rgb.g, 174);
-    EXPECT_EQ(warmwhite_rgb.b, 71);
+    EXPECT_EQ(warmwhite_rgb.r, 174);
+    EXPECT_EQ(warmwhite_rgb.g, 189);
+    EXPECT_EQ(warmwhite_rgb.b, 89);
     EXPECT_LT(warmwhite_rgb.r, warmwhite_rgb.g);  // G is slightly higher than R
 }
 
@@ -197,8 +197,8 @@ TEST_F(LightingConversionFixture, HSV_Orange_ConvertToRGB) {
     LED_HSV orange_hsv = {32, 255, 255};
     LED_RGB orange_rgb = Lighting::hsv2rgb(orange_hsv);
     
-    EXPECT_EQ(orange_rgb.r, 123);
-    EXPECT_EQ(orange_rgb.g, 127);
+    EXPECT_EQ(orange_rgb.r, 171);
+    EXPECT_EQ(orange_rgb.g, 85);
     EXPECT_EQ(orange_rgb.b, 0);
 }
 
@@ -206,8 +206,8 @@ TEST_F(LightingConversionFixture, HSV_Yellow_ConvertToRGB_Diagnostic) {
     LED_HSV yellow_hsv = {64, 255, 255};
     LED_RGB yellow_rgb = Lighting::hsv2rgb(yellow_hsv);
     
-    EXPECT_EQ(yellow_rgb.r, 0);
-    EXPECT_EQ(yellow_rgb.g, 251);
+    EXPECT_EQ(yellow_rgb.r, 171);
+    EXPECT_EQ(yellow_rgb.g, 170);
     EXPECT_EQ(yellow_rgb.b, 0);
 }
 
@@ -215,6 +215,9 @@ TEST_F(LightingConversionFixture, HSV_Hue36_AllSaturations_Specific) {
     LED_HSV test_hsv = {36, 183, 255};
     LED_RGB test_rgb = Lighting::hsv2rgb(test_hsv);
     
+    EXPECT_EQ(test_rgb.r, 174);
+    EXPECT_EQ(test_rgb.g, 189);
+    EXPECT_EQ(test_rgb.b, 89);
     EXPECT_GT(test_rgb.g, test_rgb.r);
 }
 
@@ -224,9 +227,9 @@ TEST_F(LightingConversionFixture, HSV_WarmWhite_ApplyOrderGRB) {
     
     LED_RGB grb_ordered = Lighting::applyColorOrder(rgb, ORDER_GRB);
     
-    EXPECT_EQ(grb_ordered.r, 174);
-    EXPECT_EQ(grb_ordered.g, 148);
-    EXPECT_EQ(grb_ordered.b, 71);
+    EXPECT_EQ(grb_ordered.r, 189);
+    EXPECT_EQ(grb_ordered.g, 174);
+    EXPECT_EQ(grb_ordered.b, 89);
 }
 
 // ============================================================================
