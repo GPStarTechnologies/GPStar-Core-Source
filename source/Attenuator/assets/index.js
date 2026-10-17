@@ -395,6 +395,21 @@ function updateBars(iPower, cMode, iTheme) {
   }
 }
 
+function updateLensColors(colorArray) {
+  // Directly set lens colors via inline styles instead of CSS variables.
+  // This ensures immediate, reliable color updates even during animations.
+  const rgbString = `rgb(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]})`;
+  const shadowString = `0 0 4px 8px rgba(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]}, 0.8)`;
+  
+  for (let i = 1; i <= 4; i++) {
+    const lens = getEl(`cycLens${i}`);
+    if (lens) {
+      lens.style.backgroundColor = rgbString;
+      lens.style.boxShadow = shadowString;
+    }
+  }
+}
+
 function updateCyclotronGraphics(packState, cyclotronState) {
   // Skip all graphical updates if display is text-only.
   if (displayType === 0) {
@@ -532,13 +547,9 @@ function updateGraphics(jObj) {
     }
     setHtml("equipTitle", header);
 
-    // Set CSS custom properties for lens color and update animation direction
-    var equipCRT = getEl("equipCRT");
-    if (equipCRT) {
-      equipCRT.style.setProperty("--lens-color-r", color[0]);
-      equipCRT.style.setProperty("--lens-color-g", color[1]);
-      equipCRT.style.setProperty("--lens-color-b", color[2]);
-    }
+    // Set lens colors directly via JavaScript for reliable, immediate updates
+    updateLensColors(color);
+
     // Animate lenses when pack is powered OR ramping is active
     const isActive = jObj.pack === "Powered" || jObj.ramping;
     updateCyclotronLensAnimation(jObj.direction, isActive);

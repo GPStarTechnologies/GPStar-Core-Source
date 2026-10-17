@@ -125,10 +125,10 @@ ul li {
 details,
 details * {
   text-align: justify;
-  hyphens: none;
+  hyphens: auto;
   margin-right: 5px;
-  overflow-wrap: normal;
-  word-break: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 details > summary {

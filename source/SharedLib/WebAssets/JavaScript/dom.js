@@ -67,7 +67,7 @@ function enableEl(id) {
   if (el) el.disabled = false;
 }
 
-function colorEl(id, red, green, blue, alpha = 0.5) {
+function colorEl(id, red, green, blue, alpha = 0.4) {
   const el = getEl(id);
   if (el) el.style.backgroundColor = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }

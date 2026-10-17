@@ -105,12 +105,12 @@
 .cyc-lens-2,
 .cyc-lens-3,
 .cyc-lens-4 {
-  background-color: rgba(var(--lens-color-r), var(--lens-color-g), var(--lens-color-b), 1);
+  background-color: rgb(180, 0, 0);
   border-radius: 50%;
   height: 2px;
   width: 2px;
   z-index: 3;
-  box-shadow: 0 0 4px 8px rgba(var(--lens-color-r), var(--lens-color-g), var(--lens-color-b), 0.8);
+  box-shadow: 0 0 4px 8px rgba(180, 0, 0, 0.8);
 }
 
 .cyc-lens-1 {
