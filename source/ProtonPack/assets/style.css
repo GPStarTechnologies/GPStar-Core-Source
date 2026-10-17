@@ -93,24 +93,20 @@
   width: 40px;
 }
 
-/* Cyclotron lens illumination animation */
-@keyframes lens-illuminate {
-  0%, 100% { opacity: 0; }
-  5%, 20% { opacity: 1; }
-  25% { opacity: 0; }
-}
+/* Lens animation now controlled by JavaScript, not CSS keyframes.
+   Opacity is set directly by the lens cycle timer. */
 
 /* Cyclotron Lens */
 .cyc-lens-1,
 .cyc-lens-2,
 .cyc-lens-3,
 .cyc-lens-4 {
-  background-color: rgba(var(--lens-color-r), var(--lens-color-g), var(--lens-color-b), 1);
+  background-color: rgb(0, 0, 0);
   border-radius: 50%;
   height: 2px;
   width: 2px;
   z-index: 3;
-  box-shadow: 0 0 4px 8px rgba(var(--lens-color-r), var(--lens-color-g), var(--lens-color-b), 0.8);
+  box-shadow: 0 0 4px 8px rgba(0, 0, 0, 0.8);
 }
 
 .cyc-lens-1 {
@@ -133,17 +129,8 @@
   top: 317px;
 }
 
-/* CW Animation: 1 → 2 → 3 → 4 */
-.cyc-lens-4.cyc-lens-animate-cw { animation: lens-illuminate 2s -0s infinite linear; }
-.cyc-lens-3.cyc-lens-animate-cw { animation: lens-illuminate 2s -0.5s infinite linear; }
-.cyc-lens-2.cyc-lens-animate-cw { animation: lens-illuminate 2s -1s infinite linear; }
-.cyc-lens-1.cyc-lens-animate-cw { animation: lens-illuminate 2s -1.5s infinite linear; }
-
-/* CCW Animation: 4 → 3 → 2 → 1 */
-.cyc-lens-1.cyc-lens-animate-ccw { animation: lens-illuminate 2s -0s infinite linear; }
-.cyc-lens-2.cyc-lens-animate-ccw { animation: lens-illuminate 2s -0.5s infinite linear; }
-.cyc-lens-3.cyc-lens-animate-ccw { animation: lens-illuminate 2s -1s infinite linear; }
-.cyc-lens-4.cyc-lens-animate-ccw { animation: lens-illuminate 2s -1.5s infinite linear; }
+/* Animation classes removed; JavaScript now controls lens visibility and opacity directly.
+   No CSS animation needed. */
 
 .filter-circle {
   border-radius: 50%;

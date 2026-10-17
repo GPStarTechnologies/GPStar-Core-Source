@@ -106,11 +106,13 @@ function getStreamColor(cMode, iTheme) {
       color[2] = 255;
       break;
     case "Proton Stream":
-    default:
       // Default Red
       color[0] = 180;
       color[1] = 0;
       color[2] = 0;
+      break;
+    default:
+      // Default Off (already initialized to [0, 0, 0])
       break;
   }
 

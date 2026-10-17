@@ -22,6 +22,14 @@ let displayType = 1; // Display Preference: 0=Text-Only, 1=Graphical, 2=Both
 let useAnimation = 1; // Enable/Disable special animations on the UI when using graphical display
 let lastCyclotronState = ""; // Track previous cyclotron state to avoid redundant effect updates
 let lastPackState = ""; // Track previous pack power state to differentiate idle updates
+var lensCycleInterval = null; // Interval ID for lens animation cycle
+var lensAnimationState = {
+  color: [0, 0, 0],
+  direction: true,
+  isActive: false,
+  currentActiveLens: 0,
+  previousDirection: null // Track direction changes to reset animation
+};
 var musicTrackStart = 0,
     musicTrackMax = 0,
     musicTrackCurrent = 0,
@@ -359,23 +367,108 @@ function setButtonStates(statusObj) {
 }
 
 function updateCyclotronLensAnimation(direction, active) {
-  // Apply animation class to all 4 lens elements based on rotation direction.
-  // Show/hide based on animation state for performance (display:none stops animations).
+  // Start or stop the JavaScript-driven lens cycle animation.
   // direction: true = CW (clockwise, 1→2→3→4), false = CCW (counter-clockwise, 4→3→2→1)
+  // active: true to start cycling, false to stop
+  
+  // Check if state has actually changed to avoid unnecessary interval restarts
+  const stateChanged = lensAnimationState.direction !== direction || lensAnimationState.isActive !== active;
+  
+  if (!stateChanged) {
+    // State hasn't changed, skip restart
+    return;
+  }
+  
+  // Detect if direction has changed while animation is active
+  const directionChanged = lensAnimationState.isActive && lensAnimationState.previousDirection !== null && lensAnimationState.previousDirection !== direction;
+  lensAnimationState.previousDirection = direction;
+  lensAnimationState.direction = direction;
+  lensAnimationState.isActive = active;
+  
+  // Stop any existing animation loop
+  if (lensCycleInterval) {
+    clearInterval(lensCycleInterval);
+    lensCycleInterval = null;
+  }
+  
+  // Clear all lenses to invisible when stopping or changing direction
   for (let i = 1; i <= 4; i++) {
-    const lensId = `cycLens${i}`;
-    const lens = getEl(lensId);
+    const lens = getEl(`cycLens${i}`);
     if (lens) {
-      if (active) {
-        showEl(lensId);
-        lens.classList.remove('cyc-lens-animate-cw', 'cyc-lens-animate-ccw');
-        lens.classList.add(direction ? 'cyc-lens-animate-cw' : 'cyc-lens-animate-ccw');
-      } else {
-        hideEl(lensId);
-        lens.classList.remove('cyc-lens-animate-cw', 'cyc-lens-animate-ccw');
-      }
+      lens.style.opacity = '0';
     }
   }
+  
+  if (!active) {
+    return;
+  }
+  
+  // Start the lens cycle animation
+  startLensCycleAnimation();
+}
+
+function startLensCycleAnimation() {
+  // Cycle through lenses 1-4, fading in/out and applying current color.
+  // Each lens cycle: 100ms fade-in, 300ms steady, 100ms fade-out = 500ms per lens
+  // Total cycle: 500ms * 4 = 2000ms (2 seconds) to complete all lenses
+  
+  lensAnimationState.currentActiveLens = 0; // Start with lens 1 (index 0)
+  const fadeinDuration = 100;   // ms to fade in
+  const steadyDuration = 300;   // ms to hold visible
+  const fadeoutDuration = 100;  // ms to fade out
+  const lensPhaseD = fadeinDuration + steadyDuration + fadeoutDuration; // 500ms per lens
+  const fullCycleDuration = lensPhaseD * 4; // 2000ms for all 4 lenses
+  
+  // Run a micro-tick every 16ms (~60fps) to smooth the fades
+  lensCycleInterval = setInterval(() => {
+    const now = Date.now();
+    // Track time within the full 2-second cycle (not resetting per lens)
+    const cycleStartTime = Math.floor(now / fullCycleDuration) * fullCycleDuration;
+    const timeInCycle = now - cycleStartTime;
+    
+    // Determine which lens should be active based on elapsed time (0-3)
+    const lensIndex = Math.floor(timeInCycle / lensPhaseD) % 4;
+    
+    if (!lensAnimationState.isActive) return;
+    
+    // Calculate time within current lens's 500ms window
+    const lensStartTime = cycleStartTime + (lensIndex * lensPhaseD);
+    const timeInLensPhase = now - lensStartTime;
+    
+    // Determine current lens number based on direction from current state
+    let lensNumber;
+    if (lensAnimationState.direction) {
+      // CW: 1→2→3→4
+      lensNumber = lensIndex + 1;
+    } else {
+      // CCW: 4→3→2→1
+      lensNumber = 4 - lensIndex;
+    }
+    
+    const lens = getEl(`cycLens${lensNumber}`);
+    if (!lens) return;
+    
+    // Apply color from current state
+    const rgbString = `rgb(${lensAnimationState.color[0]}, ${lensAnimationState.color[1]}, ${lensAnimationState.color[2]})`;
+    const shadowString = `0 0 4px 8px rgba(${lensAnimationState.color[0]}, ${lensAnimationState.color[1]}, ${lensAnimationState.color[2]}, 0.8)`;
+    lens.style.setProperty('background-color', rgbString, 'important');
+    lens.style.setProperty('box-shadow', shadowString, 'important');
+    
+    // Fade in, steady, fade out logic
+    let opacity = 0;
+    if (timeInLensPhase < fadeinDuration) {
+      // Fade in phase
+      opacity = timeInLensPhase / fadeinDuration;
+    } else if (timeInLensPhase < fadeinDuration + steadyDuration) {
+      // Steady phase
+      opacity = 1;
+    } else if (timeInLensPhase < lensPhaseD) {
+      // Fade out phase
+      opacity = 1 - ((timeInLensPhase - fadeinDuration - steadyDuration) / fadeoutDuration);
+    }
+    
+    lens.style.opacity = opacity.toString();
+  }, 16); // ~60fps
 }
 
 function updateBars(iPower, cMode, iTheme) {
@@ -396,18 +489,9 @@ function updateBars(iPower, cMode, iTheme) {
 }
 
 function updateLensColors(colorArray) {
-  // Directly set lens colors via inline styles instead of CSS variables.
-  // This ensures immediate, reliable color updates even during animations.
-  const rgbString = `rgb(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]})`;
-  const shadowString = `0 0 4px 8px rgba(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]}, 0.8)`;
-  
-  for (let i = 1; i <= 4; i++) {
-    const lens = getEl(`cycLens${i}`);
-    if (lens) {
-      lens.style.backgroundColor = rgbString;
-      lens.style.boxShadow = shadowString;
-    }
-  }
+  // Cache the color in the animation state for the active lens animation to apply.
+  // The lens cycle animation (startLensCycleAnimation) will read this value.
+  lensAnimationState.color = colorArray;
 }
 
 function updateCyclotronGraphics(packState, cyclotronState) {
