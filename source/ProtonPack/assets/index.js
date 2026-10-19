@@ -26,9 +26,7 @@ var lensCycleInterval = null; // Interval ID for lens animation cycle
 var lensAnimationState = {
   color: [0, 0, 0],
   direction: true,
-  isActive: false,
-  currentActiveLens: 0,
-  previousDirection: null // Track direction changes to reset animation
+  isVisible: false
 };
 var musicTrackStart = 0,
     musicTrackMax = 0,
@@ -209,6 +207,16 @@ function updateTrackListing() {
   }
 }
 
+function clearLens(lensNumber) {
+  // Clear a single lens: set opacity to 0 and remove color/shadow styles
+  const lens = getEl(`cycLens${lensNumber}`);
+  if (lens) {
+    lens.style.opacity = '0';
+    lens.style.removeProperty('background-color');
+    lens.style.removeProperty('box-shadow');
+  }
+}
+
 function setDefaultOverlays() {
   // Reset colors on all graphic overlay elements to a default state.
   colorEl("ionOverlay", 255, 0, 0);
@@ -231,6 +239,11 @@ function setDefaultOverlays() {
   // Clear special text elements until we know the system state.
   setHtml("equipTitle", "");
   setHtml("streamStatus", "");
+
+  // Clear all lens elements to default state
+  for (let i = 1; i <= 4; i++) {
+    clearLens(i);
+  }
 
   // Clear all glitch effects on page load
   clearAllEffects();
@@ -372,18 +385,15 @@ function updateCyclotronLensAnimation(direction, active) {
   // active: true to start cycling, false to stop
   
   // Check if state has actually changed to avoid unnecessary interval restarts
-  const stateChanged = lensAnimationState.direction !== direction || lensAnimationState.isActive !== active;
-  
+  const stateChanged = lensAnimationState.direction !== direction || lensAnimationState.isVisible !== active;
   if (!stateChanged) {
     // State hasn't changed, skip restart
     return;
   }
-  
-  // Detect if direction has changed while animation is active
-  const directionChanged = lensAnimationState.isActive && lensAnimationState.previousDirection !== null && lensAnimationState.previousDirection !== direction;
-  lensAnimationState.previousDirection = direction;
+
+  // Update remaining properties on the lens
   lensAnimationState.direction = direction;
-  lensAnimationState.isActive = active;
+  lensAnimationState.isVisible = active;
   
   // Stop any existing animation loop
   if (lensCycleInterval) {
@@ -393,10 +403,7 @@ function updateCyclotronLensAnimation(direction, active) {
   
   // Clear all lenses to invisible when stopping or changing direction
   for (let i = 1; i <= 4; i++) {
-    const lens = getEl(`cycLens${i}`);
-    if (lens) {
-      lens.style.opacity = '0';
-    }
+    clearLens(i);
   }
   
   if (!active) {
@@ -412,14 +419,14 @@ function startLensCycleAnimation() {
   // Each lens cycle: 100ms fade-in, 300ms steady, 100ms fade-out = 500ms per lens
   // Total cycle: 500ms * 4 = 2000ms (2 seconds) to complete all lenses
   
-  lensAnimationState.currentActiveLens = 0; // Start with lens 1 (index 0)
-  const fadeinDuration = 100;   // ms to fade in
-  const steadyDuration = 300;   // ms to hold visible
-  const fadeoutDuration = 100;  // ms to fade out
+  const timerInterval = 10;    // ms between animation ticks
+  const fadeinDuration = 100;  // ms to fade in
+  const steadyDuration = 300;  // ms to hold visible
+  const fadeoutDuration = 100; // ms to fade out
   const lensPhaseD = fadeinDuration + steadyDuration + fadeoutDuration; // 500ms per lens
   const fullCycleDuration = lensPhaseD * 4; // 2000ms for all 4 lenses
   
-  // Run a micro-tick every 16ms (~60fps) to smooth the fades
+  // Run a micro-tick every 10ms (~100fps) for precise phase boundary alignment
   lensCycleInterval = setInterval(() => {
     const now = Date.now();
     // Track time within the full 2-second cycle (not resetting per lens)
@@ -429,9 +436,9 @@ function startLensCycleAnimation() {
     // Determine which lens should be active based on elapsed time (0-3)
     const lensIndex = Math.floor(timeInCycle / lensPhaseD) % 4;
     
-    if (!lensAnimationState.isActive) return;
+    if (!lensAnimationState.isVisible) return;
     
-    // Calculate time within current lens's 500ms window
+    // Calculate time within current lens's visibility window
     const lensStartTime = cycleStartTime + (lensIndex * lensPhaseD);
     const timeInLensPhase = now - lensStartTime;
     
@@ -447,6 +454,14 @@ function startLensCycleAnimation() {
     
     const lens = getEl(`cycLens${lensNumber}`);
     if (!lens) return;
+    
+    // Only apply styles if this lens is still within its active phase window
+    // Check with timer interval buffer to avoid imprecision overshooting the boundary
+    if (timeInLensPhase > lensPhaseD - timerInterval) {
+      // Lens phase is ending or has ended, clear it immediately
+      clearLens(lensNumber);
+      return;
+    }
     
     // Apply color from current state
     const rgbString = `rgb(${lensAnimationState.color[0]}, ${lensAnimationState.color[1]}, ${lensAnimationState.color[2]})`;
@@ -468,7 +483,7 @@ function startLensCycleAnimation() {
     }
     
     lens.style.opacity = opacity.toString();
-  }, 16); // ~60fps
+  }, timerInterval);
 }
 
 function updateBars(iPower, cMode, iTheme) {
@@ -635,8 +650,8 @@ function updateGraphics(jObj) {
     updateLensColors(color);
 
     // Animate lenses when pack is powered OR ramping is active
-    const isActive = jObj.pack === "Powered" || jObj.ramping;
-    updateCyclotronLensAnimation(jObj.direction, isActive);
+    const isVisible = jObj.pack === "Powered" || jObj.ramping;
+    updateCyclotronLensAnimation(jObj.direction, isVisible);
 
     if (jObj.switch == "Ready") {
       colorEl("ionOverlay", 0, 150, 0);

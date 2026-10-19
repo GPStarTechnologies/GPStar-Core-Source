@@ -101,12 +101,11 @@
 .cyc-lens-2,
 .cyc-lens-3,
 .cyc-lens-4 {
-  background-color: rgb(0, 0, 0);
   border-radius: 50%;
   height: 2px;
   width: 2px;
+  opacity: 0;
   z-index: 3;
-  box-shadow: 0 0 4px 8px rgba(0, 0, 0, 0.8);
 }
 
 .cyc-lens-1 {
