@@ -74,6 +74,7 @@ void sendDebug(const String& message);
 
 // Forward declaration of scheduler task callback(s).
 void animateTaskCallback();
+void musicTaskCallback();
 
 // Create the primary task scheduler.
 Scheduler schedule;
@@ -139,6 +140,9 @@ void sendDebug(const String& message) {
 // Create a task to handle all updates for LED animations.
 // 6ms reflects a refresh rate equivalent to ~167fps.
 Task animateTask(6, TASK_FOREVER, &animateTaskCallback);
+
+// Create a task to handle checks for music playback every 250ms.
+Task musicTask(250, TASK_FOREVER, &musicTaskCallback);
 
 void setup() {
   // Initialize LED driver for each hardware chain
@@ -347,7 +351,6 @@ void setup() {
   packOffReset();
 
   // Start some timers
-  ms_check_music.start(i_music_check_delay);
   ms_attenuator_check.start(i_attenuator_disconnect_delay);
   ms_cyclotron_switch_plate_leds.start(i_cyclotron_switch_plate_leds_delay);
 
@@ -373,11 +376,14 @@ void setup() {
 
   // Set the options for the tasks so that it "catches up" if there is a delay.
   animateTask.setSchedulingOption(TASK_SCHEDULE);
+  musicTask.setSchedulingOption(TASK_SCHEDULE);
 
   // Initialize the task scheduler and enable the core tasks.
   schedule.init();
   schedule.addTask(animateTask);
+  schedule.addTask(musicTask);
   animateTask.enable();
+  musicTask.enable();
 }
 
 // Task callback for handling animations.
@@ -403,6 +409,11 @@ void animateTaskCallback() {
   }
 }
 
+// Task callback for handling music playback.
+void musicTaskCallback() {
+  checkMusicAdvance(); // Handle detection of music playback and pausing between tracks.
+}
+
 // Loop logic dedicated to this device which handles all of the standard operations.
 void mainLoop() {
   // If we haven't told the wand we're done booting yet, do that now.
@@ -411,7 +422,6 @@ void mainLoop() {
     wandSerialSend(A_POST_FINISH);
   }
 
-  checkMusic();
   checkSwitches();
   checkRotaryEncoder();
   checkMenuVibration();
