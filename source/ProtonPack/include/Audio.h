@@ -336,7 +336,6 @@ void playMusic() {
 
         audio.trackGain(i_current_music_track, i_volume_music);
         audio.trackPlayPoly(i_current_music_track, true);
-        audio.update();
 
         audio.resetTrackCounter();
       break;
@@ -352,7 +351,6 @@ void playMusic() {
 
         audio.trackGain(i_current_music_track, i_volume_music);
         audio.trackPlayPoly(i_current_music_track, true, b_preload_tracks ? 50 : 0);
-        audio.update();
 
         audio.resetTrackCounter();
       break;
@@ -379,8 +377,6 @@ void stopMusic() {
       if(i_music_track_count > 0 && i_current_music_track >= i_music_track_start) {
         audio.trackStop(i_current_music_track);
       }
-
-      audio.update();
     break;
 
     case AUDIO_NONE:
@@ -414,7 +410,6 @@ void pauseMusic() {
           }
 
           audio.trackPause(i_current_music_track);
-          audio.update();
 
           if(i_volume_music_percentage < 100) {
             delay(15);
@@ -423,7 +418,6 @@ void pauseMusic() {
         }
         else {
           audio.trackPause(i_current_music_track);
-          audio.update();
         }
       }
       break;
@@ -453,7 +447,6 @@ void resumeMusic() {
       case AUDIO_GPSTAR_ADV:
         audio.resetTrackCounter();
         audio.trackResume(i_current_music_track);
-        audio.update();
       break;
 
       case AUDIO_NONE:
