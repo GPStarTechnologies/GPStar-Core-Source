@@ -18,6 +18,7 @@
  */
 
 #pragma once
+
 #include <ShuffleMusic.h>
 
 /**
@@ -402,7 +403,6 @@ void pauseMusic() {
       case AUDIO_WAV_TRIGGER:
       case AUDIO_GPSTAR:
       case AUDIO_GPSTAR_ADV:
-      {
         if(AUDIO_DEVICE != AUDIO_WAV_TRIGGER && i_audio_version < 106) {
           // GPStar Audio firmwares before v1.06 have a pause bug workaround.
           if(i_volume_music_percentage < 100) {
@@ -419,7 +419,6 @@ void pauseMusic() {
         else {
           audio.trackPause(i_current_music_track);
         }
-      }
       break;
 
       case AUDIO_NONE:
@@ -1359,7 +1358,6 @@ void checkMusicAdvance() {
     break;
   }
 }
-
 
 void toggleMusicLoop(bool enable) {
   b_repeat_track = enable;

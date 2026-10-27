@@ -94,14 +94,6 @@ const uint8_t VOLUME_MUSIC_MULTIPLIER = 5;
 const uint8_t VOLUME_EFFECTS_MULTIPLIER = 5;
 
 /*
- * Set to true to enable the onboard amplifier on the WAV Trigger.
- * This is for the WAV Trigger only and does not affect GPStar Audio.
- * If you use the output pins directly on the WAV Trigger board to your speakers, you will need to enable the onboard amp.
- * NOTE: The onboard mono audio amplifier and speaker connector specifications: 2W into 4 Ohms, 1.25W into 8 Ohms
- */
-const bool b_onboard_amp_enabled = true;
-
-/*
  * Set to true to have the LED on the GPStar Audio stay on while the system is running.
  */
 bool b_gpstar_audio_led_enabled = true;

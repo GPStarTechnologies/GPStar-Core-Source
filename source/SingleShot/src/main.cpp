@@ -72,6 +72,7 @@ void sendDebug(const String& message);
 // Forward declaration of scheduler task callback(s).
 void animateTaskCallback();
 void inputTaskCallback();
+void musicTaskCallback();
 #ifdef ESP32
 void motionTaskCallback();
 void wifiSetupTaskCallback();
@@ -154,6 +155,9 @@ Task animateTask(16, TASK_FOREVER, &animateTaskCallback);
 // Create a task to check for user inputs via switches/encoders.
 // Average visual reaction time to changes is 13-20ms.
 Task inputsTask(14, TASK_FOREVER, &inputTaskCallback);
+
+// Create a task to handle checks for music playback every 250ms.
+Task musicTask(250, TASK_FOREVER, &musicTaskCallback);
 
 #ifdef ESP32
   // Create a task to check for motion via IMU/magnetometer.
@@ -299,9 +303,6 @@ void setup() {
   // Then the EEPROM reads any settings if required, then we reset the volume.
   updateMasterVolume(true);
 
-  // Starts music track completion check timer.
-  ms_check_music.start(i_music_check_delay);
-
   // Make sure lights are off, including the bargraph.
   allLightsOff();
 
@@ -311,11 +312,13 @@ void setup() {
   // Set the options for the tasks so that it "catches up" if there is a delay.
   animateTask.setSchedulingOption(TASK_SCHEDULE);
   inputsTask.setSchedulingOption(TASK_SCHEDULE);
+  musicTask.setSchedulingOption(TASK_SCHEDULE);
 
   // Initialize the task scheduler and enable the core tasks.
   schedule.init();
   schedule.addTask(animateTask);
   schedule.addTask(inputsTask);
+  schedule.addTask(musicTask);
 #ifdef ESP32
   schedule.addTask(motionTask);
   schedule.addTask(wifiSetupTask);
@@ -324,6 +327,7 @@ void setup() {
 #endif
   animateTask.enable();
   inputsTask.enable();
+  musicTask.enable();
 }
 
 // Task callback for handling animations.
@@ -359,8 +363,6 @@ void inputTaskCallback() {
 
   updateAudio(); // Update the state of the available sound board.
 
-  checkMusic(); // Perform music control here as this is a standalone device.
-
   switchLoops(); // Standard polling for switch/button changes via user inputs.
 
   // Get the current state of any input devices (toggles, buttons, and switches).
@@ -372,6 +374,11 @@ void inputTaskCallback() {
 
   // Perform updates/actions based on timer events.
   checkGeneralTimers();
+}
+
+// Task callback for handling music playback.
+void musicTaskCallback() {
+  checkMusicAdvance(); // Handle detection of music playback and pausing between tracks.
 }
 
 #ifdef ESP32

@@ -19,7 +19,7 @@
  *
  */
 
- #pragma once
+#pragma once
 
 /*
  * Micro SD Card sound files in order. If you have no sound, your SD card might be too slow, try a faster one.

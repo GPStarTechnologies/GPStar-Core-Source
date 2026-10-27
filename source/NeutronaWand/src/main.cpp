@@ -81,6 +81,7 @@ void sendDebug(const String& message);
 
 // Forward declaration of scheduler task callback(s).
 void animateTaskCallback();
+void musicTaskCallback();
 #ifdef ESP32
 void motionTaskCallback();
 #endif
@@ -160,6 +161,9 @@ void sendDebug(const String& message) {
 // Create a task to handle all updates for LED animations.
 // 6ms reflects a refresh rate equivalent to ~167fps.
 Task animateTask(6, TASK_FOREVER, &animateTaskCallback);
+
+// Create a task to handle checks for music playback every 250ms.
+Task musicTask(250, TASK_FOREVER, &musicTaskCallback);
 
 #ifdef ESP32
   // Create a task to check for motion via IMU/magnetometer.
@@ -393,9 +397,6 @@ void setup() {
 
     // Stop the pack sync timer since we are no longer syncing to a pack.
     ms_packsync.stop();
-
-    // Starts music track completion check timer (bench test mode only).
-    ms_check_music.start(i_music_check_delay);
   }
   else {
     WAND_CONN_STATE = PACK_DISCONNECTED;
@@ -411,7 +412,9 @@ void setup() {
   // Initialize the task scheduler and enable the core tasks.
   schedule.init();
   schedule.addTask(animateTask);
+  schedule.addTask(musicTask);
   animateTask.enable();
+  musicTask.enable();
 #ifdef ESP32
   schedule.addTask(motionTask);
   motionTask.enable();
@@ -462,6 +465,13 @@ void motionTaskCallback() {
   }
 }
 #endif
+
+// Task callback for handling music playback.
+void musicTaskCallback() {
+  if (WAND_CONN_STATE == NC_BENCHTEST) {
+    checkMusicAdvance(); // Handle detection of music playback and pausing between tracks.
+  }
+}
 
 // Loop logic dedicated to this device which handles all of the standard operations.
 void mainLoop() {
@@ -769,8 +779,6 @@ void loop() {
     case NC_BENCHTEST:
       // User has opted to operate the Neutrona Wand in a standalone manner, without a Proton Pack attached.
       updateAudio(); // Update the state of the selected sound board.
-
-      checkMusic(); // Music control is here since pack is not present.
 
       mainLoop(); // Continue on to the main loop.
     break;

@@ -20,23 +20,28 @@
  */
 
 #pragma once
-#include <ShuffleMusic.h>
 
+#include <ShuffleMusic.h>
 #include <GPStarAudio.h>
 gpstarAudio audio;
+
+// Create a HardwareSerial instance for AudioSerial set to UART2.
+#ifndef AUDIO_RX_PIN
+  #define AUDIO_RX_PIN 15
+#endif
+#ifndef AUDIO_TX_PIN
+  #define AUDIO_TX_PIN 16
+#endif
+HardwareSerial AudioSerial(2);
+
+// Forward declarations
+void sendDebug(const String& message); // from main.cpp
 
 /*
  * Audio Devices
  */
 enum AUDIO_DEVICES { AUDIO_NONE, AUDIO_GPSTAR, AUDIO_GPSTAR_ADV };
 enum AUDIO_DEVICES AUDIO_DEVICE;
-
-/*
- * Serial device
- */
-#define AUDIO_RX_PIN 15 // Pin to receive serial data from the GPStar Audio
-#define AUDIO_TX_PIN 16 // Pin to transmit serial data to the GPStar Audio
-HardwareSerial AudioSerial(2);
 
 /*
  * Audio Variables
@@ -80,14 +85,19 @@ String s_track_listing = ""; // Utilized only for the web UI to display the musi
  * Music Control/Checking
  */
 StatelessShuffle shuffleSystem;
-const uint16_t i_music_check_delay = 2000;
-const uint16_t i_music_next_track_delay = 500;
-millisDelay ms_check_music;
-millisDelay ms_music_next_track;
-millisDelay ms_music_status_check;
 uint16_t i_current_shuffle_index = 0;
 uint16_t i_first_shuffle_index = 0;
 uint16_t i_last_shuffle_index = 0;
+
+/**
+ * Music Playback Detection States
+ */
+enum MUSIC_STATE {
+  MUSIC_STATE_IDLE,     // No music playing
+  MUSIC_STATE_PLAYING,  // Actively playing, send status request
+  MUSIC_STATE_CHECKING, // Waiting for serial response, then check status
+  MUSIC_STATE_WAITING   // Track ended, wait for device to settle, then start next track
+};
 
 /*
  * Volume percentage values (0 to 100)
@@ -306,7 +316,6 @@ void playMusic() {
 
         audio.trackGain(i_current_music_track, i_volume_music);
         audio.trackPlayPoly(i_current_music_track, true);
-        audio.update();
 
         audio.resetTrackCounter();
       break;
@@ -322,7 +331,6 @@ void playMusic() {
 
         audio.trackGain(i_current_music_track, i_volume_music);
         audio.trackPlayPoly(i_current_music_track, true, b_preload_tracks ? 50 : 0);
-        audio.update();
 
         audio.resetTrackCounter();
       break;
@@ -332,9 +340,6 @@ void playMusic() {
         // Nothing.
       break;
     }
-
-    // Manage track navigation.
-    ms_music_status_check.start(i_music_check_delay * 10);
   }
 }
 
@@ -345,8 +350,6 @@ void stopMusic() {
       if(i_music_track_count > 0 && i_current_music_track >= i_music_track_start) {
         audio.trackStop(i_current_music_track);
       }
-
-      audio.update();
     break;
 
     case AUDIO_NONE:
@@ -361,15 +364,11 @@ void stopMusic() {
 
 void pauseMusic() {
   if(b_playing_music && !b_music_paused) {
-    // Stop the music check timer.
-    ms_music_status_check.stop();
-
-    // Pause music playback on the Proton Pack
+    // Pause music playback on the device
     switch(AUDIO_DEVICE) {
       case AUDIO_GPSTAR:
       case AUDIO_GPSTAR_ADV:
         audio.trackPause(i_current_music_track);
-        audio.update();
       break;
 
       case AUDIO_NONE:
@@ -384,16 +383,12 @@ void pauseMusic() {
 
 void resumeMusic() {
   if(b_music_paused) {
-    // Reset the music check timer.
-    ms_music_status_check.start(i_music_check_delay * 4);
-
-    // Resume music playback on the Proton Pack
+    // Resume music playback on the device
     switch(AUDIO_DEVICE) {
       case AUDIO_GPSTAR:
       case AUDIO_GPSTAR_ADV:
         audio.resetTrackCounter();
         audio.trackResume(i_current_music_track);
-        audio.update();
       break;
 
       case AUDIO_NONE:
@@ -406,7 +401,7 @@ void resumeMusic() {
   }
 }
 
-void musicNextTrack() {
+void musicNextTrack(boolean b_advance = b_playing_music) {
   int16_t i_temp_track = i_current_music_track; // Used for music navigation.
 
   if(b_shuffle_tracks) {
@@ -446,13 +441,13 @@ void musicNextTrack() {
   }
 
   // Switch to the next track.
-  if(b_playing_music) {
+  if(b_advance) {
     // Stops music using the current track number as the identifier.
     stopMusic();
 
     i_current_music_track = i_temp_track; // Change only AFTER stopping music playback.
 
-    // Play the appropriate track on pack and wand, and notify the AudioSerial device.
+    // Begin playing the new track.
     playMusic();
   }
   else {
@@ -507,7 +502,7 @@ void musicPrevTrack() {
 
     i_current_music_track = i_temp_track; // Change only AFTER stopping music playback.
 
-    // Play the appropriate track on pack and wand, and notify the AudioSerial device.
+    // Begin playing the new track.
     playMusic();
   }
   else {
@@ -806,7 +801,17 @@ void toggleAudioBoost(bool enable) {
 }
 
 void updateEffectsVolume() {
-  // Currently non-op as we do not have sound effects yet.
+  switch(AUDIO_DEVICE) {
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
+      // Reserved for special looped audio effects.
+    break;
+
+    case AUDIO_NONE:
+    default:
+      // No audio device connected.
+    break;
+  }
 }
 
 void increaseVolumeEffects() {
@@ -822,11 +827,13 @@ void increaseVolumeEffects() {
   }
 
   i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
+
+  updateEffectsVolume();
 }
 
 void decreaseVolumeEffects() {
   if(i_volume_effects_percentage - VOLUME_EFFECTS_MULTIPLIER < 0) {
-    i_volume_effects_percentage = 0;;
+    i_volume_effects_percentage = 0;
 
     // Provide feedback at minimum volume.
     stopEffect(S_BEEPS_ALT);
@@ -837,6 +844,8 @@ void decreaseVolumeEffects() {
   }
 
   i_volume_effects = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_effects_percentage / 100);
+
+  updateEffectsVolume();
 }
 
 void updateMusicVolume() {
@@ -985,56 +994,130 @@ bool musicTrackStatus() {
   }
 }
 
-void checkMusic() {
-  if(ms_check_music.justFinished() && !ms_music_next_track.isRunning()) {
-    switch(AUDIO_DEVICE) {
-      case AUDIO_GPSTAR:
-      case AUDIO_GPSTAR_ADV:
-        ms_check_music.start(i_music_check_delay);
+/**
+ * Music Playback & Auto-Advance State Machine
+ * 
+ * State Flow (250ms per cycle):
+ *   IDLE
+ *     -> PLAYING (when playMusic() called externally, b_playing_music=true)
+ *     -> CHECKING (send trackPlayingStatus request async)
+ *     -> WAITING (when track ends per device status)
+ *     -> PLAYING (after 500ms settle, call playMusic() for next track)
+ *     -> IDLE (if playMusic() fails)
+ */
+void checkMusicAdvance() {
+  // Current state of music playback, held as a local static variable.
+  static MUSIC_STATE music_state = MUSIC_STATE_IDLE;
+  
+  // Counter for the 500ms wait period. Only meaningful in WAITING state.
+  // Since this function runs by the task scheduler every 250ms:
+  // - i_wait_counter = 0: Just detected track end, waiting starts
+  // - i_wait_counter = 1: 250ms has passed
+  // - i_wait_counter = 2: 500ms has passed, safe to play next track
+  static uint8_t i_wait_counter = 0;
 
-        musicTrackPlayingStatus();
+  // Track status variables used in CHECKING state.
+  bool track_status = false;
+  bool counter_reset = false;
 
-        // Loop through all the tracks if the music is not set to repeat a track.
-        if(b_playing_music && !b_repeat_track && !b_music_paused) {
-          if(!musicTrackStatus() && ms_music_status_check.justFinished() && !musicIsTrackCounterReset()) {
-            ms_check_music.stop();
-            ms_music_status_check.stop();
+  switch(AUDIO_DEVICE) {
+    case AUDIO_GPSTAR:
+    case AUDIO_GPSTAR_ADV:
+      
+      // Safety catch-all: If user manually stops during PLAYING state,
+      // reset to IDLE immediately. Only trigger during PLAYING to avoid
+      // interrupting the auto-advance sequence (WAITING state).
+      if(!b_playing_music && music_state == MUSIC_STATE_PLAYING) {
+        sendDebug(F("MUSIC: User stopped music, resetting to IDLE"));
+        i_wait_counter = 0;
+        music_state = MUSIC_STATE_IDLE;
+      }
 
-            stopMusic();
+      switch(music_state) {
+        case MUSIC_STATE_IDLE:
+          // No music playing. Wait for external playMusic() call to start.
+          if(b_playing_music) {
+            music_state = MUSIC_STATE_PLAYING;
+            sendDebug(String(F("MUSIC: Transitioned IDLE -> PLAYING, track ")) + String(i_current_music_track));
+          }
+        break;
 
-            // Switch to the next track.
-            if(i_current_music_track + 1 > i_music_track_start + i_music_track_count - 1) {
-              i_current_music_track = i_music_track_start;
-            }
-            else {
-              i_current_music_track++;
-            }
+        case MUSIC_STATE_PLAYING:
+          // Music is actively playing. Send status request and prepare to check response.
+          musicTrackPlayingStatus();  // Send async request
+          music_state = MUSIC_STATE_CHECKING;  // Transition to check response next cycle
+          sendDebug(F("MUSIC: PLAYING, sent status request -> CHECKING"));
+        break;
 
-            // Start timer to prepare to play music again.
-            ms_music_next_track.start(i_music_next_track_delay);
+        case MUSIC_STATE_CHECKING:
+          // Previous cycle sent status request. Now read the response.
+          // Response should be in cached state via updateAudio() from main loop.
+          
+          track_status = musicTrackStatus();
+          counter_reset = musicIsTrackCounterReset();
+          
+          sendDebug(String(F("MUSIC: CHECKING - track_status=")) + String(track_status) + 
+                    String(F(" counter_reset=")) + String(counter_reset) +
+                    String(F(" b_playing_music=")) + String(b_playing_music));
+          
+          // Detect natural track completion:
+          // - Must still be in PLAYING intent (b_playing_music = true)
+          // - Track must have stopped (!track_status = true)
+          // - Counter must not be reset (!counter_reset = true)
+          // - Not repeating or paused
+          if(b_playing_music && !track_status && !counter_reset && !b_repeat_track && !b_music_paused) {
+            sendDebug(F("MUSIC: Track ended, calculating next track and transitioning to WAITING"));
+            
+            // Transition to waiting state for 500ms device settle gap.
+            i_wait_counter = 0;
+            music_state = MUSIC_STATE_WAITING;
           }
           else {
-            if(ms_music_status_check.justFinished()) {
-              ms_music_status_check.start(i_music_check_delay * 4);
+            // Track still playing or conditions not met, go back to PLAYING to check again
+            music_state = MUSIC_STATE_PLAYING;
+          }
+        break;
+
+        case MUSIC_STATE_WAITING:
+          // Waiting for audio device to settle between tracks.
+          // Increment counter on each 250ms task execution.
+          i_wait_counter++;
+          sendDebug(String(F("MUSIC: WAITING state, counter=")) + String(i_wait_counter) + F(" (need 2 for 500ms)"));
+          
+          // Safety check: cap counter
+          if(i_wait_counter > 2) {
+            i_wait_counter = 2;
+          }
+          
+          // When counter reaches 2, full 500ms settle time has elapsed, start the next track.
+          if(i_wait_counter >= 2) {
+            sendDebug(String(F("MUSIC: 500ms settle complete, starting track ")) + String(i_current_music_track));
+
+            // Calculate next track (i_current_music_track) and force the call of stopMusic() then playMusic().
+            musicNextTrack(true);
+            i_wait_counter = 0;
+            
+            // Check if playMusic() succeeded before resuming status checks
+            if(b_playing_music) {
+              music_state = MUSIC_STATE_PLAYING;
+              sendDebug(F("MUSIC: Next track playing -> PLAYING"));
+            } else {
+              music_state = MUSIC_STATE_IDLE;
+              sendDebug(F("MUSIC: playMusic() failed -> IDLE"));
             }
           }
-        }
-      break;
+        break;
 
-      case AUDIO_NONE:
-      default:
-        // None
-      break;
-    }
-  }
+        default:
+          music_state = MUSIC_STATE_IDLE;
+        break;
+      }
+    break;
 
-  // Start playing music again.
-  if(ms_music_next_track.justFinished()) {
-    ms_music_next_track.stop();
-    ms_check_music.start(i_music_check_delay);
-
-    // Play the appropriate track on the pack and wand, and notify the AudioSerial device.
-    playMusic();
+    case AUDIO_NONE:
+    default:
+      // No audio device is connected, so nothing to check
+    break;
   }
 }
 
@@ -1089,11 +1172,14 @@ void useShortTrackOverload(bool enabled) {
  * Used to detect, update, and reset the available audio devices.
  */
 bool setupAudioDevice() {
-  // Short delay to allow the audio boards to boot up.
-  delay(1000);
+  // Before we do anything, set up our initial volume parameters.
+  i_volume_master = PROGMEM_READI8(i_volume_master_lookup_table[i_volume_master_percentage / 5]); // Master overall volume.
+  i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup.
+  i_volume_revert = i_volume_master; // Used to restore volume level from a muted state.
+
+  char gVersion[VERSION_STRING_LEN];
 
   AudioSerial.begin(57600, SERIAL_8N1, AUDIO_RX_PIN, AUDIO_TX_PIN);
-
   audio.start(AudioSerial);
 
   uint16_t i_timeout = millis() + 1000;
@@ -1120,10 +1206,6 @@ bool setupAudioDevice() {
       i_audio_version = 100; // Set to 100 to indicate old version.
     }
 
-    i_volume_master = MINIMUM_VOLUME - (MINIMUM_VOLUME * i_volume_master_percentage / 100); // Master overall volume.
-    i_volume_master_eeprom = i_volume_master; // Master overall volume that is saved into the eeprom menu and loaded during bootup.
-    i_volume_revert = i_volume_master; // Used to restore volume level from a muted state.
-
     sendDebug(String(F("Using GPStar Audio Version: ")) + String(audio.getVersionNumber()));
 
     i_num_tracks = audio.getNumTracks();
@@ -1135,6 +1217,44 @@ bool setupAudioDevice() {
 
     // Stop all tracks.
     audio.stopAllTracks();
+
+    if(b_microsd_corrupt || b_microsd_outdated) {
+      // If we ran into an error simply exit.
+      return false;
+    }
+
+    return true;
+  }
+
+  // Reset the master gain db. Range is -70 to 0. Bootup the system muted, then we reset it after the system is loaded.
+  audio.masterGain(i_volume_abs_min);
+
+  // Stop all tracks.
+  audio.stopAllTracks();
+
+  // Ask for some WAV Trigger information.
+  audio.requestVersionString();
+  audio.requestSystemInfo();
+
+  // Delay to allow time for WAV Trigger to respond.
+  delay(10);
+
+  if(audio.getVersion(gVersion)) {
+    // We found a WAV Trigger. Build the music track count.
+    if(audio.wasSysInfoRcvd()) {
+      // Only attempt to build a music track count if the WAV Trigger responded with RSP_SYSTEM_INFO.
+      i_max_track_count = 2048; // WAV Trigger has lower maximum track count.
+      i_num_tracks = audio.getNumTracks();
+      buildMusicCount(i_num_tracks);
+    }
+    else {
+      sendDebug(F("Warning: RSP_SYSTEM_INFO not received!"));
+
+      AUDIO_DEVICE = AUDIO_NONE;
+      AudioSerial.end();
+
+      return false;
+    }
 
     if(b_microsd_corrupt || b_microsd_outdated) {
       // If we ran into an error, attempt to play an alarm sound and exit.

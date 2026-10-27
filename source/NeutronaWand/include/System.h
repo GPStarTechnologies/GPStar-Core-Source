@@ -10594,9 +10594,6 @@ void toggleStandaloneMode(bool on) {
     // Reset the audio device now that we are in standalone mode and need music playback.
     setupAudioDevice();
 
-    // Start the music check timer for standalone mode.
-    ms_check_music.start(i_music_check_delay);
-
     // Re-read the EEPROM now that we are in standalone mode to make sure system mode and volume are correct.
     if(b_eeprom) {
       readEEPROM();

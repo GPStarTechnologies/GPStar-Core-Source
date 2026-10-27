@@ -85,6 +85,7 @@ WirelessManager* wirelessMgr = nullptr;
 
 // Task Handles
 TaskHandle_t AnimationTaskHandle = NULL;
+TaskHandle_t MusicCheckTaskHandle = NULL;
 TaskHandle_t PreferencesTaskHandle = NULL;
 TaskHandle_t UserInputTaskHandle = NULL;
 TaskHandle_t WiFiManagementTaskHandle = NULL;
@@ -160,9 +161,27 @@ void AnimationTask(void *parameter) {
       sendAnimationFrameData(); // Send real-time frame data to connected clients via SSE during active recording/playback.
     }
     updateAudio(); // Update the state of the available sound board.
-    checkMusic(); // Perform music control as necessary.
+    checkMusicAdvance(); // Perform music control as necessary.
 
     vTaskDelay(10 / portTICK_PERIOD_MS); // 10ms delay
+  }
+}
+
+// Music Check Task (Loop)
+void MusicCheckTask(void *parameter) {
+  while(true) {
+    #if defined(DEBUG_TASK_TO_CONSOLE)
+      // Confirm the core in use for this task, and when it runs.
+      debug(F("Executing MusicCheckTask in core"));
+      debug(xPortGetCoreID());
+      // Get the stack high water mark for optimizing bytes allocated.
+      debug(F(" | Stack HWM: "));
+      debugln(uxTaskGetStackHighWaterMark(NULL));
+    #endif
+
+    checkMusicAdvance(); // Handle detection of music playback and pausing between tracks.
+
+    vTaskDelay(250 / portTICK_PERIOD_MS); // 250ms delay
   }
 }
 
@@ -231,9 +250,6 @@ void UserInputTask(void *parameter) {
 
     // Update the state of the audio device.
     updateAudio();
-
-    // Perform music control and check for track advancement.
-    checkMusic();
 
     // Check each RF input pin for triggers.
     RFButtonChannel* buttons[] = {&devices.button1, &devices.button2, &devices.button3, &devices.button4};
@@ -531,8 +547,9 @@ void setup() {
   vTaskDelay(200 / portTICK_PERIOD_MS); // Delay for 200ms to avoid competition.
 
   // Create tasks which utilize a loop for continuous operation (prioritized highest to lowest).
-  xTaskCreatePinnedToCore(UserInputTask, "UserInputTask", 4096, NULL, 3, &UserInputTaskHandle, 1);
-  xTaskCreatePinnedToCore(AnimationTask, "AnimationTask", 4096, NULL, 2, &AnimationTaskHandle, 1);
+  xTaskCreatePinnedToCore(UserInputTask, "UserInputTask", 4096, NULL, 4, &UserInputTaskHandle, 1);
+  xTaskCreatePinnedToCore(AnimationTask, "AnimationTask", 4096, NULL, 3, &AnimationTaskHandle, 1);
+  xTaskCreatePinnedToCore(MusicCheckTask, "MusicCheckTask", 4096, NULL, 2, &MusicCheckTaskHandle, 1);
   xTaskCreatePinnedToCore(WiFiManagementTask, "WiFiManagementTask", 4096, NULL, 1, &WiFiManagementTaskHandle, 0);
 
   // Create idle tasks for each core, used to estimate % busy for core.
@@ -606,6 +623,11 @@ void printMemoryStats() {
   if(AnimationTaskHandle != NULL) {
     debug(F("|--Animation: "));
     debug(formatBytesWithCommas(uxTaskGetStackHighWaterMark(AnimationTaskHandle)));
+    debugln(F(" / 4,096 bytes"));
+  }
+  if(MusicCheckTaskHandle != NULL) {
+    debug(F("|--Animation: "));
+    debug(formatBytesWithCommas(uxTaskGetStackHighWaterMark(MusicCheckTaskHandle)));
     debugln(F(" / 4,096 bytes"));
   }
   if(WiFiManagementTaskHandle != NULL) {
