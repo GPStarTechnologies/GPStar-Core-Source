@@ -79,6 +79,7 @@ void setTargetAsReady() {
   setIndicatorLEDs(C_GREEN, 0, DEVICE_MAX_LEDS);
 
   ms_pstt_blink_rate.start(i_pstt_blink_rate_delay);
+  ms_target_autoreset.stop();
 
   notifyWSClients();
  }
@@ -89,6 +90,10 @@ void setTargetDefeated() {
 
   psttServoControl(0);
   ms_pstt_health_regen.stop();
+
+  if(targetConfig.autoReset) {
+    ms_target_autoreset.start(targetConfig.autoResetDelay);
+  }
 
   notifyWSClients();
 }
@@ -124,7 +129,10 @@ void regenerateTargetHealth() {
 void checkTargetHealth() {
   switch(PSTT_STATUS) {
     case PSTT_DISABLED:
-      // Nothing.
+      // Check for auto-reset.
+      if(targetConfig.autoReset && ms_target_autoreset.justFinished()) {
+        setTargetAsReady();
+      }
     break;
 
     case PSTT_READY:

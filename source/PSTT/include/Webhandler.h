@@ -131,6 +131,8 @@ String getDeviceConfig() {
   jsonBody["wandPower3"] = targetConfig.wandPower3;
   jsonBody["wandPower4"] = targetConfig.wandPower4;
   jsonBody["wandPower5"] = targetConfig.wandPower5;
+  jsonBody["autoReset"] = targetConfig.autoReset;
+  jsonBody["autoResetDelay"] = targetConfig.autoResetDelay;
 
   // Serialize JSON object to string.
   serializeJson(jsonBody, equipSettings);
@@ -807,6 +809,16 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
     }
     if(jsonBody["wandPower5"].is<uint16_t>()) {
       targetConfig.wandPower5 = jsonBody["wandPower5"].as<uint16_t>();
+    }
+
+    // Target Auto-Reset Settings
+    if(jsonBody["autoReset"].is<bool>()) {
+      // Enables the ability for the target to automatically reset.
+      targetConfig.autoReset = jsonBody["autoReset"].as<bool>();
+    }
+    if(jsonBody["autoResetDelay"].is<uint16_t>()) {
+      // Sets the delay before the target automatically resets after being defeated.
+      targetConfig.autoResetDelay = jsonBody["autoResetDelay"].as<uint16_t>();
     }
 
     if(preferences.begin("device", false)) {

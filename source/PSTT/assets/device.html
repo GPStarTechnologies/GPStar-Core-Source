@@ -68,23 +68,17 @@
       <div class="setting">
         <b>Maximum Health:</b>
         <br />
-        <span class="note">Total health points when target is reset (100-10000)</span>
-        <br />
         <input type="range" id="maxHealth" min="100" max="10000" step="100" value="1000" style="width: 100%; max-width: 300px" oninput="updateSliderValue('maxHealth')" />
         <span id="maxHealth-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">1000</span>
       </div>
       <div class="setting">
         <b>Low Health Threshold:</b>
         <br />
-        <span class="note">Health level where indicator turns yellow</span>
-        <br />
         <input type="range" id="lowHealth" min="50" max="5000" step="50" value="440" style="width: 100%; max-width: 300px" oninput="updateSliderValue('lowHealth')" />
         <span id="lowHealth-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">440</span>
       </div>
       <div class="setting">
         <b>Critical Health Threshold:</b>
-        <br />
-        <span class="note">Health level where indicator turns red</span>
         <br />
         <input type="range" id="extremeLowHealth" min="10" max="2500" step="10" value="220" style="width: 100%; max-width: 300px" oninput="updateSliderValue('extremeLowHealth')" />
         <span id="extremeLowHealth-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">220</span>
@@ -96,15 +90,11 @@
       <div class="setting">
         <b>Regen Amount:</b>
         <br />
-        <span class="note">Health restored per regeneration cycle</span>
-        <br />
         <input type="range" id="healthRegen" min="10" max="500" step="10" value="100" style="width: 100%; max-width: 300px" oninput="updateSliderValue('healthRegen')" />
         <span id="healthRegen-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">100</span>
       </div>
       <div class="setting">
         <b>Regen Delay (ms):</b>
-        <br />
-        <span class="note">Milliseconds between regeneration cycles</span>
         <br />
         <input type="range" id="healthRegenDelay" min="100" max="10000" step="100" value="1000" style="width: 100%; max-width: 300px" oninput="updateSliderValue('healthRegenDelay')"
         />
@@ -117,15 +107,11 @@
       <div class="setting">
         <b>Power Level 1:</b>
         <br />
-        <span class="note">Damage per hit at power level 1</span>
-        <br />
         <input type="range" id="wandPower1" min="10" max="500" step="10" value="15" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower1')" />
         <span id="wandPower1-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">15</span>
       </div>
       <div class="setting">
         <b>Power Level 2:</b>
-        <br />
-        <span class="note">Damage per hit at power level 2</span>
         <br />
         <input type="range" id="wandPower2" min="10" max="500" step="10" value="30" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower2')" />
         <span id="wandPower2-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">30</span>
@@ -133,15 +119,11 @@
       <div class="setting">
         <b>Power Level 3:</b>
         <br />
-        <span class="note">Damage per hit at power level 3</span>
-        <br />
         <input type="range" id="wandPower3" min="10" max="500" step="10" value="45" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower3')" />
         <span id="wandPower3-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">45</span>
       </div>
       <div class="setting">
         <b>Power Level 4:</b>
-        <br />
-        <span class="note">Damage per hit at power level 4</span>
         <br />
         <input type="range" id="wandPower4" min="10" max="500" step="10" value="60" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower4')" />
         <span id="wandPower4-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">60</span>
@@ -149,10 +131,28 @@
       <div class="setting">
         <b>Power Level 5:</b>
         <br />
-        <span class="note">Damage per hit at power level 5</span>
-        <br />
         <input type="range" id="wandPower5" min="10" max="500" step="10" value="75" style="width: 100%; max-width: 300px" oninput="updateSliderValue('wandPower5')" />
         <span id="wandPower5-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">75</span>
+      </div>
+    </div>
+
+    <h1>Target Reset</h1>
+    <div class="block left">
+      <div class="setting">
+        <label class="toggle-switchy" data-text="yesno" data-label="left">
+          <input id="autoReset" name="autoReset" type="checkbox" />
+          <span class="toggle">
+            <span class="switch"></span>
+          </span>
+          <span class="label">Automatic Target Reset:</span>
+        </label>
+      </div>
+      <div class="setting">
+        <b>Auto Reset Delay (ms):</b>
+        <br />
+        <input type="range" id="autoResetDelay" min="1000" max="60000" step="1000" value="10000" style="width: 100%; max-width: 300px" oninput="updateSliderValue('autoResetDelay')"
+        />
+        <span id="autoResetDelay-value" style="display: inline-block; min-width: 70px; text-align: right; font-weight: bold">1000</span>
       </div>
     </div>
 
@@ -221,6 +221,10 @@
               setSliderValue("wandPower3", settings.wandPower3 || 45);
               setSliderValue("wandPower4", settings.wandPower4 || 60);
               setSliderValue("wandPower5", settings.wandPower5 || 75);
+
+              // Auto-reset Settings
+              setToggle("autoReset", settings.autoReset);
+              setSliderValue("autoResetDelay", settings.autoResetDelay || 10000);
             }
           } else if (this.readyState == 4) {
             // Handle error responses
@@ -277,6 +281,8 @@
           wandPower3: getInt("wandPower3"),
           wandPower4: getInt("wandPower4"),
           wandPower5: getInt("wandPower5"),
+          autoReset: getToggle("autoReset"),
+          autoResetDelay: getInt("autoResetDelay"),
         };
 
         var xhttp = new XMLHttpRequest();

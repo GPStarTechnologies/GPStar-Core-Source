@@ -81,6 +81,12 @@ bool b_colourChange = true;
 #define NEUTRONA_WAND_PWR_5 75
 
 /*
+ * Target Auto-Reset Behaviour
+ */
+#define TARGET_AUTORESET_DEFAULT_DELAY 10000
+millisDelay ms_target_autoreset;
+
+/*
  * Data structure object for target customizations which are saved into NVS.
  * WARNING: Do not reorder fields without changing field names or types, as this
  * would cause size validation to pass but load data into incorrect fields.
@@ -101,4 +107,8 @@ struct __attribute__((packed)) UserTargetConfig {
   uint16_t wandPower3 = NEUTRONA_WAND_PWR_3;
   uint16_t wandPower4 = NEUTRONA_WAND_PWR_4;
   uint16_t wandPower5 = NEUTRONA_WAND_PWR_5;
+
+  // Auto-Reset Settings
+  bool autoReset = false;
+  uint16_t autoResetDelay = TARGET_AUTORESET_DEFAULT_DELAY;
 } targetConfig;
