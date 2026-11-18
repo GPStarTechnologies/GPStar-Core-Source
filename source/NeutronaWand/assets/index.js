@@ -763,9 +763,9 @@ window.addEventListener("load", onLoad);
 
 /** API Commands **/
 
-function triggerInfrared() {
-  // Trigger an IR signal as sent by the PKE meter.
-  sendCommand("/infrared/signal?type=ghostintrap");
+function triggerInfrared(irType) {
+  // Trigger an IR signal as sent by type name.
+  sendCommand("/infrared/signal?type=" + irType);
 }
 
 function doGyroCalibration() {

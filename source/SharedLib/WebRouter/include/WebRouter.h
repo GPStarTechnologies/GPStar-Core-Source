@@ -473,6 +473,7 @@ String generateOpenAPISpec() {
       paramSchema[JSON_PROPERTY_TYPE] = F("string");
       JsonArray enumValues = paramSchema["enum"].to<JsonArray>();
       enumValues.add(F("ghostintrap"));
+      enumValues.add(F("hologramnext"));
       enumValues.add(F("firing"));
       enumValues.add(F("gpstartest"));
       paramSchema["default"] = F("ghostintrap");

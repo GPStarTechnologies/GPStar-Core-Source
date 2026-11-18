@@ -163,6 +163,15 @@ JsonDocument InfraredManager::sendCommand(IR_COMMAND_TYPE commandType, uint8_t s
     jsonResult["status"] = "success";
     IrSender.sendRaw(ir_GhostInTrap, sizeof(ir_GhostInTrap) / sizeof(ir_GhostInTrap[0]), CARRIER_KHZ);
   }
+  else if(commandType == IR_CMD_HOLO_NEXT) {
+    // Send an IR signal to trigger a holographic fan.
+    // Address: A6 0A 00 00 (0x0AA6 -> sent as A6 0A, low byte first)
+    // Command: 0A F5 00 00 (0xF50A -> 0A with calculated inverse F5)
+    jsonResult["command"] = "hologramnext";
+    jsonResult["description"] = "Hologram display [Next] IR signal";
+    jsonResult["status"] = "success";
+    IrSender.sendNEC(0x0AA6, 0x0A, 0);
+  }
   else if(commandType == IR_CMD_TEST) {
     // Send a special command to test the NEC-based IR signal.
     uint16_t myAddress = buildIRAddress(m_deviceType, m_deviceID);
@@ -290,8 +299,13 @@ JsonDocument InfraredManager::sendCommand(IR_COMMAND_TYPE commandType, uint8_t s
 
 // Convert string command type to IR_COMMAND_TYPE enum
 bool InfraredManager::stringToCommandType(const String& commandStr, IR_COMMAND_TYPE& commandType) {
+  // Check strings directly using equals() as a simple switch statement can only work on integers.
   if(commandStr.equals("ghostintrap")) {
     commandType = IR_CMD_GHOST_TRAP;
+    return true;
+  }
+  else if(commandStr.equals("hologramnext")) {
+    commandType = IR_CMD_HOLO_NEXT;
     return true;
   }
   else if(commandStr.equals("firing")) {
@@ -302,7 +316,8 @@ bool InfraredManager::stringToCommandType(const String& commandStr, IR_COMMAND_T
     commandType = IR_CMD_TEST;
     return true;
   }
-  return false;
+
+  return false; // Default fall-through.
 }
 #endif // ESP32
 #endif // (defined(ESP32) || defined(__AVR_ATtiny1616__))

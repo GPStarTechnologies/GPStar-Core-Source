@@ -94,6 +94,7 @@
 // IR Command Type Enum - Defines the types of infrared commands that can be sent
 enum IR_COMMAND_TYPE {
   IR_CMD_GHOST_TRAP,  // Ghost Trap (PKE) raw IR signal
+  IR_CMD_HOLO_NEXT,   // Hologram display [Next] IR signal
   IR_CMD_FIRING,      // Firing command with stream type/power level
   IR_CMD_TEST         // Test command for IR signal verification
 };
@@ -128,7 +129,7 @@ public:
 #ifdef ESP32
   /**
    * Send an infrared command
-   * @param commandType Command type from IR_COMMAND_TYPE enum (IR_CMD_GHOST_TRAP, IR_CMD_FIRING, IR_CMD_TEST)
+   * @param commandType Command type from IR_COMMAND_TYPE enum (IR_CMD_GHOST_TRAP, IR_CMD_HOLO_NEXT, IR_CMD_FIRING, IR_CMD_TEST)
    * @param streamMode Stream mode for firing commands (0=PROTON, 1=SLIME, 2=STASIS, 3=MESON)
    * @param powerLevel Power level for firing commands (1-5)
    * @param streamInfo Firing a stream, crossing the streams or a blast (alt firing) (0-1-2)
@@ -138,7 +139,7 @@ public:
 
   /**
    * Convert string command type to IR_COMMAND_TYPE enum
-   * @param commandStr Command type string ("ghostintrap", "firing", "gpstartest")
+   * @param commandStr Command type string ("ghostintrap", "hologramnext", "firing", "gpstartest")
    * @param commandType Output parameter for the enum value
    * @return True if conversion successful, false if unknown command string
    */
