@@ -26,6 +26,7 @@
 #include <Arduino.h>
 #ifdef ESP32
 #include <ArduinoJson.h>
+#include <Preferences.h>
 #endif
 #include <millisDelay.h>
 
@@ -91,12 +92,22 @@
 #define IR_STREAM_SLIME         2      // 2, Slime Blower
 #define IR_STREAM_MESON         3      // 3, Composite Particle System
 
+static constexpr uint8_t IR_CUSTOM_COMMAND_MAX = 10;
+static constexpr uint8_t IR_CUSTOM_COMMAND_NAME_MAX = 20;
+static constexpr uint8_t IR_CUSTOM_COMMAND_INDEX_INVALID = 0xFF;
+
+struct IR_CUSTOM_COMMAND_ENTRY {
+  char name[IR_CUSTOM_COMMAND_NAME_MAX + 1] = {}; // Empty name marks an unused slot.
+  uint8_t address[2] = {}; // Low byte first, matching captured NEC byte order.
+  uint8_t command[2] = {}; // Captured command and inverse; sendNEC uses the first byte.
+};
+
 // IR Command Type Enum - Defines the types of infrared commands that can be sent
 enum IR_COMMAND_TYPE {
   IR_CMD_GHOST_TRAP,  // Ghost Trap (PKE) raw IR signal
-  IR_CMD_HOLO_NEXT,   // Hologram display [Next] IR signal
   IR_CMD_FIRING,      // Firing command with stream type/power level
-  IR_CMD_TEST         // Test command for IR signal verification
+  IR_CMD_TEST,        // Test command for IR signal verification
+  IR_CMD_CUSTOM       // User-configured NEC command selected by slot index
 };
 
 // IR Stream Type. Sending a stream, a crossing the streams or a blast.
@@ -129,17 +140,36 @@ public:
 #ifdef ESP32
   /**
    * Send an infrared command
-   * @param commandType Command type from IR_COMMAND_TYPE enum (IR_CMD_GHOST_TRAP, IR_CMD_HOLO_NEXT, IR_CMD_FIRING, IR_CMD_TEST)
+   * @param commandType Command type from IR_COMMAND_TYPE enum
    * @param streamMode Stream mode for firing commands (0=PROTON, 1=SLIME, 2=STASIS, 3=MESON)
    * @param powerLevel Power level for firing commands (1-5)
    * @param streamInfo Firing a stream, crossing the streams or a blast (alt firing) (0-1-2)
+   * @param customCommandIndex Custom command slot index; required for IR_CMD_CUSTOM
    * @return JsonDocument with command result and debugging information
    */
-  JsonDocument sendCommand(IR_COMMAND_TYPE commandType, uint8_t streamMode = IR_STREAM_PROTON, uint8_t powerLevel = 5, uint8_t streamInfo = 0);
+  JsonDocument sendCommand(IR_COMMAND_TYPE commandType, uint8_t streamMode = IR_STREAM_PROTON, uint8_t powerLevel = 5, uint8_t streamInfo = 0, uint8_t customCommandIndex = IR_CUSTOM_COMMAND_INDEX_INVALID);
+
+  /**
+   * Copy a configured custom command from its slot.
+   * @return True if the index is valid and the slot is configured.
+   */
+  bool getCustomCommand(uint8_t index, IR_CUSTOM_COMMAND_ENTRY& entry) const;
+
+  /**
+   * Store or replace a custom command and persist the full slot array.
+   * @return True if the entry is valid and persistence succeeds.
+   */
+  bool setCustomCommand(uint8_t index, const IR_CUSTOM_COMMAND_ENTRY& entry);
+
+  /**
+   * Clear a custom command slot and persist the full slot array.
+   * @return True if the index is valid and persistence succeeds.
+   */
+  bool clearCustomCommand(uint8_t index);
 
   /**
    * Convert string command type to IR_COMMAND_TYPE enum
-   * @param commandStr Command type string ("ghostintrap", "hologramnext", "firing", "gpstartest")
+   * @param commandStr Command type string ("ghostintrap", "custom", "firing", "gpstartest")
    * @param commandType Output parameter for the enum value
    * @return True if conversion successful, false if unknown command string
    */
@@ -259,6 +289,14 @@ private:
   millisDelay tx_timer;      // Timer for transmit signals
 #ifndef GPSTAR_IR_TX_ONLY
   millisDelay rx_timer;      // Timer for receive signals
+#endif
+#ifdef ESP32
+  IR_CUSTOM_COMMAND_ENTRY m_customCommands[IR_CUSTOM_COMMAND_MAX] = {};
+  bool m_customCommandsAvailable = false; // False when loading the saved slots fails.
+
+  bool loadCustomCommands();
+  bool saveCustomCommands(const IR_CUSTOM_COMMAND_ENTRY* entries);
+  bool isValidCustomCommand(const IR_CUSTOM_COMMAND_ENTRY& entry) const;
 #endif
   /**
    * Build a 16-bit NEC address from device type and device ID

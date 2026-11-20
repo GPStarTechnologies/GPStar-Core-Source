@@ -67,6 +67,7 @@ These endpoints return JSON data from mock files:
 | `GET /wifi/settings` | WiFi configuration | `wifi_settings.json` |
 | `GET /wifi/networks` | Available networks | `wifi_networks.json` |
 | `GET /wifi/restart` | Restart WiFi (returns settings) | `wifi_restart.json` |
+| `GET /infrared/settings` | Custom infrared signals and triggers | `infrared_settings.json` |
 
 ### Action Endpoints (PUT/DELETE)
 
@@ -125,7 +126,7 @@ These endpoints return `{"success": true}` to simulate successful actions:
 - `PUT /light/off` - Lights off
 - `PUT /pstt/drop` - Target down
 - `PUT /pstt/reset` - Target up
-- `PUT /infrared/signal` - Send IR signal
+- `PUT /infrared/signal?type={type}` - Send IR signal (optional `command={n}`)
 
 #### Sensors
 - `PUT /sensors/recenter` - Recenter orientation
@@ -158,9 +159,9 @@ These endpoints return `{"success": true}` to simulate successful actions:
 #### WiFi Management
 - `DELETE /wifi/network/{index}` - Delete saved network (e.g., `/wifi/network/0`)
 
-### Body Handler Endpoints (POST)
+### Body Handler Endpoints (POST/PUT)
 
-These endpoints accept JSON body data and return `{"success": true, "received": <field_count>}`:
+These endpoints accept JSON body data. POST endpoints return `{"success": true, "received": <field_count>}`; the infrared PUT response also includes `"status": "success"` for the settings page.
 
 | Endpoint | Description | Example Body |
 |----------|-------------|--------------|
@@ -171,6 +172,7 @@ These endpoints accept JSON body data and return `{"success": true, "received": 
 | `POST /config/blaster/save` | Save blaster config | `{"blasterMode": 1, "fireRate": 2}` |
 | `POST /password/update` | Update WiFi password | `{"password": "newpassword123"}` |
 | `POST /wifi/update` | Update WiFi settings | `{"active": {"ssid": "MyWiFi", "password": "pass"}}` |
+| `PUT /infrared/update` | Save infrared settings | All 10 signal slots and an empty `triggers` object |
 
 ### Static Files (Automatic .gz Support)
 

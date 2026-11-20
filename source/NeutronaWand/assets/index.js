@@ -763,11 +763,6 @@ window.addEventListener("load", onLoad);
 
 /** API Commands **/
 
-function triggerInfrared(irType) {
-  // Trigger an IR signal as sent by type name.
-  sendCommand("/infrared/signal?type=" + irType);
-}
-
 function doGyroCalibration() {
   if (confirm("Ready to start gyroscope calibration?")) {
     disableEl("btnGyroCal");

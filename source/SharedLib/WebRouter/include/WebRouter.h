@@ -464,19 +464,30 @@ String generateOpenAPISpec() {
     }
     if(openApiPath.equals("/infrared/signal")) {
       JsonArray parameters = operation["parameters"].to<JsonArray>();
-      JsonObject trackParam = parameters.add<JsonObject>();
-      trackParam[JSON_PROPERTY_NAME] = F("type");
-      trackParam["in"] = F("query");
-      trackParam[JSON_PROPERTY_DESCRIPTION] = F("IR signal type to send");
-      trackParam[JSON_PROPERTY_REQUIRED] = true;
-      JsonObject paramSchema = trackParam[JSON_PROPERTY_SCHEMA].to<JsonObject>();
+
+      JsonObject typeParam = parameters.add<JsonObject>();
+      typeParam[JSON_PROPERTY_NAME] = F("type");
+      typeParam["in"] = F("query");
+      typeParam[JSON_PROPERTY_DESCRIPTION] = F("IR signal type to send");
+      typeParam[JSON_PROPERTY_REQUIRED] = true;
+      JsonObject paramSchema = typeParam[JSON_PROPERTY_SCHEMA].to<JsonObject>();
       paramSchema[JSON_PROPERTY_TYPE] = F("string");
       JsonArray enumValues = paramSchema["enum"].to<JsonArray>();
-      enumValues.add(F("ghostintrap"));
-      enumValues.add(F("hologramnext"));
       enumValues.add(F("firing"));
+      enumValues.add(F("ghostintrap"));
       enumValues.add(F("gpstartest"));
+      enumValues.add(F("custom"));
       paramSchema["default"] = F("ghostintrap");
+
+      JsonObject commandParam = parameters.add<JsonObject>();
+      commandParam[JSON_PROPERTY_NAME] = F("command");
+      commandParam["in"] = F("query");
+      commandParam[JSON_PROPERTY_DESCRIPTION] = F("Zero-based custom signal position; required when type is custom");
+      commandParam[JSON_PROPERTY_REQUIRED] = false;
+      JsonObject commandSchema = commandParam[JSON_PROPERTY_SCHEMA].to<JsonObject>();
+      commandSchema[JSON_PROPERTY_TYPE] = F("integer");
+      commandSchema["minimum"] = 0;
+      commandSchema["maximum"] = 9;
     }
 
     // Add path parameters for specific, consistent routes

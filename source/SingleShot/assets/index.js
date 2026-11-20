@@ -119,7 +119,7 @@ const esManager = new EventSourceManager({
       setHtml("yaw", formatFloat(obj.yaw ?? 0) + "&deg;");
       setHtml("gForce", `${formatFloat(obj.gForce ?? 0)}`);
       setHtml("angVel", `${formatFloat(obj.angVel ?? 0)}&deg;/s`);
-      setHtml("shaken", `&nbsp;&nbsp;&nbsp;${obj.shaken ? "&oplus;" : "&mdash;"}`);  
+      setHtml("shaken", `&nbsp;&nbsp;&nbsp;${obj.shaken ? "&oplus;" : "&mdash;"}`);
       setHtml("magX", `${formatFloat(obj.mX ?? 0)}&micro;T`);
       setHtml("magY", `${formatFloat(obj.mY ?? 0)}&micro;T`);
       setHtml("magZ", `${formatFloat(obj.mZ ?? 0)}&micro;T`);
@@ -732,11 +732,6 @@ function init3D() {
 window.addEventListener("load", onLoad);
 
 /** API Commands **/
-
-function triggerInfrared(irType) {
-  // Trigger an IR signal as sent by type name.
-  sendCommand("/infrared/signal?type=" + irType);
-}
 
 function doGyroCalibration() {
   if (confirm("Ready to start gyroscope calibration?")) {

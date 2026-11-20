@@ -58,6 +58,10 @@ InfraredManager::InfraredManager(uint8_t deviceType, uint16_t deviceID)
 
   // Initialize and start the timer with 0 delay
   tx_timer.start(0);
+
+#ifdef ESP32
+  m_customCommandsAvailable = loadCustomCommands();
+#endif
 }
 
 void InfraredManager::setDeviceID(uint16_t deviceID) {
@@ -87,6 +91,144 @@ void InfraredManager::stopTXTimer() {
 bool InfraredManager::isTXTimerExpired() {
   return tx_timer.justFinished();
 }
+
+#ifdef ESP32
+bool InfraredManager::isValidCustomCommand(const IR_CUSTOM_COMMAND_ENTRY& entry) const {
+  uint8_t nameLength = 0;
+  while(nameLength <= IR_CUSTOM_COMMAND_NAME_MAX && entry.name[nameLength] != '\0') {
+    nameLength++;
+  }
+
+  if(nameLength == 0 || nameLength > IR_CUSTOM_COMMAND_NAME_MAX) {
+    return false;
+  }
+
+  for(uint8_t i = 0; i < nameLength; i++) {
+    uint8_t character = static_cast<uint8_t>(entry.name[i]);
+    if(character < 0x20 || character > 0x7E) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool InfraredManager::loadCustomCommands() {
+  IR_CUSTOM_COMMAND_ENTRY loadedCommands[IR_CUSTOM_COMMAND_MAX] = {};
+  Preferences preferences;
+
+  auto loadDefaults = [this]() {
+    static const char* const defaultNames[] = {
+      "Run", "Stop", "Repeat", "Previous", "Next", "Pause", "BrightnessLower", "BrightnessHigher"
+    };
+    static const uint8_t defaultAddress[] = {0xA6, 0x0A};
+    static const uint8_t defaultCommands[][2] = {
+      {0x00, 0xFF}, {0x02, 0xFD}, {0x05, 0xFA}, {0x08, 0xF7},
+      {0x0A, 0xF5}, {0x09, 0xF6}, {0x10, 0xEF}, {0x12, 0xED}
+    };
+
+    memset(m_customCommands, 0, sizeof(m_customCommands));
+    for(uint8_t index = 0; index < sizeof(defaultNames) / sizeof(defaultNames[0]); index++) {
+      for(size_t characterIndex = 0; defaultNames[index][characterIndex] != '\0'; characterIndex++) {
+        m_customCommands[index].name[characterIndex] = defaultNames[index][characterIndex];
+      }
+      memcpy(m_customCommands[index].address, defaultAddress, sizeof(defaultAddress));
+      memcpy(m_customCommands[index].command, defaultCommands[index], sizeof(defaultCommands[index]));
+    }
+
+    return true;
+  };
+
+  // Open read-write so first use can create the namespace.
+  if(!preferences.begin("ir_custom", false)) {
+    return loadDefaults();
+  }
+
+  size_t storedSize = preferences.getBytesLength("commands");
+  if(storedSize == 0) {
+    preferences.end();
+    return loadDefaults();
+  }
+  if(storedSize != sizeof(loadedCommands)) {
+    preferences.end();
+    return false;
+  }
+
+  size_t bytesRead = preferences.getBytes("commands", loadedCommands, sizeof(loadedCommands));
+  preferences.end();
+  if(bytesRead != sizeof(loadedCommands)) {
+    return false;
+  }
+
+  for(uint8_t i = 0; i < IR_CUSTOM_COMMAND_MAX; i++) {
+    if(loadedCommands[i].name[0] != '\0' && !isValidCustomCommand(loadedCommands[i])) {
+      return false;
+    }
+  }
+
+  memcpy(m_customCommands, loadedCommands, sizeof(m_customCommands));
+  return true;
+}
+
+bool InfraredManager::saveCustomCommands(const IR_CUSTOM_COMMAND_ENTRY* entries) {
+  if(entries == nullptr) {
+    return false;
+  }
+
+  Preferences preferences;
+  if(!preferences.begin("ir_custom", false)) {
+    return false;
+  }
+
+  size_t bytesWritten = preferences.putBytes("commands", entries, sizeof(m_customCommands));
+  preferences.end();
+  return bytesWritten == sizeof(m_customCommands);
+}
+
+bool InfraredManager::getCustomCommand(uint8_t index, IR_CUSTOM_COMMAND_ENTRY& entry) const {
+  if(!m_customCommandsAvailable || index >= IR_CUSTOM_COMMAND_MAX || m_customCommands[index].name[0] == '\0') {
+    return false;
+  }
+
+  entry = m_customCommands[index];
+  return true;
+}
+
+bool InfraredManager::setCustomCommand(uint8_t index, const IR_CUSTOM_COMMAND_ENTRY& entry) {
+  if(!m_customCommandsAvailable || index >= IR_CUSTOM_COMMAND_MAX || !isValidCustomCommand(entry)) {
+    return false;
+  }
+
+  IR_CUSTOM_COMMAND_ENTRY candidate[IR_CUSTOM_COMMAND_MAX];
+  memcpy(candidate, m_customCommands, sizeof(candidate));
+  candidate[index] = entry;
+
+  if(!saveCustomCommands(candidate)) {
+    return false;
+  }
+
+  memcpy(m_customCommands, candidate, sizeof(m_customCommands));
+  return true;
+}
+
+bool InfraredManager::clearCustomCommand(uint8_t index) {
+  if(!m_customCommandsAvailable || index >= IR_CUSTOM_COMMAND_MAX) {
+    return false;
+  }
+
+  IR_CUSTOM_COMMAND_ENTRY candidate[IR_CUSTOM_COMMAND_MAX];
+  memcpy(candidate, m_customCommands, sizeof(candidate));
+  IR_CUSTOM_COMMAND_ENTRY emptyEntry = {};
+  candidate[index] = emptyEntry;
+
+  if(!saveCustomCommands(candidate)) {
+    return false;
+  }
+
+  memcpy(m_customCommands, candidate, sizeof(m_customCommands));
+  return true;
+}
+#endif // ESP32
 
 #ifndef GPSTAR_IR_TX_ONLY
 void InfraredManager::startRXTimer(uint16_t delay) {
@@ -153,7 +295,7 @@ uint16_t InfraredManager::buildIRAddress(uint8_t deviceType, uint16_t deviceId) 
 #ifdef ESP32
 // Send an infrared command using the device's configured type and ID.
 // Returns a JSON document with details about the command sent and its status.
-JsonDocument InfraredManager::sendCommand(IR_COMMAND_TYPE commandType, uint8_t streamMode, uint8_t powerLevel, uint8_t streamInfo) {
+JsonDocument InfraredManager::sendCommand(IR_COMMAND_TYPE commandType, uint8_t streamMode, uint8_t powerLevel, uint8_t streamInfo, uint8_t customCommandIndex) {
   JsonDocument jsonResult;
 
   if(commandType == IR_CMD_GHOST_TRAP) {
@@ -163,14 +305,34 @@ JsonDocument InfraredManager::sendCommand(IR_COMMAND_TYPE commandType, uint8_t s
     jsonResult["status"] = "success";
     IrSender.sendRaw(ir_GhostInTrap, sizeof(ir_GhostInTrap) / sizeof(ir_GhostInTrap[0]), CARRIER_KHZ);
   }
-  else if(commandType == IR_CMD_HOLO_NEXT) {
-    // Send an IR signal to trigger a holographic fan.
-    // Address: A6 0A 00 00 (0x0AA6 -> sent as A6 0A, low byte first)
-    // Command: 0A F5 00 00 (0xF50A -> 0A with calculated inverse F5)
-    jsonResult["command"] = "hologramnext";
-    jsonResult["description"] = "Hologram display [Next] IR signal";
-    jsonResult["status"] = "success";
-    IrSender.sendNEC(0x0AA6, 0x0A, 0);
+  else if(commandType == IR_CMD_CUSTOM) {
+    IR_CUSTOM_COMMAND_ENTRY entry = {};
+
+    if(!m_customCommandsAvailable) {
+      jsonResult["command"] = "custom";
+      jsonResult["status"] = "failure";
+      jsonResult["error"] = "Custom IR command storage is unavailable";
+    }
+    else if(customCommandIndex >= IR_CUSTOM_COMMAND_MAX || !getCustomCommand(customCommandIndex, entry)) {
+      jsonResult["command"] = "custom";
+      jsonResult["status"] = "failure";
+      jsonResult["error"] = "Invalid or unconfigured custom IR command index";
+    }
+    else {
+      // Rebuild the 16-bit NEC address from the UI's low-byte-first storage.
+      uint16_t address = static_cast<uint16_t>(entry.address[0]) |
+                         (static_cast<uint16_t>(entry.address[1]) << 8);
+      // sendNEC generates the inverse byte from the selected command byte.
+      uint8_t command = entry.command[0];
+
+      jsonResult["command"] = "custom";
+      jsonResult["customCommandIndex"] = customCommandIndex;
+      jsonResult["name"] = entry.name;
+      jsonResult["address"] = "0x" + String(address, HEX);
+      jsonResult["customCommand"] = "0x" + String(command, HEX);
+      jsonResult["status"] = "success";
+      IrSender.sendNEC(address, command, 0);
+    }
   }
   else if(commandType == IR_CMD_TEST) {
     // Send a special command to test the NEC-based IR signal.
@@ -304,16 +466,16 @@ bool InfraredManager::stringToCommandType(const String& commandStr, IR_COMMAND_T
     commandType = IR_CMD_GHOST_TRAP;
     return true;
   }
-  else if(commandStr.equals("hologramnext")) {
-    commandType = IR_CMD_HOLO_NEXT;
-    return true;
-  }
   else if(commandStr.equals("firing")) {
     commandType = IR_CMD_FIRING;
     return true;
   }
   else if(commandStr.equals("gpstartest")) {
     commandType = IR_CMD_TEST;
+    return true;
+  }
+  else if(commandStr.equals("custom")) {
+    commandType = IR_CMD_CUSTOM;
     return true;
   }
 

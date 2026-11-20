@@ -35,7 +35,7 @@ DESCRIPTION:
        - /pack/on, /music/next, /volume/master/set/*, etc.
        - Returns {"success": true} response
     
-    4. Body Handlers (POST - Accepts JSON):
+    4. Body Handlers (POST/PUT - Accepts JSON):
        - /config/device/save, /wifi/update, etc.
        - Accepts JSON body, returns success response
 
@@ -112,6 +112,7 @@ DATA_ENDPOINTS = {
     '/wifi/settings',
     '/wifi/networks',
     '/wifi/status',
+    '/infrared/settings',
 }
 
 # Action endpoints - PUT/DELETE requests that perform actions (return success JSON)
@@ -209,6 +210,11 @@ BODY_HANDLER_ENDPOINTS = {
     '/wifi/update',
 }
 
+# Body handler endpoints that accept JSON with PUT
+PUT_BODY_HANDLER_ENDPOINTS = {
+    '/infrared/update',
+}
+
 # Static file mappings (everything else should try file serving first)
 STATIC_EXTENSIONS = {'.html', '.css', '.js', '.svg', '.ico', '.stl', '.gz', '.json', '.png', '.jpg', '.woff', '.woff2', '.ttf'}
 
@@ -226,6 +232,7 @@ class GzipHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             /password           -> password.html
             /settings/device    -> device.html
             /settings/pack      -> pack.html
+            /settings/infrared  -> infrared.html
             /settings/wand      -> wand.html
             /settings/smoke     -> smoke.html
             /settings/blaster   -> blaster.html
@@ -321,7 +328,7 @@ class GzipHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         print(f"ACTION {self.command} {self.path} → success")
 
     def handle_body_handler(self, endpoint):
-        """Handle BODY_HANDLER POST requests - accept JSON body, return success"""
+        """Handle JSON body endpoints - accept a body and return success"""
         content_length = int(self.headers.get('Content-Length', 0))
         body = {}
         
@@ -329,12 +336,25 @@ class GzipHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 body_data = self.rfile.read(content_length)
                 body = json.loads(body_data.decode('utf-8'))
-            except Exception as e:
+            except (UnicodeDecodeError, json.JSONDecodeError) as e:
                 print(f"Error parsing body: {e}")
+                self.send_error(400, f"Invalid JSON body: {e}")
+                return
+
+        if endpoint == '/infrared/update' and (
+            not isinstance(body, dict)
+            or set(body) != {'signals', 'triggers'}
+            or not isinstance(body['signals'], list)
+            or not isinstance(body['triggers'], dict)
+        ):
+            self.send_error(400, "Infrared settings must contain signals and triggers")
+            return
         
         response = {"success": True, "received": len(body)}
+        if endpoint == '/infrared/update':
+            response["status"] = "success"
         self.send_json_response(response)
-        print(f"POST {self.path} → {len(body)} fields received")
+        print(f"{self.command} {self.path} → {len(body)} fields received")
 
     def matches_wildcard_pattern(self, path, pattern):
         """Check if path matches a wildcard pattern like /volume/master/set/*"""
@@ -438,8 +458,12 @@ class GzipHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 super().do_GET()
 
     def do_PUT(self):
-        """Handle PUT requests - action endpoints"""
+        """Handle PUT requests - body handlers and action endpoints"""
         url_path = self.path.split('?')[0]
+
+        if url_path in PUT_BODY_HANDLER_ENDPOINTS:
+            self.handle_body_handler(url_path)
+            return
         
         # Check for exact path matches
         if (url_path, 'PUT') in ACTION_ENDPOINTS:

@@ -30,12 +30,12 @@ extern InfraredManager* irManager;
 // Declare the external binary data markers for embedded files.
 // Common Assets
 #include "../../SharedLib/WebAssets/CommonAssets.h"
-// geometry.stl
-extern const uint8_t _binary_assets_geometry_stl_gz_start[];
-extern const uint8_t _binary_assets_geometry_stl_gz_end[];
 // common.js
 extern const uint8_t _binary_assets_common_js_gz_start[];
 extern const uint8_t _binary_assets_common_js_gz_end[];
+// geometry.stl
+extern const uint8_t _binary_assets_geometry_stl_gz_start[];
+extern const uint8_t _binary_assets_geometry_stl_gz_end[];
 // style.css
 extern const uint8_t _binary_assets_style_css_gz_start[];
 extern const uint8_t _binary_assets_style_css_gz_end[];
@@ -51,6 +51,9 @@ extern const uint8_t _binary_assets_three_min_js_gz_end[];
 // device.html
 extern const uint8_t _binary_assets_device_html_gz_start[];
 extern const uint8_t _binary_assets_device_html_gz_end[];
+// infrared.html
+extern const uint8_t _binary_assets_infrared_html_gz_start[];
+extern const uint8_t _binary_assets_infrared_html_gz_end[];
 // network.html
 extern const uint8_t _binary_assets_network_html_gz_start[];
 extern const uint8_t _binary_assets_network_html_gz_end[];
@@ -343,6 +346,33 @@ String getNetworkStatus() {
   // Serialize JSON object to string.
   serializeJson(jsonBody, networkStatus);
   return networkStatus;
+}
+
+String getCustomIR() {
+  String irSettings;
+  JsonDocument jsonBody;
+
+  // Prepare the array of custom signals by address/command.
+  JsonArray signals = jsonBody["signals"].to<JsonArray>();
+  for(uint8_t index = 0; index < IR_CUSTOM_COMMAND_MAX; index++) {
+    IR_CUSTOM_COMMAND_ENTRY entry = {};
+    irManager->getCustomCommand(index, entry);
+    JsonObject signal = signals.add<JsonObject>();
+    signal["name"] = entry.name;
+
+    JsonArray address = signal["address"].to<JsonArray>();
+    address.add(entry.address[0]);
+    address.add(entry.address[1]);
+
+    JsonArray command = signal["command"].to<JsonArray>();
+    command.add(entry.command[0]);
+    command.add(entry.command[1]);
+  }
+
+  // Prepare the triggers for custom signals.
+  jsonBody["triggers"].to<JsonObject>();
+  serializeJson(jsonBody, irSettings);
+  return irSettings;
 }
 
 String getWifiSettings() {
@@ -892,6 +922,16 @@ void handleDeviceSettings(AsyncWebServerRequest *request) {
   request->send(response); // Serve page content.
 }
 
+void handleInfraredSettings(AsyncWebServerRequest *request) {
+  // Used for the infrared page from the web server.
+  debugln(F("Sending -> Infrared Settings HTML"));
+  size_t i_file_len = embeddedFileSize(_binary_assets_infrared_html_gz_start, _binary_assets_infrared_html_gz_end);
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_HTML, _binary_assets_infrared_html_gz_start, i_file_len);
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  response->addHeader(HEADER_CONTENT_ENCODING, ENCODING_GZIP); // Tell the client this is gzipped content.
+  request->send(response); // Serve page content.
+}
+
 void handleSwagger(AsyncWebServerRequest *request) {
   // Used for the SwaggerUI page (/ = swaggerui.html) from the web server.
   debugln(F("Sending -> SwaggerUI HTML"));
@@ -934,6 +974,13 @@ void handleGetBlasterConfig(AsyncWebServerRequest *request) {
 void handleGetStatus(AsyncWebServerRequest *request) {
   // Return current system status as a stringified JSON object.
   AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getEquipmentStatus());
+  response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
+  request->send(response);
+}
+
+void handleGetInfrared(AsyncWebServerRequest *request) {
+  // Return custom IR options as a stringified JSON object.
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getCustomIR());
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }
@@ -1632,6 +1679,121 @@ AsyncCallbackJsonWebHandler *passwordChangeHandler = new AsyncCallbackJsonWebHan
     request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Unable to update password.")); // 500 Server Error
   }
 }); // passwordChangeHandler
+
+// Handles the JSON body for custom infrared settings.
+AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHandler("/infrared/update", [](AsyncWebServerRequest *request, JsonVariant &json) {
+  auto sendInvalidRequest = [request](const String& reason) {
+    request->send(HTTP_STATUS_400, MIME_JSON, returnJsonStatus(reason));
+  };
+
+  if(!json.is<JsonObject>()) {
+    sendInvalidRequest("Request body must be a JSON object.");
+    return;
+  }
+
+  JsonObject settings = json.as<JsonObject>();
+  if(settings.size() != 2 ||
+     !settings["signals"].is<JsonArray>() ||
+     !settings["triggers"].is<JsonObject>()) {
+    sendInvalidRequest("Request must contain only signals and triggers.");
+    return;
+  }
+
+  JsonArray signals = settings["signals"].as<JsonArray>();
+  JsonObject triggers = settings["triggers"].as<JsonObject>();
+  if(signals.size() != IR_CUSTOM_COMMAND_MAX || triggers.size() != 0) {
+    sendInvalidRequest("Signals must contain all slots and triggers must be empty.");
+    return;
+  }
+
+  if(irManager == nullptr) {
+    request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Infrared manager is unavailable."));
+    return;
+  }
+
+  IR_CUSTOM_COMMAND_ENTRY entries[IR_CUSTOM_COMMAND_MAX] = {};
+  auto parseBytePair = [](JsonVariant value, uint8_t* bytes) {
+    if(!value.is<JsonArray>()) {
+      return false;
+    }
+
+    JsonArray values = value.as<JsonArray>();
+    if(values.size() != 2) {
+      return false;
+    }
+
+    for(uint8_t byteIndex = 0; byteIndex < 2; byteIndex++) {
+      if(!values[byteIndex].is<int>()) {
+        return false;
+      }
+
+      int byteValue = values[byteIndex].as<int>();
+      if(byteValue < 0 || byteValue > 0xFF) {
+        return false;
+      }
+
+      bytes[byteIndex] = static_cast<uint8_t>(byteValue);
+    }
+
+    return true;
+  };
+
+  for(uint8_t index = 0; index < IR_CUSTOM_COMMAND_MAX; index++) {
+    JsonVariant signalValue = signals[index];
+    if(!signalValue.is<JsonObject>()) {
+      sendInvalidRequest("Each signal must be a JSON object.");
+      return;
+    }
+
+    JsonObject signal = signalValue.as<JsonObject>();
+    if(!signal["name"].is<const char*>()) {
+      sendInvalidRequest("Each signal must include a string name.");
+      return;
+    }
+
+    JsonString name = signal["name"].as<JsonString>();
+    if(name.size() > IR_CUSTOM_COMMAND_NAME_MAX) {
+      sendInvalidRequest("Signal names must be no more than 20 characters.");
+      return;
+    }
+
+    if(name.size() == 0) {
+      continue;
+    }
+
+    for(size_t characterIndex = 0; characterIndex < name.size(); characterIndex++) {
+      uint8_t character = static_cast<uint8_t>(name.c_str()[characterIndex]);
+      if(character < 0x20 || character > 0x7E) {
+        sendInvalidRequest("Signal names must contain printable ASCII characters.");
+        return;
+      }
+      entries[index].name[characterIndex] = static_cast<char>(character);
+    }
+    entries[index].name[name.size()] = '\0';
+
+    if(!parseBytePair(signal["address"], entries[index].address) ||
+       !parseBytePair(signal["command"], entries[index].command)) {
+      sendInvalidRequest("Address and command must each contain two byte values from 0 to 255.");
+      return;
+    }
+  }
+
+  for(uint8_t index = 0; index < IR_CUSTOM_COMMAND_MAX; index++) {
+    bool saved = entries[index].name[0] == '\0'
+      ? irManager->clearCustomCommand(index)
+      : irManager->setCustomCommand(index, entries[index]);
+
+    if(!saved) {
+      String reason = "Unable to save infrared signal slot ";
+      reason += String(index + 1);
+      reason += ".";
+      request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus(reason));
+      return;
+    }
+  }
+
+  request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus());
+}); // infraredChangeHandler
 
 // Handles the JSON body for the wifi network info.
 AsyncCallbackJsonWebHandler *wifiChangeHandler = new AsyncCallbackJsonWebHandler("/wifi/update", [](AsyncWebServerRequest *request, JsonVariant &json) {

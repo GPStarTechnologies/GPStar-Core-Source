@@ -1,0 +1,55 @@
+{
+  "signals": [
+    {
+      "name": "Run",
+      "address": [166, 10],
+      "command": [0, 255]
+    },
+    {
+      "name": "Stop",
+      "address": [166, 10],
+      "command": [2, 253]
+    },
+    {
+      "name": "Repeat",
+      "address": [166, 10],
+      "command": [5, 250]
+    },
+    {
+      "name": "Previous",
+      "address": [166, 10],
+      "command": [8, 247]
+    },
+    {
+      "name": "Next",
+      "address": [166, 10],
+      "command": [10, 245]
+    },
+    {
+      "name": "Pause",
+      "address": [166, 10],
+      "command": [9, 246]
+    },
+    {
+      "name": "BrightnessLower",
+      "address": [166, 10],
+      "command": [16, 239]
+    },
+    {
+      "name": "BrightnessHigher",
+      "address": [166, 10],
+      "command": [18, 237]
+    },
+    {
+      "name": "",
+      "address": [0, 0],
+      "command": [0, 0]
+    },
+    {
+      "name": "",
+      "address": [0, 0],
+      "command": [0, 0]
+    }
+  ],
+  "triggers": {}
+}
