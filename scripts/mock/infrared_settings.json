@@ -1,54 +1,204 @@
 {
-  "signals": [
+  "entries": [
     {
-      "name": "Run",
-      "address": [166, 10],
-      "command": [0, 255]
-    },
-    {
-      "name": "Stop",
-      "address": [166, 10],
-      "command": [2, 253]
-    },
-    {
-      "name": "Repeat",
-      "address": [166, 10],
-      "command": [5, 250]
-    },
-    {
-      "name": "Previous",
-      "address": [166, 10],
-      "command": [8, 247]
-    },
-    {
-      "name": "Next",
-      "address": [166, 10],
-      "command": [10, 245]
-    },
-    {
-      "name": "Pause",
-      "address": [166, 10],
-      "command": [9, 246]
-    },
-    {
-      "name": "BrightnessLower",
-      "address": [166, 10],
-      "command": [16, 239]
-    },
-    {
-      "name": "BrightnessHigher",
-      "address": [166, 10],
-      "command": [18, 237]
-    },
-    {
-      "name": "",
+      "index": 0,
+      "name": "GPStarTest",
+      "protocol": 1,
+      "protection": 1,
       "address": [0, 0],
-      "command": [0, 0]
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
     },
     {
-      "name": "",
+      "index": 1,
+      "name": "Firing",
+      "protocol": 1,
+      "protection": 2,
       "address": [0, 0],
-      "command": [0, 0]
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 2,
+      "name": "GhostInTrap",
+      "protocol": 2,
+      "protection": 1,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 19,
+      "rawData": [1770, 1200, 600, 600, 600, 600, 580, 1200, 600, 600, 580, 1200, 600, 1200, 580, 600, 580, 1200, 600]
+    },
+    {
+      "index": 3,
+      "name": "HoloRun",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [0, 255],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 4,
+      "name": "HoloStop",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [2, 253],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 5,
+      "name": "HoloRepeat",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [5, 250],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 6,
+      "name": "HoloPrevious",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [8, 247],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 7,
+      "name": "HoloNext",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [10, 245],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 8,
+      "name": "HoloPause",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [9, 246],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 9,
+      "name": "HoloDim",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [16, 239],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 10,
+      "name": "HoloBright",
+      "protocol": 0,
+      "protection": 0,
+      "address": [166, 10],
+      "command": [18, 237],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 11,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 12,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 13,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 14,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 15,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 16,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 17,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 18,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 19,
+      "name": "",
+      "protocol": 0,
+      "protection": 0,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
     }
   ],
   "triggers": {}

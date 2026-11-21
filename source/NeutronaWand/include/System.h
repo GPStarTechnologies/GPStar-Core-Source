@@ -3736,7 +3736,7 @@ void fireControlCheck() {
         #ifdef ESP32
           if(irManager->isTXTimerExpired()) {
             // Trigger infrared after firing.
-            irManager->sendCommand(IR_CMD_GHOST_TRAP);
+            irManager->sendCommand(IR_GHOST_IN_TRAP);
             irManager->startTXTimer(1000);
           }
         #endif
@@ -8966,7 +8966,7 @@ void firePulseEffect() {
 
     #ifdef ESP32
       // Send infrared command using the IR manager when firing.
-      irManager->sendCommand(IR_CMD_FIRING, gpstarWand.getStreamMode(), gpstarWand.getPowerLevel(), IR_CMD_BLAST);
+      irManager->sendCommand(IR_DEVICE_FIRING, gpstarWand.getStreamMode(), gpstarWand.getPowerLevel(), IR_CMD_BLAST);
     #endif
   }
 }
@@ -10822,10 +10822,10 @@ void firingCheckIR() {
       }
 
       if(b_firing_cross_streams) {
-        irManager->sendCommand(IR_CMD_FIRING, ir_stream_mode, gpstarWand.getPowerLevel(), IR_CMD_CTS);
+        irManager->sendCommand(IR_DEVICE_FIRING, ir_stream_mode, gpstarWand.getPowerLevel(), IR_CMD_CTS);
       }
       else {
-        irManager->sendCommand(IR_CMD_FIRING, ir_stream_mode, gpstarWand.getPowerLevel(), IR_CMD_STREAM);
+        irManager->sendCommand(IR_DEVICE_FIRING, ir_stream_mode, gpstarWand.getPowerLevel(), IR_CMD_STREAM);
       }
       irManager->restartTXTimer();
     }

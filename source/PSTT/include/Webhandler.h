@@ -687,29 +687,33 @@ void handleResetTarget(AsyncWebServerRequest *request) {
 }
 
 void handleInfraredSignal(AsyncWebServerRequest *request) {
-  String c_signal_type = "";
   JsonDocument jsonResponse;
+  bool validCommand = request->hasParam("command");
+  String commandValue = validCommand ? request->getParam("command")->value() : "";
+  validCommand = validCommand && commandValue.length() > 0;
+  uint16_t commandIndex = 0;
 
-  if(request->hasParam("type")) {
-    // Get the parameter "type" if it exists (will be a String).
-    c_signal_type = request->getParam("type")->value();
-
-    // Convert string to IR command type enum
-    IR_COMMAND_TYPE commandType;
-    if(InfraredManager::stringToCommandType(c_signal_type, commandType)) {
-      jsonResponse = irManager->sendCommand(commandType);
-      jsonResponse["deviceName"] = wirelessMgr->getLocalNetworkName();
-    }
-    else {
-      // Invalid command type
-      jsonResponse["status"] = "failure";
-      jsonResponse["error"] = "Invalid command type: " + c_signal_type;
+  for(size_t characterIndex = 0; validCommand && characterIndex < commandValue.length(); characterIndex++) {
+    char character = commandValue[characterIndex];
+    if(character < '0' || character > '9') {
+      validCommand = false;
+    } else {
+      commandIndex = commandIndex * 10 + (character - '0');
+      if(commandIndex >= IR_COMMAND_MAX) {
+        validCommand = false;
+      }
     }
   }
+
+  if(validCommand) {
+    jsonResponse = irManager->sendCommand(static_cast<uint8_t>(commandIndex));
+    jsonResponse["deviceName"] = wirelessMgr->getLocalNetworkName();
+  }
   else {
-    // No type parameter provided
     jsonResponse["status"] = "failure";
-    jsonResponse["error"] = "Missing 'type' parameter";
+    jsonResponse["error"] = request->hasParam("command")
+      ? "Invalid command index"
+      : "Missing 'command' parameter";
   }
 
   // Serialize and send the response

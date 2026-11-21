@@ -348,25 +348,36 @@ String getNetworkStatus() {
   return networkStatus;
 }
 
-String getCustomIR() {
+String getInfraredSlots() {
   String irSettings;
   JsonDocument jsonBody;
 
-  // Prepare the array of custom signals by address/command.
-  JsonArray signals = jsonBody["signals"].to<JsonArray>();
-  for(uint8_t index = 0; index < IR_CUSTOM_COMMAND_MAX; index++) {
-    IR_CUSTOM_COMMAND_ENTRY entry = {};
-    irManager->getCustomCommand(index, entry);
-    JsonObject signal = signals.add<JsonObject>();
-    signal["name"] = entry.name;
+  // Return every command slot with its protocol-specific data.
+  JsonArray entryArray = jsonBody["entries"].to<JsonArray>();
+  for(uint8_t index = 0; index < IR_COMMAND_MAX; index++) {
+    IR_COMMAND_ENTRY entry = {};
+    irManager->getCommandEntry(index, entry);
+    JsonObject entryObject = entryArray.add<JsonObject>();
+    entryObject["index"] = index;
+    entryObject["name"] = entry.name;
+    entryObject["protocol"] = entry.protocol;
+    entryObject["protection"] = entry.protection;
 
-    JsonArray address = signal["address"].to<JsonArray>();
+    JsonArray address = entryObject["address"].to<JsonArray>();
     address.add(entry.address[0]);
     address.add(entry.address[1]);
 
-    JsonArray command = signal["command"].to<JsonArray>();
+    JsonArray command = entryObject["command"].to<JsonArray>();
     command.add(entry.command[0]);
     command.add(entry.command[1]);
+
+    entryObject["rawDataLength"] = entry.rawDataLength;
+    JsonArray rawData = entryObject["rawData"].to<JsonArray>();
+    for(uint16_t timingIndex = 0;
+        timingIndex < entry.rawDataLength && timingIndex < IR_COMMAND_RAW_MAX;
+        timingIndex++) {
+      rawData.add(entry.rawData[timingIndex]);
+    }
   }
 
   // Prepare the triggers for custom signals.
@@ -980,7 +991,7 @@ void handleGetStatus(AsyncWebServerRequest *request) {
 
 void handleGetInfrared(AsyncWebServerRequest *request) {
   // Return custom IR options as a stringified JSON object.
-  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getCustomIR());
+  AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_200, MIME_JSON, getInfraredSlots());
   response->addHeader(HEADER_CACHE_CONTROL, CACHE_NO_CACHE);
   request->send(response);
 }
@@ -1373,29 +1384,33 @@ void handleMagCalDisabled(AsyncWebServerRequest *request) {
 }
 
 void handleInfraredSignal(AsyncWebServerRequest *request) {
-  String c_signal_type = "";
   JsonDocument jsonResponse;
+  bool validCommand = request->hasParam("command");
+  String commandValue = validCommand ? request->getParam("command")->value() : "";
+  validCommand = validCommand && commandValue.length() > 0;
+  uint16_t commandIndex = 0;
 
-  if(request->hasParam("type")) {
-    // Get the parameter "type" if it exists (will be a String).
-    c_signal_type = request->getParam("type")->value();
-
-    // Convert string to IR command type enum
-    IR_COMMAND_TYPE commandType;
-    if(InfraredManager::stringToCommandType(c_signal_type, commandType)) {
-      jsonResponse = irManager->sendCommand(commandType);
-      jsonResponse["deviceName"] = wirelessMgr->getLocalNetworkName();
-    }
-    else {
-      // Invalid command type
-      jsonResponse["status"] = "failure";
-      jsonResponse["error"] = "Invalid command type: " + c_signal_type;
+  for(size_t characterIndex = 0; validCommand && characterIndex < commandValue.length(); characterIndex++) {
+    char character = commandValue[characterIndex];
+    if(character < '0' || character > '9') {
+      validCommand = false;
+    } else {
+      commandIndex = commandIndex * 10 + (character - '0');
+      if(commandIndex >= IR_COMMAND_MAX) {
+        validCommand = false;
+      }
     }
   }
+
+  if(validCommand) {
+    jsonResponse = irManager->sendCommand(static_cast<uint8_t>(commandIndex));
+    jsonResponse["deviceName"] = wirelessMgr->getLocalNetworkName();
+  }
   else {
-    // No type parameter provided
     jsonResponse["status"] = "failure";
-    jsonResponse["error"] = "Missing 'type' parameter";
+    jsonResponse["error"] = request->hasParam("command")
+      ? "Invalid command index"
+      : "Missing 'command' parameter";
   }
 
   // Serialize and send the response
@@ -1693,16 +1708,16 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
 
   JsonObject settings = json.as<JsonObject>();
   if(settings.size() != 2 ||
-     !settings["signals"].is<JsonArray>() ||
+     !settings["entries"].is<JsonArray>() ||
      !settings["triggers"].is<JsonObject>()) {
-    sendInvalidRequest("Request must contain only signals and triggers.");
+    sendInvalidRequest("Request must contain only entries and triggers.");
     return;
   }
 
-  JsonArray signals = settings["signals"].as<JsonArray>();
+  JsonArray incomingEntries = settings["entries"].as<JsonArray>();
   JsonObject triggers = settings["triggers"].as<JsonObject>();
-  if(signals.size() != IR_CUSTOM_COMMAND_MAX || triggers.size() != 0) {
-    sendInvalidRequest("Signals must contain all slots and triggers must be empty.");
+  if(incomingEntries.size() != IR_COMMAND_MAX || triggers.size() != 0) {
+    sendInvalidRequest("Entries must contain all slots and triggers must be empty.");
     return;
   }
 
@@ -1711,7 +1726,13 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
     return;
   }
 
-  IR_CUSTOM_COMMAND_ENTRY entries[IR_CUSTOM_COMMAND_MAX] = {};
+  IR_COMMAND_ENTRY originalEntries[IR_COMMAND_MAX] = {};
+  IR_COMMAND_ENTRY commandEntries[IR_COMMAND_MAX] = {};
+  for(uint8_t index = 0; index < IR_COMMAND_MAX; index++) {
+    irManager->getCommandEntry(index, originalEntries[index]);
+    commandEntries[index] = originalEntries[index];
+  }
+
   auto parseBytePair = [](JsonVariant value, uint8_t* bytes) {
     if(!value.is<JsonArray>()) {
       return false;
@@ -1738,22 +1759,81 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
     return true;
   };
 
-  for(uint8_t index = 0; index < IR_CUSTOM_COMMAND_MAX; index++) {
-    JsonVariant signalValue = signals[index];
-    if(!signalValue.is<JsonObject>()) {
-      sendInvalidRequest("Each signal must be a JSON object.");
+  auto parseRawTimings = [](JsonVariant value, IR_COMMAND_ENTRY& entry) {
+    if(!value.is<const char*>()) {
+      return false;
+    }
+
+    JsonString timings = value.as<JsonString>();
+    const char* text = timings.c_str();
+    size_t textLength = timings.size();
+    size_t characterIndex = 0;
+    entry.rawDataLength = 0;
+    memset(entry.rawData, 0, sizeof(entry.rawData));
+
+    while(characterIndex < textLength) {
+      while(characterIndex < textLength &&
+            (text[characterIndex] == ' ' || text[characterIndex] == '\t' ||
+             text[characterIndex] == '\r' || text[characterIndex] == '\n')) {
+        characterIndex++;
+      }
+      if(characterIndex == textLength || entry.rawDataLength >= IR_COMMAND_RAW_MAX) {
+        return false;
+      }
+
+      uint32_t timing = 0;
+      bool hasDigit = false;
+      while(characterIndex < textLength &&
+            text[characterIndex] >= '0' && text[characterIndex] <= '9') {
+        uint32_t digit = text[characterIndex] - '0';
+        if(timing > (0xFFFF - digit) / 10) {
+          return false;
+        }
+        timing = timing * 10 + digit;
+        hasDigit = true;
+        characterIndex++;
+      }
+      if(!hasDigit || timing == 0) {
+        return false;
+      }
+
+      entry.rawData[entry.rawDataLength++] = static_cast<uint16_t>(timing);
+
+      while(characterIndex < textLength &&
+            (text[characterIndex] == ' ' || text[characterIndex] == '\t' ||
+             text[characterIndex] == '\r' || text[characterIndex] == '\n')) {
+        characterIndex++;
+      }
+      if(characterIndex == textLength) {
+        break;
+      }
+      if(text[characterIndex] != ',') {
+        return false;
+      }
+      characterIndex++;
+    }
+
+    return entry.rawDataLength > 0;
+  };
+
+  for(uint8_t index = 0; index < IR_COMMAND_MAX; index++) {
+    JsonVariant entryValue = incomingEntries[index];
+    if(!entryValue.is<JsonObject>()) {
+      sendInvalidRequest("Each entry must be a JSON object.");
       return;
     }
 
-    JsonObject signal = signalValue.as<JsonObject>();
-    if(!signal["name"].is<const char*>()) {
-      sendInvalidRequest("Each signal must include a string name.");
+    JsonObject entry = entryValue.as<JsonObject>();
+    memset(commandEntries[index].name, 0, sizeof(commandEntries[index].name));
+
+    if(!entry["name"].is<const char*>()) {
+      sendInvalidRequest("Each entry must include a string name.");
       return;
     }
 
-    JsonString name = signal["name"].as<JsonString>();
-    if(name.size() > IR_CUSTOM_COMMAND_NAME_MAX) {
-      sendInvalidRequest("Signal names must be no more than 20 characters.");
+    JsonString name = entry["name"].as<JsonString>();
+    if(name.size() > IR_COMMAND_NAME_MAX) {
+      sendInvalidRequest("Entry names must be no more than 20 characters.");
       return;
     }
 
@@ -1764,27 +1844,48 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
     for(size_t characterIndex = 0; characterIndex < name.size(); characterIndex++) {
       uint8_t character = static_cast<uint8_t>(name.c_str()[characterIndex]);
       if(character < 0x20 || character > 0x7E) {
-        sendInvalidRequest("Signal names must contain printable ASCII characters.");
+        sendInvalidRequest("Entry names must contain printable ASCII characters.");
         return;
       }
-      entries[index].name[characterIndex] = static_cast<char>(character);
+      commandEntries[index].name[characterIndex] = static_cast<char>(character);
     }
-    entries[index].name[name.size()] = '\0';
+    commandEntries[index].name[name.size()] = '\0';
 
-    if(!parseBytePair(signal["address"], entries[index].address) ||
-       !parseBytePair(signal["command"], entries[index].command)) {
-      sendInvalidRequest("Address and command must each contain two byte values from 0 to 255.");
+    if(!entry["protocol"].is<int>()) {
+      sendInvalidRequest("Each entry must include a numeric protocol.");
+      return;
+    }
+    int protocol = entry["protocol"].as<int>();
+    if(protocol < IR_NEC || protocol > IR_RAW_TIMINGS) {
+      sendInvalidRequest("Protocol must be NEC (0), NEC RAW (1), or TIMINGS (2).");
+      return;
+    }
+    commandEntries[index].protocol = static_cast<uint8_t>(protocol);
+
+    if(protocol == IR_NEC) {
+      if(!parseBytePair(entry["address"], commandEntries[index].address) ||
+         !parseBytePair(entry["command"], commandEntries[index].command)) {
+        sendInvalidRequest("Address and command must each contain two byte values from 0 to 255.");
+        return;
+      }
+    }
+    else if(protocol == IR_RAW_TIMINGS && !parseRawTimings(entry["rawData"], commandEntries[index])) {
+      sendInvalidRequest("TIMINGS protocol requires 1 to 40 comma-separated values from 1 to 65535.");
       return;
     }
   }
 
-  for(uint8_t index = 0; index < IR_CUSTOM_COMMAND_MAX; index++) {
-    bool saved = entries[index].name[0] == '\0'
-      ? irManager->clearCustomCommand(index)
-      : irManager->setCustomCommand(index, entries[index]);
+  for(uint8_t index = 0; index < IR_COMMAND_MAX; index++) {
+    if(originalEntries[index].protection != IR_READ_WRITE) {
+      continue;
+    }
+
+    bool saved = commandEntries[index].name[0] == '\0'
+      ? irManager->clearCommandEntry(index)
+      : irManager->setCommandEntry(index, commandEntries[index]);
 
     if(!saved) {
-      String reason = "Unable to save infrared signal slot ";
+      String reason = "Unable to save infrared entry slot ";
       reason += String(index + 1);
       reason += ".";
       request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus(reason));

@@ -126,7 +126,7 @@ These endpoints return `{"success": true}` to simulate successful actions:
 - `PUT /light/off` - Lights off
 - `PUT /pstt/drop` - Target down
 - `PUT /pstt/reset` - Target up
-- `PUT /infrared/signal?type={type}` - Send IR signal (optional `command={n}`)
+- `PUT /infrared/signal?command={index}` - Send IR signal)
 
 #### Sensors
 - `PUT /sensors/recenter` - Recenter orientation

@@ -65,56 +65,76 @@
  * - Address: 2-bit preamble (0b11) + 2-bit device code + 12-bit unique device ID.
  * - Command: 8-bit command value (providing up to 256 commands).
  */
-#define IR_GPSTAR_PREAMBLE      0b11   // 0x3
+#define IR_GPSTAR_PREAMBLE 0b11  // 0x3
 
 // Device type codes (2 bits)
-#define IR_DEVICE_NEUTRONA_WAND 0b00   // 0x0
-#define IR_DEVICE_SINGLE_SHOT   0b01   // 0x1
-#define IR_DEVICE_GHOST_TRAP    0b10   // 0x2
-#define IR_DEVICE_PSTT          0b11   // 0x3
+#define IR_DEVICE_NEUTRONA_WAND 0b00 // 0x0
+#define IR_DEVICE_SINGLE_SHOT   0b01 // 0x1
+#define IR_DEVICE_GHOST_TRAP    0b10 // 0x2
+#define IR_DEVICE_PSTT          0b11 // 0x3
 
 // Command base values for firing commands
-#define IR_COMMAND_PROTON         0x20   // 0x20, Proton Stream
-#define IR_COMMAND_BOSON_DART     0x25   // 0x25, Boson Dart -> Proton Stream (Alt)
-#define IR_COMMAND_SLIME          0x30   // 0x30, Slime Blower
-#define IR_COMMAND_SLIME_BLAST    0x35   // 0x35, Slime Blast -> Slime Blower (Alt)
-#define IR_COMMAND_STASIS         0x40   // 0x40, Dark Matter Generator
-#define IR_COMMAND_SHOCK_BLAST    0x45   // 0x45, Shock Blast -> Dark Matter Generator (Alt)
-#define IR_COMMAND_MESON          0x50   // 0x50, Composite Particle System
-#define IR_COMMAND_OVERLOAD_PULSE 0x55   // 0x55, Overload Pulse -> Composite Particle System (Alt)
-#define IR_COMMAND_CTS            0x60   // 0x60, Crossing The Streams -> Proton Stream (Alt *)
-#define IR_COMMAND_TEST           0xFF   // 0xFF, Test Command
+#define IR_COMMAND_PROTON         0x20 // 0x20, Proton Stream
+#define IR_COMMAND_BOSON_DART     0x25 // 0x25, Boson Dart -> Proton Stream (Alt)
+#define IR_COMMAND_SLIME          0x30 // 0x30, Slime Blower
+#define IR_COMMAND_SLIME_BLAST    0x35 // 0x35, Slime Blast -> Slime Blower (Alt)
+#define IR_COMMAND_STASIS         0x40 // 0x40, Dark Matter Generator
+#define IR_COMMAND_SHOCK_BLAST    0x45 // 0x45, Shock Blast -> Dark Matter Generator (Alt)
+#define IR_COMMAND_MESON          0x50 // 0x50, Composite Particle System
+#define IR_COMMAND_OVERLOAD_PULSE 0x55 // 0x55, Overload Pulse -> Composite Particle System (Alt)
+#define IR_COMMAND_CTS            0x60 // 0x60, Crossing The Streams -> Proton Stream (Alt *)
+#define IR_COMMAND_TEST           0xFF // 0xFF, Test Command
 
 // Stream mode constants for firing commands (should match STREAM_MODES enum in Streams.h)
 // Note: All "Spectral" stream modes are treated as cosmetically custom Proton streams.
-#define IR_STREAM_PROTON        0      // 0, Proton Stream
-#define IR_STREAM_STASIS        1      // 1, Dark Matter Generator
-#define IR_STREAM_SLIME         2      // 2, Slime Blower
-#define IR_STREAM_MESON         3      // 3, Composite Particle System
+#define IR_STREAM_PROTON 0 // Proton Stream
+#define IR_STREAM_STASIS 1 // Dark Matter Generator
+#define IR_STREAM_SLIME  2 // Slime Blower
+#define IR_STREAM_MESON  3 // Composite Particle System
 
-static constexpr uint8_t IR_CUSTOM_COMMAND_MAX = 10;
-static constexpr uint8_t IR_CUSTOM_COMMAND_NAME_MAX = 20;
-static constexpr uint8_t IR_CUSTOM_COMMAND_INDEX_INVALID = 0xFF;
-
-struct IR_CUSTOM_COMMAND_ENTRY {
-  char name[IR_CUSTOM_COMMAND_NAME_MAX + 1] = {}; // Empty name marks an unused slot.
-  uint8_t address[2] = {}; // Low byte first, matching captured NEC byte order.
-  uint8_t command[2] = {}; // Captured command and inverse; sendNEC uses the first byte.
-};
-
-// IR Command Type Enum - Defines the types of infrared commands that can be sent
-enum IR_COMMAND_TYPE {
-  IR_CMD_GHOST_TRAP,  // Ghost Trap (PKE) raw IR signal
-  IR_CMD_FIRING,      // Firing command with stream type/power level
-  IR_CMD_TEST,        // Test command for IR signal verification
-  IR_CMD_CUSTOM       // User-configured NEC command selected by slot index
-};
-
-// IR Stream Type. Sending a stream, a crossing the streams or a blast.
+// IR Stream Type. Sending a stream, a crossing the streams, or a blast.
 enum IR_STREAM_INFO {
-  IR_CMD_STREAM,   // Regular firing stream
-  IR_CMD_CTS,      // Crossing the streams
-  IR_CMD_BLAST     // Alt firing blasts such as: Boson Dart, Shock Blast, Overload Pulse and Slime Blast
+  IR_CMD_STREAM, // Regular firing stream
+  IR_CMD_CTS,    // Crossing the streams
+  IR_CMD_BLAST   // Alt firing blasts such as: Boson Dart, Shock Blast, Overload Pulse and Slime Blast
+};
+
+// IR Protocol Enum - Determines the mechanism for sending the signal
+enum IR_PROTOCOL : uint8_t {
+  IR_NEC         = 0,  // NEC or NEC Extended, as based on address size
+  IR_NEC_RAW     = 1,  // NEC address/command sent as a raw frame
+  IR_RAW_TIMINGS = 2   // Raw timings over 38kHz carrier
+};
+
+// IR Protection Enum - Denotes when a command entry may be user-modified
+enum IR_PROTECTION : uint8_t {
+  IR_READ_WRITE = 0,  // User-defined entry which may be changed/deleted
+  IR_READ_ONLY  = 1,  // System-defined static entry which cannot be removed
+  IR_DYNAMIC    = 2   // System-defined dynamic entry generated at runtime
+};
+
+// IR Protection Enum - Denotes when a command entry may be user-modified
+enum IR_COMMAND_INDEX : uint8_t {
+  IR_GPSTAR_TEST   = 0,
+  IR_DEVICE_FIRING = 1,
+  IR_GHOST_IN_TRAP = 2
+};
+
+// Limits and constants for the command array entries.
+static constexpr uint8_t IR_COMMAND_MAX = 20;
+static constexpr uint8_t IR_COMMAND_NAME_MAX = 20;
+static constexpr uint8_t IR_COMMAND_RAW_MAX = 40;
+static constexpr uint8_t IR_COMMAND_INDEX_INVALID = 0xFF;
+
+// Infrared Command Entry - Defines a standard or custom IR command
+struct IR_COMMAND_ENTRY {
+  char name[IR_COMMAND_NAME_MAX + 1] = {}; // Command name + null terminator; empty == unused slot.
+  uint8_t protocol = 0;    // Protocol for IR signaling (eg. NEC or Timings).
+  uint8_t protection = 0;  // Indicate read/write ability for this entry.
+  uint8_t address[2] = {}; // NEC: Low byte first, matching captured NEC byte order.
+  uint8_t command[2] = {}; // NEC: Captured command and inverse; sendNEC uses the first byte.
+  uint16_t rawData[IR_COMMAND_RAW_MAX] = {}; // Data values (up to max) for RAW_TIMINGS protocol.
+  uint16_t rawDataLength = 0; // Actual length of any raw data timings entered.
 };
 
 /**
@@ -140,40 +160,31 @@ public:
 #ifdef ESP32
   /**
    * Send an infrared command
-   * @param commandType Command type from IR_COMMAND_TYPE enum
+   * @param commandIndex Command slot index containing all necessary info for use
    * @param streamMode Stream mode for firing commands (0=PROTON, 1=SLIME, 2=STASIS, 3=MESON)
    * @param powerLevel Power level for firing commands (1-5)
    * @param streamInfo Firing a stream, crossing the streams or a blast (alt firing) (0-1-2)
-   * @param customCommandIndex Custom command slot index; required for IR_CMD_CUSTOM
    * @return JsonDocument with command result and debugging information
    */
-  JsonDocument sendCommand(IR_COMMAND_TYPE commandType, uint8_t streamMode = IR_STREAM_PROTON, uint8_t powerLevel = 5, uint8_t streamInfo = 0, uint8_t customCommandIndex = IR_CUSTOM_COMMAND_INDEX_INVALID);
+  JsonDocument sendCommand(uint8_t commandIndex = IR_COMMAND_INDEX_INVALID, uint8_t streamMode = IR_STREAM_PROTON, uint8_t powerLevel = 5, uint8_t streamInfo = 0);
 
   /**
    * Copy a configured custom command from its slot.
    * @return True if the index is valid and the slot is configured.
    */
-  bool getCustomCommand(uint8_t index, IR_CUSTOM_COMMAND_ENTRY& entry) const;
+  bool getCommandEntry(uint8_t index, IR_COMMAND_ENTRY& entry) const;
 
   /**
    * Store or replace a custom command and persist the full slot array.
    * @return True if the entry is valid and persistence succeeds.
    */
-  bool setCustomCommand(uint8_t index, const IR_CUSTOM_COMMAND_ENTRY& entry);
+  bool setCommandEntry(uint8_t index, const IR_COMMAND_ENTRY& entry);
 
   /**
    * Clear a custom command slot and persist the full slot array.
    * @return True if the index is valid and persistence succeeds.
    */
-  bool clearCustomCommand(uint8_t index);
-
-  /**
-   * Convert string command type to IR_COMMAND_TYPE enum
-   * @param commandStr Command type string ("ghostintrap", "custom", "firing", "gpstartest")
-   * @param commandType Output parameter for the enum value
-   * @return True if conversion successful, false if unknown command string
-   */
-  static bool stringToCommandType(const String& commandStr, IR_COMMAND_TYPE& commandType);
+  bool clearCommandEntry(uint8_t index);
 #endif
 
   /**
@@ -284,19 +295,19 @@ public:
 #endif
 
 private:
-  uint8_t m_deviceType;     // Device type constant
-  uint16_t m_deviceID;      // Unique device identifier
-  millisDelay tx_timer;      // Timer for transmit signals
+  uint8_t m_deviceType;  // Device type constant
+  uint16_t m_deviceID;   // Unique device identifier
+  millisDelay tx_timer;  // Timer for transmit signals
 #ifndef GPSTAR_IR_TX_ONLY
-  millisDelay rx_timer;      // Timer for receive signals
+  millisDelay rx_timer;  // Timer for receive signals
 #endif
 #ifdef ESP32
-  IR_CUSTOM_COMMAND_ENTRY m_customCommands[IR_CUSTOM_COMMAND_MAX] = {};
-  bool m_customCommandsAvailable = false; // False when loading the saved slots fails.
+  IR_COMMAND_ENTRY m_Entries[IR_COMMAND_MAX] = {};
+  bool m_EntriesAvailable = false; // False when loading the saved slots fails.
 
-  bool loadCustomCommands();
-  bool saveCustomCommands(const IR_CUSTOM_COMMAND_ENTRY* entries);
-  bool isValidCustomCommand(const IR_CUSTOM_COMMAND_ENTRY& entry) const;
+  bool loadFromPreferences();
+  bool saveAllCommands(const IR_COMMAND_ENTRY* entries);
+  bool isValidCommand(const IR_COMMAND_ENTRY& entry) const;
 #endif
   /**
    * Build a 16-bit NEC address from device type and device ID
