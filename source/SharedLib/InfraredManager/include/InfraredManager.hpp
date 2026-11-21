@@ -114,7 +114,9 @@ bool InfraredManager::loadFromPreferences() {
     };
 
     static const char* const defaultNames[] = {
-      "GPStarTest", "Firing", "GhostInTrap",
+      "GPStarTest", "Firing", "Reserved1", "Reserved2",
+      "GhostTrapOpen", "GhostTrapClose", "GhostTrapFail",
+      "GhostTrapCapture", "GhostTrapReserved", "GhostInTrap",
       "HoloRun", "HoloStop", "HoloRepeat", "HoloPrevious",
       "HoloNext", "HoloPause", "HoloDim", "HoloBright"
     };
@@ -145,6 +147,17 @@ bool InfraredManager::loadFromPreferences() {
 
         case IR_DEVICE_FIRING:
           // Firing
+          m_Entries[index].protocol = IR_NEC_RAW;
+          m_Entries[index].protection = IR_DYNAMIC;
+        break;
+
+        case IR_RESERVED_1:
+        case IR_RESERVED_2:
+        case IR_TRAP_OPEN:
+        case IR_TRAP_CLOSE:
+        case IR_TRAP_FAIL:
+        case IR_TRAP_CAPTURE:
+        case IR_TRAP_RESERVED:
           m_Entries[index].protocol = IR_NEC_RAW;
           m_Entries[index].protection = IR_DYNAMIC;
         break;
@@ -333,12 +346,168 @@ uint16_t InfraredManager::buildIRAddress(uint8_t deviceType, uint16_t deviceId) 
 }
 
 #ifdef ESP32
+void InfraredManager::sendGPStarTestCommand(JsonDocument& jsonResult, const IR_COMMAND_ENTRY& commandEntry) {
+  // Send a special command to test the NEC-based IR signal.
+  uint16_t necAddress = buildIRAddress(m_deviceType, m_deviceID);
+  uint8_t necCommand = IR_COMMAND_TEST; // Command 0xFF (255) = Testing
+
+  jsonResult["preamble"] = "0x" + String(IR_GPSTAR_PREAMBLE, HEX);
+  jsonResult["deviceType"] = "0x" + String(m_deviceType, HEX);
+  jsonResult["deviceID"] = "0x" + String(m_deviceID, HEX);
+  jsonResult["address"] = "0x" + String(necAddress, HEX);
+  jsonResult["command"] = "0x" + String(necCommand, HEX);
+
+  // Show what bytes should be transmitted in standard NEC.
+  uint8_t addrLSB = necAddress & 0xFF;
+  uint8_t addrMSB = (necAddress >> 8) & 0xFF;
+  jsonResult["expectedNEC"] = String(addrLSB, HEX) + " " + String(addrMSB, HEX) + " "
+                            + String(necCommand, HEX) + " " + String((uint8_t)~necCommand, HEX);
+
+  // Compute what raw data the library will generate.
+  uint32_t rawData = IrSender.computeNECRawDataAndChecksum(necAddress, necCommand);
+  jsonResult["rawData"] = "0x" + String(rawData, HEX);
+
+  // Break down the raw data into bytes.
+  uint8_t byte0 = rawData & 0xFF;
+  uint8_t byte1 = (rawData >> 8) & 0xFF;
+  uint8_t byte2 = (rawData >> 16) & 0xFF;
+  uint8_t byte3 = (rawData >> 24) & 0xFF;
+  jsonResult["rawBytes"] = String(byte0, HEX) + " "
+                          + String(byte1, HEX) + " "
+                          + String(byte2, HEX) + " "
+                          + String(byte3, HEX);
+
+  jsonResult["status"] = "success";
+  // Send as raw NEC data (without repeats) as we constructed the data exactly as we want it.
+  IrSender.sendNECRaw(rawData, 0);
+}
+
+void InfraredManager::sendFiringCommand(JsonDocument& jsonResult,
+                                        const IR_COMMAND_ENTRY& commandEntry,
+                                        uint8_t streamMode,
+                                        uint8_t powerLevel,
+                                        uint8_t streamInfo) {
+  // Send firing command with both stream type and power level embedded
+  uint16_t necAddress = buildIRAddress(m_deviceType, m_deviceID);
+  uint8_t baseCommand = IR_COMMAND_PROTON; // Initialize to Proton stream.
+
+  switch(streamMode) {
+    case IR_STREAM_PROTON:
+    default:
+      if(streamInfo == IR_CMD_STREAM) {
+        baseCommand = IR_COMMAND_PROTON; // Proton: 0x20-0x24 (power levels 1-5)
+      }
+      else if(streamInfo == IR_CMD_BLAST) {
+        baseCommand = IR_COMMAND_BOSON_DART; // Boson Dart: 0x25-0x29 (power levels 1-5)
+      }
+      else if(streamInfo == IR_CMD_CTS) {
+        baseCommand = IR_COMMAND_CTS; // Crossing the Streams: 0x60-0x64 (power levels 1-5)
+      }
+    break;
+    case IR_STREAM_SLIME:
+      if(streamInfo == IR_CMD_STREAM) {
+        baseCommand = IR_COMMAND_SLIME; // Slime: 0x30-0x34 (power levels 1-5)
+      }
+      else if(streamInfo == IR_CMD_BLAST) {
+        baseCommand = IR_COMMAND_SLIME_BLAST; // Slime Blast: 0x35-0x39 (power levels 1-5)
+      }
+    break;
+    case IR_STREAM_STASIS:
+      if(streamInfo == IR_CMD_STREAM) {
+        baseCommand = IR_COMMAND_STASIS; // Stasis: 0x40-0x44 (power levels 1-5)
+      }
+      else if(streamInfo == IR_CMD_BLAST) {
+        baseCommand = IR_COMMAND_SHOCK_BLAST; // Shock Blast: 0x45-0x49 (power levels 1-5)
+      }
+    break;
+    case IR_STREAM_MESON:
+      if(streamInfo == IR_CMD_STREAM) {
+        baseCommand = IR_COMMAND_MESON; // Meson: 0x50-0x54 (power levels 1-5)
+      }
+      else if(streamInfo == IR_CMD_BLAST) {
+        baseCommand = IR_COMMAND_OVERLOAD_PULSE; // Overload Pulse: 0x55-0x59 (power levels 1-5)
+      }
+    break;
+  }
+  uint8_t necCommand = baseCommand + (powerLevel - 1); // Add power level offset
+
+  jsonResult["streamMode"] = streamMode;
+  jsonResult["powerLevel"] = powerLevel;
+  jsonResult["streamInfo"] = streamInfo;
+  jsonResult["preamble"] = "0x" + String(IR_GPSTAR_PREAMBLE, HEX);
+  jsonResult["deviceType"] = "0x" + String(m_deviceType, HEX);
+  jsonResult["deviceID"] = "0x" + String(m_deviceID, HEX);
+  jsonResult["address"] = "0x" + String(necAddress, HEX);
+  jsonResult["command"] = "0x" + String(necCommand, HEX);
+
+  // Show what bytes should be transmitted in standard NEC.
+  uint8_t addrLSB = necAddress & 0xFF;
+  uint8_t addrMSB = (necAddress >> 8) & 0xFF;
+  jsonResult["expectedNEC"] = String(addrLSB, HEX) + " " + String(addrMSB, HEX) + " "
+                            + String(necCommand, HEX) + " " + String((uint8_t)~necCommand, HEX);
+
+  // Compute what raw data the library will generate.
+  uint32_t rawData = IrSender.computeNECRawDataAndChecksum(necAddress, necCommand);
+  jsonResult["rawData"] = "0x" + String(rawData, HEX);
+
+  // Break down the raw data into bytes.
+  uint8_t byte0 = rawData & 0xFF;
+  uint8_t byte1 = (rawData >> 8) & 0xFF;
+  uint8_t byte2 = (rawData >> 16) & 0xFF;
+  uint8_t byte3 = (rawData >> 24) & 0xFF;
+  jsonResult["rawBytes"] = String(byte0, HEX) + " "
+                          + String(byte1, HEX) + " "
+                          + String(byte2, HEX) + " "
+                          + String(byte3, HEX);
+
+  jsonResult["status"] = "success";
+  // Send as raw NEC data (without repeats) as we constructed the data exactly as we want it.
+  IrSender.sendNECRaw(rawData, 0);
+}
+
+void InfraredManager::sendGhostInTrapCommand(JsonDocument& jsonResult, const IR_COMMAND_ENTRY& commandEntry) {
+  // Send the standard Ghost Trap (PKE) IR signal.
+  if(commandEntry.rawDataLength == 0 ||
+     commandEntry.rawDataLength > IR_COMMAND_RAW_MAX) {
+    jsonResult["status"] = "failure";
+    jsonResult["error"] = "Invalid raw timing length";
+    return;
+  }
+
+  jsonResult["status"] = "success";
+  IrSender.sendRaw(commandEntry.rawData, commandEntry.rawDataLength, CARRIER_KHZ);
+}
+
+void InfraredManager::sendConfiguredProtocolCommand(JsonDocument& jsonResult, const IR_COMMAND_ENTRY& commandEntry) {
+  uint16_t necAddress;
+  uint8_t necCommand;
+
+  switch(commandEntry.protocol) {
+    case IR_NEC:
+      // Rebuild the 16-bit NEC address from the UI's low-byte-first storage.
+      necAddress = static_cast<uint16_t>(commandEntry.address[0]) |
+                   (static_cast<uint16_t>(commandEntry.address[1]) << 8);
+      // sendNEC generates the inverse byte from the selected command byte.
+      necCommand = commandEntry.command[0];
+
+      jsonResult["address"] = "0x" + String(necAddress, HEX);
+      jsonResult["command"] = "0x" + String(necCommand, HEX);
+      jsonResult["status"] = "success";
+      IrSender.sendNEC(necAddress, necCommand, 0);
+    break;
+
+    default:
+      // Unsupported protocol encountered.
+      jsonResult["status"] = "failure";
+      jsonResult["error"] = "Command protocol is not supported by this handler";
+    break;
+  }
+}
+
 // Send an infrared command using the device's configured type and ID.
 // Returns a JSON document with details about the command sent and its status.
 JsonDocument InfraredManager::sendCommand(uint8_t commandIndex, uint8_t streamMode, uint8_t powerLevel, uint8_t streamInfo) {
   IR_COMMAND_ENTRY commandEntry = {};
-  uint16_t necAddress;
-  uint8_t necCommand;
   JsonDocument jsonResult;
 
   if(!m_EntriesAvailable) {
@@ -358,167 +527,43 @@ JsonDocument InfraredManager::sendCommand(uint8_t commandIndex, uint8_t streamMo
   }
 
   if(isValidCommand(commandEntry)) {
-    if(strcmp(commandEntry.name, "GhostInTrap") == 0) {
-      // Send the standard Ghost Trap (PKE) IR signal.
-      jsonResult["index"] = commandIndex;
-      jsonResult["name"] = commandEntry.name;
-      jsonResult["description"] = "Ghost Trap raw IR signal (PKE format)";
+    switch(commandIndex) {
+      case IR_GPSTAR_TEST:
+        jsonResult["index"] = commandIndex;
+        jsonResult["name"] = commandEntry.name;
+        jsonResult["description"] = "GPStar NEC-based IR signal test command";
+        sendGPStarTestCommand(jsonResult, commandEntry);
+      break;
 
-      if(commandEntry.rawDataLength == 0 ||
-         commandEntry.rawDataLength > IR_COMMAND_RAW_MAX) {
-        jsonResult["status"] = "failure";
-        jsonResult["error"] = "Invalid raw timing length";
-        return jsonResult;
-      }
+      case IR_DEVICE_FIRING:
+        jsonResult["index"] = commandIndex;
+        jsonResult["name"] = commandEntry.name;
+        jsonResult["description"] = "GPStar NEC-based IR signal firing command with stream type and power level";
+        sendFiringCommand(jsonResult, commandEntry, streamMode, powerLevel, streamInfo);
+      break;
 
-      jsonResult["status"] = "success";
-      IrSender.sendRaw(commandEntry.rawData, commandEntry.rawDataLength, CARRIER_KHZ);
-    }
-    else if(strcmp(commandEntry.name, "GPStarTest") == 0) {
-      // Send a special command to test the NEC-based IR signal.
-      necAddress = buildIRAddress(m_deviceType, m_deviceID);
-      necCommand = IR_COMMAND_TEST; // Command 0xFF (255) = Testing
+      case IR_RESERVED_1:
+      case IR_RESERVED_2:
+      case IR_TRAP_OPEN:
+      case IR_TRAP_CLOSE:
+      case IR_TRAP_FAIL:
+      case IR_TRAP_CAPTURE:
+      case IR_TRAP_RESERVED:
+        // Logic TBD
+      break;
 
-      jsonResult["index"] = commandIndex;
-      jsonResult["name"] = commandEntry.name;
-      jsonResult["description"] = "GPStar NEC-based IR signal test command";
-      jsonResult["preamble"] = "0x" + String(IR_GPSTAR_PREAMBLE, HEX);
-      jsonResult["deviceType"] = "0x" + String(m_deviceType, HEX);
-      jsonResult["deviceID"] = "0x" + String(m_deviceID, HEX);
-      jsonResult["address"] = "0x" + String(necAddress, HEX);
-      jsonResult["command"] = "0x" + String(necCommand, HEX);
+      case IR_GHOST_IN_TRAP:
+        jsonResult["index"] = commandIndex;
+        jsonResult["name"] = commandEntry.name;
+        jsonResult["description"] = "Ghost Trap raw IR signal (PKE format)";
+        sendGhostInTrapCommand(jsonResult, commandEntry);
+      break;
 
-      // Show what bytes should be transmitted in standard NEC.
-      uint8_t addrLSB = necAddress & 0xFF;
-      uint8_t addrMSB = (necAddress >> 8) & 0xFF;
-      jsonResult["expectedNEC"] = String(addrLSB, HEX) + " " + String(addrMSB, HEX) + " "
-                                + String(necCommand, HEX) + " " + String((uint8_t)~necCommand, HEX);
-
-      // Compute what raw data the library will generate.
-      uint32_t rawData = IrSender.computeNECRawDataAndChecksum(necAddress, necCommand);
-      jsonResult["rawData"] = "0x" + String(rawData, HEX);
-
-      // Break down the raw data into bytes.
-      uint8_t byte0 = rawData & 0xFF;
-      uint8_t byte1 = (rawData >> 8) & 0xFF;
-      uint8_t byte2 = (rawData >> 16) & 0xFF;
-      uint8_t byte3 = (rawData >> 24) & 0xFF;
-      jsonResult["rawBytes"] = String(byte0, HEX) + " "
-                              + String(byte1, HEX) + " "
-                              + String(byte2, HEX) + " "
-                              + String(byte3, HEX);
-      jsonResult["status"] = "success";
-
-      // Send as raw NEC data (without repeats) as we constructed the data exactly as we want it.
-      IrSender.sendNECRaw(rawData, 0);
-    }
-    else if(strcmp(commandEntry.name, "Firing") == 0) {
-      // Send firing command with both stream type and power level embedded
-      necAddress = buildIRAddress(m_deviceType, m_deviceID);
-
-      // Calculate command based on stream type and power level
-      uint8_t baseCommand = IR_COMMAND_PROTON; // Initialize to Proton stream.
-      switch(streamMode) {
-        case IR_STREAM_PROTON:
-        default:
-          if(streamInfo == IR_CMD_STREAM) {
-            baseCommand = IR_COMMAND_PROTON; // Proton: 0x20-0x24 (power levels 1-5)
-          }
-          else if(streamInfo == IR_CMD_BLAST) {
-            baseCommand = IR_COMMAND_BOSON_DART; // Boson Dart: 0x25-0x29 (power levels 1-5)
-          }
-          else if(streamInfo == IR_CMD_CTS) {
-            baseCommand = IR_COMMAND_CTS; // Crossing the Streams: 0x60-0x64 (power levels 1-5)
-          }
-        break;
-        case IR_STREAM_SLIME:
-          if(streamInfo == IR_CMD_STREAM) {
-            baseCommand = IR_COMMAND_SLIME; // Slime: 0x30-0x34 (power levels 1-5)
-          }
-          else if(streamInfo == IR_CMD_BLAST) {
-            baseCommand = IR_COMMAND_SLIME_BLAST; // Slime Blast: 0x35-0x39 (power levels 1-5)
-          }
-        break;
-        case IR_STREAM_STASIS:
-          if(streamInfo == IR_CMD_STREAM) {
-            baseCommand = IR_COMMAND_STASIS; // Stasis: 0x40-0x44 (power levels 1-5)
-          }
-          else if(streamInfo == IR_CMD_BLAST) {
-            baseCommand = IR_COMMAND_SHOCK_BLAST; // Shock Blast: 0x45-0x49 (power levels 1-5)
-          }
-        break;
-        case IR_STREAM_MESON:
-          if(streamInfo == IR_CMD_STREAM) {
-            baseCommand = IR_COMMAND_MESON; // Meson: 0x50-0x54 (power levels 1-5)
-          }
-          else if(streamInfo == IR_CMD_BLAST) {
-            baseCommand = IR_COMMAND_OVERLOAD_PULSE; // Overload Pulse: 0x55-0x59 (power levels 1-5)
-          }
-        break;
-      }
-      necCommand = baseCommand + (powerLevel - 1); // Add power level offset
-
-      jsonResult["index"] = commandIndex;
-      jsonResult["name"] = commandEntry.name;
-      jsonResult["description"] = "GPStar NEC-based IR signal firing command with stream type and power level";
-      jsonResult["streamMode"] = streamMode;
-      jsonResult["powerLevel"] = powerLevel;
-      jsonResult["streamInfo"] = streamInfo;
-      jsonResult["preamble"] = "0x" + String(IR_GPSTAR_PREAMBLE, HEX);
-      jsonResult["deviceType"] = "0x" + String(m_deviceType, HEX);
-      jsonResult["deviceID"] = "0x" + String(m_deviceID, HEX);
-      jsonResult["address"] = "0x" + String(necAddress, HEX);
-      jsonResult["command"] = "0x" + String(necCommand, HEX);
-
-      // Show what bytes should be transmitted in standard NEC.
-      uint8_t addrLSB = necAddress & 0xFF;
-      uint8_t addrMSB = (necAddress >> 8) & 0xFF;
-      jsonResult["expectedNEC"] = String(addrLSB, HEX) + " " + String(addrMSB, HEX) + " "
-                                + String(necCommand, HEX) + " " + String((uint8_t)~necCommand, HEX);
-
-      // Compute what raw data the library will generate.
-      uint32_t rawData = IrSender.computeNECRawDataAndChecksum(necAddress, necCommand);
-      jsonResult["rawData"] = "0x" + String(rawData, HEX);
-
-      // Break down the raw data into bytes.
-      uint8_t byte0 = rawData & 0xFF;
-      uint8_t byte1 = (rawData >> 8) & 0xFF;
-      uint8_t byte2 = (rawData >> 16) & 0xFF;
-      uint8_t byte3 = (rawData >> 24) & 0xFF;
-      jsonResult["rawBytes"] = String(byte0, HEX) + " "
-                             + String(byte1, HEX) + " "
-                             + String(byte2, HEX) + " "
-                             + String(byte3, HEX);
-      jsonResult["status"] = "success";
-
-      // Send as raw NEC data (without repeats) as we constructed the data exactly as we want it.
-      IrSender.sendNECRaw(rawData, 0);
-    }
-    else {
-      // Fall-through for all other signals which do not match a specific name.
-      jsonResult["index"] = commandIndex;
-      jsonResult["name"] = commandEntry.name;
-
-      switch(commandEntry.protocol) {
-        case IR_NEC:
-          // Rebuild the 16-bit NEC address from the UI's low-byte-first storage.
-          necAddress = static_cast<uint16_t>(commandEntry.address[0]) |
-                       (static_cast<uint16_t>(commandEntry.address[1]) << 8);
-          // sendNEC generates the inverse byte from the selected command byte.
-          necCommand = commandEntry.command[0];
-
-          jsonResult["address"] = "0x" + String(necAddress, HEX);
-          jsonResult["command"] = "0x" + String(necCommand, HEX);
-          jsonResult["status"] = "success";
-          IrSender.sendNEC(necAddress, necCommand, 0);
-        break;
-
-        default:
-          // Unsupported protocol encountered.
-          jsonResult["status"] = "failure";
-          jsonResult["error"] = "Command protocol is not supported by this handler";
-        break;
-      }
+      default:
+        jsonResult["index"] = commandIndex;
+        jsonResult["name"] = commandEntry.name;
+        sendConfiguredProtocolCommand(jsonResult, commandEntry);
+      break;
     }
   }
   else {

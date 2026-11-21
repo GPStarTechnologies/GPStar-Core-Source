@@ -22,6 +22,76 @@
     },
     {
       "index": 2,
+      "name": "Reserved1",
+      "protocol": 1,
+      "protection": 2,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 3,
+      "name": "Reserved2",
+      "protocol": 1,
+      "protection": 2,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 4,
+      "name": "GhostTrapOpen",
+      "protocol": 1,
+      "protection": 2,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 5,
+      "name": "GhostTrapClose",
+      "protocol": 1,
+      "protection": 2,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 6,
+      "name": "GhostTrapFail",
+      "protocol": 1,
+      "protection": 2,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 7,
+      "name": "GhostTrapCapture",
+      "protocol": 1,
+      "protection": 2,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 8,
+      "name": "GhostTrapReserved",
+      "protocol": 1,
+      "protection": 2,
+      "address": [0, 0],
+      "command": [0, 0],
+      "rawDataLength": 0,
+      "rawData": []
+    },
+    {
+      "index": 9,
       "name": "GhostInTrap",
       "protocol": 2,
       "protection": 1,
@@ -31,7 +101,7 @@
       "rawData": [1770, 1200, 600, 600, 600, 600, 580, 1200, 600, 600, 580, 1200, 600, 1200, 580, 600, 580, 1200, 600]
     },
     {
-      "index": 3,
+      "index": 10,
       "name": "HoloRun",
       "protocol": 0,
       "protection": 0,
@@ -41,7 +111,7 @@
       "rawData": []
     },
     {
-      "index": 4,
+      "index": 11,
       "name": "HoloStop",
       "protocol": 0,
       "protection": 0,
@@ -51,7 +121,7 @@
       "rawData": []
     },
     {
-      "index": 5,
+      "index": 12,
       "name": "HoloRepeat",
       "protocol": 0,
       "protection": 0,
@@ -61,7 +131,7 @@
       "rawData": []
     },
     {
-      "index": 6,
+      "index": 13,
       "name": "HoloPrevious",
       "protocol": 0,
       "protection": 0,
@@ -71,7 +141,7 @@
       "rawData": []
     },
     {
-      "index": 7,
+      "index": 14,
       "name": "HoloNext",
       "protocol": 0,
       "protection": 0,
@@ -81,7 +151,7 @@
       "rawData": []
     },
     {
-      "index": 8,
+      "index": 15,
       "name": "HoloPause",
       "protocol": 0,
       "protection": 0,
@@ -91,7 +161,7 @@
       "rawData": []
     },
     {
-      "index": 9,
+      "index": 16,
       "name": "HoloDim",
       "protocol": 0,
       "protection": 0,
@@ -101,82 +171,12 @@
       "rawData": []
     },
     {
-      "index": 10,
+      "index": 17,
       "name": "HoloBright",
       "protocol": 0,
       "protection": 0,
       "address": [166, 10],
       "command": [18, 237],
-      "rawDataLength": 0,
-      "rawData": []
-    },
-    {
-      "index": 11,
-      "name": "",
-      "protocol": 0,
-      "protection": 0,
-      "address": [0, 0],
-      "command": [0, 0],
-      "rawDataLength": 0,
-      "rawData": []
-    },
-    {
-      "index": 12,
-      "name": "",
-      "protocol": 0,
-      "protection": 0,
-      "address": [0, 0],
-      "command": [0, 0],
-      "rawDataLength": 0,
-      "rawData": []
-    },
-    {
-      "index": 13,
-      "name": "",
-      "protocol": 0,
-      "protection": 0,
-      "address": [0, 0],
-      "command": [0, 0],
-      "rawDataLength": 0,
-      "rawData": []
-    },
-    {
-      "index": 14,
-      "name": "",
-      "protocol": 0,
-      "protection": 0,
-      "address": [0, 0],
-      "command": [0, 0],
-      "rawDataLength": 0,
-      "rawData": []
-    },
-    {
-      "index": 15,
-      "name": "",
-      "protocol": 0,
-      "protection": 0,
-      "address": [0, 0],
-      "command": [0, 0],
-      "rawDataLength": 0,
-      "rawData": []
-    },
-    {
-      "index": 16,
-      "name": "",
-      "protocol": 0,
-      "protection": 0,
-      "address": [0, 0],
-      "command": [0, 0],
-      "rawDataLength": 0,
-      "rawData": []
-    },
-    {
-      "index": 17,
-      "name": "",
-      "protocol": 0,
-      "protection": 0,
-      "address": [0, 0],
-      "command": [0, 0],
       "rawDataLength": 0,
       "rawData": []
     },

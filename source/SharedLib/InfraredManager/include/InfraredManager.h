@@ -113,11 +113,18 @@ enum IR_PROTECTION : uint8_t {
   IR_DYNAMIC    = 2   // System-defined dynamic entry generated at runtime
 };
 
-// IR Protection Enum - Denotes when a command entry may be user-modified
+// IR Command Enum - Special system-reserved command indexes
 enum IR_COMMAND_INDEX : uint8_t {
   IR_GPSTAR_TEST   = 0,
   IR_DEVICE_FIRING = 1,
-  IR_GHOST_IN_TRAP = 2
+  IR_RESERVED_1    = 2,
+  IR_RESERVED_2    = 3,
+  IR_TRAP_OPEN     = 4,
+  IR_TRAP_CLOSE    = 5,
+  IR_TRAP_FAIL     = 6,
+  IR_TRAP_CAPTURE  = 7,
+  IR_TRAP_RESERVED = 8,
+  IR_GHOST_IN_TRAP = 9
 };
 
 // Limits and constants for the command array entries.
@@ -308,6 +315,10 @@ private:
   bool loadFromPreferences();
   bool saveAllCommands(const IR_COMMAND_ENTRY* entries);
   bool isValidCommand(const IR_COMMAND_ENTRY& entry) const;
+  void sendGPStarTestCommand(JsonDocument& jsonResult, const IR_COMMAND_ENTRY& commandEntry);
+  void sendFiringCommand(JsonDocument& jsonResult, const IR_COMMAND_ENTRY& commandEntry, uint8_t streamMode, uint8_t powerLevel, uint8_t streamInfo);
+  void sendGhostInTrapCommand(JsonDocument& jsonResult, const IR_COMMAND_ENTRY& commandEntry);
+  void sendConfiguredProtocolCommand(JsonDocument& jsonResult, const IR_COMMAND_ENTRY& commandEntry);
 #endif
   /**
    * Build a 16-bit NEC address from device type and device ID
