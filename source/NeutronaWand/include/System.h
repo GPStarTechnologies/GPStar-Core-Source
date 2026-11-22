@@ -444,10 +444,10 @@ void setClippardLED(bool b_on, ColorID colorEnum = C_WARM_WHITE) {
     // Use RGB addressable LED with color support
     auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
     ventMgr.setPixelColor(2, b_on ? colorEnum : C_BLACK);
-  } else {
-    // Fall back to simple GPIO on/off
-    digitalWriteFast(CLIPPARD_LED_PIN, b_on ? HIGH : LOW);
   }
+
+  // Always use simple GPIO on/off
+  digitalWriteFast(CLIPPARD_LED_PIN, b_on ? HIGH : LOW);
 }
 
 // Helper function for top Hat LED control (index 3 in CHAIN_VENT, or GPIO pin)
@@ -456,10 +456,10 @@ void setTopHatLED(bool b_on, ColorID colorEnum = C_ORANGE) {
     // Use RGB addressable LED with color support
     auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
     ventMgr.setPixelColor(3, b_on ? colorEnum : C_BLACK);
-  } else {
-    // Fall back to simple GPIO on/off
-    digitalWriteFast(TOP_HAT_LED_PIN, b_on ? HIGH : LOW);
   }
+
+  // Always use simple GPIO on/off
+  digitalWriteFast(TOP_HAT_LED_PIN, b_on ? HIGH : LOW);
 }
 
 // Main control of hat light functions.
@@ -1788,7 +1788,7 @@ void overheatingFinished() {
   ms_settings_blink.stop();
 
   // Turn off hat light 2.
-  digitalWriteFast(TOP_HAT_LED_PIN, LOW);
+  setTopHatLED(false);
 
   // Prepare a few things before ramping the bargraph back up from a full ramp down.
   if(!b_overheat_bargraph_blink) {
@@ -10627,13 +10627,7 @@ void checkPowerOnReminder() {
     if(ms_power_indicator.justFinished()) {
       if(gpstarWand.isPackInactiveModeOriginal() || gpstarWand.getSystemMode() == MODE_SUPER_HERO) {
         // Blink the Clippard LED to indicate to the user that the system battery is still powered on.
-        if(b_rgb_vent_light && b_rgb_clippard) {
-          auto& ventMgr = LightingManager::getInstance(CHAIN_VENT);
-          // Toggle by checking if currently off (black), then turn it on, otherwise turn it off
-          setClippardLED(ventMgr.getPixelColor(2) == LED_RGB_BLACK);
-        } else {
-          digitalWriteFast(CLIPPARD_LED_PIN, (digitalReadFast(CLIPPARD_LED_PIN) == LOW) ? HIGH : LOW);
-        }
+        setClippardLED(digitalReadFast(CLIPPARD_LED_PIN) == LOW);
       }
 
       // Restart the blink timer.
