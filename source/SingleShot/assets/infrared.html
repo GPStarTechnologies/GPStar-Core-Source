@@ -8,106 +8,42 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/style.css" />
-    <style>
-      .ir-signals-scroll {
-        overflow-x: auto;
-      }
-
-      .ir-signal-table {
-        min-width: 640px;
-        table-layout: fixed;
-        width: 100%;
-      }
-
-      .ir-signal-table th,
-      .ir-signal-table td {
-        padding: 4px;
-        text-align: left;
-        vertical-align: middle;
-      }
-
-      .ir-signal-table .ir-column-group {
-        text-align: center;
-      }
-
-      .ir-signal-table th:first-child,
-      .ir-signal-table td:first-child {
-        width: 40px;
-      }
-
-      .ir-signal-table th:nth-child(2),
-      .ir-signal-table td:nth-child(2) {
-        width: 200px;
-      }
-
-      .ir-signal-table input[type="text"] {
-        max-width: 100%;
-        min-width: 0;
-        width: auto;
-      }
-
-      .ir-signal-table .ir-byte-select {
-        font-size: 0.85rem;
-        height: 34px;
-        margin: 2px;
-        max-width: 64px;
-        min-width: 64px;
-        padding: 0 1px;
-        width: 64px;
-      }
-
-      .ir-signal-table .ir-protocol-select {
-        font-size: 0.85rem;
-        height: 34px;
-        margin: 2px;
-        width: 100px;
-      }
-
-      .ir-signal-table .ir-timing-input {
-        box-sizing: border-box;
-        min-height: 48px;
-        width: 100%;
-      }
-
-      .ir-signal-table button {
-        font-size: 0.95rem;
-        min-width: 0;
-        padding: 9px 8px;
-        width: auto;
-      }
-    </style>
   </head>
   <body>
     <h1>Infrared Settings</h1>
     <div class="block left">
       <p>
-        Configure up to 10 custom NEC signal definitions. Leave a name blank to clear that slot.
+        View and configure infrared signals available for use and their triggering events (where applicable).
+        Use the Test IR button to directly trigger a signal to confirm operation.
       </p>
     </div>
 
     <div class="block left">
-      <div class="ir-signals-scroll">
-        <table class="ir-signal-table">
+      <div class="setting" id="commandSelect" hidden>
+        <label for="command"><b>Signal:</b></label>
+        <select id="command"></select>
+        <button type="button" id="btnTest" class="orange" onclick="triggerInfrared()">Test IR</button>
+      </div>
+    </div>
+
+    <div class="block left">
+      <div>
+        <table>
           <thead>
             <tr>
-              <th scope="col">#</th>
+              <th scope="col">#&nbsp;</th>
               <th scope="col">Name</th>
               <th scope="col">Protocol</th>
-              <th scope="colgroup" colspan="4">NEC Address/Command or Timings</th>
               <th scope="col">Action</th>
+            </tr>
+            <tr>
+              <th scope="col">&#8627;</th>
+              <th scope="col" colspan="3">NEC Address/Command or Timings</th>
             </tr>
           </thead>
           <tbody id="irSignalRows"></tbody>
         </table>
       </div>
-    </div>
-
-    <div class="block left">
-      <div class="setting" id="commandSelect" hidden>
-        <label for="command"><b>IR Signal:</b></label>
-        <select id="command"></select>
-      </div>
-      <button type="button" id="btnTest" class="orange" onclick="triggerInfrared()">Test IR</button>
     </div>
 
     <div class="block">
@@ -124,26 +60,33 @@
 
     <script type="application/javascript" src="/common.js"></script>
     <script type="application/javascript">
-      const IR_SIGNAL_LIMIT = 20;
-      const IR_SIGNAL_NAME_MAX = 20;
+      const IR_ENTRIES_MAX = 20;
+      const IR_ENTRY_NAME_MAX = 20;
       const IR_RAW_TIMINGS_MAX = 40;
+      const IR_PROTECTION_READ_WRITE = 0;
+      // These protocol values must stay aligned with the firmware IR_PROTOCOL enum.
       const IR_PROTOCOL_OPTIONS = [
         { value: 0, label: "NEC" },
         { value: 1, label: "NEC RAW" },
         { value: 2, label: "TIMINGS" },
       ];
-      const IR_BYTE_FIELDS = ["Address Byte 1", "Address Byte 2", "Command Byte 1", "Command Byte 2"];
+      const IR_NEC_BYTE_FIELDS = [
+        "Address Byte 1",
+        "Address Byte 2",
+        "Command Byte 1",
+        "Command Byte 2"
+      ];
 
       window.addEventListener("load", onLoad);
+      // Build the editable slots, load their current values, and initialize page help.
       function onLoad() {
         createSignalRows();
-        document.getElementById("irTestType").addEventListener("change", updateCommandSelect);
-        updateCommandSelect();
-        getInfrared();
+        getSettings();
 
         initializeHelp("infrared");
       }
 
+      // Add every byte value to the shared template, then create the fixed set of entry rows.
       function createSignalRows() {
         var selectTemplate = document.getElementById("irByteSelectTemplate").content.querySelector("select");
         for (var value = 0; value <= 0xFF; value++) {
@@ -154,27 +97,30 @@
         }
 
         var rows = document.getElementById("irSignalRows");
-        for (var index = 0; index < IR_SIGNAL_LIMIT; index++) {
+        for (var index = 0; index < IR_ENTRIES_MAX; index++) {
           rows.appendChild(createSignalRow(index, selectTemplate));
         }
       }
 
+      // Build the name/protocol row and its corresponding data row for one entry slot.
       function createSignalRow(index, selectTemplate) {
-        var row = document.createElement("tr");
+        var entryRow = document.createElement("tr");
+        var dataRow = document.createElement("tr");
 
-        var indexCell = document.createElement("td");
-        indexCell.textContent = (index + 1).toString();
-        row.appendChild(indexCell);
+        var indexCell = document.createElement("th");
+        indexCell.scope = "row";
+        indexCell.textContent = (index + 1).toString() + "\u00A0";
+        entryRow.appendChild(indexCell);
 
         var nameCell = document.createElement("td");
         var nameInput = document.createElement("input");
         nameInput.type = "text";
-        nameInput.size = IR_SIGNAL_NAME_MAX;
-        nameInput.maxLength = IR_SIGNAL_NAME_MAX;
-        nameInput.className = "ir-signal-name";
+        nameInput.size = IR_ENTRY_NAME_MAX;
+        nameInput.maxLength = IR_ENTRY_NAME_MAX;
+        nameInput.className = "ir-entries-name";
         nameInput.setAttribute("aria-label", "Signal " + (index + 1) + " name");
         nameCell.appendChild(nameInput);
-        row.appendChild(nameCell);
+        entryRow.appendChild(nameCell);
 
         var protocolCell = document.createElement("td");
         var protocolSelect = document.createElement("select");
@@ -187,127 +133,150 @@
           protocolSelect.appendChild(option);
         });
         protocolCell.appendChild(protocolSelect);
-        row.appendChild(protocolCell);
-
-        for (var field = 0; field < IR_BYTE_FIELDS.length; field++) {
-          var byteCell = document.createElement("td");
-          byteCell.className = "ir-nec-only";
-          var byteSelect = selectTemplate.cloneNode(true);
-          byteSelect.value = "0";
-          byteSelect.setAttribute("aria-label", "Signal " + (index + 1) + " " + IR_BYTE_FIELDS[field]);
-          byteCell.appendChild(byteSelect);
-          row.appendChild(byteCell);
-        }
-
-        var timingsCell = document.createElement("td");
-        timingsCell.className = "ir-timings-cell";
-        timingsCell.colSpan = 4;
-        var timingsInput = document.createElement("textarea");
-        timingsInput.className = "ir-timing-input";
-        timingsInput.placeholder = "Comma-separated values (up to 40)";
-        timingsInput.setAttribute("aria-label", "Signal " + (index + 1) + " raw timings");
-        timingsCell.appendChild(timingsInput);
-        row.appendChild(timingsCell);
-
-        var emptyDataCell = document.createElement("td");
-        emptyDataCell.className = "ir-no-data-cell";
-        emptyDataCell.colSpan = 4;
-        row.appendChild(emptyDataCell);
-
-        protocolSelect.addEventListener("change", function () {
-          updateProtocolFields(row);
-        });
-        updateProtocolFields(row);
+        entryRow.appendChild(protocolCell);
 
         var clearCell = document.createElement("td");
         var clearButton = document.createElement("button");
         clearButton.type = "button";
-        clearButton.className = "red";
+        clearButton.className = "red ir-clear-button";
         clearButton.textContent = "Clear";
-        clearButton.setAttribute("aria-label", "Clear signal " + (index + 1));
+        clearButton.hidden = true;
+        clearButton.setAttribute("aria-label", "Clear entries " + (index + 1));
         clearButton.addEventListener("click", function () {
-          clearSignalRow(row);
+          clearSignalRow(entryRow);
         });
         clearCell.appendChild(clearButton);
-        row.appendChild(clearCell);
+        entryRow.appendChild(clearCell);
 
-        return row;
+        dataRow.appendChild(document.createElement("td"));
+        var dataCell = document.createElement("td");
+        dataCell.colSpan = 3;
+        var byteFields = document.createElement("div");
+        byteFields.className = "ir-nec-only";
+        for (var field = 0; field < IR_NEC_BYTE_FIELDS.length; field++) {
+          // Label the first select in each two-byte NEC pair.
+          if (field === 0 || field === 2) {
+            var byteGroupLabel = document.createElement("span");
+            byteGroupLabel.textContent = field === 0 ? "ADDR:" : "\u00A0\u00A0CMD:";
+            byteFields.appendChild(byteGroupLabel);
+          }
+          var byteSelect = selectTemplate.cloneNode(true);
+          byteSelect.value = "0";
+          byteSelect.setAttribute("aria-label", "Signal " + (index + 1) + " " + IR_NEC_BYTE_FIELDS[field]);
+          byteFields.appendChild(byteSelect);
+        }
+        dataCell.appendChild(byteFields);
+
+        var timingsInput = document.createElement("textarea");
+        timingsInput.className = "ir-timing-input";
+        timingsInput.placeholder = "Comma-separated values (up to 40)";
+        timingsInput.setAttribute("aria-label", "Signal " + (index + 1) + " raw timings");
+        dataCell.appendChild(timingsInput);
+        dataRow.appendChild(dataCell);
+
+        protocolSelect.addEventListener("change", function () {
+          updateProtocolFields(entryRow);
+        });
+
+        var entryRows = document.createDocumentFragment();
+        entryRows.appendChild(entryRow);
+        entryRows.appendChild(dataRow);
+        updateProtocolFields(entryRow);
+        return entryRows;
       }
 
+      // Clear one editable entry and restore its default NEC field visibility.
       function clearSignalRow(row) {
-        row.querySelector(".ir-signal-name").value = "";
+        row.querySelector(".ir-entries-name").value = "";
         row.querySelector(".ir-protocol-select").value = "0";
-        row.querySelectorAll(".ir-byte-select").forEach(function (select) {
+        var dataRow = row.nextElementSibling;
+        dataRow.querySelectorAll(".ir-byte-select").forEach(function (select) {
           select.value = "0";
         });
-        row.querySelector(".ir-timing-input").value = "";
+        dataRow.querySelector(".ir-timing-input").value = "";
         updateProtocolFields(row);
       }
 
+      // Show only the input controls used by the selected protocol.
       function updateProtocolFields(row) {
-        var protocol = Number(row.querySelector(".ir-protocol-select").value);
-        row.querySelectorAll(".ir-nec-only").forEach(function (cell) {
-          cell.hidden = protocol !== 0;
-        });
-        row.querySelector(".ir-timings-cell").hidden = protocol !== 2;
-        row.querySelector(".ir-no-data-cell").hidden = protocol !== 1;
+        var protocol = row.querySelector(".ir-protocol-select").value;
+        var dataRow = row.nextElementSibling;
+        dataRow.querySelector(".ir-nec-only").hidden = protocol !== "0";
+        dataRow.querySelector(".ir-timing-input").hidden = protocol !== "2";
       }
 
-      function isBytePair(bytes) {
-        return Array.isArray(bytes) &&
-          bytes.length === 2 &&
-          bytes.every(function (value) {
-            return Number.isInteger(value) && value >= 0 && value <= 0xFF;
-          });
+      // Select a representable byte value; disable the control if the value has no option.
+      function setByteSelect(select, value, isReadWrite) {
+        select.value = Number.isInteger(value) ? value.toString() : "";
+        select.disabled = !isReadWrite || select.value === "";
       }
 
+      // Populate rows independently so malformed fields do not prevent other entries loading.
       function populateSignalRows(entries) {
         var rows = document.querySelectorAll("#irSignalRows tr");
-        if (entries.length !== rows.length) return false;
-
-        rows.forEach(function (row) {
-          row.querySelector(".ir-signal-name").value = "";
-          row.querySelector(".ir-protocol-select").value = "0";
-          row.querySelectorAll(".ir-byte-select").forEach(function (select) {
-            select.value = "0";
-          });
-          row.querySelector(".ir-timing-input").value = "";
-          updateProtocolFields(row);
-        });
-
-        for (var index = 0; index < entries.length; index++) {
-          var signal = entries[index];
-          if (!signal ||
-              typeof signal.name !== "string" ||
-              signal.name.length > IR_SIGNAL_NAME_MAX ||
-              !Number.isInteger(signal.protocol) ||
-              signal.protocol < 0 ||
-              signal.protocol > 2 ||
-              !isBytePair(signal.address) ||
-              !isBytePair(signal.command) ||
-              !Array.isArray(signal.rawData) ||
-              signal.rawData.length > IR_RAW_TIMINGS_MAX ||
-              !signal.rawData.every(function (timing) {
-                return Number.isInteger(timing) && timing > 0 && timing <= 0xFFFF;
-              })) {
-            return false;
-          }
-
+        for (var index = 0; index < rows.length; index += 2) {
           var row = rows[index];
-          row.querySelector(".ir-signal-name").value = signal.name;
-          row.querySelector(".ir-protocol-select").value = signal.protocol.toString();
-          var selects = row.querySelectorAll(".ir-byte-select");
-          selects[0].value = signal.address[0].toString();
-          selects[1].value = signal.address[1].toString();
-          selects[2].value = signal.command[0].toString();
-          selects[3].value = signal.command[1].toString();
-          row.querySelector(".ir-timing-input").value = signal.rawData.join(", ");
+          var dataRow = rows[index + 1];
+          var nameInput = row.querySelector(".ir-entries-name");
+          var protocolSelect = row.querySelector(".ir-protocol-select");
+          nameInput.value = "";
+          nameInput.disabled = true;
+          protocolSelect.value = "";
+          protocolSelect.disabled = true;
+          row.querySelector("button").hidden = true;
+          dataRow.hidden = true;
+          dataRow.querySelectorAll(".ir-byte-select").forEach(function (select) {
+            select.value = "";
+            select.disabled = true;
+          });
+          var timingsInput = dataRow.querySelector(".ir-timing-input");
+          timingsInput.value = "";
+          timingsInput.disabled = true;
           updateProtocolFields(row);
         }
 
-        return true;
+        // Keep usable fields available when another field in an entry is malformed.
+        var entryCount = Math.min(entries.length, rows.length / 2);
+        for (var index = 0; index < entryCount; index++) {
+          var entry = entries[index];
+          var row = rows[index * 2];
+          var dataRow = rows[index * 2 + 1];
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+
+          var nameInput = row.querySelector(".ir-entries-name");
+          var protocolSelect = row.querySelector(".ir-protocol-select");
+          var isReadWrite = entry.protection === IR_PROTECTION_READ_WRITE;
+          var hasName = typeof entry.name === "string";
+          nameInput.value = hasName ? entry.name : "";
+          nameInput.disabled = !isReadWrite || !hasName || entry.name.length > IR_ENTRY_NAME_MAX;
+          protocolSelect.value = Number.isInteger(entry.protocol) ? entry.protocol.toString() : "";
+          var hasProtocol = protocolSelect.value !== "";
+          protocolSelect.disabled = !isReadWrite || !hasProtocol;
+          row.querySelector("button").hidden = !isReadWrite;
+          dataRow.hidden = !hasProtocol || (!isReadWrite && protocolSelect.value !== "2");
+
+          var selects = dataRow.querySelectorAll(".ir-byte-select");
+          var address = Array.isArray(entry.address) ? entry.address : [];
+          var command = Array.isArray(entry.command) ? entry.command : [];
+          setByteSelect(selects[0], address[0], isReadWrite);
+          setByteSelect(selects[1], address[1], isReadWrite);
+          setByteSelect(selects[2], command[0], isReadWrite);
+          setByteSelect(selects[3], command[1], isReadWrite);
+
+          var timingsInput = dataRow.querySelector(".ir-timing-input");
+          var rawData = Array.isArray(entry.rawData) ? entry.rawData : [];
+          var hasValidTimings = Array.isArray(entry.rawData) &&
+            rawData.length <= IR_RAW_TIMINGS_MAX &&
+            rawData.every(function (timing) {
+              return Number.isInteger(timing) && timing > 0 && timing <= 0xFFFF;
+            });
+          timingsInput.value = rawData.join(", ");
+          timingsInput.disabled = !isReadWrite || !hasValidTimings;
+          updateProtocolFields(row);
+        }
       }
 
+      // Add named entries to the Test IR selector and show it only when it has choices.
       function populateCommandOptions(entries) {
         var select = document.getElementById("command");
         while (select.options.length > 0) {
@@ -315,27 +284,24 @@
         }
 
         var hasEntries = false;
-        for (var index = 0; index < entries.length; index++) {
-          var signal = entries[index];
-          if (!signal.name) continue;
+        for (var index = 0; index < entries.length && index < IR_ENTRIES_MAX; index++) {
+          var entry = entries[index];
+          if (!entry || typeof entry.name !== "string" || !entry.name) continue;
 
           var option = document.createElement("option");
           option.value = index.toString();
-          option.textContent = signal.name;
+          option.textContent = entry.name;
           select.appendChild(option);
           hasEntries = true;
         }
 
         select.selectedIndex = -1;
         select.disabled = !hasEntries;
+        document.getElementById("commandSelect").hidden = !hasEntries;
       }
 
-      function updateCommandSelect() {
-        var isCustom = document.getElementById("irTestType").value === "custom";
-        document.getElementById("commandSelect").hidden = !isCustom;
-      }
-
-      function getInfrared() {
+      // Fetch saved settings and populate the page, reporting endpoint-level failures.
+      function getSettings() {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function () {
           if (this.readyState != 4) return;
@@ -347,9 +313,10 @@
             }
 
             var settings = JSON.parse(this.responseText);
-            if (!settings || !Array.isArray(settings.entries) || !populateSignalRows(settings.entries)) {
+            if (!settings || !Array.isArray(settings.entries)) {
               handleStatus("The infrared settings response has an invalid entries array.");
             } else {
+              populateSignalRows(settings.entries);
               populateCommandOptions(settings.entries);
             }
           } else {
@@ -360,28 +327,32 @@
         xhttp.send();
       }
 
+      // Trigger the signal to be sent by the IR hardware.
       function triggerInfrared() {
         var command = document.getElementById("command").value;
         if (command === "") {
           alert("Select a configured command first.");
           return;
         }
-
-        sendCommand("/infrared/signal?command=" + encodeURIComponent(command));
+        sendCommand("/infrared/entries?command=" + encodeURIComponent(command));
       }
 
+      // Serialize all slots and submit them, then reload the saved values on success.
       function saveInfrared() {
         var entries = [];
-        document.querySelectorAll("#irSignalRows tr").forEach(function (row) {
-          var selects = row.querySelectorAll(".ir-byte-select");
+        var rows = document.querySelectorAll("#irSignalRows tr");
+        for (var index = 0; index < rows.length; index += 2) {
+          var row = rows[index];
+          var dataRow = rows[index + 1];
+          var selects = dataRow.querySelectorAll(".ir-byte-select");
           entries.push({
-            name: row.querySelector(".ir-signal-name").value,
+            name: row.querySelector(".ir-entries-name").value,
             protocol: Number(row.querySelector(".ir-protocol-select").value),
             address: [Number(selects[0].value), Number(selects[1].value)],
             command: [Number(selects[2].value), Number(selects[3].value)],
-            rawData: row.querySelector(".ir-timing-input").value,
+            rawData: dataRow.querySelector(".ir-timing-input").value,
           });
-        });
+        }
 
         var body = JSON.stringify({
           entries: entries,
@@ -393,7 +364,7 @@
           if (this.readyState == 4 && this.status >= 200 && this.status < 300) {
             var jObj = JSON.parse(this.responseText);
             alert(jObj.status); // Always display status returned.
-            getInfrared();
+            getSettings();
           } else if (this.readyState == 4) {
             handleStatus(this.responseText || "An unknown error occurred. Please try again.");
           }

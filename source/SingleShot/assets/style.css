@@ -189,3 +189,16 @@
   margin-left: 5px;
   margin-top: 10px;
 }
+
+.ir-byte-select {
+  min-width: 80px;
+  width: 80px;
+}
+
+.ir-timing-input {
+  width: 100%;
+}
+
+.ir-clear-button {
+  padding: 9px 4px;
+}
