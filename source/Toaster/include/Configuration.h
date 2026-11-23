@@ -97,3 +97,8 @@ const uint8_t VOLUME_EFFECTS_MULTIPLIER = 5;
  * Set to true to have the LED on the GPStar Audio stay on while the system is running.
  */
 bool b_gpstar_audio_led_enabled = true;
+
+/*
+ * Animation slot controlled by the action button (0-3)
+ */
+uint8_t ACTION_BUTTON_SLOT = 0;

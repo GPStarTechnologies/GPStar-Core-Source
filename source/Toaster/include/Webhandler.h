@@ -136,6 +136,7 @@ String getDeviceConfig() {
   jsonBody["audioOutdated"] = b_microsd_outdated;
   jsonBody["wifiName"] = wirelessMgr->getLocalNetworkName();
   jsonBody["wifiNameExt"] = wirelessMgr->getExtWifiNetworkName();
+  jsonBody["actionSlot"] = ACTION_BUTTON_SLOT;
 
   // Refresh external WiFi info when/if connected and get the values.
   if(wirelessMgr->getExtWifiNetworkInfo()) {
@@ -1320,6 +1321,19 @@ AsyncCallbackJsonWebHandler *handleSaveDeviceConfig = new AsyncCallbackJsonWebHa
         // Max size for preferences is 4KB so we need to make reserve space for other items.
         // Also, there is a 2KB limit for a single item which is what we're storing here.
         b_list_err = true;
+      }
+
+      // Handle action button slot if provided
+      if(jsonBody["actionSlot"].is<uint8_t>()) {
+        uint8_t buttonSlot = jsonBody["actionSlot"].as<uint8_t>();
+        if(buttonSlot >= 0 && buttonSlot <= 3) {
+          preferences.putUChar("action_slot", buttonSlot);
+          ACTION_BUTTON_SLOT = buttonSlot;
+          #if defined(DEBUG_SEND_TO_CONSOLE)
+            debug(F("Action Button Slot: "));
+            debugln(buttonSlot);
+          #endif
+        }
       }
 
       preferences.end();

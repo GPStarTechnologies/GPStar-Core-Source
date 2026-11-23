@@ -22,6 +22,21 @@
 #define BUILT_IN_LED 2
 
 /**
+ * General Purpose Button
+ * 
+ * Pin Options:
+ *   GPIO14: Normal I/O, safe from strapping effects, default choice
+ *   GPIO12: Normal I/O, alternate option
+ *   GPIO13: Normal I/O, alternate option
+ *   GPIO15: Normal I/O, alternate option (occasionally JTAG-related, but safe)
+ * 
+ * At boot: If held LOW, forces WiFi AP to use default password (session-only).
+ * During runtime: Available for animation triggers and other actions.
+ */
+#define ACTION_BTN 14
+ezButton action_btn(ACTION_BTN);
+
+/**
  * RF Inputs
  * ---------
  * GPIO34 (Input-Only)

@@ -35,6 +35,15 @@
           title="Only letters, numbers, hyphens, and underscores are allowed, up to 32 characters."
         />
       </div>
+      <div class="setting">
+        <b>Action Button Slot:</b>
+        <select id="actionSlot">
+          <option value="0">Slot 0</option>
+          <option value="1">Slot 1</option>
+          <option value="2">Slot 2</option>
+          <option value="3">Slot 3</option>
+        </select>
+      </div>
     </div>
 
     <h1>Music Track Listing</h1>
@@ -91,6 +100,7 @@
               setValue("wifiName", settings.wifiName || "");
 
               setValue("songList", settings.songList || "");
+              setValue("actionSlot", settings.actionSlot || "0");
               updateByteCount();
             }
           } else if (this.readyState == 4) {
@@ -133,6 +143,7 @@
         var settings = {
           wifiName: wifiName,
           songList: getText("songList"),
+          actionSlot: parseInt(getValue("actionSlot")),
         };
         var body = JSON.stringify(settings);
 

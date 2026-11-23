@@ -86,7 +86,15 @@ bool startAccessPoint() {
   // Additionally, sets radio to channel 1, don't hide SSID, and max 6 connections.
   // Note that the WiFi protocols available for use are 802.11 b/g/n over 2.4GHz.
   bool b_success = false;
-  b_success = WiFi.softAP(wirelessMgr->getLocalNetworkName().c_str(), wirelessMgr->getLocalPassword().c_str(), 1, false, 6);
+  if(action_btn.getStateRaw() == LOW) {
+    // If action button is held at boot, use the default password.
+    b_success = WiFi.softAP(wirelessMgr->getLocalNetworkName().c_str(), wirelessMgr->getDefaultPassword(), 1, false, 6);
+    debugln(F("WARNING: User forced use of the default WiFi password!"));
+  }
+  else {
+    // Otherwise, set the password as desired by the user (or the default).
+    b_success = WiFi.softAP(wirelessMgr->getLocalNetworkName().c_str(), wirelessMgr->getLocalPassword().c_str(), 1, false, 6);
+  }
 
   #if defined(DEBUG_WIRELESS_SETUP)
     debugln(b_success ? "AP Ready" : "AP Failed");

@@ -43,6 +43,7 @@
 
 // 3rd-Party Libraries
 #include <millisDelay.h>
+#include <ezButton.h>
 #include <esp_system.h>
 #include <nvs_flash.h>
 #include <Preferences.h>
@@ -251,6 +252,9 @@ void UserInputTask(void *parameter) {
     // Update the state of the audio device.
     updateAudio();
 
+    // Update the action button state.
+    action_btn.loop();
+
     // Check each RF input pin for triggers.
     RFButtonChannel* buttons[] = {&devices.button1, &devices.button2, &devices.button3, &devices.button4};
     uint8_t buttonPins[] = {devices.button1.pin, devices.button2.pin, devices.button3.pin, devices.button4.pin};
@@ -327,6 +331,32 @@ void UserInputTask(void *parameter) {
       // Applies to both rising edge (animation trigger) and falling edge (button release).
       if (stateChanged) {
         sendDeviceStateEvent();
+      }
+    }
+
+    // Handle general-purpose action button
+    if(action_btn.isPressed()) {
+      if (currentAnimation.state != ANIM_PLAYBACK) {
+        // Not playing, start animation slot
+        if (startPlayback(ACTION_BUTTON_SLOT, TRIGGER_SOURCE_RF)) {
+          #if defined(DEBUG_SEND_TO_CONSOLE)
+            debugln(F("Action button started animation playback"));
+          #endif
+        }
+      } else if (currentAnimation.state == ANIM_PLAYBACK && currentAnimation.sourceSlot == ACTION_BUTTON_SLOT) {
+        // Currently playing assigned slot, stop it
+        stopPlayback();
+        #if defined(DEBUG_SEND_TO_CONSOLE)
+          debugln(F("Action button stopped animation playback"));
+        #endif
+      } else {
+        // Different slot playing, switch to assigned slot
+        stopPlayback();
+        if (startPlayback(ACTION_BUTTON_SLOT, TRIGGER_SOURCE_RF)) {
+          #if defined(DEBUG_SEND_TO_CONSOLE)
+            debugln(F("Action button switched to animation playback"));
+          #endif
+        }
       }
     }
 
@@ -448,6 +478,9 @@ void setup() {
   digitalWrite(RELAY3_PIN, LOW);
   digitalWrite(RELAY4_PIN, LOW);
 
+  // Initialize the action button.
+  action_btn.setDebounceTime(50);
+
   // Initialize RF input button states (LOW = idle, HIGH = pressed)
   devices.button1.state.currentState = false;  // LOW (idle)
   devices.button1.state.previousState = false;
@@ -495,12 +528,14 @@ void setup() {
   if(b_namespace_opened) {
     // Return stored values if available, otherwise use a default value.
     s_track_listing = preferences.getString("track_list", "");
+    ACTION_BUTTON_SLOT = preferences.getUChar("action_slot", 0);
     preferences.end();
   }
   else {
     // If namespace is not initialized, open in read/write mode and set defaults.
     if(preferences.begin("device", false)) {
       preferences.putString("track_list", "");
+      preferences.putUChar("action_slot", 0);
       preferences.end();
     }
   }
