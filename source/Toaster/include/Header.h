@@ -24,16 +24,10 @@
 /**
  * General Purpose Button
  * 
- * Pin Options:
- *   GPIO14: Normal I/O, safe from strapping effects, default choice
- *   GPIO12: Normal I/O, alternate option
- *   GPIO13: Normal I/O, alternate option
- *   GPIO15: Normal I/O, alternate option (occasionally JTAG-related, but safe)
- * 
  * At boot: If held LOW, forces WiFi AP to use default password (session-only).
  * During runtime: Available for animation triggers and other actions.
  */
-#define ACTION_BTN 14
+#define ACTION_BTN 4
 ezButton action_btn(ACTION_BTN);
 
 /**

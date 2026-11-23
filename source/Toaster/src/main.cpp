@@ -478,7 +478,8 @@ void setup() {
   digitalWrite(RELAY3_PIN, LOW);
   digitalWrite(RELAY4_PIN, LOW);
 
-  // Initialize the action button.
+  // Initialize the action button with internal pull-up
+  pinMode(ACTION_BTN, INPUT_PULLUP);
   action_btn.setDebounceTime(50);
 
   // Initialize RF input button states (LOW = idle, HIGH = pressed)
