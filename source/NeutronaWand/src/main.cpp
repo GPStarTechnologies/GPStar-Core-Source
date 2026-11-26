@@ -229,6 +229,9 @@ void setup() {
     if(irManager == nullptr) {
       irManager = new InfraredManager(IR_DEVICE_NEUTRONA_WAND, wirelessMgr->getDeviceID());
     }
+    if(!loadInfraredTriggerSettings()) {
+      sendDebug("Unable to load infrared trigger settings; configured triggers are disabled.");
+    }
 
     #if defined(RESET_AP_SETTINGS)
       // Reset the WiFi password to the expected default on every startup.
@@ -716,6 +719,8 @@ void mainLoop() {
   if(b_firing && WAND_ACTION_STATUS != ACTION_FIRING) {
     modeFireStop();
   }
+
+  checkFiringTimers();
 
   // Play the firing pulse effect animation.
   if(ms_firing_pulse.justFinished()) {

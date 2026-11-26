@@ -469,6 +469,27 @@ bool b_sound_afterlife_idle_2_fade = true;
 bool b_all_switch_activation = false; // Used to check if Activate was flipped to on while the vent switch was already in the on position for sound purposes.
 bool b_overheat_recovery = false; // Used to prevent wand from erroneously sending overlapping bootup sounds to pack when recovering from overheat.
 bool b_wand_boot_error_on = false;
+uint32_t i_firing_start_ms = 0; // Time in MS to mark when firing began.
+uint32_t i_cts_firing_start_ms = 0; // Time in MS to mark when CTS firing began.
+#ifdef ESP32
+enum IR_TRIGGER_EVENT : uint8_t {
+  IR_TRIGGER_FIRING_START,
+  IR_TRIGGER_FIRING_END,
+  IR_TRIGGER_CTS_START,
+  IR_TRIGGER_CTS_END,
+  IR_TRIGGER_FIRING_AFTER,
+  IR_TRIGGER_CTS_AFTER,
+  IR_TRIGGER_EVENT_COUNT
+};
+const uint8_t IR_TRIGGER_COMMAND_DISABLED = 0xFF;
+struct IR_TRIGGER_CONFIG {
+  uint8_t commandIndex = IR_TRIGGER_COMMAND_DISABLED;
+  uint32_t delayMs = 0;
+};
+IR_TRIGGER_CONFIG irTriggerSettings[IR_TRIGGER_EVENT_COUNT] = {};
+bool b_ir_firing_duration_triggered = false;
+bool b_ir_cts_duration_triggered = false;
+#endif
 
 /*
  * Button Mashing Lock-out - Prevents excessive user input via the primary/secondary firing buttons.

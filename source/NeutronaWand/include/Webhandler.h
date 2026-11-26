@@ -27,6 +27,15 @@
 // Extern declaration for global infrared handler
 extern InfraredManager* irManager;
 
+const char* const IR_TRIGGER_EVENT_NAMES[IR_TRIGGER_EVENT_COUNT] = {
+  "firing_start",
+  "firing_end",
+  "cts_start",
+  "cts_end",
+  "firing_after",
+  "cts_after"
+};
+
 // Declare the external binary data markers for embedded files.
 // Common Assets
 #include "../../SharedLib/WebAssets/CommonAssets.h"
@@ -512,8 +521,27 @@ String getInfraredSlots() {
     }
   }
 
-  // Prepare the triggers for custom signals.
-  jsonBody["triggers"].to<JsonObject>();
+  JsonObject triggers = jsonBody["triggers"].to<JsonObject>();
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    JsonObject trigger = triggers[IR_TRIGGER_EVENT_NAMES[eventIndex]].to<JsonObject>();
+    uint8_t commandIndex = irTriggerSettings[eventIndex].commandIndex;
+    if(commandIndex == IR_TRIGGER_COMMAND_DISABLED) {
+      trigger["commandIndex"] = nullptr;
+    }
+    else {
+      trigger["commandIndex"] = commandIndex;
+    }
+
+    if(eventIndex >= IR_TRIGGER_FIRING_AFTER) {
+      if(commandIndex == IR_TRIGGER_COMMAND_DISABLED) {
+        trigger["delayMs"] = nullptr;
+      }
+      else {
+        trigger["delayMs"] = irTriggerSettings[eventIndex].delayMs;
+      }
+    }
+  }
+
   serializeJson(jsonBody, irSettings);
   return irSettings;
 }
@@ -2151,8 +2179,8 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
 
   JsonArray incomingEntries = settings["entries"].as<JsonArray>();
   JsonObject triggers = settings["triggers"].as<JsonObject>();
-  if(incomingEntries.size() != IR_COMMAND_MAX || triggers.size() != 0) {
-    sendInvalidRequest("Entries must contain all slots and triggers must be empty.");
+  if(incomingEntries.size() != IR_COMMAND_MAX || triggers.size() != IR_TRIGGER_EVENT_COUNT) {
+    sendInvalidRequest("Entries must contain all slots and triggers must contain all six events.");
     return;
   }
 
@@ -2166,6 +2194,63 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
   for(uint8_t index = 0; index < IR_COMMAND_MAX; index++) {
     irManager->getCommandEntry(index, originalEntries[index]);
     commandEntries[index] = originalEntries[index];
+  }
+
+  IR_TRIGGER_CONFIG updatedTriggers[IR_TRIGGER_EVENT_COUNT] = {};
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    JsonVariant eventValue = triggers[IR_TRIGGER_EVENT_NAMES[eventIndex]];
+    if(!eventValue.is<JsonObject>()) {
+      sendInvalidRequest("Each trigger must be an object.");
+      return;
+    }
+
+    JsonObject eventTrigger = eventValue.as<JsonObject>();
+    bool isTimedEvent = eventIndex >= IR_TRIGGER_FIRING_AFTER;
+    if(eventTrigger.size() != (isTimedEvent ? 2 : 1) ||
+       !eventTrigger.containsKey("commandIndex")) {
+      sendInvalidRequest("Each trigger must contain its required fields only.");
+      return;
+    }
+
+    JsonVariant commandValue = eventTrigger["commandIndex"];
+    if(commandValue.isNull()) {
+      updatedTriggers[eventIndex].commandIndex = IR_TRIGGER_COMMAND_DISABLED;
+    }
+    else {
+      if(!commandValue.is<int>()) {
+        sendInvalidRequest("Trigger commandIndex must be a slot number or null.");
+        return;
+      }
+
+      int commandIndex = commandValue.as<int>();
+      if(commandIndex < 0 || commandIndex >= IR_COMMAND_MAX) {
+        sendInvalidRequest("Trigger commandIndex is outside the configured slot range.");
+        return;
+      }
+      updatedTriggers[eventIndex].commandIndex = static_cast<uint8_t>(commandIndex);
+    }
+
+    if(isTimedEvent) {
+      if(!eventTrigger.containsKey("delayMs")) {
+        sendInvalidRequest("Timed triggers must include delayMs.");
+        return;
+      }
+
+      JsonVariant delayValue = eventTrigger["delayMs"];
+      if(updatedTriggers[eventIndex].commandIndex == IR_TRIGGER_COMMAND_DISABLED) {
+        if(!delayValue.isNull()) {
+          sendInvalidRequest("Disabled timed triggers must use a null delayMs.");
+          return;
+        }
+      }
+      else {
+        if(!delayValue.is<uint32_t>() || delayValue.as<uint32_t>() == 0) {
+          sendInvalidRequest("Enabled timed triggers require a positive delayMs value.");
+          return;
+        }
+        updatedTriggers[eventIndex].delayMs = delayValue.as<uint32_t>();
+      }
+    }
   }
 
   auto parseBytePair = [](JsonVariant value, uint8_t* bytes) {
@@ -2310,6 +2395,19 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
     }
   }
 
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    uint8_t commandIndex = updatedTriggers[eventIndex].commandIndex;
+    if(commandIndex == IR_TRIGGER_COMMAND_DISABLED) {
+      continue;
+    }
+
+    const IR_COMMAND_ENTRY& commandEntry = commandEntries[commandIndex];
+    if(commandEntry.name[0] == '\0' || commandEntry.protection != IR_READ_WRITE) {
+      sendInvalidRequest("Triggers may only reference configured user-editable signal slots.");
+      return;
+    }
+  }
+
   for(uint8_t index = 0; index < IR_COMMAND_MAX; index++) {
     if(originalEntries[index].protection != IR_READ_WRITE) {
       continue;
@@ -2327,6 +2425,17 @@ AsyncCallbackJsonWebHandler *infraredChangeHandler = new AsyncCallbackJsonWebHan
       return;
     }
   }
+
+  if(!saveInfraredTriggerSettings(updatedTriggers)) {
+    request->send(HTTP_STATUS_500, MIME_JSON, returnJsonStatus("Unable to save infrared trigger settings."));
+    return;
+  }
+
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    irTriggerSettings[eventIndex] = updatedTriggers[eventIndex];
+  }
+  b_ir_firing_duration_triggered = false;
+  b_ir_cts_duration_triggered = false;
 
   request->send(HTTP_STATUS_201, MIME_JSON, returnJsonStatus());
 }); // infraredChangeHandler

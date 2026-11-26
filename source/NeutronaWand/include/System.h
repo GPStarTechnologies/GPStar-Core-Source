@@ -2282,6 +2282,100 @@ void stopMashErrorSounds() {
   stopEffect(S_SMASH_ERROR_RESTART);
 }
 
+#ifdef ESP32
+void sendInfraredTrigger(IR_TRIGGER_EVENT eventIndex) {
+  const IR_TRIGGER_CONFIG& trigger = irTriggerSettings[eventIndex];
+  if(trigger.commandIndex == IR_TRIGGER_COMMAND_DISABLED) {
+    return;
+  }
+
+  if(irManager == nullptr) {
+    sendDebug("Unable to send configured infrared trigger: manager is unavailable.");
+    return;
+  }
+
+  JsonDocument result = irManager->sendCommand(trigger.commandIndex);
+  if(result["status"] != "success") {
+    const char* errorMessage = result["error"] | "Unknown infrared send error";
+    sendDebug(String("Configured infrared trigger failed: ") + errorMessage);
+  }
+}
+#endif
+
+void checkFiringTimers() {
+#ifdef ESP32
+  if(b_firing && !b_ir_firing_duration_triggered) {
+    const IR_TRIGGER_CONFIG& trigger = irTriggerSettings[IR_TRIGGER_FIRING_AFTER];
+    if(trigger.commandIndex != IR_TRIGGER_COMMAND_DISABLED &&
+       static_cast<uint32_t>(millis() - i_firing_start_ms) >= trigger.delayMs) {
+      b_ir_firing_duration_triggered = true;
+      sendInfraredTrigger(IR_TRIGGER_FIRING_AFTER);
+    }
+  }
+
+  if(b_firing_cross_streams && !b_ir_cts_duration_triggered) {
+    const IR_TRIGGER_CONFIG& trigger = irTriggerSettings[IR_TRIGGER_CTS_AFTER];
+    if(trigger.commandIndex != IR_TRIGGER_COMMAND_DISABLED &&
+       static_cast<uint32_t>(millis() - i_cts_firing_start_ms) >= trigger.delayMs) {
+      b_ir_cts_duration_triggered = true;
+      sendInfraredTrigger(IR_TRIGGER_CTS_AFTER);
+    }
+  }
+#endif
+}
+
+void firingEventStart() {
+  i_firing_start_ms = millis();
+#ifdef ESP32
+  b_ir_firing_duration_triggered = false;
+  sendInfraredTrigger(IR_TRIGGER_FIRING_START);
+#endif
+}
+
+void firingEventEnd() {
+#ifdef ESP32
+  if(b_firing) {
+    sendInfraredTrigger(IR_TRIGGER_FIRING_END);
+  }
+  b_ir_firing_duration_triggered = false;
+#endif
+  i_firing_start_ms = 0;
+}
+
+void ctsFiringStart() {
+#ifdef ESP32
+  if(!b_firing_cross_streams) {
+    b_firing_cross_streams = true;
+    i_cts_firing_start_ms = millis();
+    b_ir_cts_duration_triggered = false;
+    sendInfraredTrigger(IR_TRIGGER_CTS_START);
+  }
+#endif
+}
+
+void ctsFiringEnd() {
+#ifdef ESP32
+  if(b_firing_cross_streams) {
+    sendInfraredTrigger(IR_TRIGGER_CTS_END);
+  }
+  b_ir_cts_duration_triggered = false;
+#endif
+  b_firing_cross_streams = false;
+  i_cts_firing_start_ms = 0;
+}
+
+uint32_t getFiringDurationMs() {
+  return b_firing
+    ? static_cast<uint32_t>(millis() - i_firing_start_ms)
+    : 0;
+}
+
+uint32_t getCTSFiringDurationMs() {
+  return b_firing_cross_streams
+    ? static_cast<uint32_t>(millis() - i_cts_firing_start_ms)
+    : 0;
+}
+
 void modeFireStopSounds() {
   // Reset some sound triggers.
   b_sound_firing_intensify_trigger = false;
@@ -2512,11 +2606,12 @@ void modeFireStopSounds() {
       break;
     }
 
-    b_firing_cross_streams = false;
+    ctsFiringEnd();
   }
 }
 
 void modeFireStop() {
+  firingEventEnd();
   ms_overheat_initiate.stop();
 
   // Tell the pack the wand stopped firing.
@@ -6165,6 +6260,7 @@ void bargraphRampFiring() {
 }
 
 void modeFireStart() {
+  firingEventStart();
   modeFireStartSounds();
 
   // Tell the pack the wand is firing, and if in Intensify (1) or Alt (2) mode.
@@ -7691,7 +7787,7 @@ void modeFiring() {
   }
 
   if(b_firing_alt && b_firing_intensify && !b_sound_firing_cross_the_streams && !b_firing_cross_streams) {
-    b_firing_cross_streams = true;
+    ctsFiringStart();
     b_sound_firing_cross_the_streams = true;
     ms_impact.stop();
     ms_firing_sound_mix.stop();
@@ -7777,7 +7873,7 @@ void modeFiring() {
 
   if((!b_firing_alt || !b_firing_intensify) && b_firing_cross_streams && gpstarWand.isFiringModeCTSMix()) {
     // In CTS Mix mode, you can release either Intensify or the Barrel Wing Button and firing will revert to the mode for the still-held button.
-    b_firing_cross_streams = false;
+    ctsFiringEnd();
     b_sound_firing_cross_the_streams = false;
 
     switch(WAND_YEAR_CTS) {
@@ -10796,7 +10892,7 @@ void ventLightControl(uint8_t i_brightness) {
 void firingCheckIR() {
   #ifdef ESP32
   if(b_ir_while_firing) {
-    // Send infrared command using the IR manager when firing the meson pulse.
+    // Send infrared command using the IR manager when firing.
     if(irManager->isTXTimerExpired()) {
       uint8_t ir_stream_mode = IR_STREAM_PROTON;
       switch(gpstarWand.getStreamMode()) {

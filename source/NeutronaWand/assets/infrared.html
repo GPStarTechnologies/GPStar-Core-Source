@@ -46,6 +46,21 @@
       </div>
     </div>
 
+    <div class="block left">
+      <h2>Event Triggers</h2>
+      <p>Choose one user-editable signal for each event. Timed events are sent once after the selected duration.</p>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Event</th>
+            <th scope="col">Signal</th>
+            <th scope="col">Delay (ms)</th>
+          </tr>
+        </thead>
+        <tbody id="irTriggerRows"></tbody>
+      </table>
+    </div>
+
     <div class="block">
       <hr />
       <div class="button-group">
@@ -76,14 +91,67 @@
         "Command Byte 1",
         "Command Byte 2"
       ];
+      const IR_TRIGGER_EVENTS = [
+        { key: "firing_start", label: "Firing starts", timed: false },
+        { key: "firing_end", label: "Firing ends", timed: false },
+        { key: "cts_start", label: "Crossing the streams starts", timed: false },
+        { key: "cts_end", label: "Crossing the streams ends", timed: false },
+        { key: "firing_after", label: "Firing duration reached", timed: true },
+        { key: "cts_after", label: "CTS duration reached", timed: true }
+      ];
 
       window.addEventListener("load", onLoad);
       // Build the editable slots, load their current values, and initialize page help.
       function onLoad() {
         createSignalRows();
+        createTriggerRows();
         getSettings();
 
         initializeHelp("infrared");
+      }
+
+      // Build the fixed trigger list and its optional signal and duration controls.
+      function createTriggerRows() {
+        var rows = document.getElementById("irTriggerRows");
+        IR_TRIGGER_EVENTS.forEach(function (event) {
+          var row = document.createElement("tr");
+          var label = document.createElement("th");
+          label.scope = "row";
+          label.textContent = event.label;
+          row.appendChild(label);
+
+          var commandCell = document.createElement("td");
+          var commandSelect = document.createElement("select");
+          commandSelect.className = "ir-trigger-command";
+          commandSelect.setAttribute("aria-label", event.label + " signal");
+          var disabledOption = document.createElement("option");
+          disabledOption.value = "";
+          disabledOption.textContent = "Disabled";
+          commandSelect.appendChild(disabledOption);
+          commandCell.appendChild(commandSelect);
+          row.appendChild(commandCell);
+
+          var delayCell = document.createElement("td");
+          if (event.timed) {
+            var delayInput = document.createElement("input");
+            delayInput.type = "number";
+            delayInput.min = "1";
+            delayInput.max = "4294967295";
+            delayInput.step = "1";
+            delayInput.className = "ir-trigger-delay";
+            delayInput.setAttribute("aria-label", event.label + " delay in milliseconds");
+            delayInput.disabled = true;
+            delayCell.appendChild(delayInput);
+            commandSelect.addEventListener("change", function () {
+              delayInput.disabled = commandSelect.value === "";
+            });
+          }
+          else {
+            delayCell.textContent = "—";
+          }
+          row.appendChild(delayCell);
+          rows.appendChild(row);
+        });
       }
 
       // Add every byte value to the shared template, then create the fixed set of entry rows.
@@ -300,6 +368,42 @@
         document.getElementById("commandSelect").hidden = !hasEntries;
       }
 
+      // Populate trigger choices from configured, user-editable signal slots.
+      function populateTriggerControls(triggers, entries) {
+        IR_TRIGGER_EVENTS.forEach(function (event) {
+          var row = document.getElementById("irTriggerRows").rows[IR_TRIGGER_EVENTS.indexOf(event)];
+          var commandSelect = row.querySelector(".ir-trigger-command");
+          while (commandSelect.options.length > 1) {
+            commandSelect.remove(1);
+          }
+
+          for (var index = 0; index < entries.length && index < IR_ENTRIES_MAX; index++) {
+            var entry = entries[index];
+            if (!entry || entry.protection !== IR_PROTECTION_READ_WRITE ||
+                typeof entry.name !== "string" || !entry.name) continue;
+
+            var option = document.createElement("option");
+            option.value = index.toString();
+            option.textContent = "#" + (index + 1) + " " + entry.name;
+            commandSelect.appendChild(option);
+          }
+
+          var trigger = triggers[event.key];
+          var commandIndex = trigger && Number.isInteger(trigger.commandIndex)
+            ? trigger.commandIndex.toString()
+            : "";
+          commandSelect.value = commandIndex;
+
+          if (event.timed) {
+            var delayInput = row.querySelector(".ir-trigger-delay");
+            delayInput.value = trigger && Number.isInteger(trigger.delayMs) && trigger.delayMs > 0
+              ? trigger.delayMs.toString()
+              : "";
+            delayInput.disabled = commandSelect.value === "";
+          }
+        });
+      }
+
       // Fetch saved settings and populate the page, reporting endpoint-level failures.
       function getSettings() {
         var xhttp = new XMLHttpRequest();
@@ -313,11 +417,13 @@
             }
 
             var settings = JSON.parse(this.responseText);
-            if (!settings || !Array.isArray(settings.entries)) {
-              handleStatus("The infrared settings response has an invalid entries array.");
+            if (!settings || !Array.isArray(settings.entries) ||
+                !settings.triggers || typeof settings.triggers !== "object") {
+              handleStatus("The infrared settings response has invalid entries or triggers.");
             } else {
               populateSignalRows(settings.entries);
               populateCommandOptions(settings.entries);
+              populateTriggerControls(settings.triggers, settings.entries);
             }
           } else {
             handleStatus(this.responseText || "Unable to load infrared settings.");
@@ -354,9 +460,28 @@
           });
         }
 
+        var triggers = {};
+        for (var eventIndex = 0; eventIndex < IR_TRIGGER_EVENTS.length; eventIndex++) {
+          var event = IR_TRIGGER_EVENTS[eventIndex];
+          var row = document.getElementById("irTriggerRows").rows[eventIndex];
+          var commandValue = row.querySelector(".ir-trigger-command").value;
+          var commandIndex = commandValue === "" ? null : Number(commandValue);
+          var trigger = { commandIndex: commandIndex };
+          if (event.timed) {
+            var delayValue = row.querySelector(".ir-trigger-delay").value;
+            if (commandIndex !== null &&
+                (!/^\d+$/.test(delayValue) || Number(delayValue) < 1 || Number(delayValue) > 4294967295)) {
+              alert("Enter a positive whole-number delay in milliseconds for " + event.label + ".");
+              return;
+            }
+            trigger.delayMs = commandIndex === null ? null : Number(delayValue);
+          }
+          triggers[event.key] = trigger;
+        }
+
         var body = JSON.stringify({
           entries: entries,
-          triggers: {},
+          triggers: triggers,
         });
 
         var xhttp = new XMLHttpRequest();

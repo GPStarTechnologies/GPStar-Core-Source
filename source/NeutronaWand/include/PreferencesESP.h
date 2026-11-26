@@ -780,3 +780,87 @@ void getSpecialPreferences() {
     INSTALL_ORIENTATION = COMPONENTS_DOWN_USB_FRONT;
   }
 }
+
+bool loadInfraredTriggerSettings() {
+  uint8_t storedSettings[IR_TRIGGER_EVENT_COUNT + 8] = {};
+  Preferences preferences;
+  if(!preferences.begin("ir_custom", true)) {
+    return false;
+  }
+
+  if(!preferences.isKey("triggers")) {
+    preferences.end();
+    return true;
+  }
+
+  if(preferences.getBytesLength("triggers") != sizeof(storedSettings) ||
+     preferences.getBytes("triggers", storedSettings, sizeof(storedSettings)) != sizeof(storedSettings)) {
+    preferences.end();
+    return false;
+  }
+  preferences.end();
+
+  IR_TRIGGER_CONFIG loadedSettings[IR_TRIGGER_EVENT_COUNT] = {};
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    loadedSettings[eventIndex].commandIndex = storedSettings[eventIndex];
+  }
+
+  uint8_t delayOffset = IR_TRIGGER_EVENT_COUNT;
+  for(uint8_t eventIndex = IR_TRIGGER_FIRING_AFTER; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    uint32_t delayMs = 0;
+    for(uint8_t byteIndex = 0; byteIndex < 4; byteIndex++) {
+      delayMs |= static_cast<uint32_t>(storedSettings[delayOffset++]) << (byteIndex * 8);
+    }
+    loadedSettings[eventIndex].delayMs = delayMs;
+  }
+
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    const IR_TRIGGER_CONFIG& trigger = loadedSettings[eventIndex];
+    bool isTimedEvent = eventIndex >= IR_TRIGGER_FIRING_AFTER;
+    if((trigger.commandIndex == IR_TRIGGER_COMMAND_DISABLED && trigger.delayMs != 0) ||
+       (trigger.commandIndex != IR_TRIGGER_COMMAND_DISABLED &&
+        ((isTimedEvent && trigger.delayMs == 0) || (!isTimedEvent && trigger.delayMs != 0)))) {
+      return false;
+    }
+
+    if(trigger.commandIndex != IR_TRIGGER_COMMAND_DISABLED) {
+      IR_COMMAND_ENTRY commandEntry = {};
+      if(irManager == nullptr ||
+         !irManager->getCommandEntry(trigger.commandIndex, commandEntry) ||
+         commandEntry.protection != IR_READ_WRITE) {
+        return false;
+      }
+    }
+  }
+
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    irTriggerSettings[eventIndex] = loadedSettings[eventIndex];
+  }
+  return true;
+}
+
+bool saveInfraredTriggerSettings(const IR_TRIGGER_CONFIG* settings) {
+  if(settings == nullptr) {
+    return false;
+  }
+
+  uint8_t storedSettings[IR_TRIGGER_EVENT_COUNT + 8] = {};
+  for(uint8_t eventIndex = 0; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    storedSettings[eventIndex] = settings[eventIndex].commandIndex;
+  }
+
+  uint8_t delayOffset = IR_TRIGGER_EVENT_COUNT;
+  for(uint8_t eventIndex = IR_TRIGGER_FIRING_AFTER; eventIndex < IR_TRIGGER_EVENT_COUNT; eventIndex++) {
+    for(uint8_t byteIndex = 0; byteIndex < 4; byteIndex++) {
+      storedSettings[delayOffset++] = static_cast<uint8_t>(settings[eventIndex].delayMs >> (byteIndex * 8));
+    }
+  }
+
+  Preferences preferences;
+  if(!preferences.begin("ir_custom", false)) {
+    return false;
+  }
+  size_t bytesWritten = preferences.putBytes("triggers", storedSettings, sizeof(storedSettings));
+  preferences.end();
+  return bytesWritten == sizeof(storedSettings);
+}

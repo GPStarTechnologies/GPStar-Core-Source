@@ -19,6 +19,21 @@
 
 #pragma once
 
+/**
+ * Service the current wand action and its timed work.
+ *
+ * Switch and pack handling select WAND_ACTION_STATUS; this function services
+ * that state and may transition it through action handlers:
+ * - IDLE and ERROR currently do no action work here.
+ * - OFF and ACTIVATE run the shutdown and startup handlers, respectively.
+ * - FIRING starts sustained firing once, services its effects, and can stop or
+ *   transition to OVERHEATING.
+ * - OVERHEATING and VENTING service indicators and timers until completion.
+ * - EEPROM and settings states process menu input until their exit handlers run.
+ *
+ * Pulsed shots are initiated separately in fireControlCheck(); they are not
+ * represented solely by ACTION_FIRING.
+ */
 void checkWandAction() {
   switch(WAND_ACTION_STATUS) {
     case ACTION_IDLE:
@@ -52,10 +67,11 @@ void checkWandAction() {
 
             ms_firing_stream_effects.start(0); // Start new barrel animation.
             ms_meson_blast.repeat(); // Repeat the timer.
-            firingCheckIR(); // Handle IR for meson pulse.
+            firingCheckIR(); // Handle IR for Meson pulse.
           }
         }
 
+        // Firing detection latch, indicates starting edge of a firing sequence.
         if(!b_firing) {
           b_firing = true;
           modeFireStart();
@@ -81,7 +97,7 @@ void checkWandAction() {
 
         // Send infrared command using the IR manager when firing.
         if(!gpstarWand.inStreamMode(MESON)) {
-          firingCheckIR();
+          firingCheckIR(); // Handle IR for all non-Meson streams.
         }
       }
       else if(b_pack_alarm && b_firing) {
@@ -128,7 +144,7 @@ void checkWandAction() {
     break;
 
     case ACTION_ERROR:
-      // nothing.
+      // Do nothing.
     break;
 
     case ACTION_ACTIVATE:
